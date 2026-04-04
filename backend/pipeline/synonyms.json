@@ -1,0 +1,21 @@
+{
+  "halal_terms": {
+    "site audit": ["on-site audit", "facility audit", "location audit", "premises audit", "SITE AUDIT", "Site Audit", "đánh giá tại chỗ", "kiểm tra tại chỗ"],
+    "internal audit": ["first party audit", "self audit", "nội bộ", "tự đánh giá"],
+    "external audit": ["second party audit", "third party audit", "supplier audit", "bên ngoài", "đánh giá bên ngoài"],
+    "audit": ["inspection", "assessment", "review", "evaluation", "kiểm toán", "đánh giá", "thanh tra"],
+    "halal": ["hợp thức", "được phép", "permissible", "lawful"],
+    "certification": ["chứng nhận", "accreditation", "approval"],
+    "compliance": ["tuân thủ", "conformity", "adherence"],
+    "documentation": ["tài liệu", "hồ sơ", "records", "paperwork"],
+    "procedure": ["quy trình", "process", "methodology"],
+    "requirement": ["yêu cầu", "requisite", "specification"]
+  },
+  "query_types": {
+    "definition": ["là gì", "định nghĩa", "khái niệm", "what is", "define", "explain"],
+    "procedure": ["cách thức", "quy trình", "bước", "how to", "procedure", "process"],
+    "requirement": ["yêu cầu", "điều kiện", "tiêu chuẩn", "requirements", "criteria", "standards"],
+    "comparison": ["so sánh", "khác biệt", "difference between", "compare"],
+    "example": ["ví dụ", "case study", "ví dụ về", "example of"]
+  }
+}

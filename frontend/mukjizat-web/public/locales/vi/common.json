@@ -1,0 +1,33 @@
+{
+  "navbar": {
+    "home": "Trang chủ",
+    "upload": "Tải lên",
+    "language": "Ngôn ngữ",
+    "switch": "Chuyển ngôn ngữ"
+  },
+  "home": {
+    "title": "Trợ lý AI Aminra",
+    "subtitle": "Đặt câu hỏi về chứng nhận Halal",
+    "input_placeholder": "Nhập câu hỏi của bạn...",
+    "send": "Gửi",
+    "thinking": "Đang suy nghĩ...",
+    "error": "Đã xảy ra lỗi. Vui lòng thử lại.",
+    "preset1": "Quy trình chứng nhận Halal",
+    "preset2": "Tin tức về thị trường Halal",
+    "preset3": "Cơ hội kinh doanh",
+    "preset4": "Các tổ chức chứng nhận Halal ở Việt Nam"
+  },
+  "upload": {
+    "title": "Tải lên Tài liệu",
+    "subtitle": "Tải lên file PDF, DOCX để phân tích",
+    "drag_drop": "Kéo & thả file vào đây, hoặc click để chọn",
+    "browse": "Chọn file",
+    "uploading": "Đang tải lên...",
+    "success": "Tải lên thành công! Kết quả phân tích sẽ hiển thị ở đây.",
+    "error": "Tải lên thất bại. Vui lòng thử lại."
+  },
+  "chat": {
+    "user": "Bạn",
+    "assistant": "Aminra AI"
+  }
+}

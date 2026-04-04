@@ -1,0 +1,245 @@
+"""
+Ollama Local LLM Integration
+For Aminra Halal Certification AI
+"""
+
+import os
+import requests
+import logging
+from typing import Optional, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
+
+log = logging.getLogger("aminra.ollama")
+
+# Ollama Configuration
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+
+SYSTEM_PROMPT = """Bạn là Aminra - chuyên gia tư vấn chứng nhận Halal với 10 năm kinh nghiệm.
+
+HƯỚNG DẪN TRẢ LỜI:
+1. Dựa HOÀN TOÀN vào ngữ cảnh được cung cấp
+2. Trả lời bằng tiếng Việt, trừ khi được yêu cầu khác
+3. Cấu trúc câu trả lời:
+   - Phần tóm tắt ngắn (1-2 câu)
+   - Chi tiết chính (bullet points)
+   - Ví dụ minh họa (nếu có)
+   - Khuyến nghị thực tế
+4. Luôn trích dẫn nguồn: [Tên file, Slide số]
+
+ĐỘ CHÍNH XÁC:
+- Nếu không có thông tin trong context: "Không tìm thấy thông tin về [chủ đề] trong tài liệu hiện có."
+- Nếu thông tin mâu thuẫn: trình bày cả hai quan điểm với nguồn
+- Ưu tiên thông tin từ slide gần đây nhất
+
+TONALITY:
+- Chuyên nghiệp nhưng thân thiện
+- Rõ ràng, dễ hiểu
+- Cung cấp giá trị thực tế cho doanh nghiệp"""
+
+
+class OllamaClient:
+    """Ollama Local LLM Client"""
+    
+    def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
+        """Initialize Ollama client"""
+        self.base_url = base_url or OLLAMA_BASE_URL
+        self.model = model or OLLAMA_MODEL
+        self.model_loaded = False
+        
+        # Check if Ollama is running
+        self._check_connection()
+    
+    def _check_connection(self) -> bool:
+        """Check if Ollama server is running"""
+        try:
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            self.model_loaded = response.status_code == 200
+            log.info(f"✅ Ollama connection OK at {self.base_url}")
+            return True
+        except requests.exceptions.ConnectionError:
+            log.error(f"❌ Cannot connect to Ollama at {self.base_url}")
+            log.error("   Make sure: ollama serve is running")
+            return False
+        except Exception as e:
+            log.error(f"❌ Ollama connection error: {e}")
+            return False
+    
+    def generate(
+        self,
+        prompt: str,
+        temperature: float = 0.1,
+        num_predict: int = 1500,
+        timeout: int = 60
+    ) -> Dict[str, Any]:
+        """Generate text using Ollama"""
+        
+        if not self.model_loaded:
+            return {
+                "success": False,
+                "error": "connection",
+                "message": f"Ollama not running at {self.base_url}"
+            }
+        
+        try:
+            log.info(f"Calling Ollama model: {self.model}")
+            
+            response = requests.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt[:6000],  # Limit prompt size
+                    "stream": False,
+                    "temperature": temperature,
+                    "num_predict": num_predict
+                },
+                timeout=timeout
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if "response" not in data:
+                raise ValueError("No response field in Ollama output")
+            
+            log.info(f"✅ Ollama generation successful ({self.model})")
+            
+            return {
+                "success": True,
+                "model": self.model,
+                "content": data["response"],
+                "stats": {
+                    "eval_count": data.get("eval_count", 0),
+                    "eval_duration": data.get("eval_duration", 0),
+                    "load_duration": data.get("load_duration", 0),
+                    "prompt_eval_count": data.get("prompt_eval_count", 0),
+                    "prompt_eval_duration": data.get("prompt_eval_duration", 0),
+                    "total_duration": data.get("total_duration", 0)
+                }
+            }
+            
+        except requests.exceptions.Timeout:
+            log.error(f"❌ Ollama timeout ({self.model})")
+            return {
+                "success": False,
+                "error": "timeout",
+                "message": f"{self.model} generation timed out after {timeout}s"
+            }
+        except requests.exceptions.RequestException as e:
+            log.error(f"❌ Ollama request error: {e}")
+            return {
+                "success": False,
+                "error": "request_error",
+                "message": str(e)
+            }
+        except Exception as e:
+            log.error(f"❌ Unexpected Ollama error: {e}")
+            return {
+                "success": False,
+                "error": "unexpected",
+                "message": str(e)
+            }
+    
+    def list_models(self) -> Dict[str, Any]:
+        """List available models in Ollama"""
+        try:
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            
+            models = [m["name"] for m in data.get("models", [])]
+            log.info(f"Available Ollama models: {models}")
+            
+            return {
+                "success": True,
+                "models": models,
+                "current": self.model
+            }
+        except Exception as e:
+            log.error(f"Error listing models: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "models": []
+            }
+    
+    def check_model_loaded(self) -> bool:
+        """Check if the configured model is loaded"""
+        try:
+            models = self.list_models()
+            if models["success"]:
+                return self.model in models["models"]
+        except:
+            pass
+        return False
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get Ollama client statistics"""
+        return {
+            "base_url": self.base_url,
+            "model": self.model,
+            "connected": self.model_loaded,
+            "models_available": self.list_models().get("models", [])
+        }
+
+
+def call_ollama(
+    prompt: str,
+    original_question: Optional[str] = None,
+    context: Optional[str] = None,
+    model: Optional[str] = None,
+    timeout: int = 60
+) -> str:
+    """
+    Call Ollama local LLM
+    
+    Args:
+        prompt: Full prompt text
+        original_question: Original question (for logging)
+        context: Context/retrieval results
+        model: Model to use (or use default from .env)
+        timeout: Timeout in seconds
+    
+    Returns:
+        Generated response text
+    """
+    
+    try:
+        client = OllamaClient(model=model)
+        result = client.generate(prompt, timeout=timeout)
+        
+        if result["success"]:
+            log.info(f"✅ Response generated by {result['model']}")
+            return result["content"]
+        else:
+            log.error(f"❌ Ollama generation failed: {result['message']}")
+            return generate_fallback_answer(context, original_question)
+    
+    except Exception as e:
+        log.error(f"Ollama client error: {e}")
+        return generate_fallback_answer(context, original_question)
+
+
+def generate_fallback_answer(context: Optional[str], question: Optional[str]) -> str:
+    """Generate answer when Ollama fails"""
+    
+    if not context:
+        return """Xin lỗi, hệ thống xử lý ngôn ngữ không khả dụng lúc này.
+
+**Khuyến nghị:**
+1. Kiểm tra Ollama đang chạy: `ollama serve`
+2. Thử lại sau vài phút
+3. Liên hệ hỗ trợ nếu vấn đề tiếp tục"""
+    
+    return f"""**Thông báo hệ thống:**
+
+Xin lỗi, không thể tạo câu trả lời tự động. Dưới đây là thông tin từ tài liệu:
+
+{context}
+
+**Khuyến nghị:**
+1. Kiểm tra Ollama: `ollama serve`
+2. Thử lại sau vài phút
+3. Rephrase câu hỏi"""
