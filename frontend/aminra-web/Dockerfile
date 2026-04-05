@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline
+    npm ci --prefer-offline --legacy-peer-deps
 
 # Rebuild the source code only when needed
 FROM base AS builder
