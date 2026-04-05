@@ -1,0 +1,17 @@
+{
+  "filename": "test_review_doc.txt",
+  "reviewer": "Nguyen Van A",
+  "notes": "Đã cập nhật sau hội ý lần 2",
+  "confirmed_issues": [
+    "0",
+    "1"
+  ],
+  "false_positives": [
+    "2"
+  ],
+  "additional_findings": [
+    "Thiếu log kiểm tra nhà cung cấp theo định kỳ 6 tháng"
+  ],
+  "status": "pending",
+  "reviewed_at": "2026-04-02T10:00:00"
+}

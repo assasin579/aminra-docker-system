@@ -1,5 +1,23 @@
 services:
-  # Frontend Services
+  # ── Nginx (production only) ───────────────────────────────────────────────
+  # Start with: docker compose --profile production up -d
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      aminra-backend:
+        condition: service_healthy
+      aminra-frontend:
+        condition: service_healthy
+    profiles:
+      - production
+
   aminra-frontend:
     build:
       context: ./frontend/aminra-web
@@ -8,37 +26,26 @@ services:
       - "3100:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_BASE_URL=http://aminra-backend:8000
+      - BACKEND_URL=http://aminra-backend:8000
     networks:
-      - frontend-network
-      - backend-network
+      - app-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 > /dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+    depends_on:
+      aminra-backend:
+        condition: service_healthy
 
-  mukjizat-frontend:
-    build:
-      context: ./frontend/mukjizat-web
-      dockerfile: Dockerfile
-    ports:
-      - "3101:3001"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_BASE_URL=http://aminra-backend:8000
-    networks:
-      - frontend-network
-      - backend-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001 > /dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Backend Service
   aminra-backend:
     build:
       context: ./backend
@@ -46,133 +53,101 @@ services:
     ports:
       - "8100:8000"
     environment:
-      - POSTGRES_HOST=postgres-db
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=aminra_auth
-      - POSTGRES_USER=aminra_user
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
       - QDRANT_URL=http://qdrant-db:6333
-      - REDIS_URL=redis://redis-cache:6379
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - EMBED_MODEL=intfloat/multilingual-e5-base
-    depends_on:
-      - postgres-db
-      - qdrant-db
-      - redis-cache
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRE_HOURS=8
+      - JWT_REFRESH_DAYS=7
+      - CORS_ORIGINS=https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - ENVIRONMENT=production
+      # Secrets are injected via /vault/secrets/env.sh (see entrypoint.sh)
     networks:
-      - backend-network
-      - database-network
+      - app-network
+      - vault-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          memory: 512M
     volumes:
       - upload-data:/app/docs
       - review-data:/app/reviews
-    secrets:
-      - postgres_password
-      - openrouter_api_key
-      - deepseek_api_key
+      - template-data:/app/admin_templates
+      - doc-cache:/app/doc_text_cache
+      - vault-secrets:/vault/secrets:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    depends_on:
+      qdrant-db:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
 
-  # Database Services
   postgres-db:
     build:
       context: ./databases/postgres
       dockerfile: Dockerfile
     environment:
-      - POSTGRES_DB=aminra_auth
+      - POSTGRES_DB=aminra
       - POSTGRES_USER=aminra_user
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - database-network
-    secrets:
-      - postgres_password
+      - app-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aminra_user -d aminra_auth"]
+      test: ["CMD-SHELL", "pg_isready -U aminra_user -d aminra"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   qdrant-db:
-    build:
-      context: ./databases/qdrant
-      dockerfile: Dockerfile
+    image: qdrant/qdrant:v1.17.1
     ports:
       - "6433:6333"
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     volumes:
       - qdrant-data:/qdrant/storage
     networks:
-      - database-network
+      - app-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
     healthcheck:
       test: ["CMD-SHELL", "bash -c '>/dev/tcp/127.0.0.1/6333' 2>/dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  redis-cache:
-    image: redis:7-alpine
-    volumes:
-      - redis-data:/data
-    networks:
-      - database-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 3
 
-  # Load Balancer
-  nginx-proxy:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - aminra-frontend
-      - mukjizat-frontend
-      - aminra-backend
-    networks:
-      - frontend-network
-      - backend-network
-    volumes:
-      - nginx-logs:/var/log/nginx
-      - ssl-certs:/etc/ssl/certs
-    restart: unless-stopped
-
-# Networks
 networks:
-  frontend-network:
+  app-network:
     driver: bridge
-  backend-network:
-    driver: bridge
-  database-network:
-    driver: bridge
+  vault-network:
+    external: true
 
-# Volumes
 volumes:
-  postgres-data:
   qdrant-data:
-  redis-data:
+  postgres-data:
   upload-data:
   review-data:
-  nginx-logs:
-  ssl-certs:
-
-# Secrets
-secrets:
-  postgres_password:
-    file: ./secrets/postgres_password.txt
-  openrouter_api_key:
-    file: ./secrets/openrouter_api_key.txt
-  deepseek_api_key:
-    file: ./secrets/deepseek_api_key.txt
+  template-data:
+  doc-cache:
+  vault-secrets:
+    external: true

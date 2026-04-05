@@ -3,6 +3,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslation } from 'react-i18next';
+import Link from 'next/link';
+import { useUserAuth } from '@/components/UserAuthContext';
+import GenerateDocTab, { type GenerateState, INITIAL_GENERATE_STATE } from '@/components/GenerateDocTab';
 
 // ─── Document type definitions ────────────────────────────────────────────────
 
@@ -71,6 +74,7 @@ interface EvaluationReport {
   gap_analysis: GapAnalysis | null;
   risk_flags: RiskFlag[];
   citations: Citation[];
+  extracted_text?: string;
 }
 
 interface FileVersionEntry {
@@ -90,7 +94,11 @@ interface AuditorReview {
   confirmed_issues: string[];
   false_positives: string[];
   additional_findings: string[];
+  issue_comments: Record<string, string>;
+  final_score: number | null;
   status: 'pending' | 'approved' | 'rejected';
+  reviewed_at?: string;
+  filename?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -153,11 +161,11 @@ function ScoreDial({ score }: { score: number }) {
 
 const TABS = [
   { id: 'overview',   label: 'Tổng quan',         icon: '◎' },
-  { id: 'gaps',       label: 'Gap Analysis',       icon: '⊟' },
-  { id: 'risks',      label: 'Rủi ro',             icon: '⚑' },
+  { id: 'gaps',       label: 'Gap & Rủi ro',      icon: '⊟' },
   { id: 'citations',  label: 'Trích dẫn',          icon: '§' },
   { id: 'history',    label: 'Lịch sử',            icon: '⏱' },
   { id: 'auditor',    label: 'Kiểm toán viên',     icon: '✎' },
+  { id: 'generate',   label: 'Tạo tài liệu mẫu',  icon: '✦' },
   { id: 'export',     label: 'Xuất báo cáo',       icon: '↓' },
 ];
 
@@ -166,13 +174,43 @@ const TABS = [
 export default function UploadPage() {
   const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
   const { i18n } = useTranslation();
-  const [isNormalUser, setIsNormalUser] = useState(true);
-  useEffect(() => {
-    setIsNormalUser((localStorage.getItem('aminra_user_role') || 'normal') === 'normal');
-  }, []);
+  const { token, isAuthenticated, user } = useUserAuth();
+  // Role-based access: logged-in users (business/provider) get full access
+  const isFullAccess = isAuthenticated && !!user;
+  const isProvider = user?.role === 'provider';
+  const isBusiness = user?.role === 'business';
 
   const [phase, setPhase] = useState<'idle' | 'uploading' | 'analyzing' | 'done'>('idle');
+  const isProcessing = phase === 'uploading' || phase === 'analyzing';
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
+
+  // Prevent navigation during upload/analyze
+  useEffect(() => {
+    if (!isProcessing) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isProcessing]);
+
+  // Intercept client-side navigation via click on <a> tags
+  useEffect(() => {
+    if (!isProcessing) return;
+    const handler = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a[href]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href') || '';
+      if (href.startsWith('/') && href !== '/upload') {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Đang xử lý tài liệu, vui lòng chờ hoàn tất trước khi chuyển trang.');
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [isProcessing]);
   const [report, setReport] = useState<EvaluationReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -192,19 +230,30 @@ export default function UploadPage() {
   const [previousReport, setPreviousReport] = useState<EvaluationReport | null>(null);
   const [showComingSoon, setShowComingSoon] = useState(false);
 
+  // Extracted text for GenerateDocTab
+  const [extractedText, setExtractedText] = useState('');
+
+  // GenerateDocTab persisted state
+  const [generateState, setGenerateState] = useState<GenerateState>(INITIAL_GENERATE_STATE);
+
   // F-09: Auditor review
   const [review, setReview] = useState<AuditorReview>({
     reviewer: '', notes: '', confirmed_issues: [], false_positives: [],
-    additional_findings: [], status: 'pending',
+    additional_findings: [], issue_comments: {}, final_score: null, status: 'pending',
   });
   const [reviewSaved, setReviewSaved] = useState(false);
   const [existingReview, setExistingReview] = useState<AuditorReview | null>(null);
 
   const safeKey = (filename: string) => filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const SESSION_KEY = 'aminra_session_result';
+  const SESSION_KEY = `aminra_eval_${user?.id || 'anon'}`;
 
-  // Restore session on mount
+  // Restore session on mount or user change
   useEffect(() => {
+    // Reset state first
+    setPhase('idle'); setReport(null); setFileName(''); setSelectedDocType(null);
+    setFileVersions([]); setExtractedText(''); setGenerateState(INITIAL_GENERATE_STATE);
+    setExistingReview(null); setActiveTab('overview');
+    setRewrites({}); setReviewSaved(false);
     try {
       const saved = sessionStorage.getItem(SESSION_KEY);
       if (saved) {
@@ -216,23 +265,25 @@ export default function UploadPage() {
           setFileVersions(s.fileVersions ?? []);
           setActiveTab(s.activeTab ?? 'overview');
           if (s.existingReview) setExistingReview(s.existingReview);
+          setExtractedText(s.extractedText ?? '');
+          if (s.generateState) setGenerateState(s.generateState);
           setPhase('done');
         }
       }
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   // Persist session whenever result is available
   useEffect(() => {
     if (phase === 'done' && report) {
       try {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-          report, fileName, selectedDocType, fileVersions, activeTab, existingReview,
+          report, fileName, selectedDocType, fileVersions, activeTab, existingReview, extractedText, generateState,
         }));
       } catch {}
     }
-  }, [phase, report, fileName, selectedDocType, fileVersions, activeTab, existingReview]);
+  }, [phase, report, fileName, selectedDocType, fileVersions, activeTab, existingReview, extractedText, generateState, SESSION_KEY]);
 
   const saveFileVersion = (r: EvaluationReport, prevVersions: FileVersionEntry[]) => {
     const entry: FileVersionEntry = {
@@ -261,7 +312,7 @@ export default function UploadPage() {
       setError('Vui lòng chọn loại tài liệu trước khi upload.');
       return;
     }
-    if (isNormalUser && selectedDocType !== 'halal_policy') {
+    if (!isFullAccess && selectedDocType !== 'halal_policy') {
       setError('Tài khoản của bạn chỉ được phép upload tài liệu Halal Policy.');
       return;
     }
@@ -270,6 +321,7 @@ export default function UploadPage() {
     setRewrites({});
     setReviewSaved(false);
     setExistingReview(null);
+    setGenerateState(INITIAL_GENERATE_STATE);
     setFileName(file.name);
     setActiveTab('overview');
 
@@ -316,7 +368,9 @@ export default function UploadPage() {
     }
     try {
       // Use frontend API route instead of direct backend call to avoid CORS issues
-      const res = await fetch('/api/upload', { method: 'POST', body: evalForm });
+      const uploadHeaders: Record<string, string> = {};
+      if (token) uploadHeaders['Authorization'] = `Bearer ${token}`;
+      const res = await fetch('/api/upload', { method: 'POST', headers: uploadHeaders, body: evalForm });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
@@ -326,6 +380,7 @@ export default function UploadPage() {
       setAnalyzeProgress(100);
       setTimeout(() => {
         setReport(data);
+        setExtractedText(data.extracted_text || '');
         setPhase('done');
         saveFileVersion(data, prevVersions);
         // Load existing review
@@ -396,7 +451,7 @@ export default function UploadPage() {
 
   if (phase === 'idle' || phase === 'uploading') {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="flex flex-col flex-1 lg:min-h-0 w-full">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white">Phân tích tài liệu Halal</h1>
           <p className="text-slate-400 mt-2">Upload tài liệu để nhận đánh giá compliance toàn diện</p>
@@ -411,8 +466,8 @@ export default function UploadPage() {
 
         {/* ── Step 1: Document type selector ─────────────────────────────── */}
         <div className="mb-6 rounded-2xl p-5" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+          <div className="grid grid-flow-col items-center gap-2 mb-4 justify-start">
+            <span className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold"
               style={{ background: selectedDocType ? '#16a34a' : '#1e3a5f', color: selectedDocType ? 'white' : '#94a3b8' }}>
               {selectedDocType ? '✓' : '1'}
             </span>
@@ -428,7 +483,7 @@ export default function UploadPage() {
           {/* Non-SOP options */}
           <div className="grid grid-cols-2 gap-2 mb-2">
             {DOC_TYPE_OPTIONS.map(opt => {
-              const locked = isNormalUser && opt.id !== 'halal_policy';
+              const locked = !isFullAccess && opt.id !== 'halal_policy';
               return (
                 <button key={opt.id}
                   onClick={() => {
@@ -459,7 +514,7 @@ export default function UploadPage() {
           <div>
             <button
               onClick={() => {
-                if (isNormalUser) {
+                if (!isFullAccess) {
                   setShowComingSoon(true);
                   setTimeout(() => setShowComingSoon(false), 3000);
                   return;
@@ -467,21 +522,22 @@ export default function UploadPage() {
                 setSopExpanded(v => !v);
                 if (!sopExpanded) setSelectedDocType(null);
               }}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-1"
+              className="w-full grid items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-1"
               style={{
+                gridTemplateColumns: '1fr auto',
                 background: SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
                 border: SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '1px solid rgba(34,197,94,0.3)' : '1px solid #1e3a5f',
-                color: isNormalUser ? '#334155' : SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '#4ade80' : '#94a3b8',
-                cursor: isNormalUser ? 'default' : 'pointer',
+                color: !isFullAccess ? '#334155' : SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '#4ade80' : '#94a3b8',
+                cursor: !isFullAccess ? 'default' : 'pointer',
               }}>
-              <span>SOP Documentation{isNormalUser && <span className="ml-1 text-xs opacity-50">🔒</span>}</span>
-              {!isNormalUser && (
+              <span>SOP Documentation{!isFullAccess && <span className="ml-1 text-xs opacity-50">🔒</span>}</span>
+              {isFullAccess && (
                 <svg className={`w-4 h-4 transition-transform ${sopExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               )}
             </button>
-            {sopExpanded && !isNormalUser && (
+            {sopExpanded && isFullAccess && (
               <div className="grid grid-cols-2 gap-2 pl-3 pt-1">
                 {SOP_SUB_OPTIONS.map(opt => (
                   <button key={opt.id} onClick={() => setSelectedDocType(opt.id)}
@@ -512,7 +568,7 @@ export default function UploadPage() {
           </div>
         )}
 
-        <div {...getRootProps()} className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all flex flex-col items-center ${
+        <div {...getRootProps()} className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all grid place-items-center ${
           !selectedDocType ? 'border-slate-700 opacity-40 cursor-not-allowed' :
           isDragActive ? 'border-green-500 bg-green-500/10' : 'border-slate-600 hover:border-green-500 bg-slate-800/30'
         }`}>
@@ -524,7 +580,7 @@ export default function UploadPage() {
             </>
           ) : (
             <>
-              <div className="h-16 w-16 rounded-full bg-green-600/20 flex items-center justify-center mb-4">
+              <div className="h-16 w-16 rounded-full bg-green-600/20 grid place-items-center mb-4">
                 <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
@@ -539,16 +595,16 @@ export default function UploadPage() {
         </div>
 
         {/* Version history preview — admin only */}
-        {!isNormalUser && fileVersions.length > 0 && (
+        {isFullAccess && fileVersions.length > 0 && (
           <div className="mt-8">
             <h3 className="text-sm font-semibold mb-3" style={{ color: '#94a3b8' }}>Lịch sử phiên bản</h3>
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e3a5f' }}>
               {fileVersions.slice(0, 5).map((v, i) => {
                 const st = statusLabel(v.status);
                 return (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < Math.min(4, fileVersions.length - 1) ? '1px solid #0f2a45' : 'none' }}>
+                  <div key={i} className="grid items-center gap-3 px-4 py-3" style={{ gridTemplateColumns: 'auto 1fr', borderBottom: i < Math.min(4, fileVersions.length - 1) ? '1px solid #0f2a45' : 'none' }}>
                     <span className="text-lg font-bold tabular-nums" style={{ color: scoreColor(v.score), width: 36 }}>{v.score}</span>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0">
                       <p className="text-sm text-white truncate">v{v.version} · {v.doc_type_label}</p>
                       <p className="text-xs" style={{ color: '#475569' }}>{v.issues_count} vấn đề · {new Date(v.timestamp).toLocaleDateString('vi-VN')}</p>
                     </div>
@@ -565,8 +621,8 @@ export default function UploadPage() {
 
   if (phase === 'analyzing') {
     return (
-      <div className="max-w-xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <div className="mb-6 relative">
+      <div className="flex-1 lg:min-h-0 w-full grid place-items-center"><div className="w-full text-center">
+        <div className="mb-6 relative w-fit mx-auto">
           <svg width="120" height="120" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="50" fill="none" stroke="#1e3a5f" strokeWidth="8" />
             <circle cx="60" cy="60" r="50" fill="none" stroke="#22c55e" strokeWidth="8"
@@ -575,7 +631,7 @@ export default function UploadPage() {
               style={{ transition: 'stroke-dasharray 0.4s ease' }}
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 grid place-items-center">
             <span className="text-2xl font-bold" style={{ color: '#22c55e' }}>{analyzeProgress}%</span>
           </div>
         </div>
@@ -587,7 +643,7 @@ export default function UploadPage() {
         {!previousReport && <div className="mb-6" />}
         <div className="space-y-2 text-sm" style={{ color: '#475569' }}>
           {['Trích xuất nội dung văn bản', 'Đối chiếu tiêu chuẩn Halal', 'Phân tích rủi ro inline', 'Tổng hợp Gap Analysis'].map((step, i) => (
-            <div key={i} className="flex items-center gap-2 justify-center">
+            <div key={i} className="grid grid-flow-col items-center gap-2 justify-center">
               {analyzeProgress > i * 22 ? (
                 <span style={{ color: '#22c55e' }}>✓</span>
               ) : (
@@ -597,7 +653,7 @@ export default function UploadPage() {
             </div>
           ))}
         </div>
-      </div>
+      </div></div>
     );
   }
 
@@ -606,9 +662,22 @@ export default function UploadPage() {
   const st = statusLabel(report.overall_status);
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="flex flex-col flex-1 lg:min-h-0 w-full">
+      {/* Saved banner */}
+      {isFullAccess && (
+        <div className="grid items-center mb-4 px-4 py-2.5 rounded-xl text-sm"
+          style={{ gridTemplateColumns: '1fr auto', background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
+          <span style={{ color: '#4ade80' }}>✓ Tài liệu đã được lưu và đánh giá thành công</span>
+          {isBusiness && (
+            <Link href="/documents" className="text-xs font-medium hover:underline" style={{ color: '#4ade80' }}>
+              Xem tất cả tài liệu →
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+      <div className="grid items-start mb-6 gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
         <div>
           <h1 className="text-xl font-bold text-white">{report.filename}</h1>
           <p className="text-sm mt-0.5" style={{ color: '#475569' }}>{report.doc_type_label} · {report.word_count.toLocaleString()} từ · {report.standards_found} tiêu chuẩn tham chiếu</p>
@@ -619,11 +688,11 @@ export default function UploadPage() {
             setPhase('idle'); setReport(null); setFileName('');
             setSelectedDocType(null); setSopExpanded(false);
             setRewrites({}); setFileVersions([]); setPreviousReport(null);
-            setExistingReview(null); setReview({ reviewer: '', notes: '', confirmed_issues: [], false_positives: [], additional_findings: [], status: 'pending' });
+            setExistingReview(null); setReview({ reviewer: '', notes: '', confirmed_issues: [], false_positives: [], additional_findings: [], issue_comments: {}, final_score: null, status: 'pending' });
             setActiveTab('overview');
           }}
-          className="flex items-center gap-2 text-sm px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #15803d, #16a34a)', color: 'white', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}>
+          className="grid items-center gap-2 text-sm px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95"
+          style={{ gridTemplateColumns: 'auto 1fr', background: 'linear-gradient(135deg, #15803d, #16a34a)', color: 'white', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
           </svg>
@@ -633,7 +702,11 @@ export default function UploadPage() {
 
       {/* Tabs */}
       {(() => {
-        const visibleTabs = TABS.filter(t => !(isNormalUser && t.id === 'history'));
+        const visibleTabs = TABS.filter(t => {
+          if (t.id === 'auditor') return isProvider;
+          if (t.id === 'history') return isFullAccess;
+          return true;
+        });
         return (
           <div style={{
             display: 'table', width: '100%', tableLayout: 'fixed',
@@ -666,9 +739,9 @@ export default function UploadPage() {
       {activeTab === 'overview' && (
         <div className="space-y-5">
           {/* Score + Status */}
-          <div className="rounded-2xl p-6 flex flex-wrap gap-6 items-center" style={{ background: 'linear-gradient(135deg,#0f2236,#162847)', border: '1px solid #1e3a5f' }}>
+          <div className="rounded-2xl p-6 grid gap-6 items-center" style={{ gridTemplateColumns: 'auto 1fr', background: 'linear-gradient(135deg,#0f2236,#162847)', border: '1px solid #1e3a5f' }}>
             <ScoreDial score={report.compliance_score} />
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0">
               <span className="inline-block text-sm px-3 py-1 rounded-full font-semibold mb-3"
                 style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
                 {st.label}
@@ -683,7 +756,7 @@ export default function UploadPage() {
               <h3 className="text-sm font-semibold mb-3" style={{ color: '#22c55e' }}>✓ Điểm mạnh</h3>
               <ul className="space-y-2">
                 {report.strengths.map((s, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-white"><span style={{ color: '#22c55e' }}>·</span>{s}</li>
+                  <li key={i} className="grid gap-2 text-sm text-white" style={{ gridTemplateColumns: 'auto 1fr' }}><span style={{ color: '#22c55e' }}>·</span>{s}</li>
                 ))}
               </ul>
             </div>
@@ -693,7 +766,7 @@ export default function UploadPage() {
           {previousReport && (
             <div className="rounded-xl p-5" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
               <h3 className="text-sm font-semibold mb-3" style={{ color: '#60a5fa' }}>↺ So sánh với lần phân tích trước</h3>
-              <div className="flex items-center gap-6 flex-wrap mb-3">
+              <div className="grid grid-flow-col items-center gap-6 mb-3 justify-start">
                 <div className="text-center">
                   <p className="text-xs mb-1" style={{ color: '#475569' }}>Lần trước</p>
                   <span className="text-2xl font-bold" style={{ color: scoreColor(previousReport.compliance_score) }}>{previousReport.compliance_score}</span>
@@ -781,6 +854,56 @@ export default function UploadPage() {
               </div>
             </div>
           )}
+          {/* Signature detection */}
+          {(report as any).signature_detection && (() => {
+            const sig = (report as any).signature_detection;
+            const status = sig.signature_status || 'none';
+            const styles: Record<string, { icon: string; color: string; bg: string; border: string; label: string }> = {
+              confirmed:   { icon: '✓', color: '#4ade80', bg: 'rgba(34,197,94,0.06)', border: 'rgba(34,197,94,0.3)', label: 'Đã xác nhận' },
+              likely:      { icon: '?', color: '#60a5fa', bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.3)', label: 'Cần xác nhận' },
+              placeholder: { icon: '✕', color: '#f87171', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.3)', label: 'Chưa có chữ ký thật' },
+              none:        { icon: '—', color: '#64748b', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.3)', label: 'Không phát hiện' },
+            };
+            const statusStyle = styles[status] || styles.none;
+
+            return (
+              <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${statusStyle.border}` }}>
+                <div className="px-5 py-4" style={{ background: statusStyle.bg, borderBottom: '1px solid rgba(30,58,95,0.3)' }}>
+                  <div className="grid grid-flow-col items-center gap-3 justify-start">
+                    <div className="w-8 h-8 rounded-lg grid place-items-center text-base font-bold"
+                      style={{ background: `${statusStyle.color}20`, color: statusStyle.color }}>
+                      {statusStyle.icon}
+                    </div>
+                    <div>
+                      <div className="grid grid-flow-col items-center gap-2 justify-start">
+                        <h3 className="text-sm font-semibold text-white">Chữ ký & Con dấu</h3>
+                        <span className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: `${statusStyle.color}20`, color: statusStyle.color }}>
+                          {statusStyle.label}
+                        </span>
+                      </div>
+                      <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>{sig.summary}</p>
+                    </div>
+                  </div>
+                </div>
+                {sig.signature_zones.length > 0 && (
+                  <div className="px-5 py-3 space-y-1.5">
+                    {sig.signature_zones.slice(0, 8).map((z: any, i: number) => (
+                      <div key={i} className="grid grid-flow-col items-center gap-2 justify-start text-xs">
+                        <span style={{ color: z.type === 'image' ? '#4ade80' : z.type === 'text_pattern' ? '#64748b' : '#fbbf24' }}>
+                          {z.type === 'image' ? '🖼' : z.type === 'text_pattern' ? '📝' : '🔐'}
+                        </span>
+                        <span style={{ color: z.type === 'text_pattern' ? '#64748b' : '#94a3b8' }}>
+                          {z.description}
+                          {z.type === 'text_pattern' && ' (chỉ là text, chưa có chữ ký thật)'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -845,58 +968,53 @@ export default function UploadPage() {
               )}
             </>
           )}
-        </div>
-      )}
 
-      {/* ── Tab: Risk Flags (F-03 + F-06) ────────────────────────────────────────── */}
-      {activeTab === 'risks' && (
-        <div className="space-y-4">
-          {report.risk_flags.length === 0 ? (
-            <div className="rounded-xl p-8 text-center" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-              <p className="text-green-400 font-semibold">✓ Không phát hiện rủi ro nào</p>
-            </div>
-          ) : (
-            report.risk_flags.map((flag, i) => {
-              const sev = severityBadge(flag.severity);
-              const key = `risk-${i}`;
-              return (
-                <div key={i} className="rounded-xl p-5" style={{ background: '#0f1e35', border: `1px solid ${sev.color}30` }}>
-                  <div className="flex items-center gap-2 flex-wrap mb-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ background: 'rgba(148,163,184,0.1)', color: '#94a3b8' }}>
-                      {riskTypeLabel(flag.risk_type)}
-                    </span>
-                  </div>
-                  {/* F-03: Inline text highlight */}
-                  <blockquote className="rounded-lg px-4 py-3 mb-3 text-sm italic border-l-2"
-                    style={{ background: `${sev.color}12`, borderColor: sev.color, color: '#e2e8f0' }}>
-                    "{flag.text_snippet}"
-                  </blockquote>
-                  <p className="text-sm" style={{ color: '#94a3b8' }}>{flag.explanation}</p>
-                  {/* F-06: Rewrite for risks */}
-                  {!rewrites[key] && (
-                    <button onClick={() => suggestRewrite(key, flag.text_snippet, flag.explanation)}
-                      disabled={rewriteLoading === key}
-                      className="mt-3 text-xs px-3 py-1.5 rounded-lg transition-all"
-                      style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}>
-                      {rewriteLoading === key ? '⏳ Đang tạo gợi ý…' : '✨ Gợi ý viết lại đoạn này'}
-                    </button>
-                  )}
-                  {rewrites[key] && (
-                    <div className="mt-3 rounded-lg p-3" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                      <p className="text-xs font-medium mb-1" style={{ color: '#60a5fa' }}>✨ Đề xuất viết lại:</p>
-                      <p className="text-sm text-white leading-relaxed">{rewrites[key].rewritten}</p>
-                      {rewrites[key].explanation && <p className="text-xs mt-2" style={{ color: '#94a3b8' }}>{rewrites[key].explanation}</p>}
-                      {rewrites[key].standards_referenced?.length > 0 && (
-                        <p className="text-xs mt-1" style={{ color: '#3b82f6' }}>§ {rewrites[key].standards_referenced.join(', ')}</p>
-                      )}
+          {/* Risk Flags (merged from former Risks tab) */}
+          {report.risk_flags.length > 0 && (
+            <div className="space-y-4 mt-6">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <span style={{ color: '#f87171' }}>⚑</span> Cảnh báo rủi ro ({report.risk_flags.length})
+              </h3>
+              {report.risk_flags.map((flag, i) => {
+                const sev = severityBadge(flag.severity);
+                const key = `risk-${i}`;
+                return (
+                  <div key={i} className="rounded-xl p-5" style={{ background: '#0f1e35', border: `1px solid ${sev.color}30` }}>
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(148,163,184,0.1)', color: '#94a3b8' }}>
+                        {riskTypeLabel(flag.risk_type)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })
+                    <blockquote className="rounded-lg px-4 py-3 mb-3 text-sm italic border-l-2"
+                      style={{ background: `${sev.color}12`, borderColor: sev.color, color: '#e2e8f0' }}>
+                      "{flag.text_snippet}"
+                    </blockquote>
+                    <p className="text-sm" style={{ color: '#94a3b8' }}>{flag.explanation}</p>
+                    {!rewrites[key] && (
+                      <button onClick={() => suggestRewrite(key, flag.text_snippet, flag.explanation)}
+                        disabled={rewriteLoading === key}
+                        className="mt-3 text-xs px-3 py-1.5 rounded-lg transition-all"
+                        style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}>
+                        {rewriteLoading === key ? '⏳ Đang tạo gợi ý…' : '✨ Gợi ý viết lại đoạn này'}
+                      </button>
+                    )}
+                    {rewrites[key] && (
+                      <div className="mt-3 rounded-lg p-3" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                        <p className="text-xs font-medium mb-1" style={{ color: '#60a5fa' }}>✨ Đề xuất viết lại:</p>
+                        <p className="text-sm text-white leading-relaxed">{rewrites[key].rewritten}</p>
+                        {rewrites[key].explanation && <p className="text-xs mt-2" style={{ color: '#94a3b8' }}>{rewrites[key].explanation}</p>}
+                        {rewrites[key].standards_referenced?.length > 0 && (
+                          <p className="text-xs mt-1" style={{ color: '#3b82f6' }}>§ {rewrites[key].standards_referenced.join(', ')}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -976,7 +1094,7 @@ export default function UploadPage() {
                     style={{ borderBottom: i < fileVersions.length - 1 ? '1px solid #0f2a45' : 'none', background: isCurrent ? 'rgba(34,197,94,0.04)' : 'transparent' }}>
                     <div className="flex items-center gap-3">
                       <span className="text-lg font-bold tabular-nums w-8" style={{ color: scoreColor(v.score) }}>{v.score}</span>
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0">
                         <p className="text-sm text-white flex items-center gap-2">
                           Phiên bản {v.version}
                           {isCurrent && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>mới nhất</span>}
@@ -1012,103 +1130,206 @@ export default function UploadPage() {
 
       {/* ── Tab: Auditor Review (F-09) ───────────────────────────────────────────── */}
       {activeTab === 'auditor' && (
-        <div className="space-y-4">
-          {existingReview && (
-            <div className="rounded-xl p-4" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-              <p className="text-sm font-semibold" style={{ color: '#22c55e' }}>✓ Đã có review từ kiểm toán viên</p>
-              <p className="text-xs mt-1" style={{ color: '#64748b' }}>Reviewer: {existingReview.reviewer} · Trạng thái: {existingReview.status}</p>
+        <div className="space-y-5">
+          {/* Header card */}
+          <div className="rounded-2xl p-5"
+            style={{ background: 'linear-gradient(135deg, #0f2236, #162847)', border: '1px solid #1e3a5f' }}>
+            <div className="grid items-center gap-4" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
+              <div className="w-12 h-12 rounded-xl grid place-items-center"
+                style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                <svg className="w-6 h-6" style={{ color: '#60a5fa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Review kiểm toán viên</h3>
+                <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>
+                  Xem xét kết quả AI, thêm nhận xét, chấm điểm cuối cùng
+                </p>
+              </div>
+              {existingReview && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    background: existingReview.status === 'approved' ? 'rgba(34,197,94,0.15)' : existingReview.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                    color: existingReview.status === 'approved' ? '#4ade80' : existingReview.status === 'rejected' ? '#f87171' : '#fbbf24',
+                  }}>
+                  {existingReview.status === 'approved' ? '✓ Đã phê duyệt' : existingReview.status === 'rejected' ? '✗ Đã từ chối' : '⏳ Đang xem xét'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* AI score vs Final score */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-xl p-4 text-center" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
+              <p className="text-xs mb-1" style={{ color: '#64748b' }}>Điểm AI</p>
+              <p className="text-2xl font-bold" style={{ color: scoreColor(report.compliance_score) }}>{report.compliance_score}</p>
+            </div>
+            <div className="rounded-xl p-4 text-center" style={{ background: '#0f1e35', border: '1px solid rgba(37,99,235,0.3)' }}>
+              <p className="text-xs mb-1" style={{ color: '#60a5fa' }}>Điểm kiểm toán viên</p>
+              <input
+                type="number" min={0} max={100}
+                value={review.final_score ?? ''}
+                onChange={e => setReview(r => ({ ...r, final_score: e.target.value ? Number(e.target.value) : null }))}
+                placeholder="—"
+                className="w-full text-2xl font-bold text-center outline-none"
+                style={{ background: 'transparent', color: review.final_score != null ? scoreColor(review.final_score) : '#475569' }}
+              />
+            </div>
+          </div>
+
+          {/* Reviewer info + status */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>Kiểm toán viên *</label>
+              <input value={review.reviewer} onChange={e => setReview(r => ({ ...r, reviewer: e.target.value }))}
+                placeholder="Họ tên kiểm toán viên"
+                className="w-full px-4 py-2.5 rounded-xl text-sm text-white outline-none"
+                style={{ background: '#0a1929', border: '1px solid #1e3a5f' }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>Quyết định</label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  ['pending', '⏳ Chờ', 'rgba(245,158,11,0.15)', '#fbbf24', 'rgba(245,158,11,0.3)'],
+                  ['approved', '✓ Duyệt', 'rgba(34,197,94,0.15)', '#4ade80', 'rgba(34,197,94,0.3)'],
+                  ['rejected', '✗ Từ chối', 'rgba(239,68,68,0.15)', '#f87171', 'rgba(239,68,68,0.3)'],
+                ] as const).map(([val, lbl, bg, color, border]) => (
+                  <button key={val} onClick={() => setReview(r => ({ ...r, status: val as AuditorReview['status'] }))}
+                    className="py-2 rounded-xl text-xs font-medium transition-all"
+                    style={{
+                      background: review.status === val ? bg : 'rgba(255,255,255,0.03)',
+                      color: review.status === val ? color : '#64748b',
+                      border: `1px solid ${review.status === val ? border : '#1e3a5f'}`,
+                    }}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Review each AI issue */}
+          {report.issues.length > 0 && (
+            <div>
+              <h4 className="text-sm font-bold text-white mb-3">
+                Xem xét từng vấn đề AI phát hiện ({report.issues.length})
+              </h4>
+              <div className="space-y-3">
+                {report.issues.map((issue, i) => {
+                  const key = String(i);
+                  const isConfirmed = review.confirmed_issues.includes(key);
+                  const isFP = review.false_positives.includes(key);
+                  const comment = review.issue_comments[key] || '';
+                  return (
+                    <div key={i} className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e3a5f' }}>
+                      <div className="px-4 py-3" style={{ background: '#0f1e35' }}>
+                        <div className="grid items-start gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-bold px-2 py-0.5 rounded"
+                                style={{
+                                  color: issue.severity === 'critical' ? '#f87171' : issue.severity === 'major' ? '#fbbf24' : '#94a3b8',
+                                  background: issue.severity === 'critical' ? 'rgba(239,68,68,0.12)' : issue.severity === 'major' ? 'rgba(245,158,11,0.12)' : 'rgba(148,163,184,0.1)',
+                                }}>
+                                {issue.severity?.toUpperCase()}
+                              </span>
+                              <span className="text-xs" style={{ color: '#475569' }}>{issue.section}</span>
+                            </div>
+                            <p className="text-sm text-white">{issue.issue}</p>
+                            {issue.recommendation && (
+                              <p className="text-sm mt-1" style={{ color: '#4ade80' }}>→ {issue.recommendation}</p>
+                            )}
+                          </div>
+                          {/* Confirm / Reject buttons */}
+                          <div className="grid grid-flow-col gap-1.5 flex-shrink-0">
+                            <button onClick={() => setReview(r => ({
+                              ...r,
+                              confirmed_issues: isConfirmed ? r.confirmed_issues.filter(x => x !== key) : [...r.confirmed_issues, key],
+                              false_positives: r.false_positives.filter(x => x !== key),
+                            }))}
+                              className="w-8 h-8 rounded-lg grid place-items-center text-xs font-bold transition-all"
+                              title="Xác nhận đúng"
+                              style={{
+                                background: isConfirmed ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
+                                color: isConfirmed ? '#4ade80' : '#475569',
+                                border: isConfirmed ? '1px solid rgba(34,197,94,0.4)' : '1px solid #1e3a5f',
+                              }}>✓</button>
+                            <button onClick={() => setReview(r => ({
+                              ...r,
+                              false_positives: isFP ? r.false_positives.filter(x => x !== key) : [...r.false_positives, key],
+                              confirmed_issues: r.confirmed_issues.filter(x => x !== key),
+                            }))}
+                              className="w-8 h-8 rounded-lg grid place-items-center text-xs font-bold transition-all"
+                              title="False positive — AI sai"
+                              style={{
+                                background: isFP ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)',
+                                color: isFP ? '#f87171' : '#475569',
+                                border: isFP ? '1px solid rgba(239,68,68,0.4)' : '1px solid #1e3a5f',
+                              }}>✗</button>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Auditor comment for this issue */}
+                      <div className="px-4 py-2" style={{ background: '#0a1929', borderTop: '1px solid #1e3a5f' }}>
+                        <input
+                          value={comment}
+                          onChange={e => setReview(r => ({ ...r, issue_comments: { ...r.issue_comments, [key]: e.target.value } }))}
+                          placeholder="Nhận xét của kiểm toán viên về vấn đề này..."
+                          className="w-full text-sm text-white outline-none"
+                          style={{ background: 'transparent', color: '#cbd5e1' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: '#475569' }}>
+                <span>✓ Xác nhận: {review.confirmed_issues.length}</span>
+                <span>✗ False positive: {review.false_positives.length}</span>
+                <span>Chưa xem: {report.issues.length - review.confirmed_issues.length - review.false_positives.length}</span>
+              </div>
             </div>
           )}
 
-          <div className="rounded-xl p-5" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
-            <h3 className="text-sm font-semibold mb-4 text-white">Chế độ kiểm toán viên</h3>
+          {/* General notes */}
+          <div>
+            <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>Nhận xét chung</label>
+            <textarea value={review.notes} onChange={e => setReview(r => ({ ...r, notes: e.target.value }))}
+              placeholder="Nhận xét tổng quát, lưu ý cho doanh nghiệp…"
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
+              style={{ background: '#0a1929', border: '1px solid #1e3a5f' }} />
+          </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#94a3b8' }}>Tên kiểm toán viên *</label>
-                <input value={review.reviewer} onChange={e => setReview(r => ({ ...r, reviewer: e.target.value }))}
-                  placeholder="Nhập tên kiểm toán viên"
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: '#0a1929', border: '1px solid #1e3a5f' }} />
-              </div>
+          {/* Additional findings */}
+          <div>
+            <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>Phát hiện thêm (AI chưa phát hiện)</label>
+            <textarea
+              value={review.additional_findings.join('\n')}
+              onChange={e => setReview(r => ({ ...r, additional_findings: e.target.value.split('\n').filter(Boolean) }))}
+              placeholder="Mỗi dòng một vấn đề mà AI bỏ sót…"
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
+              style={{ background: '#0a1929', border: '1px solid #1e3a5f' }} />
+          </div>
 
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#94a3b8' }}>Trạng thái đánh giá</label>
-                <div className="flex gap-2">
-                  {[['pending', 'Chờ xem xét'], ['approved', 'Phê duyệt'], ['rejected', 'Từ chối']].map(([val, lbl]) => (
-                    <button key={val} onClick={() => setReview(r => ({ ...r, status: val as AuditorReview['status'] }))}
-                      className="text-xs px-3 py-1.5 rounded-lg transition-all"
-                      style={{
-                        background: review.status === val ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-                        color: review.status === val ? '#22c55e' : '#94a3b8',
-                        border: `1px solid ${review.status === val ? 'rgba(34,197,94,0.3)' : '#1e3a5f'}`,
-                      }}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#94a3b8' }}>Nhận xét chung</label>
-                <textarea value={review.notes} onChange={e => setReview(r => ({ ...r, notes: e.target.value }))}
-                  placeholder="Nhận xét tổng quát về tài liệu này…"
-                  rows={4}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                  style={{ background: '#0a1929', border: '1px solid #1e3a5f' }} />
-              </div>
-
-              {/* Confirmed / False Positives */}
-              {report.issues.length > 0 && (
-                <div>
-                  <label className="text-xs font-medium mb-2 block" style={{ color: '#94a3b8' }}>Xác nhận các vấn đề từ AI</label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {report.issues.map((issue, i) => {
-                      const isConfirmed = review.confirmed_issues.includes(String(i));
-                      const isFP = review.false_positives.includes(String(i));
-                      return (
-                        <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: '#0a1929' }}>
-                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
-                            <button onClick={() => setReview(r => ({
-                              ...r,
-                              confirmed_issues: isConfirmed ? r.confirmed_issues.filter(x => x !== String(i)) : [...r.confirmed_issues, String(i)],
-                              false_positives: r.false_positives.filter(x => x !== String(i)),
-                            }))} className="text-xs px-1.5 py-0.5 rounded"
-                              style={{ background: isConfirmed ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)', color: isConfirmed ? '#22c55e' : '#64748b' }}>✓</button>
-                            <button onClick={() => setReview(r => ({
-                              ...r,
-                              false_positives: isFP ? r.false_positives.filter(x => x !== String(i)) : [...r.false_positives, String(i)],
-                              confirmed_issues: r.confirmed_issues.filter(x => x !== String(i)),
-                            }))} className="text-xs px-1.5 py-0.5 rounded"
-                              style={{ background: isFP ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)', color: isFP ? '#f87171' : '#64748b' }}>✗</button>
-                          </div>
-                          <p className="text-xs text-white">{issue.issue}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-xs mt-1" style={{ color: '#475569' }}>✓ Xác nhận · ✗ False positive</p>
-                </div>
-              )}
-
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#94a3b8' }}>Phát hiện thêm (mỗi dòng một điểm)</label>
-                <textarea
-                  value={review.additional_findings.join('\n')}
-                  onChange={e => setReview(r => ({ ...r, additional_findings: e.target.value.split('\n').filter(Boolean) }))}
-                  placeholder="Vấn đề mà AI chưa phát hiện…"
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                  style={{ background: '#0a1929', border: '1px solid #1e3a5f' }} />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button onClick={saveReview} disabled={!review.reviewer.trim()}
-                  className="px-5 py-2 text-sm font-medium rounded-xl transition-all"
-                  style={{ background: '#22c55e', color: '#000', opacity: review.reviewer.trim() ? 1 : 0.4 }}>
-                  Lưu Review
-                </button>
-                {reviewSaved && <span className="text-sm" style={{ color: '#22c55e' }}>✓ Đã lưu</span>}
-              </div>
+          {/* Save bar */}
+          <div className="grid items-center gap-4 rounded-xl p-4"
+            style={{ gridTemplateColumns: 'auto 1fr auto', background: '#0f1e35', border: '1px solid #1e3a5f' }}>
+            <button onClick={saveReview} disabled={!review.reviewer.trim()}
+              className="px-6 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+              style={{
+                background: review.reviewer.trim() ? 'linear-gradient(135deg, #15803d, #16a34a)' : '#1e3a5f',
+                color: review.reviewer.trim() ? 'white' : '#475569',
+                boxShadow: review.reviewer.trim() ? '0 4px 12px rgba(22,163,74,0.3)' : 'none',
+              }}>
+              Lưu & Hoàn tất Review
+            </button>
+            <div>
+              {reviewSaved && <span className="text-sm font-medium" style={{ color: '#4ade80' }}>✓ Đã lưu thành công</span>}
             </div>
+            <span className="text-xs" style={{ color: '#334155' }}>
+              {review.confirmed_issues.length + review.false_positives.length}/{report.issues.length} vấn đề đã xem xét
+            </span>
           </div>
         </div>
       )}
@@ -1119,10 +1340,10 @@ export default function UploadPage() {
           <div className="rounded-xl p-6" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
             <h3 className="text-base font-semibold mb-2 text-white">Xuất báo cáo đánh giá</h3>
             <p className="text-sm mb-5" style={{ color: '#64748b' }}>Tạo báo cáo đầy đủ gồm Compliance Score, Gap Analysis, Risk Flags và Citations.</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-flow-col gap-3 justify-start">
               <button onClick={exportReport}
-                className="px-5 py-2.5 text-sm font-medium rounded-xl transition-all flex items-center gap-2"
-                style={{ background: '#22c55e', color: '#000' }}>
+                className="px-5 py-2.5 text-sm font-medium rounded-xl transition-all grid items-center gap-2"
+                style={{ gridTemplateColumns: 'auto 1fr', background: '#22c55e', color: '#000' }}>
                 <span>↓</span> In / Lưu PDF
               </button>
               <button onClick={() => {
@@ -1130,8 +1351,8 @@ export default function UploadPage() {
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
                 a.download = `${report.filename.replace(/\.[^.]+$/, '')}_eval.json`; a.click();
               }}
-                className="px-5 py-2.5 text-sm font-medium rounded-xl transition-all flex items-center gap-2"
-                style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}>
+                className="px-5 py-2.5 text-sm font-medium rounded-xl transition-all grid items-center gap-2"
+                style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}>
                 <span>{ }</span> Xuất JSON
               </button>
             </div>
@@ -1149,6 +1370,11 @@ export default function UploadPage() {
             <p className="mt-3">{report.summary}</p>
           </div>
         </div>
+      )}
+
+      {/* ── Tab: Generate Document ──────────────────────────────────────────────── */}
+      {activeTab === 'generate' && (
+        <GenerateDocTab report={report} extractedText={extractedText} token={token} persisted={generateState} onStateChange={setGenerateState} />
       )}
     </div>
   );

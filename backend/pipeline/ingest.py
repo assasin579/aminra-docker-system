@@ -155,13 +155,22 @@ def extract_txt(path: Path) -> list:
     return result
 
 
+def extract_docx(path: Path) -> list:
+    from docx import Document
+    doc = Document(str(path))
+    text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    return [{"slide": 1, "text": text}]
+
+
 def extract(path: Path):
     ext = path.suffix.lower()
     if ext in (".pptx", ".ppt"):
         return "pptx", extract_pptx(path)
     elif ext == ".pdf":
         return "pdf", extract_pdf(path)
-    elif ext in (".txt", ".md"):
+    elif ext in (".docx", ".doc"):
+        return "docx", extract_docx(path)
+    elif ext in (".txt", ".md", ".odt"):
         return "txt", extract_txt(path)
     else:
         raise ValueError(f"Khong ho tro dinh dang: {ext}")
@@ -268,8 +277,8 @@ def embed_chunks(chunks, batch_size=32):
 
 def get_qdrant_client():
     from qdrant_client import QdrantClient
-    # Khong truyen api_key de tranh UnicodeEncodeError trong httpx
-    return QdrantClient(url=QDRANT_URL)
+    api_key = os.getenv("QDRANT_API_KEY")
+    return QdrantClient(url=QDRANT_URL, api_key=api_key)
 
 
 def ensure_collection(client, reset=False):

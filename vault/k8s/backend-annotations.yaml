@@ -1,0 +1,23 @@
+# Vault Agent Injector annotations for aminra-backend pod
+# Usage: include under spec.template.metadata.annotations in the Deployment
+vault.hashicorp.com/agent-inject: "true"
+vault.hashicorp.com/role: "aminra-backend"
+vault.hashicorp.com/agent-inject-secret-env.sh: "secret/data/aminra/api-keys"
+vault.hashicorp.com/agent-inject-template-env.sh: |
+  {{- with secret "secret/data/aminra/api-keys" }}
+  export OPENROUTER_API_KEY="{{ .Data.data.openrouter_api_key }}"
+  export DEEPSEEK_API_KEY="{{ .Data.data.deepseek_api_key }}"
+  {{- end }}
+  {{- with secret "secret/data/aminra/database" }}
+  export POSTGRES_PASSWORD="{{ .Data.data.postgres_password }}"
+  export DATABASE_URL="postgresql://aminra_user:{{ .Data.data.postgres_password }}@postgres-db:5432/aminra"
+  {{- end }}
+  {{- with secret "secret/data/aminra/auth" }}
+  export JWT_SECRET="{{ .Data.data.jwt_secret }}"
+  export ADMIN_USERNAME="{{ .Data.data.admin_username }}"
+  export ADMIN_PASSWORD="{{ .Data.data.admin_password }}"
+  export ADMIN_SECRET="{{ .Data.data.admin_secret }}"
+  {{- end }}
+  {{- with secret "secret/data/aminra/qdrant" }}
+  export QDRANT_API_KEY="{{ .Data.data.api_key }}"
+  {{- end }}

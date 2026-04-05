@@ -1,0 +1,36 @@
+# Render Blueprint for Aminra Backend
+# Reference: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: aminra-backend
+    env: python
+    region: singapore  # or oregon, frankfurt, etc.
+    plan: free  # or starter, standard, etc.
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: LLM_BACKEND
+        value: openrouter
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: deepseek/deepseek-chat
+      - key: EMBED_MODEL
+        value: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      - key: COLLECTION_NAME
+        value: halal_kb
+      - key: PYTHONUNBUFFERED
+        value: 1
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    autoDeploy: true

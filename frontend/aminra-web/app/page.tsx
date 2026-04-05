@@ -315,7 +315,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col flex-1 lg:min-h-0 w-full">
       {/* 2-column layout */}
       <div className="flex flex-col lg:flex-row gap-4 flex-1 lg:min-h-0">
 

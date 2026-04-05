@@ -1,0 +1,17 @@
+{
+  "filename": "approved_test.txt",
+  "reviewer": "Nguyen Van A",
+  "notes": "Tài liệu có vấn đề nghiêm trọng về Carmine E120. Cần loại bỏ hoàn toàn.",
+  "confirmed_issues": [
+    "0",
+    "1"
+  ],
+  "false_positives": [
+    "2"
+  ],
+  "additional_findings": [
+    "Thiếu log kiểm tra nhà cung cấp theo định kỳ 6 tháng"
+  ],
+  "status": "approved",
+  "reviewed_at": "2026-04-02T10:00:00"
+}

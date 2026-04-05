@@ -1,0 +1,17 @@
+# Apple phát hành bản beta 3 của iOS/iPadOS 15.4 để sửa các lỗi tồn đọng
+
+Nguồn: https://vietq.vn/chung-nhan-halal-la-gi-d197284.html
+
+Apple phát hành bản beta 3 của iOS/iPadOS 15.4 để sửa các lỗi tồn đọng
+(VietQ.vn) - Apple vừa phát hành bản cập nhật iOS 15.4 và iPadOS 15.4 public beta 3 để người dùng có thể trải nghiệm các tính năng mới. Trong đó, iOS 15.4 beta 3 có cập nhật đáng chú ý đến tính năng mở khóa Face ID khi đeo khẩu trang.
+Huawei MateBook 14: Màn hình 2K tỷ lệ cao 3:2, chip Intel Core i5 có giá bán 21,99 triệu
+Oppo Pad: Oppo sắp ra mắt máy tính bảng đầu tiên ngày 24/2
+OPPO ra mắt kinh thông minh Air Glass, cả thế giới hiển thị ngay trước mắt
+Theo đó, iOS 15.4 beta 3 sẽ nhắc nhở người dùng không tắt lựa chọn "Require Attention for Face ID", tính năng dùng camera TrueDepth để đo lường cái nhìn thẳng khi mở khóa.
+Apple phát hành bản beta 3 của iOS/iPadOS 15.4 để sửa các lỗi còn tồn đọng.
+Với bản cập nhật này, Apple tập trung vào việc sửa lỗi tồn đọng trên bản beta 2 và tối ưu hóa hiệu suất thiết bị tốt hơn. Cụ thể, iOS 15.4 beta 3 hỗ trợ cập nhật hệ điều hành qua mạng 4G hay đưa ra cảnh báo kiểm tra lại thông tin hệ thống cứu trợ Emergency SOS ngay đầu mục Settings.
+Với hơn 37 biểu tượng cảm xúc mới được phát hiện và bổ sung thêm 75 tông màu da. Apple cũng cập nhật thêm tính năng Tap to Pay, giúp iPhone nhận thanh toán từ iPhone khác hoặc thẻ qua NFC...
+Đối với macOS 12.3 Monterey, bản beta 3 điều chỉnh một chút để người dùng sử dụng Universal Control thuận tiện hơn. Theo đó, mục Universal Control sẽ có ngay trong khu tùy chỉnh Displays thay vì ẩn sâu như trước.
+Apple cũng phát hành tvOS 15.4 beta 3 cho Apple TV, watchOS 8.5 beta 3 cho Apple Watch.
+Ngoài phát hành iOS/iPadOS 15.4 beta 3, Apple cũng đã phát hành tvOS 15.4 beta 3 cho Apple TV, watchOS 8.5 beta 3 cho Apple Watch. Tuy nhiên, tương tự như iOS/iPadOS 15.4 beta 3, bản cập nhật mới này cũng chỉ là những bản cập nhật nhỏ vá lỗi và cải thiện hiệu suất cho thiết bị.
+Thích và chia sẻ bài viết:

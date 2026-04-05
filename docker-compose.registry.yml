@@ -1,0 +1,25 @@
+# ── Registry Override ──────────────────────────────────────────────────────────
+# Use pre-built images from GHCR instead of local build.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.registry.yml up -d
+#
+# Set IMAGE_TAG env var (default: latest):
+#   IMAGE_TAG=abc1234 docker compose -f docker-compose.yml -f docker-compose.registry.yml up -d
+
+services:
+  aminra-backend:
+    image: ghcr.io/${GITHUB_OWNER:-aminra-dev}/aminra-backend:${IMAGE_TAG:-latest}
+    build: !reset null
+
+  aminra-frontend:
+    image: ghcr.io/${GITHUB_OWNER:-aminra-dev}/aminra-frontend:${IMAGE_TAG:-latest}
+    build: !reset null
+
+  postgres-db:
+    image: ghcr.io/${GITHUB_OWNER:-aminra-dev}/aminra-postgres:${IMAGE_TAG:-latest}
+    build: !reset null
+
+  nginx:
+    image: ghcr.io/${GITHUB_OWNER:-aminra-dev}/aminra-nginx:${IMAGE_TAG:-latest}
+    build: !reset null

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: false,
-  allowedDevOrigins: ['fe.silvergem.org', 'localhost:3000'],
+  allowedDevOrigins: ['fe.silvergem.org', 'localhost:3000', 'dev-web.silvergem.org', 'dev-api.silvergem.org'],
   
   // Docker standalone output configuration
   output: 'standalone',

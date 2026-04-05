@@ -1,0 +1,38 @@
+{
+  "doc_type": "halal_policy",
+  "label": "Halal Policy",
+  "mandatory_criteria": [
+    {
+      "id": "c_1775167858767",
+      "name": "Có cam kết rõ ràng từ công ty, tổ chức trong việc tuân thủ các quy định về Halal",
+      "description": "Trong Halal policy, cần nêu rõ, AI là người cam kết? (Tên công ty, cấp lãnh đạo cao nhất)",
+      "weight": 50
+    },
+    {
+      "id": "c_1775168018456",
+      "name": "Có thông tin rõ ràng về các tiêu chuẩn được áp dụng. VD: MS, TCVN, MUI, UAE, GSO, SFDA,... Đây là các nhóm tiêu chuẩn chung. Tài liệu có thể để thông tin chung như thế này hoặc cụ thể từng tiêu chuẩn như MS 1500:2019, GSO 993, ....",
+      "description": "VD: MS, TCVN, MUI, UAE, GSO, SFDA,... Đây là các nhóm tiêu chuẩn chung. Tài liệu có thể để thông tin chung như thế này hoặc cụ thể từng tiêu chuẩn như MS 1500:2019, GSO 993, ....",
+      "weight": 10
+    },
+    {
+      "id": "c_1775168103431",
+      "name": "Có khẳng định về việc đảm bảo quản lý tốt nguyên liệu sử dụng theo đúng chuẩn Halal, không chứa các chất bị cấm",
+      "description": "Phải đề cập đến việc chỉ sử dụng các nguyên liệu Halal, phòng tránh nhiễm chéo, và quy trình giám sát liên tục ",
+      "weight": 10
+    },
+    {
+      "id": "c_1775169339295",
+      "name": "Cam kết liên tục phát triển và cập nhật tài liệu để đảm bảo hiệu quả ",
+      "description": "Tài liệu phải được review, update, improve liên tục",
+      "weight": 10
+    },
+    {
+      "id": "c_1775169370695",
+      "name": "Có chữ ký của lãnh đạo cao nhất ",
+      "description": "Đảm bảo sự cam kết 100% của cấp lãnh đạo công ty về việc áp dụng Halal policy ",
+      "weight": 20
+    }
+  ],
+  "evaluation_guidance": "AI sẽ đọc các tiêu chí này rồi đánh giá tài liệu dựa theo nó. Từ đó đưa ra đánh giá, nhận xét và chấm điểm tương ứng. Không đối chiếu quá cứng nhắc, các thông tin cụ thể có thể khác so với template ban đầu, VD loại tiêu chuẩn, tên công ty,.... ",
+  "updated_at": "2026-04-03T07:36:24.974077"
+}

@@ -1,31 +1,83 @@
 import os, sys, shutil, logging, json as _json, secrets, time
 import httpx
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 
 from starlette.concurrency import run_in_threadpool
 from pipeline.query import HalalRAG, embed_query, hybrid_search, build_context, build_system_prompt, SYSTEM_PROMPT, OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL, LLM_BASE_URL, LLM_MODEL
 from pipeline.ingest import ingest_file, ensure_collection, get_qdrant_client
 from pipeline.openrouter_client import call_openrouter
-# Ollama removed - using external APIs only
 from pipeline.evaluate import evaluate_document
+from auth.db import init_pool, close_pool
+from auth.router import router as auth_router
+from auth.admin_router import router as admin_auth_router
+from auth.document_router import router as document_router
+from auth.jwt_utils import decode_token
+from auth.rate_limit import rate_limit_api, rate_limit_upload
+from auth.upload_utils import validate_upload
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("aminra.api")
 
+# ── Sentry (optional) ─────────────────────────────────────────────────────────
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
+        environment=os.getenv("ENVIRONMENT", "production"),
+    )
+    log.info("Sentry initialized")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_pool()
+    yield
+    await close_pool()
+
+
+_is_prod = os.getenv("ENVIRONMENT", "").lower() == "production"
 app = FastAPI(
     title="Aminra — Halal Certification AI",
     version="1.0.0",
+    lifespan=lifespan,
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
 )
-app.add_middleware(CORSMiddleware, allow_origins=["https://fe.silvergem.org", "http://fe.silvergem.org", "http://localhost:3000", "https://mukjizat.silvergem.org", "http://mukjizat.silvergem.org", "http://localhost:3001"], allow_methods=["*"], allow_headers=["*"])
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://fe.silvergem.org,https://mukjizat.silvergem.org").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["authorization", "content-type"],
+    allow_credentials=True,
+    max_age=3600,
+)
+
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    log.error(f"Unhandled: {exc}", exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+from auth.submission_router import router as submission_router
+app.include_router(auth_router,       prefix="/auth", tags=["auth"])
+app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
+app.include_router(document_router,   prefix="/api",  tags=["documents"])
+app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])
 
 rag = HalalRAG()
 
@@ -42,19 +94,45 @@ TEMPLATE_REVISIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Admin auth ─────────────────────────────────────────────────────────────────
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "aminra2026")
-ADMIN_SECRET   = os.getenv("ADMIN_SECRET",   secrets.token_hex(32))
-_sessions: Dict[str, float] = {}   # token → expiry unix timestamp
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    log.warning("ADMIN_PASSWORD not set — admin panel login disabled")
+    ADMIN_PASSWORD = secrets.token_hex(32)  # random = effectively disabled
+ADMIN_SECRET   = os.getenv("ADMIN_SECRET", secrets.token_hex(32))
 SESSION_TTL = 8 * 3600             # 8 hours
+_SESSIONS_FILE = Path("data/admin_sessions.json")
+
+def _load_sessions() -> Dict[str, float]:
+    try:
+        if _SESSIONS_FILE.exists():
+            return _json.loads(_SESSIONS_FILE.read_text())
+    except Exception:
+        pass
+    return {}
+
+def _save_sessions(sessions: Dict[str, float]):
+    _SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _SESSIONS_FILE.write_text(_json.dumps(sessions))
+
+def _set_session(token: str, expiry: float):
+    s = _load_sessions()
+    s[token] = expiry
+    _save_sessions(s)
+
+def _remove_session(token: str):
+    s = _load_sessions()
+    s.pop(token, None)
+    _save_sessions(s)
 
 def _require_admin(request: Request):
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(401, "Unauthorized")
     token = auth[7:]
-    exp = _sessions.get(token)
+    sessions = _load_sessions()
+    exp = sessions.get(token)
     if not exp or time.time() > exp:
-        _sessions.pop(token, None)
+        _remove_session(token)
         raise HTTPException(401, "Session expired or invalid")
 
 # ── Halal document type registry ───────────────────────────────────────────────
@@ -184,6 +262,7 @@ class EvaluationReport(BaseModel):
     gap_analysis:     Optional[Dict] = None
     risk_flags:       List[Dict]     = []
     citations:        List[Dict]     = []
+    extracted_text:   Optional[str]  = None
 
 class RewriteRequest(BaseModel):
     section_text: str
@@ -216,11 +295,31 @@ class TemplateCriterion(BaseModel):
     description: str
     weight:      int = 10
 
+class DocxMetaItem(BaseModel):
+    key:   str = ""
+    value: str = ""
+
+class DocxCustomSection(BaseModel):
+    title:   str = ""
+    content: str = ""   # plain text, one paragraph per line
+
+class DocxConfig(BaseModel):
+    # Cover page
+    cover_meta:          List[DocxMetaItem] = []
+    confidential_label:  str = "TÀI LIỆU NỘI BỘ"
+    # Structural sections
+    show_toc:            bool = False
+    show_revision_table: bool = True
+    show_approval_block: bool = True
+    # Custom sections before main content
+    custom_sections:     List[DocxCustomSection] = []
+
 class TemplateConfig(BaseModel):
     doc_type:            str
     label:               str = ""
     mandatory_criteria:  List[TemplateCriterion] = []
     evaluation_guidance: str = ""
+    docx_config:         Optional[DocxConfig] = None
     updated_at:          str = ""
 
 # ── Admin endpoints ────────────────────────────────────────────────────────────
@@ -230,14 +329,14 @@ def admin_login(req: AdminLoginRequest):
     if req.username != ADMIN_USERNAME or req.password != ADMIN_PASSWORD:
         raise HTTPException(401, "Sai tên đăng nhập hoặc mật khẩu")
     token = secrets.token_hex(32)
-    _sessions[token] = time.time() + SESSION_TTL
+    _set_session(token, time.time() + SESSION_TTL)
     return {"token": token, "expires_in": SESSION_TTL}
 
 @app.post("/admin/logout")
 def admin_logout(request: Request):
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        _sessions.pop(auth[7:], None)
+        _remove_session(auth[7:])
     return {"message": "Logged out"}
 
 @app.get("/admin/verify")
@@ -307,16 +406,14 @@ async def upload_template_file(doc_type: str, request: Request, file: UploadFile
     _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
-    allowed = {".pdf", ".pptx", ".ppt", ".docx", ".odt", ".txt", ".md"}
-    suffix  = Path(file.filename).suffix.lower()
-    if suffix not in allowed:
-        raise HTTPException(400, f"Định dạng không hỗ trợ: {suffix}")
+    content = await validate_upload(file)
     dir_path = TEMPLATE_FILES_DIR / doc_type
     dir_path.mkdir(parents=True, exist_ok=True)
     safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in file.filename).strip()
     save_path = dir_path / safe_name
-    with open(save_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    if not save_path.resolve().is_relative_to(dir_path.resolve()):
+        raise HTTPException(400, "Invalid file path")
+    save_path.write_bytes(content)
     _template_files_cache.pop(doc_type, None)
     _append_revision(doc_type, {
         "action": "upload",
@@ -334,6 +431,9 @@ def delete_template_file(doc_type: str, filename: str, request: Request):
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in filename).strip()
     file_path = TEMPLATE_FILES_DIR / doc_type / safe_name
+    base_dir = TEMPLATE_FILES_DIR / doc_type
+    if not file_path.resolve().is_relative_to(base_dir.resolve()):
+        raise HTTPException(400, "Invalid file path")
     if not file_path.exists():
         raise HTTPException(404, "File không tồn tại")
     file_path.unlink()
@@ -360,9 +460,157 @@ def get_template_revisions(doc_type: str, request: Request):
     except Exception:
         return {"revisions": []}
 
+# ── Admin user management ──────────────────────────────────────────────────────
+
+class AdminCreateUserRequest(BaseModel):
+    email: str
+    password: str
+    company_name: str
+    role: str           # 'business' | 'provider'
+    company_code: Optional[str] = None
+    status: str = "active"
+
+class AdminUpdateUserRequest(BaseModel):
+    company_name: Optional[str] = None
+    company_code: Optional[str] = None
+    status: Optional[str] = None      # active | pending | suspended
+    role: Optional[str] = None
+    is_owner: Optional[bool] = None
+    password: Optional[str] = None    # if set → rehash and update
+
+@app.get("/admin/users")
+async def admin_list_users(
+    request: Request,
+    role: Optional[str] = None,
+    status: Optional[str] = None,
+    q: Optional[str] = None,
+):
+    _require_admin(request)
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        conditions = []
+        params: list = []
+        idx = 1
+        if role:
+            conditions.append(f"role = ${idx}"); params.append(role); idx += 1
+        if status:
+            conditions.append(f"status = ${idx}"); params.append(status); idx += 1
+        if q:
+            conditions.append(f"(email ILIKE ${idx} OR company_name ILIKE ${idx})")
+            params.append(f"%{q}%"); idx += 1
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        rows = await conn.fetch(
+            f"""SELECT id, email, role, company_name, company_code,
+                       status, is_owner, tenant_id, created_at
+                FROM users {where} ORDER BY created_at DESC""",
+            *params,
+        )
+    return {"users": [dict(r) for r in rows], "total": len(rows)}
+
+@app.post("/admin/users")
+async def admin_create_user(request: Request, body: AdminCreateUserRequest):
+    _require_admin(request)
+    from auth.db import get_pool
+    from auth.password import hash_password
+    import uuid as _uuid2
+    pool = get_pool()
+    pw_hash = hash_password(body.password)
+    user_id = str(_uuid2.uuid4())
+    tenant_id = user_id if body.role == "business" else None
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT id FROM users WHERE email=$1", body.email)
+        if existing:
+            raise HTTPException(400, "Email đã tồn tại")
+        await conn.execute(
+            """INSERT INTO users
+               (id, email, password_hash, role, company_name, company_code,
+                status, is_owner, tenant_id)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)""",
+            user_id, body.email, pw_hash, body.role,
+            body.company_name, body.company_code,
+            body.status, True, tenant_id,
+        )
+        row = await conn.fetchrow(
+            "SELECT id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at FROM users WHERE id=$1", user_id
+        )
+    return dict(row)
+
+@app.put("/admin/users/{user_id}")
+async def admin_update_user(user_id: str, request: Request, body: AdminUpdateUserRequest):
+    _require_admin(request)
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM users WHERE id=$1", user_id)
+        if not row:
+            raise HTTPException(404, "User không tồn tại")
+        updates: list[str] = []
+        params: list = []
+        idx = 1
+        for field, val in [
+            ("company_name", body.company_name),
+            ("company_code", body.company_code),
+            ("status",       body.status),
+            ("role",         body.role),
+            ("is_owner",     body.is_owner),
+        ]:
+            if val is not None:
+                updates.append(f"{field} = ${idx}"); params.append(val); idx += 1
+        if body.password:
+            from auth.password import hash_password
+            updates.append(f"password_hash = ${idx}"); params.append(hash_password(body.password)); idx += 1
+        if not updates:
+            return dict(row)
+        params.append(user_id)
+        await conn.execute(
+            f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params
+        )
+        row = await conn.fetchrow(
+            "SELECT id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at FROM users WHERE id=$1", user_id
+        )
+    return dict(row)
+
+@app.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: str, request: Request):
+    _require_admin(request)
+    if user_id == "54182089-3a6d-458a-994d-93ac4e0c504f":  # guard: never delete seeded admin
+        raise HTTPException(403, "Không thể xoá tài khoản admin gốc")
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT id, role, tenant_id FROM users WHERE id=$1", user_id)
+        if not row:
+            raise HTTPException(404, "User không tồn tại")
+        # Delete tenant members first (cascade doesn't cover cross-tenant)
+        if row["role"] == "business" and row["tenant_id"] == user_id:
+            await conn.execute("DELETE FROM documents WHERE tenant_id=$1", user_id)
+            await conn.execute("DELETE FROM users WHERE tenant_id=$1 AND id != $1", user_id, user_id)
+        await conn.execute("DELETE FROM users WHERE id=$1", user_id)
+    return {"message": "Đã xoá user", "id": user_id}
+
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "Aminra Halal Certification AI"}
+async def health():
+    checks = {"status": "ok", "service": "Aminra Halal Certification AI"}
+    # Quick DB check
+    try:
+        from auth.db import get_pool
+        pool = get_pool()
+        if pool:
+            async with pool.acquire() as conn:
+                await conn.fetchval("SELECT 1")
+            checks["database"] = "connected"
+    except Exception:
+        checks["database"] = "disconnected"
+    # Quick Qdrant check
+    try:
+        client = get_qdrant_client()
+        from pipeline.ingest import COLLECTION_NAME
+        client.get_collection(COLLECTION_NAME)
+        checks["qdrant"] = "connected"
+    except Exception:
+        checks["qdrant"] = "disconnected"
+    return checks
 
 @app.get("/stats")
 def stats():
@@ -380,7 +628,7 @@ def list_topics():
     return {"topics": TOPIC_LIST}
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
+def chat(req: ChatRequest, _: None = Depends(rate_limit_api)):
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="question khong duoc de trong")
     if len(req.question) > 1000:
@@ -396,7 +644,7 @@ def chat(req: ChatRequest):
     )
 
 @app.post("/chat/stream")
-async def chat_stream(req: ChatRequest):
+async def chat_stream(req: ChatRequest, _: None = Depends(rate_limit_api)):
     if not req.question.strip():
         raise HTTPException(400, "question khong duoc de trong")
 
@@ -456,28 +704,35 @@ async def chat_stream(req: ChatRequest):
     return StreamingResponse(generate(), media_type="text/plain")
 
 @app.post("/ingest", response_model=IngestStatus)
-async def ingest_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    allowed = {".pptx", ".ppt", ".pdf", ".txt", ".md", ".docx", ".odt"}
-    suffix  = Path(file.filename).suffix.lower()
-    if suffix not in allowed:
-        raise HTTPException(status_code=400, detail=f"Dinh dang khong ho tro: {suffix}")
+async def ingest_document(background_tasks: BackgroundTasks, file: UploadFile = File(...), _: None = Depends(rate_limit_upload)):
+    content = await validate_upload(file)
     save_path = UPLOAD_DIR / file.filename
-    with open(save_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    if not save_path.resolve().is_relative_to(UPLOAD_DIR.resolve()):
+        raise HTTPException(400, "Invalid file path")
+    save_path.write_bytes(content)
     background_tasks.add_task(_run_ingest, save_path)
     return IngestStatus(filename=file.filename, chunks=0, status="queued")
 
 @app.post("/evaluate", response_model=EvaluationReport)
 async def evaluate_doc(
+    request: Request,
     file: UploadFile = File(...),
+    _rate_limit: None = Depends(rate_limit_upload),
     doc_type: Optional[str] = Form(None),
     previous_context: Optional[str] = Form(None),
     lang: Optional[str] = Form(None),
 ):
-    allowed = {".pptx", ".ppt", ".pdf", ".txt", ".md", ".docx", ".odt"}
-    suffix  = Path(file.filename).suffix.lower()
-    if suffix not in allowed:
-        raise HTTPException(status_code=400, detail=f"Dinh dang khong ho tro: {suffix}")
+    content = await validate_upload(file)
+    suffix  = Path(file.filename or "").suffix.lower()
+
+    # Extract JWT user if present (optional — anonymous evaluate still works)
+    jwt_user = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            jwt_user = decode_token(auth_header[7:])
+        except Exception:
+            pass  # treat as anonymous
 
     forced_doc_type   = doc_type if doc_type and doc_type in HALAL_DOC_TYPES else None
     forced_doc_label  = HALAL_DOC_TYPES.get(forced_doc_type, "") if forced_doc_type else ""
@@ -485,9 +740,12 @@ async def evaluate_doc(
     template_files_content    = _load_template_files_content(forced_doc_type) if forced_doc_type else ""
     template_files_dir        = (TEMPLATE_FILES_DIR / forced_doc_type) if forced_doc_type else None
 
-    import tempfile
+    import tempfile, uuid as _uuid
+    file_bytes = content
+    file_size  = len(file_bytes)
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
+        tmp.write(file_bytes)
         tmp_path = Path(tmp.name)
 
     try:
@@ -509,7 +767,7 @@ async def evaluate_doc(
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    return EvaluationReport(**{
+    report = EvaluationReport(**{
         "filename":         result.get("filename", file.filename),
         "doc_type":         result.get("doc_type", "general"),
         "doc_type_label":   result.get("doc_type_label", "Tài liệu chung"),
@@ -525,7 +783,46 @@ async def evaluate_doc(
         "gap_analysis":     result.get("gap_analysis"),
         "risk_flags":       result.get("risk_flags", []),
         "citations":        result.get("citations", []),
+        "extracted_text":   result.get("extracted_text"),
     })
+
+    # Persist to DB if authenticated business user
+    if jwt_user and jwt_user.get("role") == "business" and jwt_user.get("tenant_id"):
+        try:
+            from auth.db import get_pool
+            import json as _json_mod
+            pool = get_pool()
+            async with pool.acquire() as conn:
+                # Save file to tenant folder
+                tenant_dir = UPLOAD_DIR / jwt_user["tenant_id"]
+                tenant_dir.mkdir(parents=True, exist_ok=True)
+                doc_uuid   = str(_uuid.uuid4())
+                safe_name  = "".join(c if c.isalnum() or c in "._- " else "_" for c in file.filename).strip()
+                save_path  = tenant_dir / f"{doc_uuid}_{safe_name}"
+                if not save_path.resolve().is_relative_to(tenant_dir.resolve()):
+                    raise HTTPException(400, "Invalid file path")
+                save_path.write_bytes(file_bytes)
+
+                mime = file.content_type or "application/octet-stream"
+                await conn.execute(
+                    """
+                    INSERT INTO documents
+                        (filename, original_filename, file_path, file_size, mime_type,
+                         user_id, tenant_id, doc_type, compliance_score, evaluation_result)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                    """,
+                    save_path.name, file.filename, str(save_path),
+                    file_size, mime,
+                    jwt_user["sub"], jwt_user["tenant_id"],
+                    result.get("doc_type"), result.get("compliance_score"),
+                    _json_mod.dumps(result, ensure_ascii=False),
+                )
+                log.info(f"[documents] Saved {file.filename} for tenant {jwt_user['tenant_id']}")
+        except Exception as e:
+            log.error(f"[documents] Failed to save to DB: {e}")
+            # Don't fail the evaluate response — just log
+
+    return report
 
 
 @app.post("/rewrite", response_model=RewriteResponse)
@@ -572,6 +869,155 @@ Dùng tiếng Việt. Chỉ trả về JSON."""
         rewritten=result.get("rewritten", ""),
         explanation=result.get("explanation", ""),
         standards_referenced=result.get("standards_referenced", []),
+    )
+
+
+# ─── Generate compliant document (streaming) ─────────────────────────────────
+
+class GenerateDocRequest(BaseModel):
+    doc_type:       str
+    doc_type_label: str
+    extracted_text: str = ""
+    issues:         list = []
+    recommendations: list = []
+    gap_analysis:   Optional[Dict] = None
+
+@app.post("/generate-document")
+async def generate_document(req: GenerateDocRequest):
+    template  = _load_template(req.doc_type)
+    criteria  = template.get("mandatory_criteria", []) if template else []
+    ref_ctx   = _load_template_files_content(req.doc_type) if req.doc_type else ""
+
+    criteria_str = "\n".join(
+        f"{i+1}. **{c.get('name','')}** (trọng số {c.get('weight',10)}pt): {c.get('description','')}"
+        for i, c in enumerate(criteria)
+    ) or "Áp dụng tiêu chuẩn Halal JAKIM/HDC đầy đủ"
+
+    issues_str = "\n".join(
+        f"- [{it.get('severity','').upper()}] {it.get('section','')}: {it.get('issue','')} → {it.get('recommendation','')}"
+        for it in req.issues[:20]
+    ) or "Không phát hiện vấn đề cụ thể"
+
+    gaps_str = ""
+    if req.gap_analysis:
+        cg = req.gap_analysis.get("critical_gaps", [])
+        mg = req.gap_analysis.get("major_gaps", [])
+        if cg: gaps_str += "Critical: " + "; ".join(cg[:5]) + "\n"
+        if mg: gaps_str += "Major: "    + "; ".join(mg[:5])
+
+    original_ctx = req.extracted_text[:10000] if req.extracted_text else ""
+
+    prompt = f"""Bạn là chuyên gia soạn thảo tài liệu chứng nhận Halal.
+
+# NHIỆM VỤ
+Cải tiến tài liệu **{req.doc_type_label}** hiện có. Xuất ra tài liệu hoàn chỉnh.
+
+# QUY TẮC — ĐỌC KỸ
+Với MỖI đoạn/câu trong tài liệu gốc, hãy quyết định 1 trong 3:
+1. **GIỮ NGUYÊN** (copy nguyên văn, không paraphrase) — nếu nội dung đó GÓP PHẦN thỏa mãn ít nhất 1 tiêu chí
+2. **SỬA ĐỔI** — nếu nội dung liên quan đến tiêu chí nhưng chưa đạt yêu cầu
+3. **LOẠI BỎ** — nếu nội dung KHÔNG liên quan đến bất kỳ tiêu chí nào (không đóng góp vào việc đạt chuẩn)
+
+Ngoài ra: **BỔ SUNG** nội dung mới nếu có tiêu chí chưa được đề cập trong tài liệu gốc.
+
+Quy tắc khi GIỮ NGUYÊN:
+- Copy ĐÚNG từng từ, từng câu — KHÔNG paraphrase, KHÔNG viết lại bằng cách diễn đạt khác
+- Giữ nguyên: tên công ty, ngày tháng, số hiệu, thuật ngữ gốc
+
+LƯU Ý: Các thông tin cá nhân (tên người, tên công ty, SĐT, email, địa chỉ, chức vụ) KHÔNG phải tiêu chí — giữ nguyên nếu có, không cần thêm nếu thiếu
+
+# {len(criteria)} TIÊU CHÍ CẦN THỎA MÃN:
+{criteria_str}
+
+# TÀI LIỆU GỐC (đối chiếu từng đoạn với tiêu chí để quyết định giữ/sửa/bỏ):
+{original_ctx or "(Không có tài liệu gốc — tạo mới hoàn toàn)"}
+
+# VẤN ĐỀ ĐÃ PHÁT HIỆN (cần sửa hoặc bổ sung):
+{issues_str}
+
+{"# GAP CẦN BỔ SUNG:" + chr(10) + gaps_str if gaps_str else ""}
+
+# THAM CHIẾU:
+{ref_ctx[:3000] or "Tiêu chuẩn Halal JAKIM MS 1500:2019 / HDC"}
+
+# FORMAT OUTPUT:
+- Tiếng Việt (giữ thuật ngữ Halal tiếng Anh/Mã Lai)
+- Plain text, không markdown
+- Đánh số: 1. 1.1 1.1.1 cho heading, a) b) c) cho sub-item
+- KHÔNG thêm giải thích, ghi chú
+
+Bắt đầu tài liệu ngay:"""
+
+    api_key  = OPENROUTER_API_KEY or os.getenv("DEEPSEEK_API_KEY", "")
+    base_url = OPENROUTER_BASE_URL if OPENROUTER_API_KEY else LLM_BASE_URL
+    model    = OPENROUTER_MODEL    if OPENROUTER_API_KEY else LLM_MODEL
+    headers  = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    if OPENROUTER_API_KEY:
+        headers["HTTP-Referer"] = "https://fe.silvergem.org"
+
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.1,
+        "max_tokens": 8000,
+        "stream": True,
+    }
+
+    async def stream_gen():
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=10.0)) as client:
+                async with client.stream(
+                    "POST", f"{base_url}/chat/completions",
+                    headers=headers, json=payload,
+                ) as resp:
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if not line.startswith("data: "): continue
+                        data = line[6:]
+                        if data == "[DONE]": break
+                        try:
+                            obj = _json.loads(data)
+                            chunk = (obj.get("choices") or [{}])[0].get("delta", {}).get("content")
+                            if chunk: yield chunk
+                        except: continue
+        except Exception as e:
+            log.error(f"[generate-document] {e}")
+            yield f"\n\n[Lỗi kết nối AI: {e}]"
+
+    return StreamingResponse(stream_gen(), media_type="text/plain")
+
+
+class ExportDocxRequest(BaseModel):
+    content:  str
+    filename: str = "generated_document"
+    title:    str = "Tài liệu Halal"
+    doc_type: str = ""
+
+@app.post("/generate-document/export-docx")
+async def export_docx(req: ExportDocxRequest):
+    from templates_docx._registry import build_docx
+    import io as _io
+
+    doc = build_docx(
+        req.content,
+        doc_type=req.doc_type,
+        title=req.title,
+        filename=req.filename,
+    )
+
+    buf = _io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in req.filename)
+    safe_name = safe_name.replace(" ", "_").rstrip(".")
+    if not safe_name.endswith(".docx"):
+        safe_name = safe_name.rsplit(".", 1)[0] + "_improved.docx"
+
+    return Response(
+        content=buf.read(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
     )
 
 

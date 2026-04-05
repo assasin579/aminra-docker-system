@@ -1,0 +1,43 @@
+# aminra Vietnam — Dependencies
+
+# Document processing
+pymupdf>=1.23.0
+python-pptx>=1.0.0
+python-docx>=1.1.0
+markitdown[pptx,pdf]>=0.0.1
+
+# Vector DB
+qdrant-client>=1.7.0
+
+# Embeddings
+sentence-transformers>=2.6.0
+torch>=2.0.0
+
+# API
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+gunicorn>=21.0.0
+python-multipart>=0.0.9
+
+# File upload validation
+python-magic>=0.4.27
+
+# Utilities
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+requests>=2.31.0
+
+# Auth
+asyncpg>=0.29.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0,<5.0.0
+python-jose[cryptography]>=3.3.0
+pydantic[email]>=2.0.0
+
+# Database migrations
+alembic>=1.13.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# Error tracking
+sentry-sdk[fastapi]>=2.0.0

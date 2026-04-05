@@ -19,13 +19,26 @@
   }
 }
 
+html {
+  font-size: 17px; /* default 16px → 17px, tăng ~6% toàn bộ app */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Override Tailwind text-xs: 12px → 13.6px (0.8rem * 17px) */
+.text-xs { font-size: 0.8rem !important; }
+/* Override Tailwind text-sm: 14px → 15.3px (0.9rem * 17px) */
+.text-sm { font-size: 0.9rem !important; }
+
 /* ── Admin panel animations ── */
+/* Document card hover — border glow instead of scale */
+.doc-card-hover { transition: border-color 0.2s, box-shadow 0.2s; }
+.doc-card-hover:hover { border-color: #2d5a8f !important; box-shadow: 0 0 12px rgba(45,90,143,0.2); }
+
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }

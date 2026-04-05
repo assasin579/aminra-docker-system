@@ -1,0 +1,120 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Images"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (default: latest)"
+        required: false
+        default: latest
+      environment:
+        description: "Target environment"
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/aminra
+  DEPLOY_DIR: /opt/aminra-docker-system
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: deploy-${{ inputs.environment || 'production' }}
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.image_tag || 'latest' }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ${{ env.DEPLOY_DIR }}
+
+            TAG="${{ steps.tag.outputs.tag }}"
+            REGISTRY="${{ env.REGISTRY }}"
+            PREFIX="${{ env.IMAGE_PREFIX }}"
+
+            echo "==> Deploying tag: ${TAG}"
+            echo "==> Saving current state for rollback..."
+            PREV_TAG=$(cat .deploy-tag 2>/dev/null || echo "none")
+            echo "$TAG" > .deploy-tag
+
+            echo "==> Pulling images..."
+            docker pull "${REGISTRY}/${PREFIX}-backend:${TAG}"
+            docker pull "${REGISTRY}/${PREFIX}-frontend:${TAG}"
+
+            echo "==> Updating compose override..."
+            cat > docker-compose.registry.yml <<YAML
+            services:
+              aminra-backend:
+                image: ${REGISTRY}/${PREFIX}-backend:${TAG}
+                build: !reset null
+              aminra-frontend:
+                image: ${REGISTRY}/${PREFIX}-frontend:${TAG}
+                build: !reset null
+            YAML
+
+            echo "==> Starting services..."
+            docker compose -f docker-compose.yml -f docker-compose.registry.yml up -d
+
+            echo "==> Waiting for health checks..."
+            HEALTHY=false
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:8100/health > /dev/null 2>&1; then
+                HEALTHY=true
+                echo "Backend healthy"
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$HEALTHY" = "false" ]; then
+              echo "==> FAILED — rolling back to ${PREV_TAG}..."
+              if [ "$PREV_TAG" != "none" ]; then
+                sed -i "s/${TAG}/${PREV_TAG}/g" docker-compose.registry.yml
+                docker compose -f docker-compose.yml -f docker-compose.registry.yml up -d
+                echo "$PREV_TAG" > .deploy-tag
+              fi
+              exit 1
+            fi
+
+            # Frontend check
+            for i in $(seq 1 20); do
+              CODE=$(curl -so /dev/null -w '%{http_code}' http://localhost:3100 2>/dev/null || echo "000")
+              if [ "$CODE" = "200" ] || [ "$CODE" = "304" ]; then
+                echo "Frontend healthy (HTTP $CODE)"
+                break
+              fi
+              sleep 5
+            done
+
+            echo "==> Deploy complete: ${TAG}"

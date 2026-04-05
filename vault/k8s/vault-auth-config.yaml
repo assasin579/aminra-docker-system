@@ -1,0 +1,52 @@
+# ── Vault Kubernetes Auth Configuration ────────────────────────────────────────
+# Run these commands after Vault is deployed on K8s.
+# This replaces the AppRole auth method used in Docker Compose.
+#
+# The secret paths (secret/aminra/*) and policy (aminra-backend) remain IDENTICAL.
+# Only the authentication mechanism changes.
+#
+# Prerequisites:
+#   - Vault running in K8s (via Helm chart)
+#   - ServiceAccount "aminra-backend" in namespace "aminra"
+# ---
+
+# Step 1: Enable Kubernetes auth method (replaces AppRole)
+# vault auth enable kubernetes
+
+# Step 2: Configure with K8s API server details
+# vault write auth/kubernetes/config \
+#     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
+
+# Step 3: Create role bound to the backend ServiceAccount
+# vault write auth/kubernetes/role/aminra-backend \
+#     bound_service_account_names=aminra-backend \
+#     bound_service_account_namespaces=aminra \
+#     policies=aminra-backend \
+#     ttl=1h
+
+# ---
+# The policy file (vault/policies/aminra-backend.hcl) is reused as-is.
+# The template (vault/templates/env.tpl) is reused as-is.
+# The entrypoint.sh sourcing logic is reused as-is.
+# ---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aminra-backend
+  namespace: aminra
+  labels:
+    app: aminra-backend
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vault-tokenreview-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: vault
+    namespace: vault

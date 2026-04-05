@@ -1,0 +1,95 @@
+# ── HashiCorp Vault Helm Chart Values ──────────────────────────────────────────
+# helm repo add hashicorp https://helm.releases.hashicorp.com
+# helm install vault hashicorp/vault -n vault -f vault/k8s/helm-values.yaml
+#
+# Migration from Docker Compose:
+#   - Storage: "file" → "raft" (integrated HA)
+#   - Auth:    AppRole → Kubernetes ServiceAccount
+#   - Unseal:  manual  → AWS KMS / GCP CKMS auto-unseal
+#   - TLS:     disabled → enabled (cert-manager)
+
+global:
+  enabled: true
+
+injector:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 128Mi
+      cpu: 250m
+
+server:
+  enabled: true
+  replicas: 3    # HA mode
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+  # HA with Raft integrated storage (replaces "file" storage from Docker)
+  ha:
+    enabled: true
+    replicas: 3
+    raft:
+      enabled: true
+      config: |
+        ui = true
+
+        listener "tcp" {
+          address     = "[::]:8200"
+          tls_disable = 0
+          tls_cert_file = "/vault/tls/tls.crt"
+          tls_key_file  = "/vault/tls/tls.key"
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+          retry_join {
+            leader_api_addr = "https://vault-0.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "https://vault-1.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "https://vault-2.vault-internal:8200"
+          }
+        }
+
+        service_registration "kubernetes" {}
+
+        # === Auto-unseal (uncomment ONE provider) ===
+
+        # AWS KMS
+        # seal "awskms" {
+        #   region     = "ap-southeast-1"
+        #   kms_key_id = "YOUR_KMS_KEY_ID"
+        # }
+
+        # GCP Cloud KMS
+        # seal "gcpckms" {
+        #   project    = "your-project"
+        #   region     = "asia-southeast1"
+        #   key_ring   = "vault-keyring"
+        #   crypto_key = "vault-unseal"
+        # }
+
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: null    # Use cluster default
+
+  auditStorage:
+    enabled: true
+    size: 5Gi
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
+  # Use Ingress for external access

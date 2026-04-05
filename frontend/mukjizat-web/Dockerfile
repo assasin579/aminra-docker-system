@@ -1,19 +1,25 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+ARG NEXT_PUBLIC_API_BASE_URL=/api
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
+ARG BACKEND_URL=http://aminra-backend:8000
+ENV BACKEND_URL=$BACKEND_URL
 
 # Build the application
 RUN npm run build
@@ -43,6 +49,7 @@ EXPOSE 3001
 
 ENV PORT 3001
 ENV HOSTNAME "0.0.0.0"
+ENV BACKEND_URL "http://aminra-backend:8000"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

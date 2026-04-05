@@ -51,6 +51,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
     setToken(null);
     localStorage.removeItem(TOKEN_KEY);
+    try { sessionStorage.clear(); } catch {}
   }, [token]);
 
   return (

@@ -1,0 +1,157 @@
+import re
+
+from pydantic import BaseModel, EmailStr, field_validator
+from typing import Optional
+from datetime import datetime
+
+MAX_MEMBERS = 7
+
+
+# ── Request models ─────────────────────────────────────────────────────────────
+
+class BusinessRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    company_name: str
+    company_code: Optional[str] = None   # Tax ID
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v):
+        if len(v) < 10:
+            raise ValueError("Password must be at least 10 characters")
+        if not re.search(r'[A-Z]', v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r'[a-z]', v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r'[0-9]', v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
+
+class ProviderRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    company_name: str          # Organization name (e.g. JAKIM, HDC)
+    company_code: Optional[str] = None   # Accreditation / license number
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v):
+        if len(v) < 10:
+            raise ValueError("Password must be at least 10 characters")
+        if not re.search(r'[A-Z]', v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r'[a-z]', v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r'[0-9]', v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class InviteMemberRequest(BaseModel):
+    email: EmailStr
+    password: str
+    display_name: str          # Stored in company_name for the member row
+    ihc_role: str = ""         # Chairman, Halal Executive, Dept Head, etc.
+    department: str = ""       # Bộ phận / phòng ban
+
+
+# ── Response models ────────────────────────────────────────────────────────────
+
+class UserProfile(BaseModel):
+    id: str
+    email: str
+    role: str
+    status: str
+    company_name: str
+    company_code: Optional[str]
+    is_owner: bool
+    tenant_id: Optional[str]
+    member_count: Optional[int] = None   # filled for business owners
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    user: UserProfile
+
+
+class RegisterBusinessResponse(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    user: UserProfile
+
+
+class RegisterProviderResponse(BaseModel):
+    user_id: str
+    email: str
+    status: str
+    message: str
+
+
+class UpdateMemberRequest(BaseModel):
+    ihc_role: Optional[str] = None
+    department: Optional[str] = None
+    display_name: Optional[str] = None
+
+
+class MemberItem(BaseModel):
+    id: str
+    email: str
+    display_name: str
+    ihc_role: Optional[str] = None
+    department: Optional[str] = None
+    status: str
+    created_at: datetime
+
+
+class MembersResponse(BaseModel):
+    members: list[MemberItem]
+    count: int
+    max_allowed: int = MAX_MEMBERS
+
+
+class InviteAuditorRequest(BaseModel):
+    email: EmailStr
+    password: str
+    display_name: str
+    specialty: str = ""        # Chuyên môn: food safety, halal compliance, etc.
+
+
+class AuditorItem(BaseModel):
+    id: str
+    email: str
+    display_name: str
+    specialty: Optional[str] = None
+    status: str
+    created_at: datetime
+
+
+class AuditorsResponse(BaseModel):
+    auditors: list[AuditorItem]
+    count: int
+
+
+class PendingProviderItem(BaseModel):
+    id: str
+    email: str
+    company_name: str
+    company_code: Optional[str]
+    created_at: datetime
+
+
+class PendingProvidersResponse(BaseModel):
+    providers: list[PendingProviderItem]
+    count: int

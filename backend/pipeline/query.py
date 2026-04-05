@@ -216,7 +216,7 @@ def hybrid_search(query_data, top_k=TOP_K, topic_filter=None):
     """Hybrid search kết hợp vector search và keyword matching."""
     from qdrant_client import QdrantClient
     from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchText
-    client = QdrantClient(url=QDRANT_URL)
+    client = QdrantClient(url=QDRANT_URL, api_key=os.getenv("QDRANT_API_KEY"))
     
     query_vector = query_data["vector"]
     enhanced = query_data["enhanced"]

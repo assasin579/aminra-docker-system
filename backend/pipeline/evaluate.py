@@ -177,13 +177,16 @@ def build_eval_prompt(doc_text: str, doc_type: str, filename: str,
         reference_ctx += f"\n=== TÀI LIỆU MẪU THAM CHIẾU (do admin cung cấp) ===\n{truncated}\n"
 
     criteria_ctx = ""
+    criteria_list = []
     if template_criteria:
         criteria_list = template_criteria.get("mandatory_criteria", [])
         guidance      = template_criteria.get("evaluation_guidance", "")
         if criteria_list:
             criteria_ctx += "\n=== TIÊU CHÍ CHẤM ĐIỂM BẮT BUỘC ===\n"
-            for c in criteria_list:
-                criteria_ctx += f"- [{c.get('weight', 10)} điểm] {c['name']}: {c.get('description', '')}\n"
+            criteria_ctx += "Tổng trọng số = 100 điểm. Chấm từng tiêu chí riêng biệt.\n\n"
+            for idx, c in enumerate(criteria_list, 1):
+                criteria_ctx += f"Tiêu chí {idx}: [{c.get('weight', 10)} điểm] {c['name']}\n"
+                criteria_ctx += f"  Mô tả: {c.get('description', '')}\n\n"
         if guidance:
             criteria_ctx += f"\n=== HƯỚNG DẪN ĐÁNH GIÁ ===\n{guidance}\n"
 
@@ -201,7 +204,11 @@ def build_eval_prompt(doc_text: str, doc_type: str, filename: str,
 
 NGÔN NGỮ ĐẦU RA: {lang_instr}
 
-QUAN TRỌNG: Chỉ sử dụng nội dung trong phần "TÀI LIỆU MẪU THAM CHIẾU" và "TIÊU CHÍ CHẤM ĐIỂM" làm cơ sở đánh giá duy nhất. Không được sử dụng kiến thức bên ngoài, không tham chiếu bất kỳ tiêu chuẩn nào không được cung cấp trong prompt này.
+QUAN TRỌNG:
+- Chỉ sử dụng nội dung trong phần "TÀI LIỆU MẪU THAM CHIẾU" và "TIÊU CHÍ CHẤM ĐIỂM" làm cơ sở đánh giá duy nhất. Không được sử dụng kiến thức bên ngoài, không tham chiếu bất kỳ tiêu chuẩn nào không được cung cấp trong prompt này.
+- TUYỆT ĐỐI KHÔNG trừ điểm, KHÔNG tạo issue, KHÔNG ghi nhận bất kỳ vấn đề nào liên quan đến thông tin cá nhân / doanh nghiệp cụ thể. Danh sách BỎ QUA HOÀN TOÀN: tên người, họ tên, tên công ty, tên lãnh đạo, chức vụ cụ thể, địa chỉ, số điện thoại, email, mã số thuế, tên bộ phận, chữ ký. Những thông tin này là placeholder — mỗi doanh nghiệp sẽ điền khác nhau và KHÔNG liên quan đến chất lượng nội dung tiêu chuẩn.
+- Nếu tài liệu mẫu có tên "ABC" nhưng tài liệu đánh giá có tên "XYZ" hoặc để trống — KHÔNG phải lỗi, KHÔNG trừ điểm.
+- CHỈ đánh giá NỘI DUNG TIÊU CHUẨN: quy trình, cam kết, chính sách, tiêu chí kỹ thuật Halal.
 
 === TÀI LIỆU CẦN ĐÁNH GIÁ ===
 Tên file: {filename}
@@ -211,9 +218,22 @@ Loại tài liệu: {DOC_TYPE_LABELS.get(doc_type, doc_type)}
 {reference_ctx}{criteria_ctx}{prev_ctx}
 
 === YÊU CẦU ===
-Đối chiếu tài liệu trên với tài liệu mẫu và tiêu chí được cung cấp. Trả về KẾT QUẢ DUY NHẤT là một JSON object hợp lệ với cấu trúc CHÍNH XÁC sau:
+Đối chiếu tài liệu trên với tài liệu mẫu và tiêu chí được cung cấp. Trả về KẾT QUẢ DUY NHẤT là một JSON object hợp lệ.
+
+NHẮC LẠI: TUYỆT ĐỐI KHÔNG trừ điểm và KHÔNG tạo issue cho thông tin cá nhân/doanh nghiệp (tên người, tên công ty, tên lãnh đạo, chức vụ, SĐT, email, địa chỉ, chữ ký, mã số thuế). Đây là placeholder, KHÔNG phải tiêu chí.
+
+CÁCH TÍNH ĐIỂM — BẮT BUỘC TUÂN THỦ:
+1. Chấm TỪNG tiêu chí riêng biệt: mỗi tiêu chí cho điểm từ 0% đến 100% mức độ đạt
+2. Điểm tiêu chí = (% đạt) × (trọng số). VD: tiêu chí 50 điểm, đạt 80% → được 40 điểm
+3. compliance_score = TỔNG điểm tất cả tiêu chí (làm tròn số nguyên)
+4. Cùng một tài liệu + cùng tiêu chí → PHẢI cho cùng điểm mỗi lần đánh giá
+
+JSON format:
 {{
-  "compliance_score": <số nguyên 0-100, dựa hoàn toàn vào mức độ đáp ứng tiêu chí được cung cấp>,
+  "criteria_scores": [
+    {{"criterion": "<tên tiêu chí>", "weight": <trọng số>, "percent": <0-100 mức độ đạt>, "score": <điểm = percent * weight / 100>, "reason": "<lý do ngắn gọn>"}}
+  ],
+  "compliance_score": <TỔNG của tất cả score trong criteria_scores, số nguyên 0-100>,
   "overall_status": "<compliant|needs_review|non_compliant>",
   "summary": "<tóm tắt 1-2 câu về mức độ phù hợp với tài liệu mẫu và tiêu chí>",
   "issues": [
@@ -258,7 +278,7 @@ Nếu không có tài liệu mẫu hoặc tiêu chí, ghi rõ trong summary và 
 
 # ── LLM calls ─────────────────────────────────────────────────────────────────
 
-def _post_llm(url: str, headers: dict, payload: dict, timeout: int = 90) -> str:
+def _post_llm(url: str, headers: dict, payload: dict, timeout: int = 110) -> str:
     import requests
     resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
     resp.raise_for_status()
@@ -407,6 +427,35 @@ def evaluate_document(path: Path, original_filename: str,
         "citations":       result.get("citations") if isinstance(result.get("citations"), list)
                            else [],
     })
+
+    result["extracted_text"] = doc_text[:12000]
+
+    # 6. Signature detection
+    try:
+        from pipeline.signature import detect_signatures
+        sig_result = detect_signatures(path)
+        result["signature_detection"] = sig_result
+        log.info(f"[evaluate] Signature: {sig_result['summary']}")
+    except Exception as e:
+        log.warning(f"[evaluate] Signature detection failed: {e}")
+        result["signature_detection"] = {
+            "has_digital_signature": False,
+            "has_signature_image": False,
+            "has_signature_text": False,
+            "signature_zones": [],
+            "digital_signatures": [],
+            "summary": f"Lỗi quét chữ ký: {e}",
+        }
+
+    # Validate: recalculate compliance_score from criteria_scores if available
+    cs = result.get("criteria_scores")
+    if isinstance(cs, list) and len(cs) > 0:
+        recalc = sum(
+            min(float(c.get("score", 0)), float(c.get("weight", 0)))
+            for c in cs if isinstance(c, dict)
+        )
+        result["compliance_score"] = max(0, min(100, round(recalc)))
+        log.info(f"[evaluate] Recalculated score from {len(cs)} criteria: {result['compliance_score']}")
 
     log.info(f"[evaluate] Done. Score={result.get('compliance_score')}, Status={result.get('overall_status')}")
     return result

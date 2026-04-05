@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { AdminAuthProvider } from './AdminAuthContext';
+import { UserAuthProvider } from './UserAuthContext';
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
+    <UserAuthProvider>
     <AdminAuthProvider>
     <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
       {/* Mobile overlay */}
@@ -49,11 +51,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <span className="text-white font-bold">Aminra</span>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 flex flex-col lg:min-h-0 lg:overflow-y-auto">
+        <main className="flex-1 p-5 md:p-8 lg:p-10 flex flex-col lg:min-h-0 lg:overflow-y-auto">
           {children}
         </main>
       </div>
     </div>
     </AdminAuthProvider>
+    </UserAuthProvider>
   );
 }

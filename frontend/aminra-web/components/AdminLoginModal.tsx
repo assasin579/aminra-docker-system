@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from './AdminAuthContext';
 
-export default function AdminLoginModal({ onClose }: { onClose: () => void }) {
+export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: boolean) => void }) {
   const { login } = useAdminAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +24,7 @@ export default function AdminLoginModal({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await login(username.trim(), password);
-      onClose();
+      onClose(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại');
     } finally {
@@ -44,7 +44,7 @@ export default function AdminLoginModal({ onClose }: { onClose: () => void }) {
             <h2 className="text-lg font-bold text-white">Đăng nhập Admin</h2>
             <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>Quản lý template và tiêu chí đánh giá</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
+          <button onClick={() => onClose()} className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
             style={{ background: 'rgba(255,255,255,0.05)' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />

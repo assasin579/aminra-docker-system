@@ -1,0 +1,29 @@
+.env
+secrets/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+*.log
+*.pyc
+*.pkl
+ollama_data/
+doc_text_cache/
+qdrant_data/
+venv/
+*.snapshot
+.next/
+
+# Vault sensitive files
+vault/approle/
+vault/.env.vault
+**/init-keys.json
+
+# Backups (keep .gitkeep)
+backups/*
+!backups/.gitkeep
+
+# Monitoring sensitive files
+monitoring/.env.monitoring
+
+# Deploy state
+.deploy-tag
