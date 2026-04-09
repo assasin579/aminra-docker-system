@@ -36,16 +36,16 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
       <div className="w-full max-w-sm rounded-2xl p-6"
-        style={{ background: '#111725', border: '1px solid #1e3a5f' }}>
+        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-bold text-white">Đăng nhập Admin</h2>
-            <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>Quản lý template và tiêu chí đánh giá</p>
+            <h2 className="text-lg font-bold" style={{ color: '#1A2332' }}>Đăng nhập Admin</h2>
+            <p className="text-xs mt-0.5" style={{ color: '#5F6F80' }}>Quản lý template và tiêu chí đánh giá</p>
           </div>
-          <button onClick={() => onClose()} className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <button onClick={() => onClose()} className="p-1.5 rounded-lg transition-colors"
+            style={{ background: 'rgba(0,0,0,0.05)', color: '#5F6F80' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -54,32 +54,32 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#94a3b8' }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5B6B7D' }}>
               Tên đăng nhập
             </label>
             <input
               type="text" autoFocus autoComplete="username"
               value={username} onChange={e => setUsername(e.target.value)}
               placeholder="admin"
-              className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none transition-all"
-              style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}
-              onFocus={e => (e.target.style.borderColor = '#22c55e')}
-              onBlur={e => (e.target.style.borderColor = '#1e3a5f')}
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
+              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
+              onFocus={e => (e.target.style.borderColor = '#087653')}
+              onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#94a3b8' }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5B6B7D' }}>
               Mật khẩu
             </label>
             <input
               type="password" autoComplete="current-password"
               value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none transition-all"
-              style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}
-              onFocus={e => (e.target.style.borderColor = '#22c55e')}
-              onBlur={e => (e.target.style.borderColor = '#1e3a5f')}
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
+              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
+              onFocus={e => (e.target.style.borderColor = '#087653')}
+              onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
 
@@ -92,8 +92,8 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
           <button type="submit" disabled={loading || !username || !password}
             className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all"
             style={{
-              background: loading || !username || !password ? '#1e3a5f' : '#16a34a',
-              color: loading || !username || !password ? '#475569' : 'white',
+              background: loading || !username || !password ? '#E2E8F0' : '#087653',
+              color: loading || !username || !password ? '#5B6B7D' : 'white',
               cursor: loading || !username || !password ? 'not-allowed' : 'pointer',
             }}>
             {loading ? 'Đang xác thực…' : 'Đăng nhập'}

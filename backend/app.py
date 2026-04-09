@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, FileResponse
 from pydantic import BaseModel
 
 from starlette.concurrency import run_in_threadpool
@@ -21,7 +21,7 @@ from auth.db import init_pool, close_pool
 from auth.router import router as auth_router
 from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
-from auth.jwt_utils import decode_token
+from auth.jwt_utils import decode_token, get_current_user
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
 
@@ -74,10 +74,23 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 from auth.submission_router import router as submission_router
-app.include_router(auth_router,       prefix="/auth", tags=["auth"])
-app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
-app.include_router(document_router,   prefix="/api",  tags=["documents"])
-app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])
+from auth.certificate_router import router as certificate_router
+from auth.notification_router import router as notification_router
+app.include_router(auth_router,         prefix="/auth", tags=["auth"])
+app.include_router(admin_auth_router,   prefix="/auth", tags=["auth-admin"])
+app.include_router(document_router,     prefix="/api",  tags=["documents"])
+app.include_router(submission_router,   prefix="/api/submissions", tags=["submissions"])
+app.include_router(certificate_router,  prefix="/api/submissions", tags=["certificates"])
+app.include_router(notification_router, prefix="/api/notifications", tags=["notifications"])
+
+from supply_chain.supplier_router import router as supplier_router
+from supply_chain.material_router import router as material_router
+from supply_chain.process_router import router as process_router
+from supply_chain.batch_router import router as batch_router
+app.include_router(supplier_router,  prefix="/api/supply-chain", tags=["supply-chain"])
+app.include_router(material_router,  prefix="/api/supply-chain", tags=["supply-chain"])
+app.include_router(process_router,   prefix="/api/supply-chain", tags=["supply-chain"])
+app.include_router(batch_router,     prefix="/api/supply-chain", tags=["supply-chain"])
 
 rag = HalalRAG()
 
@@ -105,7 +118,13 @@ _SESSIONS_FILE = Path("data/admin_sessions.json")
 def _load_sessions() -> Dict[str, float]:
     try:
         if _SESSIONS_FILE.exists():
-            return _json.loads(_SESSIONS_FILE.read_text())
+            raw = _json.loads(_SESSIONS_FILE.read_text())
+            # Auto-clean expired sessions
+            now = time.time()
+            cleaned = {k: v for k, v in raw.items() if v > now}
+            if len(cleaned) != len(raw):
+                _SESSIONS_FILE.write_text(_json.dumps(cleaned))
+            return cleaned
     except Exception:
         pass
     return {}
@@ -184,16 +203,21 @@ def _load_template(doc_type: str) -> Optional[Dict]:
     _template_json_cache[doc_type] = (data, mtime)
     return data
 
-def _load_template_files_content(doc_type: str) -> str:
+def _load_template_files_content(doc_type: str, lang: str = "vi") -> str:
     from pipeline.evaluate import load_template_files_content
-    dir_path = TEMPLATE_FILES_DIR / doc_type
+    # Try language-specific dir first, fall back to root dir
+    lang_dir = TEMPLATE_FILES_DIR / doc_type / lang
+    root_dir = TEMPLATE_FILES_DIR / doc_type
+    dir_path = lang_dir if lang_dir.exists() and any(lang_dir.iterdir()) else root_dir
+
+    cache_key = f"{doc_type}_{lang}"
     mtime_sum = _dir_mtime_sum(dir_path)
-    cached = _template_files_cache.get(doc_type)
+    cached = _template_files_cache.get(cache_key)
     if cached and cached[1] == mtime_sum:
         return cached[0]
     content = load_template_files_content(dir_path)
-    _template_files_cache[doc_type] = (content, mtime_sum)
-    log.info(f"[cache] Template files re-extracted for {doc_type} ({len(content)} chars)")
+    _template_files_cache[cache_key] = (content, mtime_sum)
+    log.info(f"[cache] Template files re-extracted for {cache_key} ({len(content)} chars)")
     return content
 
 TOPIC_LIST = [
@@ -325,7 +349,7 @@ class TemplateConfig(BaseModel):
 # ── Admin endpoints ────────────────────────────────────────────────────────────
 
 @app.post("/admin/login")
-def admin_login(req: AdminLoginRequest):
+def admin_login(req: AdminLoginRequest, _: None = Depends(rate_limit_api)):
     if req.username != ADMIN_USERNAME or req.password != ADMIN_PASSWORD:
         raise HTTPException(401, "Sai tên đăng nhập hoặc mật khẩu")
     token = secrets.token_hex(32)
@@ -348,7 +372,8 @@ def admin_verify(request: Request):
         return {"valid": False}
 
 @app.get("/admin/doc-types")
-def list_doc_types():
+def list_doc_types(request: Request):
+    _require_admin(request)
     return {"doc_types": [{"id": k, "label": v} for k, v in HALAL_DOC_TYPES.items()]}
 
 @app.get("/admin/templates")
@@ -388,62 +413,87 @@ def save_template(doc_type: str, config: TemplateConfig, request: Request):
     return {"message": "Template saved", "doc_type": doc_type}
 
 @app.get("/admin/templates/{doc_type}/files")
-def list_template_files(doc_type: str, request: Request):
+def list_template_files(doc_type: str, request: Request, lang: str = ""):
+    """List reference files. If lang specified (vi/en), list from lang subfolder."""
     _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
-    dir_path = TEMPLATE_FILES_DIR / doc_type
+    if lang and lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ")
+
+    # If lang specified, list from subfolder; otherwise list all
+    if lang:
+        dir_path = TEMPLATE_FILES_DIR / doc_type / lang
+    else:
+        # Return both vi and en
+        result: Dict[str, list] = {"vi": [], "en": []}
+        for l in ("vi", "en"):
+            d = TEMPLATE_FILES_DIR / doc_type / l
+            if d.exists():
+                result[l] = [
+                    {"name": f.name, "size": f.stat().st_size,
+                     "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat()}
+                    for f in sorted(d.iterdir()) if f.is_file()
+                ]
+        # Also include legacy root files (not in vi/en subfolder)
+        root = TEMPLATE_FILES_DIR / doc_type
+        if root.exists():
+            legacy = [
+                {"name": f.name, "size": f.stat().st_size,
+                 "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat()}
+                for f in sorted(root.iterdir()) if f.is_file() and not f.name.endswith(("_vi.docx", "_en.docx"))
+            ]
+            if legacy:
+                result["legacy"] = legacy
+        return {"files_by_lang": result}
+
     if not dir_path.exists():
         return {"files": []}
     files = [
-        {"name": f.name, "size": f.stat().st_size, "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat()}
+        {"name": f.name, "size": f.stat().st_size,
+         "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat()}
         for f in sorted(dir_path.iterdir()) if f.is_file()
     ]
     return {"files": files}
 
 @app.post("/admin/templates/{doc_type}/files")
-async def upload_template_file(doc_type: str, request: Request, file: UploadFile = File(...)):
+async def upload_template_file(doc_type: str, request: Request, file: UploadFile = File(...), lang: str = Form("vi")):
+    """Upload reference file to a language subfolder."""
     _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
+    if lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ (vi hoặc en)")
     content = await validate_upload(file)
-    dir_path = TEMPLATE_FILES_DIR / doc_type
+    dir_path = TEMPLATE_FILES_DIR / doc_type / lang
     dir_path.mkdir(parents=True, exist_ok=True)
     safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in file.filename).strip()
     save_path = dir_path / safe_name
     if not save_path.resolve().is_relative_to(dir_path.resolve()):
         raise HTTPException(400, "Invalid file path")
     save_path.write_bytes(content)
-    _template_files_cache.pop(doc_type, None)
-    _append_revision(doc_type, {
-        "action": "upload",
-        "filename": safe_name,
-        "size": save_path.stat().st_size,
-        "timestamp": datetime.utcnow().isoformat(),
-    })
-    log.info(f"[admin] Template file uploaded: {doc_type}/{safe_name}")
-    return {"message": "File uploaded", "filename": safe_name, "doc_type": doc_type}
+    _template_files_cache.pop(f"{doc_type}_{lang}", None)
+    log.info(f"[admin] Ref file uploaded: {doc_type}/{lang}/{safe_name}")
+    return {"message": "File uploaded", "filename": safe_name, "lang": lang}
 
 @app.delete("/admin/templates/{doc_type}/files/{filename}")
-def delete_template_file(doc_type: str, filename: str, request: Request):
+def delete_template_file(doc_type: str, filename: str, request: Request, lang: str = "vi"):
+    """Delete reference file from a language subfolder."""
     _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
+    if lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ")
     safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in filename).strip()
-    file_path = TEMPLATE_FILES_DIR / doc_type / safe_name
-    base_dir = TEMPLATE_FILES_DIR / doc_type
+    base_dir = TEMPLATE_FILES_DIR / doc_type / lang
+    file_path = base_dir / safe_name
     if not file_path.resolve().is_relative_to(base_dir.resolve()):
         raise HTTPException(400, "Invalid file path")
     if not file_path.exists():
         raise HTTPException(404, "File không tồn tại")
     file_path.unlink()
-    _template_files_cache.pop(doc_type, None)
-    _append_revision(doc_type, {
-        "action": "delete",
-        "filename": safe_name,
-        "timestamp": datetime.utcnow().isoformat(),
-    })
-    log.info(f"[admin] Template file deleted: {doc_type}/{safe_name}")
+    _template_files_cache.pop(f"{doc_type}_{lang}", None)
+    log.info(f"[admin] Ref file deleted: {doc_type}/{lang}/{safe_name}")
     return {"message": "File deleted", "filename": safe_name}
 
 @app.get("/admin/templates/{doc_type}/revisions")
@@ -459,6 +509,213 @@ def get_template_revisions(doc_type: str, request: Request):
         return {"revisions": list(reversed(revisions))}
     except Exception:
         return {"revisions": []}
+
+@app.post("/admin/templates/{doc_type}/template-file")
+async def upload_template_file_lang(
+    doc_type: str, request: Request,
+    file: UploadFile = File(...),
+    lang: str = Form("vi"),
+):
+    """Upload a DOCX template for a specific language (vi/en)."""
+    _require_admin(request)
+    if doc_type not in HALAL_DOC_TYPES:
+        raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
+    if lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ (vi hoặc en)")
+    content = await validate_upload(file)
+    dir_path = TEMPLATE_FILES_DIR / doc_type
+    dir_path.mkdir(parents=True, exist_ok=True)
+    # Keep original filename for display, but save with convention name
+    original_name = file.filename or "template.docx"
+    save_name = f"{doc_type}_{lang}.docx"
+    save_path = dir_path / save_name
+    save_path.write_bytes(content)
+    _template_files_cache.pop(doc_type, None)
+    log.info(f"[admin] Template {lang.upper()} uploaded: {doc_type}/{save_name}")
+    return {"message": f"Template {lang.upper()} uploaded", "filename": save_name, "original_filename": original_name}
+
+
+@app.delete("/admin/templates/{doc_type}/template-file")
+def delete_template_file_lang(doc_type: str, request: Request, lang: str = "vi"):
+    """Delete a language-specific DOCX template."""
+    _require_admin(request)
+    if doc_type not in HALAL_DOC_TYPES:
+        raise HTTPException(404)
+    if lang not in ("vi", "en"):
+        raise HTTPException(400)
+    save_path = TEMPLATE_FILES_DIR / doc_type / f"{doc_type}_{lang}.docx"
+    if not save_path.exists():
+        raise HTTPException(404, f"Template {lang.upper()} chưa được upload")
+    save_path.unlink()
+    _template_files_cache.pop(doc_type, None)
+    return {"message": f"Template {lang.upper()} deleted"}
+
+
+@app.get("/admin/templates/{doc_type}/template-files")
+def list_template_files_lang(doc_type: str, request: Request):
+    """List language-specific templates for a doc_type."""
+    _require_admin(request)
+    if doc_type not in HALAL_DOC_TYPES:
+        raise HTTPException(404)
+    result = {}
+    for lang in ("vi", "en"):
+        f = TEMPLATE_FILES_DIR / doc_type / f"{doc_type}_{lang}.docx"
+        if f.exists():
+            result[lang] = {
+                "filename": f.name,
+                "size": f.stat().st_size,
+                "updated_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat(),
+            }
+    return {"templates": result}
+
+
+# ── Public template endpoints (for document creation) ─────────────────────────
+
+def _find_template_file(doc_type: str, lang: str) -> Optional[Path]:
+    """Find template DOCX for a doc_type + language (vi/en)."""
+    dir_path = TEMPLATE_FILES_DIR / doc_type
+    if not dir_path.exists():
+        return None
+    # Priority: exact lang suffix → any docx
+    for f in dir_path.iterdir():
+        if f.suffix.lower() == ".docx" and f.stem.endswith(f"_{lang}"):
+            return f
+    return None
+
+
+@app.get("/templates/available")
+def list_available_templates():
+    """List doc_types that have template files, with language availability."""
+    result = []
+    for doc_type, label in HALAL_DOC_TYPES.items():
+        dir_path = TEMPLATE_FILES_DIR / doc_type
+        if not dir_path.exists():
+            continue
+        vi_file = _find_template_file(doc_type, "vi")
+        en_file = _find_template_file(doc_type, "en")
+        if vi_file or en_file:
+            result.append({
+                "doc_type": doc_type,
+                "label": label,
+                "has_vi": vi_file is not None,
+                "has_en": en_file is not None,
+                "vi_size": vi_file.stat().st_size if vi_file else None,
+                "en_size": en_file.stat().st_size if en_file else None,
+            })
+    return {"templates": result}
+
+
+@app.get("/templates/{doc_type}/download")
+def download_template(
+    doc_type: str,
+    lang: str = "vi",
+    _: dict = Depends(get_current_user),
+):
+    """Download template DOCX for a specific language."""
+    if doc_type not in HALAL_DOC_TYPES:
+        raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
+    if lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ (vi hoặc en)")
+    template = _find_template_file(doc_type, lang)
+    if not template:
+        raise HTTPException(404, f"Template {lang.upper()} chưa được upload cho {doc_type}")
+    return FileResponse(
+        path=str(template),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=template.name,
+    )
+
+
+# ── Placeholder management (admin) ────────────────────────────────────────────
+
+@app.get("/admin/placeholders")
+async def list_placeholders(request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM custom_placeholders ORDER BY is_system DESC, created_at")
+    return {"placeholders": [dict(r) | {"id": str(r["id"])} for r in rows]}
+
+
+@app.post("/admin/placeholders")
+async def create_placeholder(request: Request):
+    _require_admin(request)
+    body = await request.json()
+    key = body.get("key", "").strip().lower().replace(" ", "_")
+    label = body.get("label", "").strip()
+    description = body.get("description", "").strip()
+    default_value = body.get("default_value", "").strip()
+    source = body.get("source", "").strip()
+
+    if not key or not label:
+        raise HTTPException(400, "Key và label là bắt buộc")
+
+    import re
+    if not re.match(r'^[a-z][a-z0-9_]*$', key):
+        raise HTTPException(400, "Key chỉ chứa chữ thường, số và dấu gạch dưới, bắt đầu bằng chữ")
+
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchval("SELECT COUNT(*) FROM custom_placeholders WHERE key=$1", key)
+        if existing:
+            raise HTTPException(409, f"Placeholder '{key}' đã tồn tại")
+        row = await conn.fetchrow(
+            "INSERT INTO custom_placeholders (key, label, description, default_value, source) VALUES ($1,$2,$3,$4,$5) RETURNING id",
+            key, label, description or None, default_value or None, source or None)
+
+    return {"id": str(row["id"]), "key": key, "message": f"Đã tạo placeholder {{{{​{key}}}}}"}
+
+
+@app.put("/admin/placeholders/{key}")
+async def update_placeholder(key: str, request: Request):
+    _require_admin(request)
+    body = await request.json()
+    label = body.get("label", "").strip()
+    description = body.get("description", "").strip()
+    default_value = body.get("default_value", "").strip()
+    source = body.get("source", "").strip()
+
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("""
+            UPDATE custom_placeholders
+            SET label = COALESCE(NULLIF($1, ''), label),
+                description = $2,
+                default_value = $3,
+                source = $4
+            WHERE key = $5 AND is_system = false
+        """, label, description or None, default_value or None, source or None, key)
+    if result == "UPDATE 0":
+        raise HTTPException(400, "Không thể sửa placeholder hệ thống hoặc không tồn tại")
+    return {"message": f"Đã cập nhật placeholder {key}"}
+
+
+@app.delete("/admin/placeholders/{key}")
+async def delete_placeholder(key: str, request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            "DELETE FROM custom_placeholders WHERE key=$1 AND is_system=false", key)
+    if result == "DELETE 0":
+        raise HTTPException(400, "Không thể xoá placeholder hệ thống hoặc không tồn tại")
+    return {"message": f"Đã xoá placeholder {key}"}
+
+
+# ── Public: get all placeholders (for template creation) ─────────────────────
+
+@app.get("/placeholders")
+async def get_all_placeholders():
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT key, label, description, default_value, source, is_system FROM custom_placeholders ORDER BY is_system DESC, created_at")
+    return {"placeholders": [dict(r) for r in rows]}
+
 
 # ── Admin user management ──────────────────────────────────────────────────────
 
@@ -734,11 +991,17 @@ async def evaluate_doc(
         except Exception:
             pass  # treat as anonymous
 
+    eval_lang = lang or "vi"
     forced_doc_type   = doc_type if doc_type and doc_type in HALAL_DOC_TYPES else None
     forced_doc_label  = HALAL_DOC_TYPES.get(forced_doc_type, "") if forced_doc_type else ""
     template_criteria         = _load_template(forced_doc_type) if forced_doc_type else None
-    template_files_content    = _load_template_files_content(forced_doc_type) if forced_doc_type else ""
-    template_files_dir        = (TEMPLATE_FILES_DIR / forced_doc_type) if forced_doc_type else None
+    template_files_content    = _load_template_files_content(forced_doc_type, eval_lang) if forced_doc_type else ""
+    # Use lang-specific dir if exists, fallback to root
+    template_files_dir        = None
+    if forced_doc_type:
+        lang_dir = TEMPLATE_FILES_DIR / forced_doc_type / eval_lang
+        root_dir = TEMPLATE_FILES_DIR / forced_doc_type
+        template_files_dir = lang_dir if lang_dir.exists() else root_dir
 
     import tempfile, uuid as _uuid
     file_bytes = content

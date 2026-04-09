@@ -52,6 +52,7 @@ class ProviderRegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    role: Optional[str] = None  # 'business' or 'provider' — for per-role email lookup
 
 
 class InviteMemberRequest(BaseModel):
@@ -74,6 +75,24 @@ class UserProfile(BaseModel):
     is_owner: bool
     tenant_id: Optional[str]
     member_count: Optional[int] = None   # filled for business owners
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    representative_name: Optional[str] = None
+    permissions: Optional[dict] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class CompanyProfileUpdate(BaseModel):
+    company_name: Optional[str] = None
+    representative_name: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    manager_name: Optional[str] = None
 
 
 class RefreshRequest(BaseModel):

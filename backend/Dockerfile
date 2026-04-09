@@ -27,6 +27,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
 COPY pipeline/ ./pipeline/
 COPY auth/ ./auth/
 COPY templates_docx/ ./templates_docx/
+COPY supply_chain/ ./supply_chain/
 COPY alembic.ini .
 COPY alembic/ ./alembic/
 COPY app.py .

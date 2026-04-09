@@ -1,8 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #111725;
-  --foreground: #ffffff;
+  --background: #FAFCF9;
+  --foreground: #1A2332;
+  --surface: #FFFFFF;
+  --surface-alt: #F0F7F4;
+  --primary: #087653;
+  --primary-light: #E6F5EE;
+  --primary-dark: #065E43;
+  --text-primary: #1A2332;
+  --text-body: #374151;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border: #E2E8F0;
+  --sidebar: #1E293B;
+
+  /* ── Animation tokens ── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 0.15s;
+  --duration-normal: 0.25s;
+  --duration-slow: 0.4s;
+  --duration-page: 0.5s;
 }
 
 @theme inline {
@@ -12,15 +33,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 html {
-  font-size: 17px; /* default 16px → 17px, tăng ~6% toàn bộ app */
+  font-size: 17px;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -29,85 +44,434 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Override Tailwind text-xs: 12px → 13.6px (0.8rem * 17px) */
 .text-xs { font-size: 0.8rem !important; }
-/* Override Tailwind text-sm: 14px → 15.3px (0.9rem * 17px) */
 .text-sm { font-size: 0.9rem !important; }
 
-/* ── Admin panel animations ── */
-/* Document card hover — border glow instead of scale */
-.doc-card-hover { transition: border-color 0.2s, box-shadow 0.2s; }
-.doc-card-hover:hover { border-color: #2d5a8f !important; box-shadow: 0 0 12px rgba(45,90,143,0.2); }
+/* ── Global smooth rendering ── */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-@keyframes fadeSlideIn {
+/* ═══════════════════════════════════════════════════
+   1. INTERACTIVE ELEMENTS — buttons, inputs, cards
+   ═══════════════════════════════════════════════════ */
+
+/* Buttons — universal spring feel */
+button, a[class*="rounded"] {
+  transition: transform var(--duration-fast) var(--ease-spring),
+              box-shadow 0.2s ease,
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              opacity 0.2s ease;
+}
+button:active:not(:disabled) { transform: scale(0.97); }
+
+/* Input fields — smooth focus glow */
+input, textarea, select {
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(8,118,83,0.4) !important;
+  box-shadow: 0 0 0 3px rgba(8,118,83,0.08);
+  outline: none;
+}
+
+/* Card hover system */
+.doc-card-hover {
+  transition: border-color var(--duration-normal) ease,
+              box-shadow var(--duration-normal) ease,
+              transform 0.2s var(--ease-spring);
+}
+.doc-card-hover:hover {
+  border-color: rgba(8,118,83,0.3) !important;
+  box-shadow: 0 4px 20px rgba(8,118,83,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  transform: translateY(-2px);
+}
+.doc-card-hover:active {
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════
+   2. PAGE & SECTION ENTRANCE
+   ═══════════════════════════════════════════════════ */
+
+/* Page-level fade in */
+@keyframes pageEnter {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+main, [data-page] {
+  animation: pageEnter var(--duration-slow) var(--ease-out-expo) forwards;
 }
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
+
+/* Section stagger — apply to direct children */
+@keyframes sectionEnter {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes slideRight {
-  from { transform: translateX(-6px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
+.animate-section {
+  opacity: 0;
+  animation: sectionEnter 0.5s var(--ease-out-expo) forwards;
 }
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
-  50%       { box-shadow: 0 0 16px 4px rgba(34,197,94,0.25); }
+.animate-section:nth-child(1) { animation-delay: 0.05s; }
+.animate-section:nth-child(2) { animation-delay: 0.12s; }
+.animate-section:nth-child(3) { animation-delay: 0.19s; }
+.animate-section:nth-child(4) { animation-delay: 0.26s; }
+.animate-section:nth-child(5) { animation-delay: 0.33s; }
+.animate-section:nth-child(6) { animation-delay: 0.40s; }
+
+/* ═══════════════════════════════════════════════════
+   3. LIST / GRID ITEM STAGGER
+   ═══════════════════════════════════════════════════ */
+
+@keyframes listItemEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+.animate-list-item {
+  opacity: 0;
+  animation: listItemEnter 0.35s var(--ease-out-expo) both;
 }
+/* Stagger delays via CSS custom property */
+.stagger-1  { animation-delay: 0.03s; }
+.stagger-2  { animation-delay: 0.06s; }
+.stagger-3  { animation-delay: 0.09s; }
+.stagger-4  { animation-delay: 0.12s; }
+.stagger-5  { animation-delay: 0.15s; }
+.stagger-6  { animation-delay: 0.18s; }
+.stagger-7  { animation-delay: 0.21s; }
+.stagger-8  { animation-delay: 0.24s; }
+.stagger-9  { animation-delay: 0.27s; }
+.stagger-10 { animation-delay: 0.30s; }
+.stagger-11 { animation-delay: 0.33s; }
+.stagger-12 { animation-delay: 0.36s; }
+
+/* Row appear — horizontal slide */
 @keyframes rowAppear {
   from { opacity: 0; transform: translateX(-8px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-
-.admin-tab-enter {
-  animation: fadeSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.admin-fade-in {
-  animation: fadeIn 0.2s ease forwards;
-}
-.admin-scale-in {
-  animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.admin-slide-right {
-  animation: slideRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.admin-pulse-glow {
-  animation: pulseGlow 1.5s ease-in-out 2;
-}
-.admin-row-appear {
-  animation: rowAppear 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-row {
+  opacity: 0;
+  animation: rowAppear 0.3s var(--ease-out-expo) both;
 }
 
-/* Shimmer loading skeleton */
-.admin-shimmer {
-  background: linear-gradient(90deg, #1a2e4a 25%, #1e3a5f 50%, #1a2e4a 75%);
+/* ═══════════════════════════════════════════════════
+   4. MODAL SYSTEM
+   ═══════════════════════════════════════════════════ */
+
+@keyframes modalOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modalOverlayOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes modalContentIn {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes modalContentOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.95) translateY(8px); }
+}
+.animate-modal-overlay {
+  animation: modalOverlayIn 0.2s ease forwards;
+}
+.animate-modal-content {
+  animation: modalContentIn 0.3s var(--ease-out-expo) forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   5. DROPDOWN / POPOVER
+   ═══════════════════════════════════════════════════ */
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dropdownUp {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-dropdown {
+  animation: dropdownIn 0.2s var(--ease-out-expo) forwards;
+}
+.animate-dropdown-up {
+  animation: dropdownUp 0.2s var(--ease-out-expo) forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   6. TAB SWITCH
+   ═══════════════════════════════════════════════════ */
+
+@keyframes tabContentIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-tab-content {
+  animation: tabContentIn 0.3s var(--ease-out-expo) forwards;
+}
+
+/* Tab indicator slide */
+.tab-indicator {
+  transition: left 0.3s var(--ease-out-expo),
+              width 0.3s var(--ease-out-expo);
+}
+
+/* ═══════════════════════════════════════════════════
+   7. TOAST / NOTIFICATION
+   ═══════════════════════════════════════════════════ */
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-10px); }
+}
+.animate-toast {
+  animation: toastIn 0.35s var(--ease-spring) forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   8. BADGE / CHIP / TAG
+   ═══════════════════════════════════════════════════ */
+
+@keyframes chipPop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-chip {
+  animation: chipPop 0.3s var(--ease-spring) forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   9. SCORE / PROGRESS / CHARTS
+   ═══════════════════════════════════════════════════ */
+
+@keyframes scoreFill {
+  from { stroke-dasharray: 0 100.5; }
+}
+.animate-score-fill {
+  animation: scoreFill 1s var(--ease-out-expo) forwards;
+}
+
+@keyframes progressFill {
+  from { width: 0; }
+}
+.animate-progress {
+  animation: progressFill 0.8s var(--ease-out-expo) forwards;
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-count {
+  animation: countUp 0.5s var(--ease-out-expo) forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   10. SKELETON / LOADING
+   ═══════════════════════════════════════════════════ */
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer, .admin-shimmer {
+  background: linear-gradient(90deg, #E2E8F0 25%, #F0F7F4 50%, #E2E8F0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
+  border-radius: 6px;
 }
 
-/* Custom scrollbar */
+/* Skeleton block helpers */
+.skeleton-text { height: 14px; border-radius: 4px; }
+.skeleton-title { height: 20px; width: 60%; border-radius: 4px; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.skeleton-card {
+  height: 80px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+/* Spinner */
+@keyframes spin-smooth {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-smooth {
+  animation: spin-smooth 0.8s linear infinite;
+}
+
+/* Pulse dot (loading indicator) */
+@keyframes pulseDot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.animate-pulse-dot {
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+.animate-pulse-dot:nth-child(2) { animation-delay: 0.2s; }
+.animate-pulse-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ═══════════════════════════════════════════════════
+   11. SIDEBAR / NAVIGATION
+   ═══════════════════════════════════════════════════ */
+
+/* Nav item entrance stagger */
+@keyframes navItemIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-nav-item {
+  opacity: 0;
+  animation: navItemIn 0.3s var(--ease-out-expo) both;
+}
+
+/* Active nav indicator */
+@keyframes navActiveIn {
+  from { width: 0; opacity: 0; }
+  to   { width: 3px; opacity: 1; }
+}
+.nav-active-bar {
+  animation: navActiveIn 0.3s var(--ease-spring) forwards;
+}
+
+/* Mobile overlay */
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-overlay {
+  animation: overlayFadeIn 0.25s ease forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   12. MICRO-INTERACTIONS
+   ═══════════════════════════════════════════════════ */
+
+/* Floating action hint */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float { animation: float-gentle 3s ease-in-out infinite; }
+
+/* Pulse glow (attention) */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(8,118,83,0); }
+  50%      { box-shadow: 0 0 16px 4px rgba(8,118,83,0.15); }
+}
+.animate-pulse-glow { animation: pulseGlow 1.5s ease-in-out 2; }
+
+/* Checkmark pop */
+@keyframes checkPop {
+  0%   { transform: scale(0); opacity: 0; }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-check { animation: checkPop 0.4s var(--ease-spring) forwards; }
+
+/* Shake (error feedback) */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+.animate-shake { animation: shake 0.4s ease; }
+
+/* Fade out */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.animate-fade-out { animation: fadeOut 0.3s ease forwards; }
+
+/* Scale in */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scaleIn 0.3s var(--ease-out-expo) forwards; }
+
+/* Slide right */
+@keyframes slideRight {
+  from { transform: translateX(-8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* Fade slide in (generic) */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════
+   13. ADMIN PANEL (legacy compat)
+   ═══════════════════════════════════════════════════ */
+
+.admin-tab-enter { animation: fadeSlideIn 0.28s var(--ease-out-expo) forwards; }
+.admin-fade-in { animation: fadeSlideIn 0.2s ease forwards; }
+.admin-scale-in { animation: scaleIn 0.22s var(--ease-out-expo) forwards; }
+.admin-slide-right { animation: slideRight 0.2s var(--ease-out-expo) forwards; }
+.admin-pulse-glow { animation: pulseGlow 1.5s ease-in-out 2; }
+.admin-row-appear { animation: rowAppear 0.22s var(--ease-out-expo) forwards; }
+
+/* ═══════════════════════════════════════════════════
+   14. TOGGLE / SWITCH
+   ═══════════════════════════════════════════════════ */
+
+.toggle-switch {
+  transition: background-color 0.25s ease;
+}
+.toggle-knob {
+  transition: transform 0.25s var(--ease-spring),
+              box-shadow 0.25s ease;
+}
+
+/* ═══════════════════════════════════════════════════
+   15. SCROLLBAR
+   ═══════════════════════════════════════════════════ */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
 .admin-scroll::-webkit-scrollbar { width: 4px; }
 .admin-scroll::-webkit-scrollbar-track { background: transparent; }
-.admin-scroll::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
-.admin-scroll::-webkit-scrollbar-thumb:hover { background: #2d5a8f; }
+.admin-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
+.admin-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-/* Glow border on focus */
-.admin-input:focus {
-  border-color: rgba(59,130,246,0.5) !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+/* ═══════════════════════════════════════════════════
+   16. FOCUS & SELECTION
+   ═══════════════════════════════════════════════════ */
+
+.admin-input:focus, .admin-textarea:focus {
+  border-color: rgba(8,118,83,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(8,118,83,0.1);
   outline: none;
 }
-.admin-textarea:focus {
-  border-color: rgba(59,130,246,0.5) !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-  outline: none;
+
+::selection { background: rgba(8,118,83,0.15); color: #065E43; }
+
+/* ═══════════════════════════════════════════════════
+   17. EMPTY STATE
+   ═══════════════════════════════════════════════════ */
+
+@keyframes emptyFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.02); }
+}
+.animate-empty-icon {
+  animation: emptyFloat 4s ease-in-out infinite;
 }

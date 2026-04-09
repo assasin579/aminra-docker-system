@@ -15,7 +15,7 @@ const AdminAuthContext = createContext<AdminAuthState>({
 });
 
 const TOKEN_KEY = 'aminra_admin_token';
-const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API = '/api';
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
@@ -43,6 +43,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const { token: t } = await res.json();
     setToken(t);
     localStorage.setItem(TOKEN_KEY, t);
+    // Clear user session — admin and user sessions must not coexist
+    localStorage.removeItem('aminra_user_token');
+    localStorage.removeItem('aminra_user_profile');
+    sessionStorage.removeItem('aminra_user_token');
+    sessionStorage.removeItem('aminra_user_profile');
+    document.cookie = 'aminra_session=; path=/; max-age=0';
   }, []);
 
   const logout = useCallback(() => {

@@ -118,7 +118,7 @@ CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Seed admin (password: admin123!)
+-- Seed admin account (change password after first login)
 INSERT INTO users (email, password_hash, role, company_name, status, is_owner, tenant_id)
 VALUES (
     'admin@aminra.com',

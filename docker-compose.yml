@@ -46,6 +46,30 @@ services:
       aminra-backend:
         condition: service_healthy
 
+  # Dev mode frontend — hot reload, no rebuild needed
+  # Start with: docker compose up -d aminra-frontend-dev
+  aminra-frontend-dev:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install --legacy-peer-deps && npm run dev"
+    ports:
+      - "3100:3000"
+    environment:
+      - NODE_ENV=development
+      - BACKEND_URL=http://aminra-backend:8000
+    volumes:
+      - ./frontend/aminra-web:/app
+      - /app/node_modules
+    tmpfs:
+      - /app/.next:exec
+    networks:
+      - app-network
+    depends_on:
+      aminra-backend:
+        condition: service_healthy
+    profiles:
+      - dev
+
   aminra-backend:
     build:
       context: ./backend
@@ -58,7 +82,8 @@ services:
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_HOURS=8
       - JWT_REFRESH_DAYS=7
-      - CORS_ORIGINS=https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
+      - CORS_ORIGINS=https://dev-web.silvergem.org,https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
+      - FRONTEND_URL=https://dev-web.silvergem.org
       - SENTRY_DSN=${SENTRY_DSN:-}
       - ENVIRONMENT=production
       # Secrets are injected via /vault/secrets/env.sh (see entrypoint.sh)

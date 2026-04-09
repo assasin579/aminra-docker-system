@@ -234,13 +234,13 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Tạo tài liệu cải tiến bằng AI</h3>
+              <h3 className="text-sm font-bold" style={{ color: '#1A2332' }}>Tạo tài liệu cải tiến bằng AI</h3>
               <p className="text-xs mt-0.5" style={{ color: '#6366f1' }}>Tự động khắc phục 100% các tiêu chí chưa đạt</p>
             </div>
           </div>
-          <p className="text-xs leading-relaxed" style={{ color: '#94a3b8' }}>
-            AI sẽ phân tích tài liệu gốc <strong className="text-white">{report.filename}</strong>,
-            đối chiếu với <strong className="text-white">{report.doc_type_label}</strong> template,
+          <p className="text-xs leading-relaxed" style={{ color: '#5B6B7D' }}>
+            AI sẽ phân tích tài liệu gốc <strong style={{ color: '#1A2332' }}>{report.filename}</strong>,
+            đối chiếu với <strong style={{ color: '#1A2332' }}>{report.doc_type_label}</strong> template,
             sau đó tạo ra phiên bản mới đáp ứng đầy đủ tiêu chuẩn Halal JAKIM/HDC.
           </p>
 
@@ -248,11 +248,11 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
             {[
               { label: 'Vấn đề cần sửa', value: report.issues.length, color: '#f87171' },
               { label: 'Điểm hiện tại', value: `${report.compliance_score}%`, color: '#fbbf24' },
-              { label: 'Mục tiêu', value: '100%', color: '#4ade80' },
+              { label: 'Mục tiêu', value: '100%', color: '#087653' },
             ].map(s => (
-              <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
+              <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
                 <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#475569' }}>{s.label}</div>
+                <div className="text-xs mt-0.5" style={{ color: '#5B6B7D' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -290,18 +290,18 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
           <div>
             <div className="grid grid-flow-col items-center gap-2 justify-start">
               <div className="w-2.5 h-2.5 rounded-full bg-indigo-400" style={{ animation: 'pulse 1.2s ease-in-out infinite' }} />
-              <span className="text-sm font-semibold text-white">AI đang soạn thảo tài liệu...</span>
+              <span className="text-sm font-semibold" style={{ color: '#1A2332' }}>AI đang soạn thảo tài liệu...</span>
             </div>
-            <p className="text-xs mt-1" style={{ color: '#475569' }}>{wordCount} từ đã tạo</p>
+            <p className="text-xs mt-1" style={{ color: '#5B6B7D' }}>{wordCount} từ đã tạo</p>
           </div>
           <button onClick={() => { abortRef.current?.abort(); update({ phase: 'idle' }); }}
             className="text-xs px-3 py-1.5 rounded-lg transition-colors"
-            style={{ border: '1px solid #1e3a5f', color: '#64748b' }}>
+            style={{ border: '1px solid #E2E8F0', color: '#5F6F80' }}>
             Huỷ
           </button>
         </div>
         <div className="rounded-xl p-4 overflow-y-auto font-mono text-xs leading-relaxed"
-          style={{ maxHeight: '60vh', background: '#060d1a', border: '1px solid #1e3a5f', color: '#94a3b8', whiteSpace: 'pre-wrap' }}>
+          style={{ maxHeight: '60vh', background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#3D4F5F', whiteSpace: 'pre-wrap' }}>
           {genText}
           <span className="inline-block w-0.5 h-4 bg-indigo-400 ml-0.5 align-middle"
             style={{ animation: 'blink 0.8s ease-in-out infinite' }} />
@@ -325,8 +325,8 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
               className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
               style={{
                 background: view === v.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-                color: view === v.id ? '#818cf8' : '#64748b',
-                border: view === v.id ? '1px solid rgba(99,102,241,0.3)' : '1px solid #1e3a5f',
+                color: view === v.id ? '#818cf8' : '#5F6F80',
+                border: view === v.id ? '1px solid rgba(99,102,241,0.3)' : '1px solid #E2E8F0',
               }}>
               <span className="mr-1">{v.icon}</span>{v.label}
             </button>
@@ -336,7 +336,7 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
         <div className="grid grid-flow-col gap-2">
           <button onClick={handleExportDocx} disabled={!!exporting}
             className="grid items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
-            style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(37,99,235,0.1)', color: '#60a5fa', border: '1px solid rgba(37,99,235,0.25)', opacity: exporting ? 0.5 : 1 }}>
+            style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(8,118,83,0.08)', color: '#087653', border: '1px solid rgba(8,118,83,0.2)', opacity: exporting ? 0.5 : 1 }}>
             {exporting === 'docx'
               ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
               : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>}
@@ -352,7 +352,7 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
           </button>
           <button onClick={() => { onStateChange(INITIAL_GENERATE_STATE); }}
             className="px-3 py-1.5 rounded-lg text-xs transition-colors"
-            style={{ border: '1px solid #1e3a5f', color: '#64748b' }}>
+            style={{ border: '1px solid #E2E8F0', color: '#5F6F80' }}>
             Tạo lại
           </button>
         </div>
@@ -364,20 +364,20 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
           {/* Legend + stats */}
           <div className="grid items-center gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
             <div className="grid grid-flow-col items-center gap-3 justify-start text-xs">
-              <span className="px-2.5 py-1 rounded" style={{ background: 'rgba(34,197,94,0.25)', color: '#86efac' }}>
+              <span className="px-2.5 py-1 rounded" style={{ background: 'rgba(8,118,83,0.12)', color: '#087653' }}>
                 Nội dung mới / sửa đổi
               </span>
               {stats.deletedLines > 0 && (
-                <span className="px-2.5 py-1 rounded" style={{ background: 'rgba(239,68,68,0.2)', color: '#fca5a5', textDecoration: 'line-through' }}>
+                <span className="px-2.5 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', textDecoration: 'line-through' }}>
                   Đã xoá
                 </span>
               )}
-              <span style={{ color: '#475569' }}>
+              <span style={{ color: '#5B6B7D' }}>
                 {stats.addedLines} dòng mới · {stats.sameLines} dòng giữ nguyên
                 {stats.deletedLines > 0 && ` · ${stats.deletedLines} dòng xoá`}
               </span>
             </div>
-            <label className="grid grid-flow-col items-center gap-1.5 text-xs cursor-pointer" style={{ color: '#64748b' }}>
+            <label className="grid grid-flow-col items-center gap-1.5 text-xs cursor-pointer" style={{ color: '#5F6F80' }}>
               <input type="checkbox" checked={onlyChanges} onChange={e => setOnlyChanges(e.target.checked)}
                 className="rounded" />
               Chỉ hiện thay đổi
@@ -391,20 +391,20 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
           )}
 
           {/* Diff content */}
-          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e3a5f' }}>
+          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
             <div className="px-5 py-3 text-xs"
-              style={{ background: '#0f1e35', borderBottom: '1px solid #1e3a5f', color: '#94a3b8' }}>
-              <strong className="text-white">{report.filename}</strong> → <strong className="text-white">{report.doc_type_label}</strong> (cải tiến)
+              style={{ background: '#F0F7F4', borderBottom: '1px solid #E2E8F0', color: '#5B6B7D' }}>
+              <strong style={{ color: '#1A2332' }}>{report.filename}</strong> → <strong style={{ color: '#1A2332' }}>{report.doc_type_label}</strong> (cải tiến)
             </div>
 
             <div className="overflow-y-auto text-sm leading-[1.8]"
-              style={{ maxHeight: 'calc(100vh - 340px)', background: '#0a1628' }}>
+              style={{ maxHeight: 'calc(100vh - 340px)', background: '#FAFCF9' }}>
               {diffSegments.map((seg, i) => {
                 // ── Unchanged ──
                 if (seg.type === 'same') {
                   if (onlyChanges && seg.text.trim()) return null;
                   return (
-                    <div key={i} className="px-5 py-0.5" style={{ whiteSpace: 'pre-wrap', color: '#64748b' }}>
+                    <div key={i} className="px-5 py-0.5" style={{ whiteSpace: 'pre-wrap', color: '#5F6F80' }}>
                       {seg.text}
                     </div>
                   );
@@ -414,10 +414,10 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
                 if (seg.type === 'del') {
                   return (
                     <div key={i} className="px-5 py-2 my-1 rounded-lg mx-3"
-                      style={{ background: 'rgba(239,68,68,0.1)', borderLeft: '3px solid #ef4444' }}>
+                      style={{ background: 'rgba(239,68,68,0.06)', borderLeft: '3px solid #ef4444' }}>
                       <div className="text-xs font-medium mb-1" style={{ color: '#f87171' }}>Đã xoá khỏi tài liệu gốc:</div>
                       <div style={{
-                        color: '#fca5a5', textDecoration: 'line-through',
+                        color: '#ef4444', textDecoration: 'line-through',
                         textDecorationColor: 'rgba(239,68,68,0.4)', whiteSpace: 'pre-wrap', opacity: 0.7,
                       }}>
                         {seg.text}
@@ -429,7 +429,7 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
                 // ── New / modified content ──
                 return (
                   <div key={i} className="px-5 py-0.5"
-                    style={{ background: 'rgba(34,197,94,0.1)', borderLeft: '3px solid #22c55e', whiteSpace: 'pre-wrap', color: '#d1fae5' }}>
+                    style={{ background: 'rgba(8,118,83,0.06)', borderLeft: '3px solid #087653', whiteSpace: 'pre-wrap', color: '#1A2332' }}>
                     {seg.text}
                   </div>
                 );
@@ -442,7 +442,7 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
       {/* Edit view */}
       {view === 'edit' && (
         <div className="space-y-3">
-          <p className="text-xs" style={{ color: '#475569' }}>
+          <p className="text-xs" style={{ color: '#5B6B7D' }}>
             Chỉnh sửa trực tiếp tài liệu bên dưới. Chuyển sang tab "So sánh" để xem thay đổi.
           </p>
           <textarea
@@ -450,12 +450,12 @@ export default function GenerateDocTab({ report, extractedText, token, persisted
             onChange={e => update({ editContent: e.target.value })}
             className="w-full rounded-xl p-4 text-sm leading-relaxed outline-none resize-none font-mono"
             style={{
-              background: '#060d1a', border: '1px solid #1e3a5f', color: '#e2e8f0',
+              background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332',
               minHeight: '60vh',
             }}
             spellCheck={false}
           />
-          <p className="text-xs" style={{ color: '#334155' }}>
+          <p className="text-xs" style={{ color: '#94A3B8' }}>
             {editContent.split(/\s+/).filter(Boolean).length} từ · {editContent.split('\n').length} dòng
           </p>
         </div>

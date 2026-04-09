@@ -14,6 +14,15 @@ export interface UserProfile {
   is_owner: boolean;
   tenant_id: string | null;
   member_count?: number | null;
+  address?: string | null;
+  phone?: string | null;
+  representative_name?: string | null;
+  permissions?: {
+    can_edit: boolean;
+    can_delete: boolean;
+    can_approve: boolean;
+    can_upload: boolean;
+  };
 }
 
 interface UserAuthState {
@@ -34,11 +43,11 @@ const UserAuthContext = createContext<UserAuthState>({
 const TOKEN_KEY   = 'aminra_user_token';
 const PROFILE_KEY = 'aminra_user_profile';
 
-async function apiLogin(email: string, password: string) {
+async function apiLogin(email: string, password: string, role?: string) {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, role }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -52,59 +61,67 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]     = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore from localStorage and verify
+  // Restore from localStorage OR sessionStorage and verify
   useEffect(() => {
-    const storedToken   = localStorage.getItem(TOKEN_KEY);
-    const storedProfile = localStorage.getItem(PROFILE_KEY);
+    const storedToken   = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    const storedProfile = localStorage.getItem(PROFILE_KEY) || sessionStorage.getItem(PROFILE_KEY);
     if (!storedToken || !storedProfile) { setLoading(false); return; }
 
-    // Optimistic restore
     setToken(storedToken);
     setUser(JSON.parse(storedProfile));
 
-    // Verify token is still valid
     fetch('/api/auth/me', { headers: { Authorization: `Bearer ${storedToken}` } })
       .then(r => r.ok ? r.json() : null)
       .then(profile => {
         if (profile) {
           setUser(profile);
-          localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+          // Update whichever storage has it
+          if (localStorage.getItem(TOKEN_KEY)) localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+          else sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
         } else {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(PROFILE_KEY);
-          setToken(null);
-          setUser(null);
+          localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(PROFILE_KEY);
+          sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(PROFILE_KEY);
+          setToken(null); setUser(null);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const _saveSession = useCallback((t: string, u: UserProfile) => {
+  const _saveSession = useCallback((t: string, u: UserProfile, remember = true) => {
     setToken(t);
     setUser(u);
-    localStorage.setItem(TOKEN_KEY, t);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(u));
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem(TOKEN_KEY, t);
+    storage.setItem(PROFILE_KEY, JSON.stringify(u));
+    // Clear the other storage
+    const other = remember ? sessionStorage : localStorage;
+    other.removeItem(TOKEN_KEY);
+    other.removeItem(PROFILE_KEY);
+    // Clear admin session — user and admin sessions must not coexist
+    localStorage.removeItem('aminra_admin_token');
+    // Set cookie for middleware redirect check
+    document.cookie = 'aminra_session=1; path=/; max-age=31536000; SameSite=Lax';
   }, []);
 
-  const loginBusiness = useCallback(async (email: string, password: string) => {
-    const { access_token, user: u } = await apiLogin(email, password);
+  const loginBusiness = useCallback(async (email: string, password: string, remember = true) => {
+    const { access_token, user: u } = await apiLogin(email, password, 'business');
     if (u.role !== 'business') throw new Error('Tài khoản không phải doanh nghiệp');
-    _saveSession(access_token, u);
+    _saveSession(access_token, u, remember);
   }, [_saveSession]);
 
-  const loginProvider = useCallback(async (email: string, password: string) => {
-    const { access_token, user: u } = await apiLogin(email, password);
+  const loginProvider = useCallback(async (email: string, password: string, remember = true) => {
+    const { access_token, user: u } = await apiLogin(email, password, 'provider');
     if (u.role !== 'provider') throw new Error('Tài khoản không phải tổ chức');
-    _saveSession(access_token, u);
+    _saveSession(access_token, u, remember);
   }, [_saveSession]);
 
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-    // Clear all session-scoped data (evaluation results, etc.)
+    localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(PROFILE_KEY);
+    sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(PROFILE_KEY);
+    document.cookie = 'aminra_session=; path=/; max-age=0';
     try { sessionStorage.clear(); } catch {}
   }, []);
 

@@ -15,7 +15,7 @@ log = logging.getLogger("mukjizat.evaluate")
 
 OPENROUTER_API_KEY  = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL",    "deepseek/deepseek-chat")
+OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL",    "google/gemini-2.0-flash-001")
 
 DEEPSEEK_API_KEY    = os.getenv("DEEPSEEK_API_KEY")
 LLM_BASE_URL        = os.getenv("LLM_BASE_URL",    "https://api.deepseek.com")
@@ -297,8 +297,10 @@ def call_llm_json(prompt: str) -> str:
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.1,
         "max_tokens": 4000,
-        "response_format": {"type": "json_object"},
     }
+    # Only add response_format for models that support it
+    if "deepseek" in OPENROUTER_MODEL or "gpt" in OPENROUTER_MODEL:
+        payload["response_format"] = {"type": "json_object"}
     return _post_llm(f"{OPENROUTER_BASE_URL}/chat/completions", headers, payload)
 
 

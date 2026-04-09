@@ -1,7 +1,10 @@
 import logging
+import magic
 from uuid import UUID as _UUID
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
+from fastapi.responses import FileResponse
 from asyncpg import Connection, UniqueViolationError
 
 from .db import get_db
@@ -13,7 +16,7 @@ from .models import (
     InviteMemberRequest, UpdateMemberRequest, LoginResponse, RegisterBusinessResponse,
     RegisterProviderResponse, UserProfile, MembersResponse, MemberItem,
     InviteAuditorRequest, AuditorItem, AuditorsResponse,
-    RefreshRequest,
+    RefreshRequest, CompanyProfileUpdate, ChangePasswordRequest,
     MAX_MEMBERS,
 )
 
@@ -30,16 +33,22 @@ router = APIRouter()
 
 
 def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
+    from auth.permissions import get_user_permissions
+    perms = get_user_permissions(dict(row))
     return UserProfile(
         id           = str(row["id"]),
         email        = row["email"],
         role         = row["role"],
         status       = row["status"],
         company_name = row["company_name"],
-        company_code = row["company_code"],
+        company_code = row.get("company_code"),
         is_owner     = row["is_owner"],
         tenant_id    = str(row["tenant_id"]) if row["tenant_id"] else None,
         member_count = member_count,
+        address      = row.get("address"),
+        phone        = row.get("phone"),
+        representative_name = row.get("representative_name"),
+        permissions  = perms,
     )
 
 
@@ -59,7 +68,7 @@ async def register_business(req: BusinessRegisterRequest, db: Connection = Depen
             req.email, pw_hash, req.company_name, req.company_code,
         )
     except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
 
     # Set tenant_id = own id (owner is their own tenant root)
     await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
@@ -93,7 +102,7 @@ async def register_provider(req: ProviderRegisterRequest, db: Connection = Depen
             req.email, pw_hash, req.company_name, req.company_code,
         )
     except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
 
     log.info(f"[auth] Provider registered (pending): {req.email}")
     return RegisterProviderResponse(
@@ -108,7 +117,10 @@ async def register_provider(req: ProviderRegisterRequest, db: Connection = Depen
 
 @router.post("/login", response_model=LoginResponse)
 async def login(req: LoginRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
-    row = await db.fetchrow("SELECT * FROM users WHERE email = $1", req.email)
+    if req.role and req.role in ("business", "provider"):
+        row = await db.fetchrow("SELECT * FROM users WHERE email = $1 AND role = $2", req.email, req.role)
+    else:
+        row = await db.fetchrow("SELECT * FROM users WHERE email = $1", req.email)
     if not row or not verify_password(req.password, row["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email hoặc mật khẩu không đúng")
 
@@ -233,6 +245,173 @@ async def invite_member(
         "display_name": row["company_name"],
         "tenant_id":    tenant_id,
     }
+
+
+# ── Invite link (no password required) ────────────────────────────────────────
+
+from pydantic import BaseModel as _BM
+
+class InviteLinkRequest(_BM):
+    email: str
+    display_name: str = ""
+    ihc_role: str = ""
+    department: str = ""
+
+
+@router.post("/business/invite-link")
+async def create_invite_link(
+    req: InviteLinkRequest,
+    owner: dict = Depends(require_business_owner),
+    db: Connection = Depends(get_db),
+):
+    """Create invite link — member sets their own password when accepting."""
+    tenant_id = owner["tenant_id"]
+    current_count = await db.fetchval(
+        "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id)
+    if current_count >= MAX_MEMBERS:
+        raise HTTPException(422, f"Đã đạt giới hạn {MAX_MEMBERS} thành viên")
+
+    # Check email not already registered
+    existing = await db.fetchval("SELECT COUNT(*) FROM users WHERE email = $1", req.email)
+    if existing:
+        raise HTTPException(409, "Email đã được đăng ký")
+
+    from uuid import uuid4 as _uuid4
+    from datetime import timedelta, timezone
+    token = str(_uuid4()).replace("-", "")
+    expires = datetime.now(timezone.utc) + timedelta(days=7)
+
+    await db.execute("""
+        INSERT INTO member_invites (tenant_id, email, invite_token, role, department, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+    """, tenant_id, req.email, token, req.ihc_role or None, req.department or None, expires)
+
+    log.info(f"[auth] Invite link created for {req.email} → tenant {tenant_id}")
+    return {
+        "invite_token": token,
+        "portal_url": f"/invite/{token}",
+        "expires_at": expires.isoformat(),
+        "email": req.email,
+        "message": "Link mời đã tạo (hết hạn sau 7 ngày)",
+    }
+
+
+@router.get("/invite/{token}")
+async def get_invite_info(token: str, db: Connection = Depends(get_db)):
+    """Public: view invite info (no auth needed)."""
+    row = await db.fetchrow("""
+        SELECT i.*, u.company_name AS business_name
+        FROM member_invites i
+        JOIN users u ON u.id = i.tenant_id AND u.is_owner = true
+        WHERE i.invite_token = $1
+    """, token)
+    if not row:
+        raise HTTPException(404, "Link không hợp lệ")
+    if row["accepted_at"]:
+        raise HTTPException(410, "Link đã được sử dụng")
+    if row["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(410, "Link đã hết hạn")
+
+    return {
+        "email": row["email"],
+        "business_name": row["business_name"],
+        "role": row["role"],
+        "department": row["department"],
+    }
+
+
+@router.post("/invite/{token}/accept")
+async def accept_invite(token: str, request: Request, db: Connection = Depends(get_db)):
+    """Public: member accepts invite and sets password."""
+    body = await request.json()
+    password = body.get("password", "")
+    display_name = body.get("display_name", "")
+
+    if len(password) < 10:
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 10 ký tự")
+
+    row = await db.fetchrow("SELECT * FROM member_invites WHERE invite_token = $1", token)
+    if not row:
+        raise HTTPException(404, "Link không hợp lệ")
+    if row["accepted_at"]:
+        raise HTTPException(410, "Link đã được sử dụng")
+    if row["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(410, "Link đã hết hạn")
+
+    pw_hash = hash_password(password)
+    try:
+        user_row = await db.fetchrow("""
+            INSERT INTO users (email, password_hash, role, company_name,
+                               status, is_owner, tenant_id, ihc_role, department)
+            VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6)
+            RETURNING id
+        """, row["email"], pw_hash, display_name or row["email"],
+            row["tenant_id"], row["role"], row["department"])
+    except UniqueViolationError:
+        raise HTTPException(409, "Email đã được đăng ký")
+
+    await db.execute("UPDATE member_invites SET accepted_at = NOW() WHERE id = $1", row["id"])
+
+    log.info(f"[auth] Invite accepted: {row['email']} → tenant {row['tenant_id']}")
+    return {"message": "Đã tham gia thành công! Bạn có thể đăng nhập ngay.", "email": row["email"]}
+
+
+# ── Member permissions ─────────────────────────────────────────────────────────
+
+@router.get("/business/members/{member_id}/permissions")
+async def get_member_permissions(
+    member_id: str,
+    owner: dict = Depends(require_business_owner),
+    db: Connection = Depends(get_db),
+):
+    _validate_uuid(member_id)
+    row = await db.fetchrow(
+        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false",
+        member_id, owner["tenant_id"])
+    if not row:
+        raise HTTPException(404, "Thành viên không tồn tại")
+
+    from auth.permissions import DEFAULT_PERMISSIONS, PERMISSION_LABELS
+    import json
+    perms = row["permissions"]
+    if isinstance(perms, str):
+        perms = json.loads(perms)
+    perms = {**DEFAULT_PERMISSIONS, **(perms or {})}
+    return {
+        "permissions": perms,
+        "labels": PERMISSION_LABELS,
+    }
+
+
+@router.put("/business/members/{member_id}/permissions")
+async def update_member_permissions(
+    member_id: str,
+    request: Request,
+    owner: dict = Depends(require_business_owner),
+    db: Connection = Depends(get_db),
+):
+    """Owner sets permissions for a member."""
+    _validate_uuid(member_id)
+    row = await db.fetchrow(
+        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false",
+        member_id, owner["tenant_id"])
+    if not row:
+        raise HTTPException(404, "Thành viên không tồn tại")
+
+    body = await request.json()
+    import json
+    from auth.permissions import DEFAULT_PERMISSIONS
+    new_perms = {}
+    for key in DEFAULT_PERMISSIONS:
+        if key in body:
+            new_perms[key] = bool(body[key])
+
+    await db.execute(
+        "UPDATE users SET permissions = $1::jsonb WHERE id = $2",
+        json.dumps(new_perms), member_id)
+
+    log.info(f"[auth] Permissions updated for {member_id}: {new_perms}")
+    return {"message": "Đã cập nhật quyền", "permissions": new_perms}
 
 
 # ── List members ───────────────────────────────────────────────────────────────
@@ -484,10 +663,23 @@ async def update_auditor(
     _validate_uuid(auditor_id)
     tenant_id = owner["tenant_id"] or owner["sub"]
     updates, params, idx = [], [], 1
+
     if "display_name" in req and req["display_name"]:
         updates.append(f"company_name = ${idx}"); params.append(req["display_name"]); idx += 1
     if "specialty" in req:
         updates.append(f"department = ${idx}"); params.append(req["specialty"] or None); idx += 1
+    if "email" in req and req["email"]:
+        # Validate email not taken by another provider user
+        existing = await db.fetchrow(
+            "SELECT id FROM users WHERE email=$1 AND role='provider' AND id != $2", req["email"], auditor_id)
+        if existing:
+            raise HTTPException(409, "Email đã được sử dụng bởi tài khoản khác")
+        updates.append(f"email = ${idx}"); params.append(req["email"]); idx += 1
+    if "password" in req and req["password"]:
+        if len(req["password"]) < 8:
+            raise HTTPException(400, "Mật khẩu tối thiểu 8 ký tự")
+        updates.append(f"password_hash = ${idx}"); params.append(hash_password(req["password"])); idx += 1
+
     if not updates:
         return {"message": "Không có thay đổi"}
     params.extend([auditor_id, tenant_id])
@@ -515,10 +707,179 @@ async def remove_auditor(
         raise HTTPException(404, "Auditor not found")
 
 
+# ── Auditor Certificates ──────────────────────────────────────────────────────
+
+@router.get("/provider/auditors/{auditor_id}/certificates")
+async def list_auditor_certificates(
+    auditor_id: str,
+    owner: dict = Depends(require_provider_owner),
+    db: Connection = Depends(get_db),
+):
+    """List certificate files for an auditor."""
+    _validate_uuid(auditor_id)
+    # Verify auditor belongs to this provider
+    row = await db.fetchrow(
+        "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
+        auditor_id, owner["tenant_id"] or owner["sub"],
+    )
+    if not row:
+        raise HTTPException(404, "Auditor không tồn tại")
+
+    from pathlib import Path as _P
+    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    if not cert_dir.exists():
+        return {"certificates": []}
+
+    certs = []
+    for f in sorted(cert_dir.iterdir()):
+        if f.is_file():
+            file_id = f.name.split("_", 1)[0]
+            display_name = f.name.split("_", 1)[-1] if "_" in f.name else f.name
+            certs.append({
+                "id": file_id,
+                "filename": display_name,
+                "size": f.stat().st_size,
+                "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat(),
+            })
+    return {"certificates": certs}
+
+
+@router.post("/provider/auditors/{auditor_id}/certificates")
+async def upload_auditor_certificate(
+    auditor_id: str,
+    file: UploadFile = File(...),
+    owner: dict = Depends(require_provider_owner),
+    db: Connection = Depends(get_db),
+):
+    """Upload a certificate file (PDF, DOCX, JPG, PNG) for an auditor."""
+    _validate_uuid(auditor_id)
+    row = await db.fetchrow(
+        "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
+        auditor_id, owner["tenant_id"] or owner["sub"],
+    )
+    if not row:
+        raise HTTPException(404, "Auditor không tồn tại")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(413, "File quá lớn (tối đa 10MB)")
+
+    import magic
+    detected = magic.from_buffer(content, mime=True)
+    allowed = {"application/pdf", "image/jpeg", "image/png",
+               "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+    if detected not in allowed:
+        raise HTTPException(400, f"Loại file không hợp lệ: {detected}")
+
+    from pathlib import Path as _P
+    import uuid as _uuid
+    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir.mkdir(parents=True, exist_ok=True)
+
+    file_id = str(_uuid.uuid4())[:8]
+    safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in (file.filename or "cert")).strip()
+    save_path = cert_dir / f"{file_id}_{safe_name}"
+    save_path.write_bytes(content)
+
+    log.info(f"[certificates] Uploaded {save_path.name} for auditor {auditor_id}")
+    return {"id": file_id, "filename": safe_name, "size": len(content)}
+
+
+@router.get("/provider/auditors/{auditor_id}/certificates/{cert_id}/view")
+async def view_auditor_certificate(
+    auditor_id: str,
+    cert_id: str,
+    request: Request,
+    token: str | None = None,
+):
+    """View certificate as PDF (convert if needed). Supports ?token= for window.open."""
+    from auth.jwt_utils import decode_token as _decode
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        user = _decode(auth[7:])
+    elif token:
+        user = _decode(token)
+    else:
+        raise HTTPException(401, "Not authenticated")
+
+    if user.get("role") != "provider":
+        raise HTTPException(403)
+
+    tenant_id = user.get("tenant_id") or user.get("sub")
+    from pathlib import Path as _P
+    cert_dir = _P("docs") / tenant_id / "certificates" / auditor_id
+
+    target = None
+    if cert_dir.exists():
+        for f in cert_dir.iterdir():
+            if f.name.startswith(cert_id):
+                target = f
+                break
+    if not target:
+        raise HTTPException(404, "Chứng chỉ không tồn tại")
+
+    mime = magic.from_buffer(target.read_bytes()[:2048], mime=True)
+
+    # PDF — serve directly
+    if mime == "application/pdf":
+        return FileResponse(path=str(target), media_type="application/pdf")
+
+    # Images — serve directly with correct MIME
+    if mime.startswith("image/"):
+        return FileResponse(path=str(target), media_type=mime)
+
+    # DOCX — convert to PDF
+    import subprocess, os
+    cache_dir = _P("data/preview_cache")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_pdf = cache_dir / f"cert_{cert_id}.pdf"
+
+    if cache_pdf.exists() and cache_pdf.stat().st_size > 0:
+        return FileResponse(path=str(cache_pdf), media_type="application/pdf")
+
+    pid_profile = f"/tmp/lo_profile_{os.getpid()}"
+    os.makedirs(pid_profile, exist_ok=True)
+    from starlette.concurrency import run_in_threadpool
+
+    def _convert():
+        result = subprocess.run(
+            ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
+             f"-env:UserInstallation=file://{pid_profile}",
+             "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(target.resolve())],
+            capture_output=True, timeout=60,
+            cwd="/tmp",
+            env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
+                 "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+        )
+        lo_output = cache_dir / (target.stem + ".pdf")
+        if lo_output.exists():
+            lo_output.rename(cache_pdf)
+
+    await run_in_threadpool(_convert)
+    if not cache_pdf.exists():
+        raise HTTPException(500, "Chuyển đổi PDF thất bại")
+    return FileResponse(path=str(cache_pdf), media_type="application/pdf")
+
+
+@router.delete("/provider/auditors/{auditor_id}/certificates/{cert_id}")
+async def delete_auditor_certificate(
+    auditor_id: str,
+    cert_id: str,
+    owner: dict = Depends(require_provider_owner),
+):
+    """Delete a certificate file."""
+    from pathlib import Path as _P
+    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    if cert_dir.exists():
+        for f in cert_dir.iterdir():
+            if f.name.startswith(cert_id):
+                f.unlink()
+                return {"message": "Đã xoá"}
+    raise HTTPException(404, "Chứng chỉ không tồn tại")
+
+
 # ── Meeting Minutes ───────────────────────────────────────────────────────────
 
-from fastapi import UploadFile, File
-from fastapi.responses import FileResponse
 from pathlib import Path as _Path
 import uuid as _uuid, shutil as _shutil
 from datetime import datetime as _dt
@@ -585,20 +946,76 @@ async def upload_minutes(
 @router.get("/business/minutes/{file_id}/view")
 async def view_minutes(
     file_id: str,
-    owner: dict = Depends(require_business_owner),
+    request: Request,
+    token: str | None = None,
     db: Connection = Depends(get_db),
 ):
     """Serve a minutes file for viewing."""
+    from auth.jwt_utils import decode_token as _decode
+    # Support both Authorization header and ?token= query param (for window.open)
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        owner = _decode(auth[7:])
+    elif token:
+        owner = _decode(token)
+    else:
+        raise HTTPException(401, "Not authenticated")
+    if owner.get("role") != "business" or not owner.get("is_owner"):
+        raise HTTPException(403, "Business owner access required")
     minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
     if not minutes_dir.exists():
         raise HTTPException(404, "Không tìm thấy biên bản")
 
+    target = None
     for f in minutes_dir.iterdir():
         if f.name.startswith(file_id):
-            return FileResponse(path=str(f), filename=f.name.split("_", 1)[-1],
-                                media_type=_guess_mime(f.name))
+            target = f
+            break
+    if not target:
+        raise HTTPException(404, "Không tìm thấy biên bản")
 
-    raise HTTPException(404, "Không tìm thấy biên bản")
+    mime = _guess_mime(target.name)
+
+    # If already PDF, serve directly
+    if mime == "application/pdf" or target.suffix.lower() == ".pdf":
+        return FileResponse(path=str(target), media_type="application/pdf")
+
+    # Convert to PDF for inline viewing (same approach as document preview)
+    import subprocess, os
+    cache_dir = _Path("data/preview_cache")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_pdf = cache_dir / f"minutes_{file_id}.pdf"
+
+    if cache_pdf.exists() and cache_pdf.stat().st_size > 0 and cache_pdf.stat().st_mtime >= target.stat().st_mtime:
+        return FileResponse(path=str(cache_pdf), media_type="application/pdf")
+
+    pid_profile = f"/tmp/lo_profile_{os.getpid()}"
+    os.makedirs(pid_profile, exist_ok=True)
+    abs_cache = str(cache_dir.resolve())
+    abs_file = str(target.resolve())
+
+    from starlette.concurrency import run_in_threadpool
+
+    def _convert():
+        result = subprocess.run(
+            ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
+             f"-env:UserInstallation=file://{pid_profile}",
+             "--convert-to", "pdf", "--outdir", abs_cache, abs_file],
+            capture_output=True, timeout=60,
+            cwd="/tmp",
+            env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
+                 "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+        )
+        lo_output = _Path(abs_cache) / (_Path(abs_file).stem + ".pdf")
+        if lo_output.exists():
+            lo_output.rename(cache_pdf.resolve())
+
+    await run_in_threadpool(_convert)
+
+    if not cache_pdf.exists():
+        raise HTTPException(500, "Chuyển đổi PDF thất bại")
+
+    return FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
 
 @router.delete("/business/minutes/{file_id}")
@@ -619,6 +1036,175 @@ async def delete_minutes(
             return {"message": "Đã xoá biên bản"}
 
     raise HTTPException(404, "Không tìm thấy biên bản")
+
+
+# ── Company profile ───────────────────────────────────────────────────────────
+
+@router.get("/company-profile")
+async def get_company_profile(
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Get company profile (from tenant owner) for template placeholder data."""
+    if user["role"] != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+
+    tenant_id = user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(400, "Tenant không xác định")
+
+    row = await db.fetchrow(
+        """SELECT company_name, email, address, phone, representative_name, manager_name
+           FROM users WHERE id = $1 AND is_owner = true""",
+        tenant_id,
+    )
+    if not row:
+        raise HTTPException(404, "Không tìm thấy thông tin công ty")
+
+    return {
+        "company_name": row["company_name"],
+        "email": row["email"],
+        "address": row["address"],
+        "phone": row["phone"],
+        "representative_name": row["representative_name"],
+        "manager_name": row["manager_name"],
+    }
+
+
+@router.put("/company-profile")
+async def update_company_profile(
+    req: CompanyProfileUpdate,
+    owner: dict = Depends(require_business_owner),
+    db: Connection = Depends(get_db),
+):
+    """Update company profile fields (owner only)."""
+    await db.execute(
+        """UPDATE users
+           SET company_name = COALESCE(NULLIF($1, ''), company_name),
+               representative_name = COALESCE(NULLIF($2, ''), representative_name),
+               address = COALESCE(NULLIF($3, ''), address),
+               phone = COALESCE(NULLIF($4, ''), phone),
+               email = COALESCE(NULLIF($5, ''), email),
+               manager_name = COALESCE(NULLIF($6, ''), manager_name)
+           WHERE id = $7""",
+        req.company_name, req.representative_name, req.address,
+        req.phone, req.email, req.manager_name, owner["sub"],
+    )
+    log.info(f"[auth] Company profile updated by {owner['sub']}")
+    return {"message": "Đã cập nhật thông tin công ty"}
+
+
+# ── Change password ──────────────────────────────────────────────────────────
+
+@router.put("/change-password")
+async def change_password(
+    req: ChangePasswordRequest,
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Change password for current user."""
+    import re
+    row = await db.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["sub"])
+    if not row:
+        raise HTTPException(404, "User không tồn tại")
+
+    if not verify_password(req.current_password, row["password_hash"]):
+        raise HTTPException(400, "Mật khẩu hiện tại không đúng")
+
+    pw = req.new_password
+    if len(pw) < 10:
+        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 10 ký tự")
+    if not re.search(r'[A-Z]', pw):
+        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 1 chữ hoa")
+    if not re.search(r'[a-z]', pw):
+        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 1 chữ thường")
+    if not re.search(r'[0-9]', pw):
+        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 1 chữ số")
+
+    new_hash = hash_password(pw)
+    await db.execute("UPDATE users SET password_hash = $1 WHERE id = $2", new_hash, user["sub"])
+    log.info(f"[auth] Password changed for {user['sub']}")
+    return {"message": "Đã đổi mật khẩu thành công"}
+
+
+# ── Upload company logo ──────────────────────────────────────────────────────
+
+LOGO_DIR = _Path("docs/logos")
+LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
+@router.post("/company-logo")
+async def upload_company_logo(
+    file: UploadFile = File(...),
+    owner: dict = Depends(require_business_owner),
+):
+    """Upload company logo (owner only). Max 2MB, PNG/JPG only."""
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(413, "Logo quá lớn (tối đa 2MB)")
+
+    import magic
+    detected = magic.from_buffer(content, mime=True)
+    if detected not in ("image/png", "image/jpeg", "image/webp"):
+        raise HTTPException(400, f"Chỉ chấp nhận PNG, JPG, hoặc WebP (phát hiện: {detected})")
+
+    suffix = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}[detected]
+    logo_path = LOGO_DIR / f"{owner['tenant_id']}{suffix}"
+
+    # Remove old logo with different extension
+    for ext in (".png", ".jpg", ".webp"):
+        old = LOGO_DIR / f"{owner['tenant_id']}{ext}"
+        if old.exists() and old != logo_path:
+            old.unlink()
+
+    logo_path.write_bytes(content)
+    log.info(f"[auth] Logo uploaded for tenant {owner['tenant_id']}")
+    return {"message": "Đã upload logo", "url": f"/api/auth/company-logo/{owner['tenant_id']}"}
+
+
+@router.get("/company-logo/{tenant_id}")
+async def get_company_logo(tenant_id: str):
+    """Serve company logo (public for display)."""
+    for ext in (".png", ".jpg", ".webp"):
+        path = LOGO_DIR / f"{tenant_id}{ext}"
+        if path.exists():
+            mime = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[ext[1:]]
+            return FileResponse(path=str(path), media_type=mime)
+    raise HTTPException(404, "Logo chưa được upload")
+
+
+# ── Notification preferences ─────────────────────────────────────────────────
+
+@router.get("/notification-preferences")
+async def get_notification_preferences(
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    row = await db.fetchrow(
+        "SELECT notify_eval_done, notify_submission_reply FROM users WHERE id = $1",
+        user["sub"],
+    )
+    if not row:
+        raise HTTPException(404)
+    return {
+        "notify_eval_done": row["notify_eval_done"] if row["notify_eval_done"] is not None else True,
+        "notify_submission_reply": row["notify_submission_reply"] if row["notify_submission_reply"] is not None else True,
+    }
+
+
+@router.put("/notification-preferences")
+async def update_notification_preferences(
+    request: Request,
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    body = await request.json()
+    await db.execute(
+        """UPDATE users SET notify_eval_done = $1, notify_submission_reply = $2 WHERE id = $3""",
+        body.get("notify_eval_done", True),
+        body.get("notify_submission_reply", True),
+        user["sub"],
+    )
+    return {"message": "Đã cập nhật cài đặt thông báo"}
 
 
 def _guess_mime(filename: str) -> str:

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+const API = '/api';
 
 interface User {
   id: string;
@@ -17,13 +17,13 @@ interface User {
 }
 
 const STATUS_CFG = {
-  active:    { label: 'Hoạt động',  bg: 'rgba(34,197,94,0.1)',   color: '#4ade80' },
-  pending:   { label: 'Chờ duyệt',  bg: 'rgba(245,158,11,0.1)', color: '#fbbf24' },
+  active:    { label: 'Hoạt động',  bg: 'rgba(8,118,83,0.1)',   color: '#087653' },
+  pending:   { label: 'Chờ duyệt',  bg: 'rgba(245,158,11,0.1)', color: '#F59E0B' },
   suspended: { label: 'Đình chỉ',   bg: 'rgba(239,68,68,0.1)',  color: '#f87171' },
 };
 const ROLE_CFG = {
-  business: { label: 'Doanh nghiệp', color: '#4ade80' },
-  provider: { label: 'Tổ chức',      color: '#60a5fa' },
+  business: { label: 'Doanh nghiệp', color: '#087653' },
+  provider: { label: 'Tổ chức',      color: '#0EA5E9' },
 };
 
 function timeAgo(iso: string) {
@@ -158,8 +158,8 @@ export default function AdminUserManager({ token }: { token: string }) {
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const inputCls = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
-  const inputStyle = { background: '#0f1e35', border: '1px solid #1e3a5f' };
+  const inputCls = "w-full px-3 py-2.5 rounded-xl text-sm outline-none";
+  const inputStyle = { background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' };
 
   return (
     <div>
@@ -169,18 +169,18 @@ export default function AdminUserManager({ token }: { token: string }) {
           <input
             type="text" placeholder="Tìm email, tên..."
             value={search} onChange={e => setSearch(e.target.value)}
-            className="text-sm px-3 py-2 rounded-lg text-slate-300 outline-none"
-            style={{ background: '#162847', border: '1px solid #1e3a5f' }} />
+            className="text-sm px-3 py-2 rounded-lg outline-none"
+            style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#3D4F5F' }} />
           <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
-            className="text-sm px-3 py-2 rounded-lg text-slate-300 outline-none"
-            style={{ background: '#162847', border: '1px solid #1e3a5f' }}>
+            className="text-sm px-3 py-2 rounded-lg outline-none"
+            style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#3D4F5F' }}>
             <option value="">Tất cả loại</option>
             <option value="business">Doanh nghiệp</option>
             <option value="provider">Tổ chức</option>
           </select>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            className="text-sm px-3 py-2 rounded-lg text-slate-300 outline-none"
-            style={{ background: '#162847', border: '1px solid #1e3a5f' }}>
+            className="text-sm px-3 py-2 rounded-lg outline-none"
+            style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#3D4F5F' }}>
             <option value="">Tất cả trạng thái</option>
             <option value="active">Hoạt động</option>
             <option value="pending">Chờ duyệt</option>
@@ -189,7 +189,7 @@ export default function AdminUserManager({ token }: { token: string }) {
         </div>
         <button onClick={openCreate}
           className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
-          style={{ gridTemplateColumns: 'auto 1fr', background: '#16a34a' }}>
+          style={{ gridTemplateColumns: 'auto 1fr', background: '#087653' }}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -198,17 +198,17 @@ export default function AdminUserManager({ token }: { token: string }) {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e3a5f' }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
         {fetching ? (
-          <div className="p-10 text-center text-slate-400 text-sm">Đang tải...</div>
+          <div className="p-10 text-center text-sm" style={{ color: '#5F6F80' }}>Đang tải...</div>
         ) : users.length === 0 ? (
-          <div className="p-10 text-center text-slate-500 text-sm">Không có user nào</div>
+          <div className="p-10 text-center text-sm" style={{ color: '#5B6B7D' }}>Không có user nào</div>
         ) : (
           <table className="w-full text-sm">
-            <thead style={{ background: '#0f1e35' }}>
+            <thead style={{ background: '#F0F7F4' }}>
               <tr>
                 {['Email / Tên', 'Loại', 'Trạng thái', 'Ngày tạo', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs text-slate-400 font-medium">{h}</th>
+                  <th key={h} className="text-left px-4 py-3 text-xs font-medium" style={{ color: '#5F6F80' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -218,17 +218,17 @@ export default function AdminUserManager({ token }: { token: string }) {
                 const rl = ROLE_CFG[u.role] ?? ROLE_CFG.business;
                 return (
                   <tr key={u.id} style={{
-                    background: i % 2 === 0 ? '#162847' : '#0f1e35',
-                    borderTop: '1px solid #1e3a5f',
+                    background: i % 2 === 0 ? '#FAFCF9' : '#FFFFFF',
+                    borderTop: '1px solid #E2E8F0',
                   }}>
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium">{u.email}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#475569' }}>{u.company_name}</p>
+                      <p className="font-medium" style={{ color: '#1A2332' }}>{u.email}</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#5B6B7D' }}>{u.company_name}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs font-medium" style={{ color: rl.color }}>{rl.label}</span>
-                      {u.role === 'business' && !u.is_owner && (
-                        <span className="ml-1 text-xs" style={{ color: '#334155' }}>· thành viên</span>
+                      {!u.is_owner && (
+                        <span className="ml-1 text-xs" style={{ color: '#94A3B8' }}>· thành viên</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -237,16 +237,16 @@ export default function AdminUserManager({ token }: { token: string }) {
                         {st.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">{timeAgo(u.created_at)}</td>
+                    <td className="px-4 py-3 text-xs" style={{ color: '#5B6B7D' }}>{timeAgo(u.created_at)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="grid grid-flow-col items-center gap-3 justify-end">
                         <button onClick={() => openEdit(u)}
-                          className="text-xs text-slate-400 hover:text-white transition-colors">
+                          className="text-xs transition-colors" style={{ color: '#5F6F80' }}>
                           Sửa
                         </button>
                         <button onClick={() => handleDelete(u.id)}
                           disabled={deleteId === u.id}
-                          className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                          className="text-xs hover:text-red-400 transition-colors" style={{ color: '#5B6B7D' }}>
                           {deleteId === u.id ? '...' : 'Xoá'}
                         </button>
                       </div>
@@ -258,31 +258,39 @@ export default function AdminUserManager({ token }: { token: string }) {
           </table>
         )}
       </div>
-      <p className="text-xs text-slate-600 mt-2">{total} user</p>
+      <p className="text-xs mt-2" style={{ color: '#5B6B7D' }}>{total} user</p>
 
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4"
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: '#111725', border: '1px solid #1e3a5f' }}>
+          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <div className="grid items-center mb-5" style={{ gridTemplateColumns: '1fr auto' }}>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold" style={{ color: '#1A2332' }}>
                 {modal === 'create' ? 'Thêm user mới' : `Sửa: ${editTarget?.email}`}
               </h3>
-              <button onClick={() => setModal(null)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setModal(null)} style={{ color: '#5F6F80' }}>✕</button>
             </div>
 
             <div className="space-y-3">
+              {/* Warning for member accounts */}
+              {modal === 'edit' && editTarget && !editTarget.is_owner && editTarget.role === 'business' && (
+                <div className="px-4 py-3 rounded-lg text-xs leading-relaxed"
+                  style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b' }}>
+                  <strong>Tài khoản thành viên.</strong> Account này được mời bởi chủ tài khoản khác. Thông tin công ty (tên, mã số thuế) được kế thừa từ tài khoản chính. Việc sửa đổi có thể gây không đồng nhất dữ liệu trong cùng tổ chức.
+                </div>
+              )}
+
               {modal === 'create' && (
                 <div>
-                  <label className="block text-xs font-medium mb-1.5 text-slate-400">Email *</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Email *</label>
                   <input type="email" required value={form.email} onChange={set('email')}
                     placeholder="user@company.vn" className={inputCls} style={inputStyle} />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-medium mb-1.5 text-slate-400">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>
                   {modal === 'create' ? 'Mật khẩu *' : 'Mật khẩu mới (để trống = giữ nguyên)'}
                 </label>
                 <input type="password" value={form.password} onChange={set('password')}
@@ -291,20 +299,20 @@ export default function AdminUserManager({ token }: { token: string }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-1.5 text-slate-400">Tên công ty / Tổ chức *</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Tên công ty / Tổ chức *</label>
                 <input type="text" required value={form.company_name} onChange={set('company_name')}
                   placeholder="Công ty ABC" className={inputCls} style={inputStyle} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-1.5 text-slate-400">Mã số thuế / Giấy phép</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Mã số thuế / Giấy phép</label>
                 <input type="text" value={form.company_code} onChange={set('company_code')}
                   placeholder="Tuỳ chọn" className={inputCls} style={inputStyle} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium mb-1.5 text-slate-400">Loại</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Loại</label>
                   <select value={form.role} onChange={set('role')}
                     className={inputCls} style={inputStyle}>
                     <option value="business">Doanh nghiệp</option>
@@ -312,7 +320,7 @@ export default function AdminUserManager({ token }: { token: string }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5 text-slate-400">Trạng thái</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Trạng thái</label>
                   <select value={form.status} onChange={set('status')}
                     className={inputCls} style={inputStyle}>
                     <option value="active">Hoạt động</option>
@@ -331,7 +339,7 @@ export default function AdminUserManager({ token }: { token: string }) {
 
               <button onClick={handleSave} disabled={saving}
                 className="w-full py-2.5 rounded-xl font-semibold text-sm text-white mt-1"
-                style={{ background: saving ? '#1e3a5f' : '#16a34a' }}>
+                style={{ background: saving ? '#E2E8F0' : '#087653', color: saving ? '#5B6B7D' : 'white' }}>
                 {saving ? 'Đang lưu...' : modal === 'create' ? 'Tạo user' : 'Lưu thay đổi'}
               </button>
             </div>

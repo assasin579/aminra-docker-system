@@ -34,15 +34,16 @@ interface DashboardStats {
 }
 
 const STATUS_STYLE = {
-  compliant:     { label: 'Đạt',        bg: 'rgba(34,197,94,0.15)',   color: '#4ade80' },
-  needs_review:  { label: 'Cần sửa',    bg: 'rgba(245,158,11,0.15)', color: '#fbbf24' },
-  non_compliant: { label: 'Chưa đạt',   bg: 'rgba(239,68,68,0.15)',  color: '#f87171' },
+  cb_approved:   { label: 'Duyệt bởi CB', bg: 'rgba(8,118,83,0.15)',   color: '#065E43' },
+  compliant:     { label: 'Đạt',           bg: 'rgba(8,118,83,0.1)',    color: '#087653' },
+  needs_review:  { label: 'Cần sửa',       bg: 'rgba(245,158,11,0.15)', color: '#d97706' },
+  non_compliant: { label: 'Chưa đạt',      bg: 'rgba(239,68,68,0.15)',  color: '#f87171' },
 };
 
 function scoreColor(s: number | null) {
-  if (s === null) return '#334155';
-  if (s >= 75) return '#4ade80';
-  if (s >= 50) return '#fbbf24';
+  if (s === null) return '#94A3B8';
+  if (s >= 75) return '#087653';
+  if (s >= 50) return '#d97706';
   return '#f87171';
 }
 
@@ -92,7 +93,11 @@ export default function BusinessDashboard() {
   if (loading || !user) {
     return (
       <div className="grid place-items-center min-h-[60vh]">
-        <div className="text-slate-400 text-sm">Đang tải...</div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+        </div>
       </div>
     );
   }
@@ -100,55 +105,49 @@ export default function BusinessDashboard() {
   const s = stats;
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full">
+    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
       {/* Header */}
-      <div className="grid items-start mb-6" style={{ gridTemplateColumns: '1fr auto' }}>
-        <div>
-          <p className="text-sm mb-1" style={{ color: '#64748b' }}>{greeting()},</p>
-          <h1 className="text-2xl font-bold text-white">{user.company_name}</h1>
-          <p className="text-slate-500 text-sm mt-1">{user.email}</p>
-        </div>
-        <button onClick={() => { logout(); router.push('/'); }}
-          className="text-xs text-slate-400 hover:text-red-400 transition-colors px-3 py-2 rounded-lg"
-          style={{ border: '1px solid #1e3a5f' }}>
-          Đăng xuất
-        </button>
+      <div className="mb-6 animate-section">
+        <p className="text-sm mb-1" style={{ color: '#5F6F80' }}>{greeting()},</p>
+        <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>{user.company_name}</h1>
+        <p className="text-sm mt-1" style={{ color: '#5B6B7D' }}>{user.email}</p>
       </div>
 
       {/* Certification Readiness */}
       {s && (
-        <div className="rounded-2xl p-6 mb-6"
-          style={{ background: 'linear-gradient(135deg, #0f2236, #162847)', border: '1px solid #1e3a5f' }}>
+        <div className="rounded-2xl p-6 mb-6 animate-section doc-card-hover"
+          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
           <div className="grid items-center gap-6" style={{ gridTemplateColumns: 'auto 1fr' }}>
             {/* Circular progress */}
             <div className="relative w-24 h-24">
               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#1e3a5f" strokeWidth="8" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="8" />
                 <circle cx="50" cy="50" r="42" fill="none"
-                  stroke={s.readiness >= 75 ? '#22c55e' : s.readiness >= 40 ? '#f59e0b' : '#ef4444'}
+                  className="animate-score-fill"
+                  stroke={s.readiness >= 75 ? '#087653' : s.readiness >= 40 ? '#f59e0b' : '#ef4444'}
                   strokeWidth="8" strokeLinecap="round"
                   strokeDasharray={`${s.readiness * 2.64} 264`} />
               </svg>
               <div className="absolute inset-0 grid place-items-center">
                 <div className="text-center">
-                  <span className="text-2xl font-bold text-white">{s.readiness}%</span>
+                  <span className="text-2xl font-bold" style={{ color: '#1A2332' }}>{s.readiness}%</span>
                 </div>
               </div>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white mb-1">Sẵn sàng chứng nhận</h2>
-              <p className="text-sm" style={{ color: '#94a3b8' }}>
-                <strong className="text-white">{s.compliant_count}</strong>/{s.total_types} loại tài liệu đạt chuẩn
+              <h2 className="text-lg font-bold mb-1" style={{ color: '#1A2332' }}>Sẵn sàng chứng nhận</h2>
+              <p className="text-sm" style={{ color: '#5B6B7D' }}>
+                <strong style={{ color: '#1A2332' }}>{s.compliant_count}</strong>/{s.total_types} loại tài liệu đạt chuẩn
                 {s.submitted_count > 0 && s.submitted_count < s.total_types && (
                   <span> · {s.total_types - s.submitted_count} chưa upload</span>
                 )}
               </p>
               {/* Mini progress bar */}
-              <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: '#1e3a5f' }}>
-                <div className="h-full rounded-full transition-all duration-500"
+              <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: '#E2E8F0' }}>
+                <div className="h-full rounded-full animate-progress"
                   style={{
                     width: `${s.readiness}%`,
-                    background: s.readiness >= 75 ? '#22c55e' : s.readiness >= 40 ? '#f59e0b' : '#ef4444',
+                    background: s.readiness >= 75 ? '#087653' : s.readiness >= 40 ? '#f59e0b' : '#ef4444',
                   }} />
               </div>
             </div>
@@ -157,40 +156,49 @@ export default function BusinessDashboard() {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-section">
         {[
-          { label: 'Tài liệu', value: s?.total_documents ?? '—', sub: 'đã upload', color: '#60a5fa' },
+          { label: 'Tài liệu', value: s?.total_documents ?? '—', sub: 'đã upload', color: '#0EA5E9' },
           { label: 'Điểm TB', value: s?.avg_score !== null && s?.avg_score !== undefined ? `${s.avg_score}%` : '—', sub: 'compliance', color: scoreColor(s?.avg_score ?? null) },
-          { label: 'Đạt chuẩn', value: s?.compliant_count ?? '—', sub: `/ ${s?.total_types ?? 13} loại`, color: '#4ade80' },
+          { label: 'Đạt chuẩn', value: s?.compliant_count ?? '—', sub: `/ ${s?.total_types ?? 13} loại`, color: '#087653' },
           { label: 'Thành viên', value: `${user.member_count ?? 0}/7`, sub: 'đang hoạt động', color: '#818cf8' },
-        ].map(st => (
-          <div key={st.label} className="rounded-xl p-4" style={{ background: '#162847', border: '1px solid #1e3a5f' }}>
-            <div className="text-xl font-bold mb-0.5" style={{ color: st.color }}>{st.value}</div>
-            <div className="text-xs text-white font-medium">{st.label}</div>
-            <div className="text-xs mt-0.5" style={{ color: '#475569' }}>{st.sub}</div>
+        ].map((st, i) => (
+          <div key={st.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+            <div className="text-xl font-bold mb-0.5 animate-count" style={{ color: st.color }}>{st.value}</div>
+            <div className="text-xs font-medium" style={{ color: '#1A2332' }}>{st.label}</div>
+            <div className="text-xs mt-0.5" style={{ color: '#5B6B7D' }}>{st.sub}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-6 flex-1 lg:min-h-0" style={{ gridTemplateColumns: '1fr 22rem' }}>
+      <div className="grid gap-6 flex-1 lg:min-h-0 grid-cols-1 lg:grid-cols-[1fr_22rem] animate-section">
         {/* Left: Document progress */}
         <div className="flex flex-col lg:min-h-0">
           <div className="grid items-center mb-3" style={{ gridTemplateColumns: '1fr auto' }}>
-            <h3 className="text-sm font-bold text-white">Tiến trình tài liệu</h3>
-            <Link href="/upload" className="text-xs font-medium" style={{ color: '#4ade80' }}>
+            <h3 className="text-sm font-bold" style={{ color: '#1A2332' }}>Tiến trình tài liệu</h3>
+            <Link href="/upload" className="text-xs font-medium" style={{ color: '#087653' }}>
               Upload tài liệu →
             </Link>
           </div>
           <div className="rounded-xl overflow-hidden flex-1 lg:min-h-0 lg:overflow-y-auto"
-            style={{ border: '1px solid #1e3a5f' }}>
+            style={{ border: '1px solid #E2E8F0' }}>
             {loadingStats ? (
-              <div className="p-8 text-center text-slate-500 text-sm">Đang tải...</div>
+              <div className="p-4 space-y-3">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className="flex gap-3 items-center">
+                    <div className="shimmer skeleton-text flex-1" />
+                    <div className="shimmer skeleton-text w-16" />
+                    <div className="shimmer skeleton-text w-12" />
+                    <div className="shimmer skeleton-text w-16" />
+                  </div>
+                ))}
+              </div>
             ) : (
               <table className="w-full text-sm">
-                <thead style={{ background: '#0f1e35', position: 'sticky', top: 0 }}>
+                <thead style={{ background: '#F0F7F4', position: 'sticky', top: 0 }}>
                   <tr>
                     {['Loại tài liệu', 'File', 'Điểm', 'Trạng thái'].map(h => (
-                      <th key={h} className="text-left px-4 py-2.5 text-xs text-slate-400 font-medium">{h}</th>
+                      <th key={h} className="text-left px-4 py-2.5 text-xs font-medium" style={{ color: '#5F6F80' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -199,21 +207,21 @@ export default function BusinessDashboard() {
                     const st = STATUS_STYLE[dt.status as keyof typeof STATUS_STYLE];
                     const submitted = dt.score !== null;
                     return (
-                      <tr key={dt.doc_type} style={{
-                        background: i % 2 === 0 ? '#162847' : '#0f1e35',
-                        borderTop: '1px solid #1e3a5f',
+                      <tr key={dt.doc_type} className={`animate-row stagger-${Math.min(i + 1, 12)}`} style={{
+                        background: i % 2 === 0 ? '#FAFCF9' : '#FFFFFF',
+                        borderTop: '1px solid #E2E8F0',
                         opacity: submitted ? 1 : 0.5,
                       }}>
                         <td className="px-4 py-3">
-                          <span className="text-white text-xs font-medium">{dt.label}</span>
+                          <span className="text-xs font-medium" style={{ color: '#1A2332' }}>{dt.label}</span>
                         </td>
                         <td className="px-4 py-3">
                           {dt.filename ? (
-                            <span className="text-xs truncate block max-w-[140px]" style={{ color: '#64748b' }} title={dt.filename}>
+                            <span className="text-xs truncate block max-w-[140px]" style={{ color: '#5F6F80' }} title={dt.filename}>
                               {dt.filename}
                             </span>
                           ) : (
-                            <span className="text-xs" style={{ color: '#334155' }}>—</span>
+                            <span className="text-xs" style={{ color: '#94A3B8' }}>—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -227,7 +235,7 @@ export default function BusinessDashboard() {
                               {st.label}
                             </span>
                           ) : (
-                            <span className="text-xs" style={{ color: '#334155' }}>Chưa upload</span>
+                            <span className="text-xs" style={{ color: '#94A3B8' }}>Chưa upload</span>
                           )}
                         </td>
                       </tr>
@@ -242,18 +250,18 @@ export default function BusinessDashboard() {
         {/* Right: Recent activity + Quick actions */}
         <div className="flex flex-col gap-5">
           {/* Recent activity */}
-          <div className="rounded-xl" style={{ border: '1px solid #1e3a5f' }}>
-            <div className="px-4 py-3" style={{ borderBottom: '1px solid #1e3a5f', background: '#0f1e35' }}>
-              <h3 className="text-xs font-bold text-white">Hoạt động gần đây</h3>
+          <div className="rounded-xl" style={{ border: '1px solid #E2E8F0' }}>
+            <div className="px-4 py-3" style={{ borderBottom: '1px solid #E2E8F0', background: '#F0F7F4' }}>
+              <h3 className="text-xs font-bold" style={{ color: '#1A2332' }}>Hoạt động gần đây</h3>
             </div>
-            <div className="divide-y" style={{ borderColor: '#1e3a5f' }}>
+            <div className="divide-y" style={{ borderColor: '#E2E8F0' }}>
               {(s?.recent_activity ?? []).length === 0 ? (
-                <div className="p-6 text-center text-xs" style={{ color: '#334155' }}>Chưa có hoạt động</div>
+                <div className="p-6 text-center text-xs" style={{ color: '#94A3B8' }}>Chưa có hoạt động</div>
               ) : (
                 (s?.recent_activity ?? []).map((r, i) => (
-                  <div key={i} className="px-4 py-3" style={{ borderColor: '#1e3a5f' }}>
-                    <p className="text-xs text-white font-medium truncate" title={r.filename}>{r.filename}</p>
-                    <div className="grid grid-flow-col items-center gap-2 mt-1 justify-start text-xs" style={{ color: '#475569' }}>
+                  <div key={i} className={`px-4 py-3 animate-list-item stagger-${Math.min(i + 1, 12)}`} style={{ borderColor: '#E2E8F0' }}>
+                    <p className="text-xs font-medium truncate" style={{ color: '#1A2332' }} title={r.filename}>{r.filename}</p>
+                    <div className="grid grid-flow-col items-center gap-2 mt-1 justify-start text-xs" style={{ color: '#5B6B7D' }}>
                       {r.score !== null && (
                         <span className="font-bold" style={{ color: scoreColor(r.score) }}>{r.score}%</span>
                       )}
@@ -269,20 +277,20 @@ export default function BusinessDashboard() {
 
           {/* Quick actions */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-white px-1">Thao tác nhanh</h3>
+            <h3 className="text-xs font-bold px-1" style={{ color: '#1A2332' }}>Thao tác nhanh</h3>
             {[
-              { href: '/upload', label: 'Đánh giá tài liệu', desc: 'Upload & kiểm tra Halal', color: '#4ade80',
+              { href: '/upload', label: 'Đánh giá tài liệu', desc: 'Upload & kiểm tra Halal', color: '#087653',
                 icon: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' },
-              { href: '/', label: 'Hỏi đáp AI', desc: 'Tư vấn quy trình chứng nhận', color: '#60a5fa',
+              { href: '/', label: 'Hỏi đáp AI', desc: 'Tư vấn quy trình chứng nhận', color: '#0EA5E9',
                 icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
               { href: '/documents', label: 'Tài liệu', desc: 'Xem & quản lý tài liệu', color: '#818cf8',
                 icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
               ...(user.is_owner ? [{ href: '/members', label: 'Thành viên', desc: `${user.member_count ?? 0}/7 thành viên`, color: '#c084fc',
                 icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' }] : []),
-            ].map(a => (
+            ].map((a, i) => (
               <Link key={a.href} href={a.href}
-                className="grid items-center gap-3 px-4 py-3 rounded-xl transition-all hover:scale-[1.01]"
-                style={{ gridTemplateColumns: '2rem 1fr', background: '#162847', border: '1px solid #1e3a5f' }}>
+                className={`grid items-center gap-3 px-4 py-3 rounded-xl doc-card-hover animate-list-item stagger-${i + 1}`}
+                style={{ gridTemplateColumns: '2rem 1fr', background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
                 <div className="w-8 h-8 rounded-lg grid place-items-center"
                   style={{ background: `${a.color}15`, border: `1px solid ${a.color}30` }}>
                   <svg className="w-4 h-4" style={{ color: a.color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,8 +298,8 @@ export default function BusinessDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-white">{a.label}</div>
-                  <div className="text-xs" style={{ color: '#475569' }}>{a.desc}</div>
+                  <div className="text-xs font-semibold" style={{ color: '#1A2332' }}>{a.label}</div>
+                  <div className="text-xs" style={{ color: '#5B6B7D' }}>{a.desc}</div>
                 </div>
               </Link>
             ))}

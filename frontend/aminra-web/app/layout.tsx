@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <script src="/chunk-error-handler.js" async></script>
       </head>
-      <body className={`${inter.className} min-h-full`} style={{background: '#111725'}}>
+      <body className={`${inter.className} min-h-full`} style={{background: '#FAFCF9'}}>
         <ClientI18nProvider>
           <LayoutShell>{children}</LayoutShell>
         </ClientI18nProvider>

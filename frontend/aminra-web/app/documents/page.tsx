@@ -1,9 +1,35 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useDropzone } from 'react-dropzone';
 import { useUserAuth } from '@/components/UserAuthContext';
+
+// ── Doc type options (from upload page) ──────────────────────────────────────
+
+const DOC_TYPE_OPTIONS = [
+  { id: 'halal_policy',             label: 'Halal Policy',                             group: 'policy' },
+  { id: 'has_manual',               label: 'HAS Manual',                               group: 'policy' },
+  { id: 'halal_manual',             label: 'Halal Manual',                             group: 'policy' },
+  { id: 'internal_halal_committee', label: 'Internal Halal Committee',                 group: 'policy' },
+  { id: 'company_profile',          label: 'Company Profile',                          group: 'policy' },
+  { id: 'ingredient_raw_material',  label: 'Ingredient & Raw Material Documentation', group: 'tech' },
+  { id: 'process_flow_chart',       label: 'Process Flow Chart',                       group: 'tech' },
+];
+
+const SOP_SUB_OPTIONS = [
+  { id: 'sop_raw_material_receiving',   label: 'Raw Material Receiving' },
+  { id: 'sop_storage_segregation',      label: 'Storage and Segregation' },
+  { id: 'sop_production_operation',     label: 'Production or Service Operation' },
+  { id: 'sop_cleaning_sanitation',      label: 'Cleaning and Sanitation' },
+  { id: 'sop_handling_nonconformances', label: 'Handling Non-Conformances' },
+  { id: 'sop_complaint_recall',         label: 'Complaint and Recall Management' },
+];
+
+const DOC_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  [...DOC_TYPE_OPTIONS, ...SOP_SUB_OPTIONS].map(d => [d.id, d.label])
+);
 
 interface DocumentItem {
   id: string;
@@ -16,6 +42,7 @@ interface DocumentItem {
   uploaded_by_name: string | null;
   uploaded_at: string;
   revision_count?: number | null;
+  status?: string | null;
 }
 
 interface RevisionItem {
@@ -36,16 +63,25 @@ interface RevisionListResponse {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; glow: string }> = {
-  compliant:     { label: 'Đạt chuẩn',   bg: 'rgba(34,197,94,0.12)',  color: '#4ade80', glow: '0 0 12px rgba(34,197,94,0.3)' },
-  needs_review:  { label: 'Cần xem xét', bg: 'rgba(245,158,11,0.12)', color: '#fbbf24', glow: '0 0 12px rgba(245,158,11,0.3)' },
-  non_compliant: { label: 'Không đạt',   bg: 'rgba(239,68,68,0.12)',  color: '#f87171', glow: '0 0 12px rgba(239,68,68,0.3)' },
+  cb_approved:   { label: 'Đã được duyệt bởi CB', bg: '#ECFDF5', color: '#065E43', glow: '0 0 8px rgba(8,118,83,0.2)' },
+  compliant:     { label: 'Đạt chuẩn',   bg: '#ECFDF5', color: '#059669', glow: 'none' },
+  needs_review:  { label: 'Cần xem xét', bg: '#FFFBEB', color: '#B45309', glow: 'none' },
+  non_compliant: { label: 'Không đạt',   bg: '#FEF2F2', color: '#DC2626', glow: 'none' },
 };
 
 function scoreColor(s: number | null) {
-  if (s === null) return '#475569';
-  if (s >= 75) return '#4ade80';
-  if (s >= 50) return '#fbbf24';
-  return '#f87171';
+  if (s === null) return '#D1D5DB';
+  if (s >= 75) return '#059669';
+  if (s >= 50) return '#D97706';
+  return '#DC2626';
+}
+
+function criteriaColor(score: number, weight: number) {
+  if (weight <= 0) return '#D1D5DB';
+  const pct = (score / weight) * 100;
+  if (pct >= 75) return '#059669';
+  if (pct >= 50) return '#D97706';
+  return '#DC2626';
 }
 
 function formatSize(bytes: number | null) {
@@ -65,16 +101,17 @@ function timeAgo(iso: string) {
 }
 
 function MiniScore({ score }: { score: number | null }) {
-  if (score === null) return <span className="text-sm" style={{ color: '#334155' }}>—</span>;
+  if (score === null) return <span className="text-sm" style={{ color: '#94A3B8' }}>—</span>;
   const pct = Math.min(score, 100);
   const color = scoreColor(score);
   return (
     <div className="relative w-12 h-12 flex-shrink-0">
       <svg viewBox="0 0 40 40" className="w-full h-full -rotate-90">
-        <circle cx="20" cy="20" r="16" fill="none" stroke="#1e3a5f" strokeWidth="3" />
+        <circle cx="20" cy="20" r="16" fill="none" stroke="#E2E8F0" strokeWidth="3" />
         <circle cx="20" cy="20" r="16" fill="none" stroke={color} strokeWidth="3"
           strokeLinecap="round" strokeDasharray={`${pct * 1.005} 100.5`}
-          style={{ transition: 'stroke-dasharray 0.6s ease' }} />
+          className="animate-score-fill"
+          style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }} />
       </svg>
       <span className="absolute inset-0 grid place-items-center text-xs font-bold" style={{ color }}>
         {score}
@@ -102,6 +139,17 @@ export default function DocumentsPage() {
   const [loadingHistory, setLoadingHistory] = useState<string | null>(null);
   const [promotingId, setPromotingId] = useState<string | null>(null);
 
+  // Upload modal
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadDocType, setUploadDocType] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [sopExpanded, setSopExpanded] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  // AI evaluate
+  const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
+  const [evalLangModal, setEvalLangModal] = useState<string | null>(null); // doc_id waiting for lang choice
+
   // Submit to provider
   const [showSubmit, setShowSubmit] = useState(false);
   const [providers, setProviders] = useState<Array<{ id: string; company_name: string; email: string }>>([]);
@@ -120,9 +168,9 @@ export default function DocumentsPage() {
     }
   }, [loading, isAuthenticated, user, router]);
 
-  const fetchDocs = useCallback(async (p = 1) => {
+  const fetchDocs = useCallback(async (p = 1, silent = false) => {
     if (!token) return;
-    setFetching(true);
+    if (!silent) setFetching(true);
     try {
       const params = new URLSearchParams({ page: String(p), page_size: String(PAGE_SIZE) });
       if (filterType)   params.set('doc_type', filterType);
@@ -137,7 +185,7 @@ export default function DocumentsPage() {
         setPage(p);
       }
     } finally {
-      setFetching(false);
+      if (!silent) setFetching(false);
     }
   }, [token, filterType, filterStatus]);
 
@@ -243,58 +291,151 @@ export default function DocumentsPage() {
     finally { setSubmitting(false); }
   };
 
+  // ── Upload handler ──────────────────────────────────────────────────────────
+  const handleUpload = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file || !uploadDocType || !token) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('doc_type', uploadDocType);
+      const res = await fetch('/api/api/documents/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.detail || `Upload thất bại (${res.status})`);
+      }
+      setShowUpload(false);
+      setUploadDocType(null);
+      setSopExpanded(false);
+      setUploadError('');
+      fetchDocs(1);
+    } catch (e: any) {
+      setUploadError(e.message || 'Upload thất bại');
+    } finally {
+      setUploading(false);
+    }
+  }, [uploadDocType, token, fetchDocs]);
+
+  const dropzone = useDropzone({
+    onDrop: handleUpload,
+    maxFiles: 1,
+    disabled: !uploadDocType || uploading,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'application/vnd.oasis.opendocument.text': ['.odt'],
+      'text/plain': ['.txt'],
+      'text/markdown': ['.md'],
+    },
+  });
+
+  // ── AI Evaluate handler ────────────────────────────────────────────────────
+  const handleEvaluate = async (docId: string, evalLang: string = 'vi') => {
+    setEvalLangModal(null);
+    setEvaluatingId(docId);
+    try {
+      const res = await fetch(`/api/api/documents/${docId}/evaluate?lang=${evalLang}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert(e.detail || 'Đánh giá thất bại');
+        setEvaluatingId(null);
+        return;
+      }
+      // Refresh — doc will show "Đang đánh giá..."
+      await fetchDocs(page, true);
+    } catch (err) {
+      alert('Đánh giá thất bại');
+    }
+    setEvaluatingId(null);
+  };
+
+  // Auto-refresh when there are evaluating documents (poll every 5s)
+  // Silent polling when evaluating — no loading skeleton flicker
+  const hasEvaluating = docs.some(d => d.status === 'evaluating');
+  const pageRef = useRef(page);
+  pageRef.current = page;
+  const fetchRef = useRef(fetchDocs);
+  fetchRef.current = fetchDocs;
+  useEffect(() => {
+    if (!hasEvaluating) return;
+    const interval = setInterval(() => fetchRef.current(pageRef.current, true), 5000);
+    return () => clearInterval(interval);
+  }, [hasEvaluating]);
+
   if (loading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
-      <div className="text-slate-400 text-sm">Đang tải...</div>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+      </div>
     </div>
   );
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   // Stats
-  const compliantCount = docs.filter(d => d.overall_status === 'compliant').length;
+  const compliantCount = docs.filter(d => d.overall_status === 'compliant' || d.overall_status === 'cb_approved').length;
   const reviewCount = docs.filter(d => d.overall_status === 'needs_review').length;
   const failCount = docs.filter(d => d.overall_status === 'non_compliant').length;
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden">
+    <div className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden" data-page>
       {/* ── Header ── */}
-      <div className="rounded-2xl p-6 mb-6"
-        style={{ background: 'linear-gradient(135deg, #0f2236 0%, #162847 50%, #0d1f35 100%)', border: '1px solid #1e3a5f' }}>
+      <div className="rounded-2xl p-6 mb-6 animate-section"
+        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="grid items-center" style={{ gridTemplateColumns: '1fr auto' }}>
           <div>
             <div className="grid grid-flow-col items-center gap-3 justify-start mb-2">
               <div className="w-10 h-10 rounded-xl grid place-items-center"
-                style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                <svg className="w-5 h-5" style={{ color: '#818cf8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                style={{ background: 'rgba(8,118,83,0.15)', border: '1px solid rgba(8,118,83,0.3)' }}>
+                <svg className="w-5 h-5" style={{ color: '#087653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Tài liệu</h1>
+                <h1 className="text-xl font-bold" style={{ color: '#1A2332' }}>Tài liệu</h1>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {docs.length > 0 && (
               <button onClick={openSubmitModal}
                 className="grid items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all hover:scale-105"
-                style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(37,99,235,0.15)', color: '#60a5fa', border: '1px solid rgba(37,99,235,0.3)' }}>
+                style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(14,165,233,0.15)', color: '#0EA5E9', border: '1px solid rgba(14,165,233,0.3)' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
                 Gửi hồ sơ
               </button>
             )}
-            <Link href="/upload"
+            <Link href="/create-document"
+              className="grid items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+              style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(124,58,237,0.12)', color: '#7C3AED', border: '1px solid rgba(124,58,237,0.25)' }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Tạo tài liệu chuẩn
+            </Link>
+            <button onClick={() => setShowUpload(true)}
               className="grid items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95"
-              style={{ gridTemplateColumns: 'auto 1fr', background: 'linear-gradient(135deg, #15803d, #16a34a)', boxShadow: '0 4px 15px rgba(22,163,74,0.3)' }}>
+              style={{ gridTemplateColumns: 'auto 1fr', background: 'linear-gradient(135deg, #065E43, #087653)', boxShadow: '0 4px 15px rgba(8,118,83,0.3)' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
               </svg>
               Upload tài liệu
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -302,8 +443,8 @@ export default function DocumentsPage() {
       {/* ── Filter ── */}
       <div className="mb-5">
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="text-sm px-4 py-2.5 rounded-xl text-slate-300 outline-none transition-all"
-          style={{ background: '#162847', border: '1px solid #1e3a5f' }}>
+          className="text-sm px-4 py-2.5 rounded-xl outline-none transition-all"
+          style={{ background: '#F0F7F4', border: '1px solid #E2E8F0', color: '#374151' }}>
           <option value="">Tất cả trạng thái</option>
           <option value="compliant">Đạt chuẩn</option>
           <option value="needs_review">Cần xem xét</option>
@@ -315,38 +456,57 @@ export default function DocumentsPage() {
       <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
         {fetching ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl h-24 animate-pulse"
-                style={{ background: '#162847', opacity: 1 - i * 0.2 }} />
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className={`rounded-2xl p-5 animate-list-item stagger-${i}`}
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
+                <div className="flex items-center gap-4">
+                  <div className="shimmer w-12 h-12 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="shimmer skeleton-text w-32" />
+                    <div className="shimmer skeleton-text w-48" />
+                    <div className="shimmer skeleton-text w-24" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="shimmer w-8 h-8 rounded-lg" />
+                    <div className="shimmer w-8 h-8 rounded-lg" />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         ) : docs.length === 0 ? (
-          <div className="rounded-2xl p-16 text-center"
-            style={{ background: '#162847', border: '1px solid #1e3a5f' }}>
-            <svg className="w-16 h-16 mx-auto mb-4" style={{ color: '#1e3a5f' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="rounded-2xl p-16 text-center animate-scale-in"
+            style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+            <svg className="w-16 h-16 mx-auto mb-4 animate-empty-icon" style={{ color: '#CBD5E1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1"
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-white font-semibold mb-2">Chưa có tài liệu nào</p>
-            <p className="text-sm mb-5" style={{ color: '#475569' }}>Upload tài liệu đầu tiên để bắt đầu đánh giá Halal</p>
-            <Link href="/upload"
+            <p className="font-semibold mb-2" style={{ color: '#1A2332' }}>Chưa có tài liệu nào</p>
+            <p className="text-sm mb-5" style={{ color: '#6B7280' }}>Upload tài liệu đầu tiên để bắt đầu đánh giá Halal</p>
+            <button onClick={() => setShowUpload(true)}
               className="inline-grid items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-              style={{ gridTemplateColumns: 'auto 1fr', background: '#16a34a' }}>
+              style={{ gridTemplateColumns: 'auto 1fr', background: '#087653' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
               </svg>
               Upload tài liệu
-            </Link>
+            </button>
           </div>
         ) : (
           docs.map((doc, i) => {
-            const st = STATUS_CONFIG[doc.overall_status || ''];
+            const st = doc.status === 'evaluating'
+              ? { label: 'Đang đánh giá...', bg: '#F5F3FF', color: '#7C3AED', glow: 'none' }
+              : doc.compliance_score === null
+                ? { label: 'Chưa đánh giá', bg: '#F3F4F6', color: '#6B7280', glow: 'none' }
+                : (STATUS_CONFIG[doc.overall_status || ''] || { label: 'Không rõ', bg: 'rgba(100,116,139,0.12)', color: '#9CA3AF', glow: 'none' });
             return (
               <div key={doc.id}
-                className="rounded-2xl p-5 transition-colors duration-200 doc-card-hover"
+                className="rounded-2xl p-5 doc-card-hover animate-list-item"
                 style={{
-                  background: 'linear-gradient(135deg, #162847, #0f2236)',
-                  border: '1px solid #1e3a5f',
+                  background: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  animationDelay: `${i * 0.05}s`,
                 }}>
                 {/* Row 1: score + doc type + status + actions */}
                 <div className="grid items-center gap-4" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
@@ -355,9 +515,9 @@ export default function DocumentsPage() {
                   <div className="min-w-0">
                     {/* Doc type + status badges */}
                     <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                      <span className="px-3 py-1 rounded-lg text-xs font-bold"
-                        style={{ background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
-                        {doc.doc_type_label || 'Chưa phân loại'}
+                      <span className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide"
+                        style={{ background: '#F0F9FF', color: '#0369A1', border: '1px solid #BAE6FD', letterSpacing: '0.02em' }}>
+                        {(doc.doc_type && DOC_TYPE_LABELS[doc.doc_type]) || doc.doc_type_label || 'Chưa phân loại'}
                       </span>
                       {st && (
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -367,36 +527,54 @@ export default function DocumentsPage() {
                       )}
                     </div>
                     {/* Filename */}
-                    <h3 className="text-sm font-semibold text-white truncate" title={doc.original_filename}>
+                    <h3 className="text-sm font-semibold truncate" style={{ color: '#1A2332' }} title={doc.original_filename}>
                       {doc.original_filename}
                     </h3>
                     {/* Meta */}
-                    <p className="text-sm mt-1" style={{ color: '#475569' }}>
+                    <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
                       {formatSize(doc.file_size)} · {new Date(doc.uploaded_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
 
                   {/* Actions — compact icon buttons */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={() => openEval(doc.id)} title="Kết quả đánh giá"
-                      disabled={loadingEval === doc.id}
+                    {/* AI Evaluate button */}
+                    <button onClick={() => setEvalLangModal(doc.id)}
+                      title={doc.status === 'evaluating' ? 'Đang đánh giá...' : doc.compliance_score === null ? 'Đánh giá tài liệu bằng AI' : 'Đánh giá lại'}
+                      disabled={evaluatingId === doc.id || doc.status === 'evaluating'}
                       className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                      style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                      {loadingEval === doc.id ? (
-                        <svg className="w-4 h-4 animate-spin" style={{ color: '#fbbf24' }} fill="none" viewBox="0 0 24 24">
+                      style={{ background: '#F5F3FF', border: '1px solid #DDD6FE' }}>
+                      {evaluatingId === doc.id || doc.status === 'evaluating' ? (
+                        <svg className="w-4 h-4 animate-spin" style={{ color: '#7C3AED' }} fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                         </svg>
                       ) : (
-                        <svg className="w-4 h-4" style={{ color: '#fbbf24' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" style={{ color: '#7C3AED' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      )}
+                    </button>
+                    <button onClick={() => openEval(doc.id)} title="Kết quả đánh giá"
+                      disabled={loadingEval === doc.id}
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                      {loadingEval === doc.id ? (
+                        <svg className="w-4 h-4 animate-spin" style={{ color: '#B45309' }} fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" style={{ color: '#B45309' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       )}
                     </button>
                     <button onClick={() => openView(doc.id)} title="Xem file gốc"
                       className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                      style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.2)' }}>
-                      <svg className="w-4 h-4" style={{ color: '#60a5fa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      style={{ background: '#F0F9FF', border: '1px solid #BAE6FD' }}>
+                      <svg className="w-4 h-4" style={{ color: '#0369A1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -404,8 +582,8 @@ export default function DocumentsPage() {
                     <a href={`/api/api/documents/${doc.id}/file?token=${encodeURIComponent(token || '')}`}
                       download onClick={e => e.stopPropagation()} title="Tải xuống"
                       className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                      <svg className="w-4 h-4" style={{ color: '#4ade80' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      style={{ background: 'rgba(8,118,83,0.1)', border: '1px solid rgba(8,118,83,0.2)' }}>
+                      <svg className="w-4 h-4" style={{ color: '#087653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                     </a>
@@ -413,8 +591,8 @@ export default function DocumentsPage() {
                       <button onClick={() => openHistory(doc.doc_type!)} title="Lịch sử"
                         disabled={loadingHistory === doc.doc_type}
                         className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                        style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                        <svg className="w-4 h-4" style={{ color: '#a78bfa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        style={{ background: '#FDF4FF', border: '1px solid #F0ABFC' }}>
+                        <svg className="w-4 h-4" style={{ color: '#A21CAF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </button>
@@ -425,12 +603,12 @@ export default function DocumentsPage() {
                         className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
                         style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
                         {removeId === doc.id ? (
-                          <svg className="w-4 h-4 animate-spin" style={{ color: '#64748b' }} fill="none" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 animate-spin" style={{ color: '#9CA3AF' }} fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                           </svg>
                         ) : (
-                          <svg className="w-4 h-4" style={{ color: '#64748b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" style={{ color: '#9CA3AF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
@@ -450,15 +628,15 @@ export default function DocumentsPage() {
         <div className="grid grid-flow-col items-center gap-3 mt-5 justify-center flex-shrink-0">
           <button disabled={page === 1} onClick={() => fetchDocs(page - 1)}
             className="px-4 py-2 rounded-xl text-sm transition-all hover:scale-105 disabled:opacity-30"
-            style={{ background: '#162847', border: '1px solid #1e3a5f', color: '#94a3b8' }}>
+            style={{ background: '#F0F7F4', border: '1px solid #E2E8F0', color: '#6B7280' }}>
             ← Trước
           </button>
-          <span className="text-sm px-3" style={{ color: '#64748b' }}>
-            Trang <strong className="text-white">{page}</strong> / {totalPages}
+          <span className="text-sm px-3" style={{ color: '#9CA3AF' }}>
+            Trang <strong style={{ color: '#1A2332' }}>{page}</strong> / {totalPages}
           </span>
           <button disabled={page === totalPages} onClick={() => fetchDocs(page + 1)}
             className="px-4 py-2 rounded-xl text-sm transition-all hover:scale-105 disabled:opacity-30"
-            style={{ background: '#162847', border: '1px solid #1e3a5f', color: '#94a3b8' }}>
+            style={{ background: '#F0F7F4', border: '1px solid #E2E8F0', color: '#6B7280' }}>
             Sau →
           </button>
         </div>
@@ -466,19 +644,19 @@ export default function DocumentsPage() {
 
       {/* ── Evaluation Detail Modal ── */}
       {evalDetail && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-3xl rounded-2xl flex flex-col"
-            style={{ background: '#111725', border: '1px solid #1e3a5f', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+        <div className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-[calc(100vw-2rem)] md:max-w-3xl rounded-2xl flex flex-col animate-modal-content"
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.1)' }}>
 
             {/* Header */}
             <div className="px-6 py-5 flex-shrink-0"
-              style={{ borderBottom: '1px solid #1e3a5f', background: 'linear-gradient(135deg, #0f2236, #162847)' }}>
+              style={{ borderBottom: '1px solid #E2E8F0', background: '#FFFFFF' }}>
               <div className="grid items-center gap-4" style={{ gridTemplateColumns: '1fr auto' }}>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <span className="px-3 py-1 rounded-lg text-xs font-bold"
-                      style={{ background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
+                      style={{ background: 'rgba(8,118,83,0.08)', color: '#087653', border: '1px solid rgba(8,118,83,0.25)' }}>
                       {evalDetail.doc_type_label || evalDetail.doc_type}
                     </span>
                     {(() => {
@@ -489,7 +667,7 @@ export default function DocumentsPage() {
                       ) : null;
                     })()}
                   </div>
-                  <h2 className="text-base font-bold text-white">{evalDetail.original_filename}</h2>
+                  <h2 className="text-base font-bold" style={{ color: '#1A2332' }}>{evalDetail.original_filename}</h2>
                 </div>
                 <div className="flex items-center gap-4">
                   {/* Big score */}
@@ -497,12 +675,12 @@ export default function DocumentsPage() {
                     <div className="text-3xl font-bold" style={{ color: scoreColor(evalDetail.compliance_score) }}>
                       {evalDetail.compliance_score ?? '—'}
                     </div>
-                    <div className="text-xs" style={{ color: '#475569' }}>điểm</div>
+                    <div className="text-xs" style={{ color: '#6B7280' }}>điểm</div>
                   </div>
                   <button onClick={() => setEvalDetail(null)}
                     className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                    style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <span className="text-slate-400 hover:text-white">✕</span>
+                    style={{ background: 'rgba(0,0,0,0.05)' }}>
+                    <span style={{ color: '#6B7280' }}>✕</span>
                   </button>
                 </div>
               </div>
@@ -512,34 +690,34 @@ export default function DocumentsPage() {
             <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
               {/* Summary */}
               {evalDetail.summary && (
-                <div className="rounded-xl p-4" style={{ background: '#162847', border: '1px solid #1e3a5f' }}>
-                  <p className="text-sm leading-relaxed" style={{ color: '#cbd5e1' }}>{evalDetail.summary}</p>
+                <div className="rounded-xl p-4" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+                  <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>{evalDetail.summary}</p>
                 </div>
               )}
 
               {/* Criteria scores */}
               {evalDetail.criteria_scores && evalDetail.criteria_scores.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-3">Điểm theo tiêu chí</h3>
+                  <h3 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Điểm theo tiêu chí</h3>
                   <div className="space-y-2">
                     {evalDetail.criteria_scores.map((cs: any, i: number) => (
-                      <div key={i} className="rounded-xl p-4" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
+                      <div key={i} className="rounded-xl p-4" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
                         <div className="grid items-center gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
                           <div>
-                            <p className="text-sm font-medium text-white">{cs.criterion}</p>
-                            {cs.reason && <p className="text-sm mt-1" style={{ color: '#64748b' }}>{cs.reason}</p>}
+                            <p className="text-sm font-medium" style={{ color: '#1A2332' }}>{cs.criterion}</p>
+                            {cs.reason && <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>{cs.reason}</p>}
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <span className="text-lg font-bold" style={{ color: scoreColor(cs.score) }}>
+                            <span className="text-lg font-bold" style={{ color: criteriaColor(cs.score, cs.weight) }}>
                               {cs.score}
                             </span>
-                            <span className="text-sm" style={{ color: '#475569' }}>/{cs.weight}</span>
+                            <span className="text-sm" style={{ color: '#6B7280' }}>/{cs.weight}</span>
                           </div>
                         </div>
                         {/* Progress bar */}
-                        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: '#1e3a5f' }}>
+                        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: '#E2E8F0' }}>
                           <div className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${cs.weight > 0 ? (cs.score / cs.weight) * 100 : 0}%`, background: scoreColor(cs.score) }} />
+                            style={{ width: `${cs.weight > 0 ? (cs.score / cs.weight) * 100 : 0}%`, background: criteriaColor(cs.score, cs.weight) }} />
                         </div>
                       </div>
                     ))}
@@ -550,23 +728,23 @@ export default function DocumentsPage() {
               {/* Issues */}
               {evalDetail.issues && evalDetail.issues.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-3">Vấn đề phát hiện ({evalDetail.issues.length})</h3>
+                  <h3 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Vấn đề phát hiện ({evalDetail.issues.length})</h3>
                   <div className="space-y-2">
                     {evalDetail.issues.map((issue: any, i: number) => (
-                      <div key={i} className="rounded-xl p-4" style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }}>
+                      <div key={i} className="rounded-xl p-4" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-xs font-bold px-2 py-0.5 rounded"
                             style={{
-                              color: issue.severity === 'critical' ? '#f87171' : issue.severity === 'major' ? '#fbbf24' : '#94a3b8',
+                              color: issue.severity === 'critical' ? '#EF4444' : issue.severity === 'major' ? '#F59E0B' : '#94a3b8',
                               background: issue.severity === 'critical' ? 'rgba(239,68,68,0.12)' : issue.severity === 'major' ? 'rgba(245,158,11,0.12)' : 'rgba(148,163,184,0.12)',
                             }}>
                             {issue.severity?.toUpperCase()}
                           </span>
-                          <span className="text-sm" style={{ color: '#64748b' }}>{issue.section}</span>
+                          <span className="text-sm" style={{ color: '#9CA3AF' }}>{issue.section}</span>
                         </div>
-                        <p className="text-sm" style={{ color: '#cbd5e1' }}>{issue.issue}</p>
+                        <p className="text-sm" style={{ color: '#374151' }}>{issue.issue}</p>
                         {issue.recommendation && (
-                          <p className="text-sm mt-1.5" style={{ color: '#4ade80' }}>→ {issue.recommendation}</p>
+                          <p className="text-sm mt-1.5" style={{ color: '#087653' }}>→ {issue.recommendation}</p>
                         )}
                       </div>
                     ))}
@@ -577,11 +755,11 @@ export default function DocumentsPage() {
               {/* Strengths */}
               {evalDetail.strengths && evalDetail.strengths.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-3">Điểm mạnh</h3>
+                  <h3 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Điểm mạnh</h3>
                   <div className="space-y-1.5">
                     {evalDetail.strengths.map((s: string, i: number) => (
-                      <div key={i} className="grid gap-2 text-sm" style={{ gridTemplateColumns: 'auto 1fr', color: '#94a3b8' }}>
-                        <span style={{ color: '#4ade80' }}>✓</span>{s}
+                      <div key={i} className="grid gap-2 text-sm" style={{ gridTemplateColumns: 'auto 1fr', color: '#6B7280' }}>
+                        <span style={{ color: '#087653' }}>✓</span>{s}
                       </div>
                     ))}
                   </div>
@@ -591,11 +769,11 @@ export default function DocumentsPage() {
               {/* Recommendations */}
               {evalDetail.recommendations && evalDetail.recommendations.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-3">Đề xuất cải thiện</h3>
+                  <h3 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Đề xuất cải thiện</h3>
                   <div className="space-y-1.5">
                     {evalDetail.recommendations.map((r: string, i: number) => (
-                      <div key={i} className="grid gap-2 text-sm" style={{ gridTemplateColumns: 'auto 1fr', color: '#94a3b8' }}>
-                        <span style={{ color: '#fbbf24' }}>→</span>{r}
+                      <div key={i} className="grid gap-2 text-sm" style={{ gridTemplateColumns: 'auto 1fr', color: '#6B7280' }}>
+                        <span style={{ color: '#F59E0B' }}>→</span>{r}
                       </div>
                     ))}
                   </div>
@@ -605,15 +783,15 @@ export default function DocumentsPage() {
               {/* Signature */}
               {evalDetail.signature_detection && (
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-3">Chữ ký & Con dấu</h3>
+                  <h3 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Chữ ký & Con dấu</h3>
                   <div className="rounded-xl p-4" style={{
-                    background: '#0f1e35', border: '1px solid #1e3a5f',
+                    background: '#FFFFFF', border: '1px solid #E2E8F0',
                     borderLeftWidth: 3,
-                    borderLeftColor: evalDetail.signature_detection.signature_status === 'confirmed' ? '#4ade80'
-                      : evalDetail.signature_detection.signature_status === 'likely' ? '#60a5fa'
-                      : evalDetail.signature_detection.signature_status === 'placeholder' ? '#f87171' : '#334155',
+                    borderLeftColor: evalDetail.signature_detection.signature_status === 'confirmed' ? '#087653'
+                      : evalDetail.signature_detection.signature_status === 'likely' ? '#0EA5E9'
+                      : evalDetail.signature_detection.signature_status === 'placeholder' ? '#EF4444' : '#94A3B8',
                   }}>
-                    <p className="text-sm" style={{ color: '#cbd5e1' }}>{evalDetail.signature_detection.summary}</p>
+                    <p className="text-sm" style={{ color: '#374151' }}>{evalDetail.signature_detection.summary}</p>
                   </div>
                 </div>
               )}
@@ -624,21 +802,21 @@ export default function DocumentsPage() {
 
       {/* ── History Modal ── */}
       {historyData && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-2xl rounded-2xl flex flex-col"
-            style={{ background: '#111725', border: '1px solid #1e3a5f', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+        <div className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl rounded-2xl flex flex-col animate-modal-content"
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.1)' }}>
 
-            <div className="px-6 py-5 flex-shrink-0" style={{ borderBottom: '1px solid #1e3a5f', background: 'linear-gradient(135deg, #0f2236, #162847)' }}>
+            <div className="px-6 py-5 flex-shrink-0" style={{ borderBottom: '1px solid #E2E8F0', background: '#FFFFFF' }}>
               <div className="grid items-center gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
                 <div>
-                  <h2 className="text-base font-bold text-white">Lịch sử — {historyData.doc_type_label || historyData.doc_type}</h2>
-                  <p className="text-sm mt-1" style={{ color: '#475569' }}>{historyData.total} phiên bản</p>
+                  <h2 className="text-base font-bold" style={{ color: '#1A2332' }}>Lịch sử — {historyData.doc_type_label || historyData.doc_type}</h2>
+                  <p className="text-sm mt-1" style={{ color: '#6B7280' }}>{historyData.total} phiên bản</p>
                 </div>
                 <button onClick={() => setHistoryData(null)}
                   className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                  style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <span className="text-slate-400 hover:text-white">✕</span>
+                  style={{ background: 'rgba(0,0,0,0.05)' }}>
+                  <span style={{ color: '#6B7280' }}>✕</span>
                 </button>
               </div>
             </div>
@@ -649,30 +827,30 @@ export default function DocumentsPage() {
                 const isLatest = i === 0;
                 return (
                   <div key={rev.id}
-                    className="px-6 py-4 transition-all hover:bg-white/[0.02]"
-                    style={{ borderBottom: '1px solid #1e3a5f' }}>
+                    className="px-6 py-4 transition-all hover:bg-black/[0.02]"
+                    style={{ borderBottom: '1px solid #E2E8F0' }}>
                     <div className="grid items-center gap-4" style={{ gridTemplateColumns: 'auto auto 1fr auto auto' }}>
                       {/* Version number */}
                       <div className="w-8 h-8 rounded-lg grid place-items-center text-xs font-bold flex-shrink-0"
                         style={{
-                          background: isLatest ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.1)',
-                          color: isLatest ? '#4ade80' : '#64748b',
-                          border: isLatest ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(100,116,139,0.2)',
+                          background: isLatest ? 'rgba(8,118,83,0.15)' : 'rgba(100,116,139,0.1)',
+                          color: isLatest ? '#087653' : '#5F6F80',
+                          border: isLatest ? '1px solid rgba(8,118,83,0.3)' : '1px solid rgba(100,116,139,0.2)',
                         }}>
                         v{historyData.total - i}
                       </div>
                       <MiniScore score={rev.compliance_score} />
                       <div>
                         <div className="grid grid-flow-col items-center gap-2 justify-start">
-                          <p className="text-sm font-medium text-white">{rev.original_filename}</p>
+                          <p className="text-sm font-medium" style={{ color: '#1A2332' }}>{rev.original_filename}</p>
                           {isLatest && (
                             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                              style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
+                              style={{ background: 'rgba(8,118,83,0.15)', color: '#087653' }}>
                               Hiện tại
                             </span>
                           )}
                         </div>
-                        <div className="grid grid-flow-col items-center gap-2 mt-1 justify-start text-sm" style={{ color: '#475569' }}>
+                        <div className="grid grid-flow-col items-center gap-2 mt-1 justify-start text-sm" style={{ color: '#6B7280' }}>
                           <span>{new Date(rev.uploaded_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                           <span>·</span>
                           <span>{formatSize(rev.file_size)}</span>
@@ -688,7 +866,7 @@ export default function DocumentsPage() {
                         <button
                           onClick={() => openView(rev.id)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
-                          style={{ background: 'rgba(37,99,235,0.1)', color: '#60a5fa', border: '1px solid rgba(37,99,235,0.2)' }}>
+                          style={{ background: 'rgba(14,165,233,0.1)', color: '#0EA5E9', border: '1px solid rgba(14,165,233,0.2)' }}>
                           Xem
                         </button>
                         {!isLatest && (
@@ -696,7 +874,7 @@ export default function DocumentsPage() {
                             onClick={() => handlePromote(rev.id, historyData.doc_type)}
                             disabled={promotingId === rev.id}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
-                            style={{ background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
+                            style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>
                             {promotingId === rev.id ? '...' : 'Lựa chọn'}
                           </button>
                         )}
@@ -712,20 +890,20 @@ export default function DocumentsPage() {
 
       {/* ── Submit Modal ── */}
       {showSubmit && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-lg rounded-2xl flex flex-col"
-            style={{ background: '#111725', border: '1px solid #1e3a5f', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+        <div className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.1)' }}>
             <div className="px-6 py-5 flex-shrink-0"
-              style={{ borderBottom: '1px solid #1e3a5f', background: 'linear-gradient(135deg, #0f2236, #162847)' }}>
+              style={{ borderBottom: '1px solid #E2E8F0', background: '#FFFFFF' }}>
               <div className="grid items-center gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
                 <div>
-                  <h2 className="text-base font-bold text-white">Gửi hồ sơ đến tổ chức chứng nhận</h2>
-                  <p className="text-sm mt-1" style={{ color: '#64748b' }}>Chọn tổ chức và tài liệu cần gửi</p>
+                  <h2 className="text-base font-bold" style={{ color: '#1A2332' }}>Gửi hồ sơ đến tổ chức chứng nhận</h2>
+                  <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>Chọn tổ chức và tài liệu cần gửi</p>
                 </div>
                 <button onClick={() => setShowSubmit(false)}
-                  className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <span className="text-slate-400 hover:text-white">✕</span>
+                  className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(0,0,0,0.05)' }}>
+                  <span style={{ color: '#6B7280' }}>✕</span>
                 </button>
               </div>
             </div>
@@ -733,9 +911,9 @@ export default function DocumentsPage() {
             <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
               {/* Provider select */}
               <div>
-                <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>Tổ chức chứng nhận *</label>
+                <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>Tổ chức chứng nhận *</label>
                 {providers.length === 0 ? (
-                  <p className="text-sm" style={{ color: '#475569' }}>Chưa có tổ chức nào trong hệ thống</p>
+                  <p className="text-sm" style={{ color: '#6B7280' }}>Chưa có tổ chức nào trong hệ thống</p>
                 ) : (
                   <div className="space-y-2">
                     {providers.map(p => (
@@ -743,18 +921,18 @@ export default function DocumentsPage() {
                         className="w-full grid items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
                         style={{
                           gridTemplateColumns: 'auto 1fr',
-                          background: selectedProvider === p.id ? 'rgba(37,99,235,0.12)' : '#0f1e35',
-                          border: `1px solid ${selectedProvider === p.id ? 'rgba(37,99,235,0.4)' : '#1e3a5f'}`,
+                          background: selectedProvider === p.id ? 'rgba(14,165,233,0.08)' : '#FFFFFF',
+                          border: `1px solid ${selectedProvider === p.id ? 'rgba(14,165,233,0.4)' : '#E2E8F0'}`,
                         }}>
                         <div className="w-8 h-8 rounded-lg grid place-items-center"
-                          style={{ background: 'rgba(37,99,235,0.15)', color: '#60a5fa' }}>
+                          style={{ background: 'rgba(14,165,233,0.15)', color: '#0EA5E9' }}>
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white">{p.company_name}</p>
-                          <p className="text-xs" style={{ color: '#475569' }}>{p.email}</p>
+                          <p className="text-sm font-medium" style={{ color: '#1A2332' }}>{p.company_name}</p>
+                          <p className="text-xs" style={{ color: '#6B7280' }}>{p.email}</p>
                         </div>
                       </button>
                     ))}
@@ -764,7 +942,7 @@ export default function DocumentsPage() {
 
               {/* Document selection */}
               <div>
-                <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>
+                <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>
                   Tài liệu gửi ({selectedDocs.size}/{docs.length})
                 </label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
@@ -772,8 +950,8 @@ export default function DocumentsPage() {
                     <label key={doc.id} className="grid items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
                       style={{
                         gridTemplateColumns: 'auto 1fr auto',
-                        background: selectedDocs.has(doc.id) ? 'rgba(34,197,94,0.08)' : '#0f1e35',
-                        border: `1px solid ${selectedDocs.has(doc.id) ? 'rgba(34,197,94,0.25)' : '#1e3a5f'}`,
+                        background: selectedDocs.has(doc.id) ? 'rgba(8,118,83,0.08)' : '#FFFFFF',
+                        border: `1px solid ${selectedDocs.has(doc.id) ? 'rgba(8,118,83,0.25)' : '#E2E8F0'}`,
                       }}>
                       <input type="checkbox" checked={selectedDocs.has(doc.id)}
                         onChange={e => {
@@ -781,8 +959,8 @@ export default function DocumentsPage() {
                           e.target.checked ? next.add(doc.id) : next.delete(doc.id);
                           setSelectedDocs(next);
                         }} className="rounded" />
-                      <span className="text-sm text-white truncate">{doc.original_filename}</span>
-                      <span className="text-xs" style={{ color: '#475569' }}>{doc.doc_type_label}</span>
+                      <span className="text-sm truncate" style={{ color: '#1A2332' }}>{doc.original_filename}</span>
+                      <span className="text-xs" style={{ color: '#6B7280' }}>{doc.doc_type_label}</span>
                     </label>
                   ))}
                 </div>
@@ -790,24 +968,161 @@ export default function DocumentsPage() {
 
               {/* Notes */}
               <div>
-                <label className="text-xs font-medium mb-1.5 block" style={{ color: '#94a3b8' }}>Ghi chú (tuỳ chọn)</label>
+                <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>Ghi chú (tuỳ chọn)</label>
                 <textarea value={submitNotes} onChange={e => setSubmitNotes(e.target.value)}
                   placeholder="Thông tin thêm cho tổ chức chứng nhận..."
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
-                  style={{ background: '#0f1e35', border: '1px solid #1e3a5f' }} />
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#1A2332' }} />
               </div>
             </div>
 
-            <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid #1e3a5f' }}>
+            <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid #E2E8F0' }}>
               <button onClick={handleSubmit}
                 disabled={submitting || !selectedProvider || selectedDocs.size === 0}
                 className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all"
                 style={{
-                  background: (!selectedProvider || selectedDocs.size === 0) ? '#1e3a5f' : 'linear-gradient(135deg, #1d4ed8, #2563eb)',
+                  background: (!selectedProvider || selectedDocs.size === 0) ? '#E2E8F0' : 'linear-gradient(135deg, #1d4ed8, #2563eb)',
                   boxShadow: selectedProvider && selectedDocs.size > 0 ? '0 4px 15px rgba(37,99,235,0.3)' : 'none',
+                  color: (!selectedProvider || selectedDocs.size === 0) ? '#5B6B7D' : 'white',
                 }}>
                 {submitting ? 'Đang gửi...' : `Gửi ${selectedDocs.size} tài liệu`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Upload Modal ── */}
+      {showUpload && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); setUploadDocType(null); setUploadError(''); setSopExpanded(false); } }}>
+          <div className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl rounded-2xl animate-modal-content"
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.1)' }}>
+
+            {/* Header */}
+            <div className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: '1px solid #E2E8F0' }}>
+              <h2 className="text-lg font-bold" style={{ color: '#1A2332' }}>Upload tài liệu</h2>
+              <button onClick={() => { setShowUpload(false); setUploadDocType(null); setUploadError(''); setSopExpanded(false); }}
+                className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(0,0,0,0.05)' }}>
+                <span style={{ color: '#6B7280' }}>✕</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
+
+              {/* Step 1: Select doc type */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: '#1A2332' }}>1. Chọn loại tài liệu</h3>
+                <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+                  {DOC_TYPE_OPTIONS.map(dt => (
+                    <button key={dt.id} onClick={() => setUploadDocType(dt.id)}
+                      className="text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        background: uploadDocType === dt.id ? 'rgba(8,118,83,0.08)' : '#FFFFFF',
+                        border: `1.5px solid ${uploadDocType === dt.id ? '#087653' : '#E2E8F0'}`,
+                        color: uploadDocType === dt.id ? '#087653' : '#5B6B7D',
+                      }}>
+                      {dt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* SOP group */}
+                <button onClick={() => setSopExpanded(!sopExpanded)}
+                  className="mt-2 flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg transition-all"
+                  style={{ color: '#a78bfa', background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.15)' }}>
+                  SOP Documents
+                  <svg className={`w-3 h-3 transition-transform ${sopExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {sopExpanded && (
+                  <div className="grid gap-2 mt-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+                    {SOP_SUB_OPTIONS.map(dt => (
+                      <button key={dt.id} onClick={() => setUploadDocType(dt.id)}
+                        className="text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all"
+                        style={{
+                          background: uploadDocType === dt.id ? 'rgba(167,139,250,0.1)' : '#FFFFFF',
+                          border: `1.5px solid ${uploadDocType === dt.id ? '#a78bfa' : '#E2E8F0'}`,
+                          color: uploadDocType === dt.id ? '#6366F1' : '#5B6B7D',
+                        }}>
+                        {dt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Dropzone */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: '#1A2332' }}>2. Chọn file</h3>
+                {!uploadDocType ? (
+                  <div className="rounded-xl p-8 text-center text-xs" style={{ background: '#FAFCF9', border: '1px dashed #E2E8F0', color: '#6B7280' }}>
+                    Vui lòng chọn loại tài liệu trước
+                  </div>
+                ) : (
+                  <div {...dropzone.getRootProps()}
+                    className="rounded-xl p-8 text-center cursor-pointer transition-all"
+                    style={{
+                      background: dropzone.isDragActive ? 'rgba(8,118,83,0.05)' : '#FAFCF9',
+                      border: `2px dashed ${dropzone.isDragActive ? '#087653' : '#E2E8F0'}`,
+                    }}>
+                    <input {...dropzone.getInputProps()} />
+                    {uploading ? (
+                      <div className="space-y-2">
+                        <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <p className="text-sm" style={{ color: '#6B7280' }}>Đang upload...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <svg className="w-10 h-10 mx-auto mb-3" style={{ color: '#E2E8F0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="text-sm font-medium" style={{ color: '#1A2332' }}>Kéo thả file hoặc click để chọn</p>
+                        <p className="text-xs mt-1" style={{ color: '#6B7280' }}>PDF, DOCX, PPTX, ODT, TXT, MD (tối đa 50MB)</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Upload error */}
+              {uploadError && (
+                <div className="px-4 py-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444' }}>
+                  {uploadError}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Eval Language Modal ── */}
+      {evalLangModal && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setEvalLangModal(null)}>
+          <div className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 25px 60px rgba(0,0,0,0.1)' }}
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-bold mb-2" style={{ color: '#1A2332' }}>Chọn ngôn ngữ đánh giá</h3>
+            <p className="text-xs mb-4" style={{ color: '#9CA3AF' }}>AI sẽ sử dụng tài liệu mẫu tham chiếu theo ngôn ngữ bạn chọn</p>
+            <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <button onClick={() => handleEvaluate(evalLangModal, 'vi')}
+                className="rounded-xl p-4 text-left transition-all hover:scale-[1.02]"
+                style={{ background: 'rgba(239,68,68,0.06)', border: '2px solid rgba(239,68,68,0.2)' }}>
+                <div className="text-lg mb-1">🇻🇳</div>
+                <div className="text-sm font-semibold" style={{ color: '#1A2332' }}>Tiếng Việt</div>
+              </button>
+              <button onClick={() => handleEvaluate(evalLangModal, 'en')}
+                className="rounded-xl p-4 text-left transition-all hover:scale-[1.02]"
+                style={{ background: 'rgba(14,165,233,0.06)', border: '2px solid rgba(14,165,233,0.2)' }}>
+                <div className="text-lg mb-1">🇬🇧</div>
+                <div className="text-sm font-semibold" style={{ color: '#1A2332' }}>English</div>
               </button>
             </div>
           </div>

@@ -17,6 +17,10 @@ ALLOWED_MIME_TYPES = {
     "text/markdown",
 }
 
+# DOCX/PPTX/ODT are ZIP-based — magic sometimes detects them as these
+_ZIP_BASED_MIMES = {"application/octet-stream", "application/zip", "application/x-zip-compressed"}
+_ZIP_BASED_EXTENSIONS = {".docx", ".pptx", ".odt"}
+
 
 async def validate_upload(file: UploadFile) -> bytes:
     """Validate file extension, size, and MIME type. Returns file bytes."""
@@ -33,7 +37,9 @@ async def validate_upload(file: UploadFile) -> bytes:
     # 3. MIME type check (magic bytes)
     detected_mime = magic.from_buffer(content, mime=True)
     if detected_mime not in ALLOWED_MIME_TYPES:
-        raise HTTPException(400, f"Invalid file content type: {detected_mime}")
+        # ZIP-based formats (DOCX, PPTX, ODT) may be detected as octet-stream/zip
+        if not (detected_mime in _ZIP_BASED_MIMES and suffix in _ZIP_BASED_EXTENSIONS):
+            raise HTTPException(400, f"Invalid file content type: {detected_mime}")
 
     await file.seek(0)  # reset for downstream readers
     return content

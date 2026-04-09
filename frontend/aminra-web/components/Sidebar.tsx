@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdminAuth } from './AdminAuthContext';
 import { useUserAuth } from './UserAuthContext';
 import AdminLoginModal from './AdminLoginModal';
+import NotificationBell from './NotificationBell';
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -15,11 +16,20 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const [clientReady, setClientReady] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const { isAdmin, logout: logoutAdmin } = useAdminAuth();
-  const { user, isAuthenticated, logout: logoutUser } = useUserAuth();
+  const { user, isAuthenticated, logout: logoutUser, token } = useUserAuth();
   const [showLogin, setShowLogin] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => { setClientReady(true); }, []);
+
+  // Close avatar dropdown on outside click
   useEffect(() => {
-    setClientReady(true);
+    const handler = (e: MouseEvent) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) setAvatarOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const languages = [
@@ -29,235 +39,232 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { code: 'ar', name: 'العربية' },
   ];
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    setLangOpen(false);
-  };
+  const changeLanguage = (lng: string) => { i18n.changeLanguage(lng); setLangOpen(false); };
 
   const dashboardHref = user?.role === 'business' ? '/dashboard/business' : user?.role === 'provider' ? '/dashboard/provider' : null;
 
+  // Company initial for avatar
+  const companyInitial = user?.company_name?.charAt(0)?.toUpperCase() || 'A';
+  const logoUrl = user?.tenant_id ? `/api/auth/company-logo/${user.tenant_id}` : null;
+
   const navItems = [
     ...(dashboardHref ? [{
-      label: 'Dashboard',
-      href: dashboardHref,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      )
+      label: 'Dashboard', href: dashboardHref,
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
     }] : []),
-    {
-      label: t('navbar.home'),
-      href: '/',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      )
-    },
-    {
-      label: t('navbar.upload'),
-      href: '/upload',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-      )
+    { label: t('navbar.home'), href: '/chat',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
     },
     ...(user?.role === 'business' ? [{
-      label: 'Tài liệu',
-      href: '/documents',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
+      label: 'Tài liệu', href: '/documents',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+    }, {
+      label: 'Hồ sơ đã gửi', href: '/submissions',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
     }] : []),
     ...(user?.role === 'business' && user?.is_owner ? [{
-      label: 'Thành viên',
-      href: '/members',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      )
+      label: 'Thành viên', href: '/members',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+    }] : []),
+    ...(user?.role === 'business' ? [{
+      label: 'Nguyên vật liệu', href: '/supply-chain/materials',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+    }, {
+      label: 'Quy trình', href: '/supply-chain/process',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" /></svg>
+    }, {
+      label: 'Lô hàng', href: '/supply-chain/batches',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
     }] : []),
     ...(user?.role === 'provider' && user?.is_owner ? [{
-      label: 'Quản lý Auditor',
-      href: '/auditors',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      )
+      label: 'Quản lý Auditor', href: '/auditors',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
     }] : []),
     ...(user?.role === 'provider' ? [{
-      label: 'Hồ sơ nhận',
-      href: '/submissions',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-        </svg>
-      )
+      label: 'Hồ sơ nhận', href: '/submissions',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
     }] : []),
-    ...(isAdmin ? [{
-      label: 'Admin Panel',
-      href: '/admin',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      )
+    ...(!isAuthenticated && isAdmin ? [{
+      label: 'Admin Panel', href: '/admin',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
     }] : []),
   ];
 
   return (
-    <aside className="w-64 min-h-screen grid"
-      style={{
-        background: '#111725',
-        borderRight: '1px solid #1e3a5f',
-        gridTemplateRows: 'auto 1fr auto auto auto auto',
-      }}>
-      {/* Logo */}
-      <div className="p-6" style={{borderBottom:'1px solid #1e3a5f'}}>
-        <div className="grid items-center"
-          style={{gridTemplateColumns: '1fr auto'}}>
-          <div className="grid items-center"
-            style={{gridTemplateColumns: '2.5rem 1fr', gap: '0.75rem'}}>
-            <div className="h-10 w-10 rounded-full bg-green-600 grid place-items-center">
-              <span className="text-white font-bold text-lg">A</span>
+    <aside className="w-64 min-h-screen flex flex-col overflow-hidden"
+      style={{ background: '#1E293B', borderRight: '1px solid #334155' }}>
+
+      {/* ── Top: AMINRA Logo (not logged in) OR Company Avatar (logged in) ── */}
+      {!isAuthenticated && (
+        <div className="px-3 py-4" style={{ borderBottom: '1px solid #334155' }}>
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-10 h-10 rounded-xl bg-emerald-700 grid place-items-center flex-shrink-0"
+              style={{ boxShadow: '0 0 12px rgba(8,118,83,0.2)' }}>
+              <span className="text-white font-black text-lg">A</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Aminra</h1>
-              <p className="text-sm text-slate-400">Halal Certification</p>
+              <h1 className="text-base font-bold text-white">Aminra</h1>
+              <p className="text-xs" style={{ color: '#64748b' }}>Halal Certification</p>
             </div>
           </div>
-          {onClose && (
-            <button onClick={onClose} className="md:hidden text-slate-400 hover:text-white p-1" aria-label="Close menu">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+        </div>
+      )}
+
+      {isAuthenticated && user && (
+        <div className="px-3 py-3" style={{ borderBottom: '1px solid #334155' }}>
+          <div ref={avatarRef} className="relative">
+            <button onClick={() => setAvatarOpen(!avatarOpen)}
+              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all hover:bg-white/5"
+              style={{ border: '1px solid transparent' }}>
+              <div className="w-9 h-9 rounded-full grid place-items-center flex-shrink-0 overflow-hidden"
+                style={{ background: '#087653', boxShadow: '0 0 0 2px #334155' }}>
+                {logoUrl ? (
+                  <img src={logoUrl} alt="" className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                ) : null}
+                <span className="text-white font-bold text-xs">{companyInitial}</span>
+              </div>
+              <div className="flex-1 min-w-0 text-left overflow-hidden">
+                <p className="text-sm font-semibold text-white truncate">{user.company_name}</p>
+                <p className="text-xs truncate" style={{ color: '#94A3B8' }}>{user.email}</p>
+              </div>
+              <svg className={`w-3.5 h-3.5 flex-shrink-0 text-slate-400 transition-transform ${avatarOpen ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-          )}
-        </div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="p-4 space-y-2 overflow-y-auto">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`grid items-center px-4 py-3 rounded-lg transition-all ${pathname === item.href
-                ? 'bg-green-600 text-white shadow-md'
-                : 'text-slate-300 hover:bg-green-600/20 hover:text-white'
-              }`}
-            style={{gridTemplateColumns: '1.25rem 1fr', gap: '0.75rem'}}
-            onClick={onClose}
-          >
-            <div className={pathname === item.href ? 'text-white' : 'text-green-500'}>
-              {item.icon}
-            </div>
-            <span className="font-medium">{item.label}</span>
+            {avatarOpen && (
+              <div className="absolute left-0 right-0 top-full mt-1 rounded-xl overflow-hidden shadow-xl z-50 animate-modal-content"
+                style={{ background: '#263548', border: '1px solid #334155' }}>
+                <div className="px-4 py-2" style={{ borderBottom: '1px solid #334155' }}>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded"
+                    style={{ background: 'rgba(8,118,83,0.15)', color: '#34d399' }}>
+                    {user.role === 'business' ? (user.is_owner ? 'Chủ tài khoản' : 'Thành viên') : 'Tổ chức'}
+                  </span>
+                </div>
+                <div className="py-1">
+                  <Link href="/settings/company" onClick={() => { setAvatarOpen(false); onClose?.(); }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors">
+                    <svg className="w-4 h-4" style={{ color: '#94A3B8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Thông tin doanh nghiệp
+                  </Link>
+                  <Link href="/settings" onClick={() => { setAvatarOpen(false); onClose?.(); }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors">
+                    <svg className="w-4 h-4" style={{ color: '#94A3B8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Cài đặt tài khoản
+                  </Link>
+                </div>
+                <div style={{ borderTop: '1px solid #334155' }}>
+                  <button onClick={() => { logoutUser(); router.push('/landing'); setAvatarOpen(false); onClose?.(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Đăng xuất
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin logged in (no user) ── */}
+      {!isAuthenticated && isAdmin && (
+        <div className="px-3 py-3" style={{ borderBottom: '1px solid #334155' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(8,118,83,0.08)', border: '1px solid rgba(8,118,83,0.2)' }}>
+            <span style={{ color: '#10b981', fontSize: 10 }}>●</span>
+            <span className="text-xs font-medium" style={{ color: '#34d399' }}>Admin</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Navigation ── */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        {navItems.map((item, i) => (
+          <Link key={item.href} href={item.href}
+            className={`animate-nav-item grid items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${pathname === item.href
+              ? 'bg-emerald-700 text-white shadow-md'
+              : 'text-slate-300 hover:bg-white/5 hover:text-white'
+            }`}
+            style={{ gridTemplateColumns: '1.25rem 1fr', gap: '0.625rem', animationDelay: `${i * 0.04}s` }}
+            onClick={onClose}>
+            {pathname === item.href && (
+              <span className="nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r bg-emerald-300" />
+            )}
+            <div className={`transition-transform duration-200 ${pathname === item.href ? 'text-white scale-110' : 'text-emerald-400'}`}>{item.icon}</div>
+            <span className="font-medium text-sm">{item.label}</span>
           </Link>
         ))}
       </nav>
 
-      {/* Auth section */}
-      <div className="px-4 pb-3" style={{borderTop:'1px solid #1e3a5f', paddingTop:'12px'}}>
-        {/* User logged in */}
-        {isAuthenticated && user && (
-          <div className="space-y-2">
-            <div className="px-3 py-2.5 rounded-lg" style={{background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.15)'}}>
-              <p className="text-xs font-semibold text-white truncate">{user.company_name}</p>
-              <p className="text-xs mt-0.5 truncate" style={{color:'#64748b'}}>{user.email}</p>
-              <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium"
-                style={{background: user.role === 'business' ? 'rgba(34,197,94,0.12)' : 'rgba(37,99,235,0.12)', color: user.role === 'business' ? '#4ade80' : '#60a5fa'}}>
-                {user.role === 'business' ? (user.is_owner ? 'Chủ tài khoản' : 'Thành viên') : 'Tổ chức'}
-              </span>
-            </div>
-            <button onClick={() => { logoutUser(); router.push('/'); onClose?.(); }}
-              className="w-full grid items-center px-4 py-3 rounded-lg transition-all text-slate-300 hover:bg-red-500/20 hover:text-red-400" style={{gridTemplateColumns:'1.25rem 1fr',gap:'0.75rem'}}>
+      {/* ── Notifications ── */}
+      {isAuthenticated && (
+        <div className="px-3 py-2" style={{ borderTop: '1px solid #334155' }}>
+          <NotificationBell token={token || ''} />
+        </div>
+      )}
+
+      {/* ── Login / Logout (when not logged in as user) ── */}
+      {!isAuthenticated && (
+        <div className="px-3 py-3 space-y-1" style={{ borderTop: '1px solid #334155' }}>
+          {isAdmin ? (
+            <button onClick={() => { logoutAdmin(); router.push('/landing'); onClose?.(); }}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span className="font-medium">Đăng xuất</span>
+              Đăng xuất Admin
             </button>
-          </div>
-        )}
-
-        {/* Admin logged in (no user session) */}
-        {!isAuthenticated && isAdmin && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)'}}>
-              <span style={{color:'#22c55e', fontSize:10}}>●</span>
-              <span className="text-xs font-medium" style={{color:'#4ade80'}}>Admin đang đăng nhập</span>
-            </div>
-            <button onClick={() => { logoutAdmin(); router.push('/'); onClose?.(); }}
-              className="w-full grid items-center px-4 py-3 rounded-lg transition-all text-slate-300 hover:bg-red-500/20 hover:text-red-400" style={{gridTemplateColumns:'1.25rem 1fr',gap:'0.75rem'}}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="font-medium">Đăng xuất Admin</span>
-            </button>
-          </div>
-        )}
-
-        {/* Not logged in — show login options */}
-        {!isAuthenticated && !isAdmin && (
-          <div className="space-y-2">
-            <Link href="/business/login" onClick={onClose}
-              className="grid items-center px-4 py-3 rounded-lg transition-all text-slate-300 hover:bg-green-600/20 hover:text-white" style={{gridTemplateColumns:'1.25rem 1fr',gap:'0.75rem'}}>
-              <div style={{color:'#4ade80'}}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          ) : (
+            <>
+              <Link href="/business/login" onClick={onClose}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-emerald-700/20 hover:text-white transition-colors">
+                <svg className="w-5 h-5" style={{ color: '#34d399' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-              </div>
-              <span className="font-medium">Đăng nhập Doanh nghiệp</span>
-            </Link>
-            <Link href="/provider/login" onClick={onClose}
-              className="grid items-center px-4 py-3 rounded-lg transition-all text-slate-300 hover:bg-green-600/20 hover:text-white" style={{gridTemplateColumns:'1.25rem 1fr',gap:'0.75rem'}}>
-              <div style={{color:'#60a5fa'}}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                Đăng nhập Doanh nghiệp
+              </Link>
+              <Link href="/provider/login" onClick={onClose}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-emerald-700/20 hover:text-white transition-colors">
+                <svg className="w-5 h-5" style={{ color: '#94A3B8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-              </div>
-              <span className="font-medium">Đăng nhập Tổ chức</span>
-            </Link>
-            <button onClick={() => setShowLogin(true)}
-              className="w-full grid items-center px-4 py-3 rounded-lg transition-all text-slate-300 hover:bg-green-600/20 hover:text-white" style={{gridTemplateColumns:'1.25rem 1fr',gap:'0.75rem'}}>
-              <div className="text-green-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                Đăng nhập Tổ chức
+              </Link>
+              <button onClick={() => setShowLogin(true)}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-emerald-700/20 hover:text-white transition-colors">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-              </div>
-              <span className="font-medium">Đăng nhập Admin</span>
-            </button>
-          </div>
-        )}
-      </div>
+                Đăng nhập Admin
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
-      {/* Language Switcher */}
-      <div className="p-4" style={{borderTop:'1px solid #1e3a5f'}}>
+      {/* ── Language ── */}
+      <div className="px-3 pb-2" style={{ borderTop: '1px solid #334155', paddingTop: '10px' }}>
         <div className="relative">
-          <button
-            onClick={() => setLangOpen(!langOpen)}
-            className="flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors text-slate-300 hover:border-green-500"
-            style={{border:'1px solid #1e3a5f', background:'#162847'}}
-          >
+          <button onClick={() => setLangOpen(!langOpen)}
+            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white transition-colors"
+            style={{ border: '1px solid #334155' }}>
             <span>{t('navbar.language')}</span>
-            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           {langOpen && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg z-50" style={{background:'#162847', border:'1px solid #1e3a5f'}}>
+            <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg shadow-lg z-50 animate-dropdown-up" style={{ background: '#263548', border: '1px solid #334155' }}>
               {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => changeLanguage(lang.code)}
-                  className="w-full text-left px-4 py-3 transition-colors text-slate-300 hover:bg-green-600/20 hover:text-white"
-                >
+                <button key={lang.code} onClick={() => changeLanguage(lang.code)}
+                  className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/5 hover:text-white transition-colors">
                   {lang.name}
                 </button>
               ))}
@@ -266,9 +273,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4" style={{borderTop:'1px solid #1e3a5f'}}>
-        <p className="text-xs text-center" style={{color:'#3d6a96'}} suppressHydrationWarning>
+      {/* ── Footer ── */}
+      <div className="px-3 py-2" style={{ borderTop: '1px solid #334155' }}>
+        <p className="text-xs text-center" style={{ color: '#475569' }} suppressHydrationWarning>
           © {new Date().getFullYear()} Aminra
         </p>
       </div>

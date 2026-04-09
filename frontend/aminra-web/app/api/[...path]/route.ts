@@ -4,6 +4,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 
+// Allow large file uploads (50MB) and longer timeouts
+export const maxDuration = 120;
+export const dynamic = 'force-dynamic';
+
 const BACKEND = process.env.BACKEND_URL || 'http://aminra-backend:8000';
 
 async function proxy(req: NextRequest, path: string[]): Promise<Response> {
