@@ -258,24 +258,25 @@ export default function MembersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5 animate-section">
+      <div className="grid grid-cols-2 gap-1 mb-5 p-1 rounded-xl animate-section" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
         {([
           { id: 'members' as const, label: 'Thành viên', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
           { id: 'minutes' as const, label: 'Biên bản họp', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
         ]).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className="grid grid-flow-col items-center gap-2 justify-center py-3 rounded-xl text-sm font-medium transition-all"
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all"
             style={{
-              background: activeTab === tab.id ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.03)',
-              color: activeTab === tab.id ? '#a5b4fc' : '#5F6F80',
-              border: `1px solid ${activeTab === tab.id ? 'rgba(99,102,241,0.3)' : '#E2E8F0'}`,
+              background: activeTab === tab.id ? '#087653' : 'transparent',
+              color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
+              boxShadow: activeTab === tab.id ? '0 2px 8px rgba(8,118,83,0.25)' : 'none',
             }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={tab.icon} />
             </svg>
             {tab.label}
             {tab.id === 'minutes' && minutes.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded text-xs animate-chip" style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>
+              <span className="px-1.5 py-0.5 rounded text-xs animate-chip"
+                style={{ background: activeTab === tab.id ? 'rgba(255,255,255,0.2)' : 'rgba(8,118,83,0.15)', color: activeTab === tab.id ? '#fff' : '#087653' }}>
                 {minutes.length}
               </span>
             )}

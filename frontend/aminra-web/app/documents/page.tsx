@@ -412,7 +412,7 @@ export default function DocumentsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             {docs.length > 0 && (
               <button onClick={openSubmitModal}
-                className="grid items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all hover:scale-105"
                 style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(14,165,233,0.15)', color: '#0EA5E9', border: '1px solid rgba(14,165,233,0.3)' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -421,7 +421,7 @@ export default function DocumentsPage() {
               </button>
             )}
             <Link href="/create-document"
-              className="grid items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all hover:scale-105"
               style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(124,58,237,0.12)', color: '#7C3AED', border: '1px solid rgba(124,58,237,0.25)' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -429,7 +429,7 @@ export default function DocumentsPage() {
               Tạo tài liệu chuẩn
             </Link>
             <button onClick={() => setShowUpload(true)}
-              className="grid items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95"
+              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95"
               style={{ gridTemplateColumns: 'auto 1fr', background: 'linear-gradient(135deg, #065E43, #087653)', boxShadow: '0 4px 15px rgba(8,118,83,0.3)' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />

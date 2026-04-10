@@ -7,7 +7,7 @@ import { AdminAuthProvider } from './AdminAuthContext';
 import { UserAuthProvider } from './UserAuthContext';
 
 const FULL_SCREEN_ROUTES = ['/landing'];
-const FULL_SCREEN_PREFIXES = ['/supplier-portal', '/invite', '/trace'];
+const FULL_SCREEN_PREFIXES = ['/supplier-portal', '/invite', '/trace', '/verify'];
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -70,7 +70,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         </header>
 
         <main className="flex-1 p-5 md:p-8 lg:p-10 flex flex-col lg:min-h-0 lg:overflow-y-auto">
-          {children}
+          <div className="w-full max-w-6xl mx-auto flex flex-col flex-1 lg:min-h-0">
+            {children}
+          </div>
         </main>
       </div>
     </div>

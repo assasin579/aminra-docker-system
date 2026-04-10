@@ -232,6 +232,138 @@ async def list_certificates(
     ]}
 
 
+@router.get("/certificates/registry")
+async def cert_registry(
+    status: Optional[str] = Query(None),
+    expiring_days: int = Query(0),
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Provider owner: full cert registry with filters and stats."""
+    if user["role"] != "provider" or not user.get("is_owner"):
+        raise HTTPException(403, "Chỉ chủ tổ chức")
+    provider_id = user.get("tenant_id") or user["sub"]
+
+    # Stats
+    stats = await db.fetchrow("""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status='active') AS active,
+            COUNT(*) FILTER (WHERE status='active' AND expiry_date < NOW() + INTERVAL '90 days') AS expiring_soon,
+            COUNT(*) FILTER (WHERE status='active' AND expiry_date < NOW()) AS expired,
+            COUNT(*) FILTER (WHERE status='suspended') AS suspended,
+            COUNT(*) FILTER (WHERE status='revoked') AS revoked
+        FROM halal_certificates WHERE issued_by=$1
+    """, provider_id)
+
+    # Filtered list
+    where = "c.issued_by=$1"
+    params = [provider_id]
+    idx = 2
+    if status:
+        if status == 'expiring':
+            where += f" AND c.status='active' AND c.expiry_date < NOW() + INTERVAL '90 days'"
+        elif status == 'expired':
+            where += f" AND c.status='active' AND c.expiry_date < NOW()"
+        else:
+            where += f" AND c.status=${idx}"
+            params.append(status); idx += 1
+    if expiring_days > 0:
+        where += f" AND c.status='active' AND c.expiry_date < NOW() + INTERVAL '{int(expiring_days)} days'"
+
+    rows = await db.fetch(f"""
+        SELECT c.*, u.company_name AS provider_name
+        FROM halal_certificates c
+        LEFT JOIN users u ON u.id=c.issued_by
+        WHERE {where}
+        ORDER BY c.expiry_date ASC
+    """, *params)
+
+    return {
+        "stats": {
+            "total": stats["total"], "active": stats["active"],
+            "expiring_soon": stats["expiring_soon"], "expired": stats["expired"],
+            "suspended": stats["suspended"], "revoked": stats["revoked"],
+        },
+        "certificates": [
+            {
+                "id": str(r["id"]),
+                "cert_number": r["cert_number"],
+                "company_name": r["company_name"],
+                "issue_date": r["issue_date"].isoformat(),
+                "expiry_date": r["expiry_date"].isoformat(),
+                "status": r["status"],
+                "notes": r["notes"],
+                "has_pdf": bool(r["pdf_path"]),
+                "days_remaining": (r["expiry_date"] - date.today()).days,
+                "created_at": r["created_at"].isoformat(),
+            } for r in rows
+        ],
+    }
+
+
+@router.get("/certificates/public/{cert_number}")
+async def public_verify_cert(cert_number: str, db: Connection = Depends(get_db)):
+    """Public endpoint — NO AUTH. Verify a certificate by its number."""
+    row = await db.fetchrow("""
+        SELECT c.cert_number, c.company_name, c.issue_date, c.expiry_date, c.status,
+               u.company_name AS provider_name
+        FROM halal_certificates c
+        LEFT JOIN users u ON u.id=c.issued_by
+        WHERE c.cert_number=$1
+    """, cert_number.strip().upper())
+    if not row:
+        raise HTTPException(404, "Chứng nhận không tồn tại")
+
+    is_expired = row["expiry_date"] < date.today() if row["expiry_date"] else False
+    effective_status = "expired" if is_expired and row["status"] == "active" else row["status"]
+
+    return {
+        "cert_number": row["cert_number"],
+        "company_name": row["company_name"],
+        "provider_name": row["provider_name"],
+        "issue_date": row["issue_date"].isoformat(),
+        "expiry_date": row["expiry_date"].isoformat(),
+        "status": effective_status,
+        "valid": effective_status == "active" and not is_expired,
+    }
+
+
+@router.put("/certificates/{cert_id}/status")
+async def update_cert_status(
+    cert_id: str,
+    req: dict,
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Provider owner: suspend, revoke, or reactivate a certificate."""
+    _validate_uuid(cert_id)
+    if user["role"] != "provider" or not user.get("is_owner"):
+        raise HTTPException(403, "Chỉ chủ tổ chức")
+
+    new_status = req.get("status")
+    if new_status not in ("active", "suspended", "revoked"):
+        raise HTTPException(400, "Status: active | suspended | revoked")
+
+    row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2", cert_id, user["sub"])
+    if not row:
+        raise HTTPException(404)
+
+    await db.execute("UPDATE halal_certificates SET status=$1 WHERE id=$2", new_status, cert_id)
+
+    # Notify business
+    from auth.notification_router import notify
+    biz_owner = await db.fetchrow(
+        "SELECT id FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", row["business_tenant"])
+    if biz_owner:
+        labels = {"active": "được kích hoạt lại", "suspended": "bị tạm đình chỉ", "revoked": "bị thu hồi"}
+        await notify(db, str(biz_owner["id"]), "certificate",
+                     f"Chứng nhận {row['cert_number']} đã {labels[new_status]}",
+                     req.get("reason", ""), "/documents")
+
+    return {"message": f"Đã cập nhật trạng thái: {new_status}"}
+
+
 @router.get("/certificates/{cert_id}/pdf")
 async def download_certificate_pdf(
     cert_id: str,

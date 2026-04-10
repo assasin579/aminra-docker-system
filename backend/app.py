@@ -76,12 +76,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 from auth.submission_router import router as submission_router
 from auth.certificate_router import router as certificate_router
 from auth.notification_router import router as notification_router
+from auth.audit_router import router as audit_router
 app.include_router(auth_router,         prefix="/auth", tags=["auth"])
 app.include_router(admin_auth_router,   prefix="/auth", tags=["auth-admin"])
 app.include_router(document_router,     prefix="/api",  tags=["documents"])
 app.include_router(submission_router,   prefix="/api/submissions", tags=["submissions"])
 app.include_router(certificate_router,  prefix="/api/submissions", tags=["certificates"])
 app.include_router(notification_router, prefix="/api/notifications", tags=["notifications"])
+app.include_router(audit_router,        prefix="/api/audits", tags=["audits"])
 
 from supply_chain.supplier_router import router as supplier_router
 from supply_chain.material_router import router as material_router

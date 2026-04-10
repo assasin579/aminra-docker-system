@@ -709,27 +709,24 @@ export default function UploadPage() {
         });
         return (
           <div style={{
-            display: 'table', width: '100%', tableLayout: 'fixed',
-            borderCollapse: 'collapse', borderBottom: '1px solid #E2E8F0',
-            marginBottom: '1.5rem',
+            display: 'grid', gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)`, gap: 4,
+            padding: 4, borderRadius: 12, marginBottom: '1.5rem',
+            background: '#F0F7F4', border: '1px solid #E2E8F0',
           }}>
             {visibleTabs.map(tab => (
-              <div key={tab.id} style={{ display: 'table-cell' }}>
-                <button onClick={() => setActiveTab(tab.id)} style={{
-                  display: 'block', width: '100%',
-                  padding: '8px 4px', textAlign: 'center',
-                  fontSize: '0.875rem', fontWeight: activeTab === tab.id ? 600 : 400,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  cursor: 'pointer', transition: 'all 0.2s',
-                  borderRadius: '6px 6px 0 0',
-                  color: activeTab === tab.id ? '#087653' : '#5B6B7D',
-                  background: activeTab === tab.id ? 'rgba(8,118,83,0.06)' : 'transparent',
-                  borderBottom: activeTab === tab.id ? '2px solid #087653' : '2px solid transparent',
-                }}>
-                  <span style={{ marginRight: 4, fontSize: '0.75rem' }}>{tab.icon}</span>
-                  {tab.label}
-                </button>
-              </div>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                padding: '10px 4px', textAlign: 'center',
+                fontSize: '0.875rem', fontWeight: activeTab === tab.id ? 600 : 500,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                cursor: 'pointer', transition: 'all 0.15s',
+                borderRadius: 8, border: 'none',
+                color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
+                background: activeTab === tab.id ? '#087653' : 'transparent',
+                boxShadow: activeTab === tab.id ? '0 2px 8px rgba(8,118,83,0.25)' : 'none',
+              }}>
+                <span style={{ marginRight: 4, fontSize: '0.75rem' }}>{tab.icon}</span>
+                {tab.label}
+              </button>
             ))}
           </div>
         );

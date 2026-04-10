@@ -268,17 +268,17 @@ export default function MaterialsPage() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5 animate-section">
+      <div className="grid grid-cols-2 gap-1 mb-5 p-1 rounded-xl animate-section" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
         {[
-          { id: 'materials' as const, label: 'Danh sách nguyên phụ liệu', count: materials.length },
-          { id: 'suppliers' as const, label: 'Danh sách nhà cung cấp', count: suppliers.length },
+          { id: 'materials' as const, label: 'Nguyên phụ liệu', count: materials.length },
+          { id: 'suppliers' as const, label: 'Nhà cung cấp', count: suppliers.length },
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all"
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all"
             style={{
-              background: activeTab === tab.id ? '#087653' : '#FAFCF9',
+              background: activeTab === tab.id ? '#087653' : 'transparent',
               color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
-              border: `1px solid ${activeTab === tab.id ? '#087653' : '#E2E8F0'}`,
+              boxShadow: activeTab === tab.id ? '0 2px 8px rgba(8,118,83,0.25)' : 'none',
             }}>
             {tab.label}
             <span className="px-1.5 py-0.5 rounded text-xs"

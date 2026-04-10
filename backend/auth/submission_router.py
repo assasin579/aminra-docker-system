@@ -54,6 +54,104 @@ def _provider_filter(user: dict, alias: str = "s"):
     return f"{prefix}{col} = $1", user["sub"]
 
 
+# ── CB Dashboard: comprehensive stats ────────────────────────────────────────
+
+@router.get("/cb-stats")
+async def cb_stats(
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Comprehensive CB dashboard stats — owner only."""
+    if user["role"] != "provider":
+        raise HTTPException(403)
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Chỉ chủ tổ chức")
+    pid = user.get("tenant_id") or user["sub"]
+
+    # Portfolio size
+    portfolio = await db.fetchval("""
+        SELECT COUNT(DISTINCT business_tenant) FROM (
+            SELECT business_tenant FROM submissions WHERE provider_id=$1
+            UNION SELECT business_tenant FROM audit_visits WHERE provider_id=$1
+        ) t
+    """, pid)
+
+    # Cert stats
+    certs = await db.fetchrow("""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status='active') AS active,
+            COUNT(*) FILTER (WHERE status='active' AND expiry_date < NOW() + INTERVAL '90 days') AS expiring_soon,
+            COUNT(*) FILTER (WHERE status='suspended' OR status='revoked') AS inactive
+        FROM halal_certificates WHERE issued_by=$1
+    """, pid)
+
+    # Audit stats
+    audits = await db.fetchrow("""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status IN ('completed','report_submitted')) AS completed,
+            ROUND(AVG(compliance_score) FILTER (WHERE compliance_score IS NOT NULL)) AS avg_compliance
+        FROM audit_visits WHERE provider_id=$1
+    """, pid)
+
+    # Submission stats (reuse existing)
+    subs = await db.fetchrow("""
+        SELECT
+            COUNT(*) FILTER (WHERE status='pending') AS pending,
+            COUNT(*) FILTER (WHERE status='reviewing') AS reviewing,
+            COUNT(*) FILTER (WHERE status='approved') AS approved,
+            COUNT(*) AS total,
+            ROUND(EXTRACT(EPOCH FROM AVG(updated_at - submitted_at) FILTER (WHERE status != 'pending')) / 3600, 1) AS avg_hours
+        FROM submissions WHERE provider_id=$1
+    """, pid)
+
+    # Auditor workload
+    auditors = await db.fetch("""
+        SELECT a.id, a.company_name,
+            (SELECT COUNT(*) FROM audit_visits WHERE auditor_id=a.id AND status IN ('scheduled','in_progress')) AS active_visits,
+            (SELECT COUNT(*) FROM submissions WHERE auditor_id=a.id AND status IN ('assigned','reviewing')) AS active_submissions
+        FROM users a
+        WHERE a.tenant_id=$1 AND a.is_owner=false AND a.role='provider' AND a.status='active'
+    """, pid)
+
+    # Expiring certs (next 90 days)
+    expiring = await db.fetch("""
+        SELECT cert_number, company_name, expiry_date
+        FROM halal_certificates
+        WHERE issued_by=$1 AND status='active' AND expiry_date < NOW() + INTERVAL '90 days'
+        ORDER BY expiry_date ASC LIMIT 10
+    """, pid)
+
+    return {
+        "portfolio_size": portfolio or 0,
+        "certs": {
+            "total": certs["total"], "active": certs["active"],
+            "expiring_soon": certs["expiring_soon"], "inactive": certs["inactive"],
+        },
+        "audits": {
+            "total": audits["total"], "completed": audits["completed"],
+            "avg_compliance": int(audits["avg_compliance"]) if audits["avg_compliance"] else None,
+        },
+        "submissions": {
+            "pending": subs["pending"], "reviewing": subs["reviewing"],
+            "approved": subs["approved"], "total": subs["total"],
+            "avg_hours": float(subs["avg_hours"]) if subs["avg_hours"] else None,
+        },
+        "auditor_workload": [
+            {"id": str(a["id"]), "name": a["company_name"],
+             "active_visits": a["active_visits"], "active_submissions": a["active_submissions"]}
+            for a in auditors
+        ],
+        "expiring_certs": [
+            {"cert_number": e["cert_number"], "company_name": e["company_name"],
+             "expiry_date": e["expiry_date"].isoformat(),
+             "days_remaining": (e["expiry_date"] - __import__('datetime').date.today()).days}
+            for e in expiring
+        ],
+    }
+
+
 # ── Provider: dashboard stats ────────────────────────────────────────────────
 
 @router.get("/stats")
