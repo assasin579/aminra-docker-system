@@ -422,7 +422,7 @@ export default function DocumentsPage() {
             )}
             <Link href="/create-document"
               className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all hover:scale-105"
-              style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(124,58,237,0.12)', color: '#7C3AED', border: '1px solid rgba(124,58,237,0.25)' }}>
+              style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(8,118,83,0.1)', color: '#087653', border: '1px solid rgba(8,118,83,0.2)' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>

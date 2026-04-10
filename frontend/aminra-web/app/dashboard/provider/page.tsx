@@ -259,7 +259,7 @@ export default function ProviderDashboard() {
               { label: 'Sắp hết hạn',   value: cb.certs.expiring_soon, color: cb.certs.expiring_soon > 0 ? '#DC2626' : '#D97706', bg: cb.certs.expiring_soon > 0 ? '#FEF2F2' : '#FFFBEB', icon: ICONS.clock },
               { label: 'KĐ hoàn thành', value: cb.audits.completed, color: '#7C3AED', bg: '#F5F3FF', icon: ICONS.clipboard },
             ] as const).map((c, i) => (
-              <div key={c.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+              <div key={c.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: c.bg }}>
                     <Icon d={c.icon} color={c.color} />
@@ -436,7 +436,7 @@ export default function ProviderDashboard() {
             { label: 'Đã duyệt',  value: au.approved,  color: '#059669', bg: '#ECFDF5' },
             { label: 'Trả lại',   value: au.returned,  color: '#D97706', bg: '#FEF3C7' },
           ] as const).map((st, i) => (
-            <div key={st.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+            <div key={st.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
               <div className="text-2xl font-bold animate-count" style={{ color: st.color }}>{st.value}</div>
               <div className="text-xs font-medium mt-0.5" style={{ color: '#5F6F80' }}>{st.label}</div>
             </div>

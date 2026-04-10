@@ -163,7 +163,7 @@ export default function BusinessDashboard() {
           { label: 'Đạt chuẩn', value: s?.compliant_count ?? '—', sub: `/ ${s?.total_types ?? 13} loại`, color: '#087653' },
           { label: 'Thành viên', value: `${user.member_count ?? 0}/7`, sub: 'đang hoạt động', color: '#818cf8' },
         ].map((st, i) => (
-          <div key={st.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+          <div key={st.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <div className="text-xl font-bold mb-0.5 animate-count" style={{ color: st.color }}>{st.value}</div>
             <div className="text-xs font-medium" style={{ color: '#1A2332' }}>{st.label}</div>
             <div className="text-xs mt-0.5" style={{ color: '#5B6B7D' }}>{st.sub}</div>

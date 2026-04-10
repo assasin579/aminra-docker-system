@@ -164,9 +164,9 @@ export default function CertificatesPage() {
           <button key={t.key} onClick={() => setTab(t.key)}
             className="px-3 py-2 rounded-lg text-xs font-semibold transition-all text-center"
             style={{
-              background: tab === t.key ? '#FFFFFF' : 'transparent',
-              color: tab === t.key ? '#087653' : '#5F6F80',
-              boxShadow: tab === t.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              background: tab === t.key ? '#087653' : 'transparent',
+              color: tab === t.key ? '#FFFFFF' : '#6B7280',
+              boxShadow: tab === t.key ? '0 2px 8px rgba(8,118,83,0.25)' : 'none',
             }}>
             {t.label}
           </button>
