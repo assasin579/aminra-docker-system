@@ -1,0 +1,21 @@
+Subject: [AMINRA] Xác nhận yêu cầu xoá tài khoản
+
+Xin chào {{ user_name | default("bạn") }},
+
+Chúng tôi nhận được yêu cầu xoá tài khoản AMINRA của bạn ({{ user_email }}).
+
+Nếu đây là yêu cầu hợp lệ, nhấn vào liên kết bên dưới để xác nhận xoá. Liên kết
+có hiệu lực trong {{ ttl_minutes | default(60) }} phút:
+
+  {{ confirm_url }}
+
+KHI BẠN XÁC NHẬN:
+- Tài khoản sẽ bị vô hiệu hoá vĩnh viễn (không thể khôi phục)
+- Email, tên doanh nghiệp và thông tin liên hệ sẽ được ẩn danh
+- Audit log có thể được giữ tới 5 năm theo nghĩa vụ pháp lý
+- Chứng chỉ Halal đã cấp vẫn duy trì trên hệ thống public verify (đây là
+  nghĩa vụ lưu trữ — không phải dữ liệu cá nhân của bạn)
+
+Nếu bạn KHÔNG yêu cầu xoá, hãy bỏ qua email này và đổi mật khẩu để bảo mật.
+
+— Đội ngũ {{ from_name }}

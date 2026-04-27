@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { parseApiError } from '@/lib/apiError';
 
 interface AdminAuthState {
   isAdmin: boolean;
@@ -38,7 +39,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Đăng nhập thất bại');
+      throw new Error(parseApiError(err, 'Đăng nhập thất bại'));
     }
     const { token: t } = await res.json();
     setToken(t);
@@ -57,6 +58,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
     setToken(null);
     localStorage.removeItem(TOKEN_KEY);
+    // Cross-context cleanup: never leave a stale user token after admin logout
+    localStorage.removeItem('aminra_user_token');
+    localStorage.removeItem('aminra_user_profile');
+    document.cookie = 'aminra_session=; path=/; max-age=0';
     try { sessionStorage.clear(); } catch {}
   }, [token]);
 

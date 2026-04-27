@@ -1,0 +1,16 @@
+Subject: [AMINRA] Chứng nhận Halal sắp hết hạn ({{ days_until_expiry }} ngày)
+
+Xin chào {{ user_name | default("bạn") }},
+
+Chứng nhận Halal của doanh nghiệp bạn sắp hết hạn:
+
+  • Số chứng nhận: {{ cert_number }}
+  • Doanh nghiệp:   {{ company_name }}
+  • Ngày hết hạn:   {{ expiry_date }}
+  • Còn lại:        {{ days_until_expiry }} ngày
+
+{% if days_until_expiry <= 30 %}KHẨN CẤP — Vui lòng liên hệ tổ chức cấp chứng nhận để chuẩn bị gia hạn.{% else %}Đề xuất bắt đầu quy trình gia hạn càng sớm càng tốt để tránh gián đoạn.{% endif %}
+
+Xem chi tiết: {{ cert_url }}
+
+— Đội ngũ {{ from_name }}

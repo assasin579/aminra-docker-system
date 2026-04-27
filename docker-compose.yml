@@ -78,10 +78,22 @@ services:
       - "8100:8000"
     environment:
       - QDRANT_URL=http://qdrant-db:6333
+      - REDIS_URL=redis://redis:6379/0
       - EMBED_MODEL=intfloat/multilingual-e5-base
+      # Server tuning — see backend/env.example for full reference
+      - WEB_CONCURRENCY=4
+      - WORKER_TIMEOUT=240
+      - MAX_REQUESTS=1000
+      - MAX_REQUESTS_JITTER=100
+      - DB_POOL_MIN_SIZE=2
+      - DB_POOL_MAX_SIZE=15
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_HOURS=8
       - JWT_REFRESH_DAYS=7
+      # Web Push (PWA) — generated 2026-04-26; rotate via Vault for production
+      - VAPID_PUBLIC_KEY=BEXej9buEL1puCJ8OUf7XSn2PE8r0t-wAmH8MZdme8Rxk0RuZG9ZPUdRURm8yxRhRE40VDBV_aOEhryz-FzZKjQ
+      - VAPID_PRIVATE_KEY=ISueXo3ZfreT0TRVqani5T5IzPg8AyMPMpXHSQ7pJA0
+      - VAPID_CONTACT_EMAIL=mailto:support@aminra.vn
       - CORS_ORIGINS=https://dev-web.silvergem.org,https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
       - FRONTEND_URL=https://dev-web.silvergem.org
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -161,6 +173,51 @@ services:
       timeout: 5s
       retries: 3
 
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 768M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  arq-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["arq", "services.jobs.WorkerSettings"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant-db:6333
+      - EMBED_MODEL=intfloat/multilingual-e5-base
+    volumes:
+      - upload-data:/app/docs
+    networks:
+      - app-network
+      - vault-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      aminra-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1.5G
+
 networks:
   app-network:
     driver: bridge
@@ -172,6 +229,7 @@ volumes:
   postgres-data:
   upload-data:
   review-data:
+  redis-data:
   template-data:
   doc-cache:
   vault-secrets:

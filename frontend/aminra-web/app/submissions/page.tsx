@@ -1,11 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUserAuth } from '@/components/UserAuthContext';
+import RevisionPanel from '@/components/submissions/RevisionPanel';
+import SlaBadge from '@/components/submissions/SlaBadge';
+import { openAuthed } from '@/lib/authedOpen';
+import { parseApiError } from '@/lib/apiError';
 
 interface Submission {
-  id: string; company_name: string; status: string;
+  id: string; business_tenant?: string; company_name: string; status: string;
   notes: string | null; auditor_notes: string | null;
   doc_count: number; document_ids: string[];
   auditor_id: string | null; auditor_name: string | null;
@@ -19,10 +23,6 @@ interface SubDoc {
   id: string; original_filename: string; doc_type: string | null;
   doc_type_label: string | null; compliance_score: number | null;
   overall_status: string | null; file_size: number | null; uploaded_at: string;
-}
-
-interface Comment {
-  id: string; author_name: string; role: string; message: string; created_at: string;
 }
 
 interface EvalData {
@@ -52,32 +52,36 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   assigned:  { label: 'Đã gán auditor', color: '#0EA5E9', bg: '#E0F2FE' },
   reviewing: { label: 'Đang đánh giá', color: '#0EA5E9', bg: 'rgba(14,165,233,0.12)' },
   returned:  { label: 'Cần bổ sung',   color: '#f87171', bg: 'rgba(239,68,68,0.12)' },
-  approved:  { label: 'Đã được duyệt bởi CB', color: '#087653', bg: 'rgba(8,118,83,0.12)' },
+  approved:  { label: 'Đã được duyệt bởi CB', color: '#0F5132', bg: 'rgba(15,81,50,0.12)' },
 };
 
 function scoreColor(s: number | null) {
-  if (s === null) return '#5B6B7D';
-  if (s >= 75) return '#087653';
+  if (s === null) return '#6B7280';
+  if (s >= 75) return '#0F5132';
   if (s >= 50) return '#F59E0B';
   return '#f87171';
 }
 
 export default function SubmissionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, token, isAuthenticated, loading } = useUserAuth();
 
   const [subs, setSubs] = useState<Submission[]>([]);
   const [fetching, setFetching] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Provider folder view: group by company.
+  // Reads `?company=...` so deep links from /portfolio land directly on the
+  // company folder. Initialize once from URL — back button clears via setter
+  // (we deliberately don't re-sync on URL changes so "Quay lại" works).
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(
+    () => searchParams?.get('company') ?? null
+  );
   const [subDocs, setSubDocs] = useState<SubDoc[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [auditorScore, setAuditorScore] = useState<{ score: number | null; notes: string | null }>({ score: null, notes: null });
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-  // Comment thread state
-  const [comments, setComments] = useState<Record<string, Comment[]>>({});
-  const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
-  const [newComment, setNewComment] = useState<Record<string, string>>({});
 
   // Certificate state
   const [certModal, setCertModal] = useState<string | null>(null);
@@ -157,24 +161,21 @@ export default function SubmissionsPage() {
     if (expanded === id) { setExpanded(null); return; }
     setExpanded(id);
     setLoadingDocs(true);
-    setLoadingComments(prev => new Set(prev).add(id));
     try {
-      const [docsRes, commentsRes, evalRes] = await Promise.all([
+      const [docsRes, evalRes] = await Promise.all([
         fetch(`/api/api/submissions/received/${id}/documents`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/api/submissions/received/${id}/comments`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`/api/api/submissions/received/${id}/evaluation`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (docsRes.ok) { const d = await docsRes.json(); setSubDocs(d.documents || []); setAuditorScore({ score: d.auditor_score ?? null, notes: d.auditor_notes ?? null }); }
-      if (commentsRes.ok) { const d = await commentsRes.json(); setComments(prev => ({ ...prev, [id]: d.comments || [] })); }
       const defaultChecklist = HALAL_CHECKLIST.map(c => ({ criteria: c, checked: false }));
       if (evalRes.ok) {
         const d = await evalRes.json();
         if (d.evaluation) {
           // Merge saved checklist with full template — keep saved checked states, add missing items
-          const savedMap = new Map((d.evaluation.checklist || []).map((c: any) => [c.criteria, c.checked]));
+          const savedMap = new Map((d.evaluation.checklist || []).map((c: { criteria: string; checked: boolean }) => [c.criteria, c.checked]));
           const mergedChecklist = defaultChecklist.map(item => ({
             criteria: item.criteria,
-            checked: savedMap.has(item.criteria) ? savedMap.get(item.criteria) : false,
+            checked: (savedMap.has(item.criteria) ? savedMap.get(item.criteria) : false) ?? false,
           }));
           setEvaluation(prev => ({ ...prev, [id]: { ...d.evaluation, checklist: mergedChecklist } }));
         } else {
@@ -185,55 +186,7 @@ export default function SubmissionsPage() {
       }
     } finally {
       setLoadingDocs(false);
-      setLoadingComments(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
-  };
-
-  // Auto-poll comments every 10s when a submission is expanded
-  const expandedRef = useRef(expanded);
-  expandedRef.current = expanded;
-  const tokenRef = useRef(token);
-  tokenRef.current = token;
-  useEffect(() => {
-    if (!expanded || !token) return;
-    const poll = async () => {
-      const id = expandedRef.current;
-      const tk = tokenRef.current;
-      if (!id || !tk) return;
-      try {
-        const res = await fetch(`/api/api/submissions/received/${id}/comments`, {
-          headers: { Authorization: `Bearer ${tk}` },
-        });
-        if (res.ok) {
-          const d = await res.json();
-          setComments(prev => ({ ...prev, [id]: d.comments || [] }));
-        }
-      } catch {}
-    };
-    const interval = setInterval(poll, 10000);
-    return () => clearInterval(interval);
-  }, [expanded, token]);
-
-  const sendComment = async (subId: string) => {
-    const msg = newComment[subId]?.trim();
-    if (!msg) return;
-    try {
-      const res = await fetch(`/api/api/submissions/received/${subId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: msg }),
-      });
-      if (res.ok) {
-        const c = await res.json();
-        if (c && c.author_role) {
-          setComments(prev => ({ ...prev, [subId]: [...(prev[subId] || []), c] }));
-        }
-        setNewComment(prev => ({ ...prev, [subId]: '' }));
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.detail || 'Gửi tin nhắn thất bại');
-      }
-    } catch {}
   };
 
   // Business: open revision history for a doc
@@ -311,10 +264,10 @@ export default function SubmissionsPage() {
     } finally { setFinalizing(false); }
   };
 
-  const issueCertificate = async (subId: string) => {
+  const issueCertificate = async (businessTenantId: string) => {
     setIssuingCert(true);
     try {
-      const res = await fetch(`/api/api/submissions/received/${subId}/issue-certificate`, {
+      const res = await fetch(`/api/api/submissions/issue-certificate/${businessTenantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ expiry_months: certExpiryMonths, notes: certNotes }),
@@ -322,6 +275,9 @@ export default function SubmissionsPage() {
       if (res.ok) {
         const d = await res.json();
         setCertResult(d);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(parseApiError(err, 'Cấp chứng nhận thất bại'));
       }
     } finally { setIssuingCert(false); }
   };
@@ -346,7 +302,7 @@ export default function SubmissionsPage() {
   };
 
   const approveFinal = async (subId: string) => {
-    if (!confirm('Xác nhận phê duyệt chính thức hồ sơ này? Tài liệu sẽ được cập nhật và hồ sơ sẽ được đóng.')) return;
+    if (!confirm('Xác nhận phê duyệt hồ sơ này? Tất cả tài liệu trong hồ sơ sẽ được đánh dấu CB-approved. Đây là bước trước khi cấp chứng nhận — không phải cấp chứng nhận.')) return;
     setApprovingFinal(true);
     try {
       const res = await fetch(`/api/api/submissions/received/${subId}/approve-final`, {
@@ -389,15 +345,15 @@ export default function SubmissionsPage() {
   };
 
   const viewDoc = (docId: string) => {
-    window.open(`/api/api/documents/${docId}/preview?token=${encodeURIComponent(token || '')}`, '_blank');
+    openAuthed(`/api/api/documents/${docId}/preview`, token || '');
   };
 
   if (loading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
       </div>
     </div>
   );
@@ -406,7 +362,7 @@ export default function SubmissionsPage() {
     <div className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden" data-page>
       {/* Header */}
       <div className="rounded-2xl p-6 mb-6 animate-section"
-        style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+        style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
         <div className="grid grid-flow-col items-center gap-3 justify-start">
           <div className="w-10 h-10 rounded-xl grid place-items-center"
             style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)' }}>
@@ -415,25 +371,105 @@ export default function SubmissionsPage() {
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold" style={{ color: '#1A2332' }}>{isBusiness ? 'Hồ sơ đã gửi' : 'Hồ sơ nhận được'}</h1>
-            <p className="text-sm" style={{ color: '#5F6F80' }}>{subs.length} hồ sơ từ doanh nghiệp</p>
+            <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>
+              {isBusiness ? 'Hồ sơ đã gửi' : selectedCompany ? selectedCompany : 'Hồ sơ nhận được'}
+            </h1>
+            <p className="text-sm" style={{ color: '#6B7280' }}>
+              {isBusiness ? `${subs.length} hồ sơ` :
+               selectedCompany ? `${subs.filter(s => s.company_name === selectedCompany).length} hồ sơ từ ${selectedCompany}` :
+               `${new Set(subs.map(s => s.company_name)).size} doanh nghiệp · ${subs.length} hồ sơ`}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Submissions list */}
-      <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
+      {/* Provider: Folder view grouped by company */}
+      {isProvider && !selectedCompany && !fetching && subs.length > 0 && (() => {
+        const grouped: Record<string, { company: string; subs: typeof subs }> = {};
+        subs.forEach(s => {
+          const key = s.company_name || 'Không rõ';
+          if (!grouped[key]) grouped[key] = { company: key, subs: [] };
+          grouped[key].subs.push(s);
+        });
+        const folders = Object.values(grouped).sort((a, b) => a.company.localeCompare(b.company));
+        return (
+          <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3 mb-4">
+            {folders.map((f, idx) => {
+              const pending = f.subs.filter(s => s.status === 'pending' || s.status === 'assigned').length;
+              const approved = f.subs.filter(s => s.status === 'approved').length;
+              const latest = f.subs[0];
+              return (
+                <button key={f.company} onClick={() => setSelectedCompany(f.company)}
+                  className={`w-full text-left rounded-xl p-4 doc-card-hover animate-list-item stagger-${Math.min(idx + 1, 12)} transition-all`}
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-full grid place-items-center flex-shrink-0 text-sm font-bold"
+                      style={{ background: 'rgba(15,81,50,0.1)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.2)' }}>
+                      {f.company.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: '#0F5132' }}>{f.company}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs" style={{ color: '#6B7280' }}>{f.subs.length} hồ sơ</span>
+                        {pending > 0 && <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: '#FEF3C7', color: '#D97706' }}>{pending} chờ xử lý</span>}
+                        {approved > 0 && <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: '#E8F5EF', color: '#0F5132' }}>{approved} đã duyệt</span>}
+                        {f.subs.length > 0 && pending === 0 && approved === f.subs.length && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(15,81,50,0.15)', color: '#0A3622' }}>✓ Đủ điều kiện cấp cert</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {user?.is_owner && f.subs.length > 0 && pending === 0 && approved === f.subs.length && (
+                        <button onClick={(e) => { e.stopPropagation(); const bizTenant = f.subs[0]?.business_tenant; if (bizTenant) { setCertModal(bizTenant); setCertResult(null); setCertNotes(''); setCertExpiryMonths(12); } }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105"
+                          style={{ background: '#D4AF37', color: '#0F5132', boxShadow: '0 1px 3px rgba(184,148,31,0.3)' }}>
+                          ★ Cấp cert
+                        </button>
+                      )}
+                      <svg className="w-4 h-4" style={{ color: '#94A3B8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Back to folders button (provider) */}
+      {isProvider && selectedCompany && (
+        <button onClick={() => {
+            setSelectedCompany(null);
+            setExpanded(null);
+            // Strip ?company= from URL so a refresh doesn't drop user back into the folder.
+            if (typeof window !== 'undefined' && window.location.search.includes('company=')) {
+              window.history.replaceState(null, '', '/submissions');
+            }
+          }}
+          className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-black/5"
+          style={{ color: '#0F5132' }}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Quay lại · {selectedCompany}
+        </button>
+      )}
+
+      {/* Submissions list (filtered by company for provider, all for business) */}
+      <div className={`flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3 ${isProvider && !selectedCompany && subs.length > 0 ? 'hidden' : ''}`}>
         {fetching ? (
           <div className="space-y-3">
-            {[1, 2].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#F0F7F4', opacity: 1 - i * 0.2 }} />)}
+            {[1, 2].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#F7F1E6', opacity: 1 - i * 0.2 }} />)}
           </div>
         ) : subs.length === 0 ? (
-          <div className="rounded-2xl p-12 text-center" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
-            <p className="font-semibold mb-2" style={{ color: '#1A2332' }}>Chưa có hồ sơ nào</p>
-            <p className="text-sm" style={{ color: '#5B6B7D' }}>Hồ sơ từ doanh nghiệp sẽ xuất hiện tại đây</p>
+          <div className="rounded-2xl p-12 text-center" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+            <p className="font-semibold mb-2" style={{ color: '#0F5132' }}>Chưa có hồ sơ nào</p>
+            <p className="text-sm" style={{ color: '#6B7280' }}>Hồ sơ từ doanh nghiệp sẽ xuất hiện tại đây</p>
           </div>
         ) : (
-          subs.map((sub, idx) => {
+          (isProvider && selectedCompany ? subs.filter(s => s.company_name === selectedCompany) : subs).map((sub, idx) => {
             const st = STATUS_MAP[sub.status] || STATUS_MAP.pending;
             const isOpen = expanded === sub.id;
             return (
@@ -444,16 +480,19 @@ export default function SubmissionsPage() {
                   className="w-full px-5 py-4 text-left transition-colors hover:bg-black/[0.02]">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold" style={{ color: '#1A2332' }}>
+                      <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>
                         {isBusiness ? (sub.provider_name || 'Tổ chức chứng nhận') : (sub.company_name || 'Doanh nghiệp')}
                       </p>
                       {isBusiness && sub.auditor_name && (
                         <p className="text-xs mt-0.5" style={{ color: '#F59E0B' }}>Auditor: {sub.auditor_name}</p>
                       )}
-                      <p className="text-sm mt-0.5" style={{ color: '#5B6B7D' }}>
+                      <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>
                         {sub.doc_count} tài liệu · {new Date(sub.submitted_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
-                      {sub.notes && <p className="text-sm mt-1" style={{ color: '#5F6F80' }}>"{sub.notes}"</p>}
+                      {sub.notes && <p className="text-sm mt-1" style={{ color: '#6B7280' }}>"{sub.notes}"</p>}
+                      <div className="mt-1.5">
+                        <SlaBadge submittedAt={sub.submitted_at} deadline={sub.deadline} status={sub.status} />
+                      </div>
                     </div>
                     <span className="px-3 py-1 rounded-full text-xs font-medium"
                       style={{ background: st.bg, color: st.color }}>
@@ -461,8 +500,8 @@ export default function SubmissionsPage() {
                     </span>
                     {sub.deadline && (() => {
                       const daysLeft = Math.ceil((new Date(sub.deadline).getTime() - Date.now()) / 86400000);
-                      const dlColor = daysLeft < 0 ? '#f87171' : daysLeft <= 3 ? '#F59E0B' : '#087653';
-                      const dlBg = daysLeft < 0 ? 'rgba(239,68,68,0.12)' : daysLeft <= 3 ? 'rgba(245,158,11,0.12)' : 'rgba(8,118,83,0.12)';
+                      const dlColor = daysLeft < 0 ? '#f87171' : daysLeft <= 3 ? '#F59E0B' : '#0F5132';
+                      const dlBg = daysLeft < 0 ? 'rgba(239,68,68,0.12)' : daysLeft <= 3 ? 'rgba(245,158,11,0.12)' : 'rgba(15,81,50,0.12)';
                       const dlLabel = daysLeft < 0 ? `Quá hạn ${-daysLeft} ngày` : daysLeft === 0 ? 'Hôm nay' : `Còn ${daysLeft} ngày`;
                       return (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: dlBg, color: dlColor }}>
@@ -485,7 +524,7 @@ export default function SubmissionsPage() {
                       </button>
                     )}
                     <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                      style={{ color: '#5B6B7D' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      style={{ color: '#6B7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -519,7 +558,7 @@ export default function SubmissionsPage() {
                     {/* Assign auditor — provider owner only */}
                     {isProvider && user?.is_owner && (
                       <div className="flex flex-wrap items-center gap-2 pb-3">
-                        <span className="text-xs font-medium" style={{ color: '#5B6B7D' }}>Auditor:</span>
+                        <span className="text-xs font-medium" style={{ color: '#6B7280' }}>Auditor:</span>
                         {auditors.length === 0 ? (
                           <>
                             <a href="/auditors" className="text-xs" style={{ color: '#0EA5E9' }}>
@@ -533,7 +572,7 @@ export default function SubmissionsPage() {
                               defaultValue={sub.auditor_id || ''}
                               id={`auditor-${sub.id}`}
                               className="text-sm px-3 py-2 rounded-lg outline-none flex-1 min-w-0"
-                              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}>
+                              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}>
                               <option value="">— Chọn auditor —</option>
                               {auditors.map(a => (
                                 <option key={a.id} value={a.id}>
@@ -548,7 +587,7 @@ export default function SubmissionsPage() {
                               }}
                               disabled={assigningId === sub.id}
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
-                              style={{ background: '#087653', whiteSpace: 'nowrap' }}>
+                              style={{ background: '#0F5132', whiteSpace: 'nowrap' }}>
                               {assigningId === sub.id ? 'Đang gán...' : 'Lưu & Thông báo'}
                             </button>
                           </>
@@ -571,7 +610,7 @@ export default function SubmissionsPage() {
                         <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#7C3AED' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p className="text-sm" style={{ color: '#5B6B7D' }}>
+                        <p className="text-sm" style={{ color: '#6B7280' }}>
                           <strong style={{ color: scoreColor(auditorScore.score) }}>Auditor chấm: {auditorScore.score}/100</strong>
                           {auditorScore.notes && <span> — {auditorScore.notes}</span>}
                         </p>
@@ -581,15 +620,15 @@ export default function SubmissionsPage() {
                     {/* Documents */}
                     {loadingDocs ? (
                       <div className="flex items-center justify-center gap-1.5 py-4">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+                        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+                        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+                        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {subDocs.map(doc => (
                           <div key={doc.id} className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl"
-                            style={{ background: '#FAFCF9', border: '1px solid #E2E8F0' }}>
+                            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 {doc.doc_type_label && (
@@ -598,7 +637,7 @@ export default function SubmissionsPage() {
                                     {doc.doc_type_label}
                                   </span>
                                 )}
-                                <p className="text-sm truncate" style={{ color: '#1A2332' }}>{doc.original_filename}</p>
+                                <p className="text-sm truncate" style={{ color: '#0F5132' }}>{doc.original_filename}</p>
                               </div>
                             </div>
                             {auditorScore.score !== null && (
@@ -641,14 +680,14 @@ export default function SubmissionsPage() {
                                 </button>
                               )}
                               {/* Tải xuống */}
-                              <a href={`/api/api/documents/${doc.id}/file?token=${encodeURIComponent(token || '')}`}
-                                download title="Tải xuống"
+                              <button onClick={() => openAuthed(`/api/api/documents/${doc.id}/file`, token || '', { download: true, filename: doc.original_filename })}
+                                title="Tải xuống"
                                 className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
-                                style={{ background: 'rgba(8,118,83,0.1)', border: '1px solid rgba(8,118,83,0.2)' }}>
-                                <svg className="w-3.5 h-3.5" style={{ color: '#087653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                style={{ background: 'rgba(15,81,50,0.1)', border: '1px solid rgba(15,81,50,0.2)' }}>
+                                <svg className="w-3.5 h-3.5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
-                              </a>
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -666,104 +705,54 @@ export default function SubmissionsPage() {
                       </div>
                     )}
 
-                    {/* Certificate button — provider owner only */}
-                    {isProvider && sub.status === 'approved' && user?.is_owner && (
-                      <div className="pt-3">
-                        <button onClick={() => { setCertModal(sub.id); setCertResult(null); setCertNotes(''); setCertExpiryMonths(12); }}
-                          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
-                          style={{ background: '#087653' }}>
-                          ✅ Cấp chứng nhận
-                        </button>
-                      </div>
-                    )}
+                    {/* Certificate button removed — cert issued at company level from folder view */}
 
                     {/* Business: Save & Finalize when approved */}
                     {isBusiness && sub.status === 'approved' && (
                       <div className="pt-3 pb-1">
-                        <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: '#ECFDF5', border: '1px solid rgba(8,118,83,0.2)' }}>
-                          <svg className="w-5 h-5 flex-shrink-0" style={{ color: '#087653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: '#E8F5EF', border: '1px solid rgba(15,81,50,0.2)' }}>
+                          <svg className="w-5 h-5 flex-shrink-0" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <div className="flex-1">
-                            <p className="text-sm font-semibold" style={{ color: '#065E43' }}>Hồ sơ đã được duyệt bởi CB</p>
+                            <p className="text-sm font-semibold" style={{ color: '#0A3622' }}>Hồ sơ đã được duyệt bởi CB</p>
                             <p className="text-xs mt-0.5" style={{ color: '#047857' }}>Nhấn "Lưu & Hoàn tất" để cập nhật tài liệu vào hệ thống</p>
                           </div>
                           <button onClick={() => handleFinalize(sub.id)}
                             disabled={finalizing}
                             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0"
-                            style={{ background: 'linear-gradient(135deg, #065E43, #087653)', boxShadow: '0 4px 12px rgba(8,118,83,0.3)' }}>
+                            style={{ background: 'linear-gradient(135deg, #0A3622, #0F5132)', boxShadow: '0 4px 12px rgba(15,81,50,0.3)' }}>
                             {finalizing ? 'Đang lưu...' : 'Lưu & Hoàn tất'}
                           </button>
                         </div>
                       </div>
                     )}
 
-                    {/* Comment thread */}
-                    <div className="pt-4">
-                      <h3 className="text-sm font-semibold mb-3" style={{ color: '#1A2332' }}>💬 Trao đổi</h3>
-                      {loadingComments.has(sub.id) ? (
-                        <div className="flex items-center gap-1.5 py-2">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
-                        </div>
-                      ) : (
-                        <div className="space-y-2 mb-3">
-                          {(comments[sub.id] || []).filter(Boolean).map((c, ci) => (
-                            <div key={c.id || ci} className={`flex items-start gap-2 animate-list-item stagger-${Math.min(ci + 1, 12)}`}>
-                              <div className="w-7 h-7 rounded-full grid place-items-center text-xs font-bold text-white flex-shrink-0"
-                                style={{ background: c?.author_role === 'provider' ? '#087653' : '#0EA5E9' }}>
-                                {c.author_name?.charAt(0)?.toUpperCase() || '?'}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs font-semibold" style={{ color: '#1A2332' }}>{c.author_name}</span>
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                                    style={{
-                                      background: c?.author_role === 'provider' ? 'rgba(8,118,83,0.12)' : 'rgba(14,165,233,0.12)',
-                                      color: c?.author_role === 'provider' ? '#087653' : '#0EA5E9',
-                                    }}>
-                                    {c?.author_role === 'provider' ? 'Tổ chức' : 'Doanh nghiệp'}
-                                  </span>
-                                  <span className="text-[10px]" style={{ color: '#94a3b8' }}>
-                                    {new Date(c.created_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-0.5" style={{ color: '#5B6B7D' }}>{c.message}</p>
-                              </div>
-                            </div>
-                          ))}
-                          {(comments[sub.id] || []).length === 0 && (
-                            <p className="text-xs" style={{ color: '#94a3b8' }}>Chưa có bình luận nào</p>
-                          )}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newComment[sub.id] || ''}
-                          onChange={e => setNewComment(prev => ({ ...prev, [sub.id]: e.target.value }))}
-                          onKeyDown={e => { if (e.key === 'Enter') sendComment(sub.id); }}
-                          placeholder="Nhập bình luận..."
-                          className="flex-1 text-sm px-3 py-2 rounded-lg outline-none"
-                          style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
+                    {/* Revision cycle panel — appears for both personas */}
+                    {token && (
+                      <div className="pt-4">
+                        <RevisionPanel
+                          submissionId={sub.id}
+                          status={sub.status}
+                          role={user?.role as 'business' | 'provider'}
+                          token={token}
+                          documents={subDocs.map(d => ({
+                            id: d.id,
+                            filename: d.original_filename,
+                          }))}
+                          onChanged={() => fetchSubs()}
                         />
-                        <button onClick={() => sendComment(sub.id)}
-                          className="px-3 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
-                          style={{ background: '#087653' }}>
-                          Gửi
-                        </button>
                       </div>
-                    </div>
+                    )}
 
                     {/* Evaluation section (collapsible) */}
                     {isProvider && (
                       <div className="pt-4">
                         <button onClick={() => setEvalOpen(evalOpen === sub.id ? null : sub.id)}
                           className="flex items-center gap-2 text-sm font-semibold transition-colors"
-                          style={{ color: '#1A2332' }}>
+                          style={{ color: '#0F5132' }}>
                           <svg className={`w-4 h-4 transition-transform ${evalOpen === sub.id ? 'rotate-180' : ''}`}
-                            style={{ color: '#5B6B7D' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            style={{ color: '#6B7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                           </svg>
                           📋 Đánh giá Halal
@@ -773,7 +762,7 @@ export default function SubmissionsPage() {
                             <div className="space-y-2">
                               {evaluation[sub.id].checklist.map((item, ci) => (
                                 <label key={ci} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-black/[0.02]"
-                                  style={{ background: item.checked ? 'rgba(8,118,83,0.06)' : 'transparent' }}>
+                                  style={{ background: item.checked ? 'rgba(15,81,50,0.06)' : 'transparent' }}>
                                   <input type="checkbox" checked={item.checked}
                                     onChange={() => {
                                       setEvaluation(prev => {
@@ -783,19 +772,19 @@ export default function SubmissionsPage() {
                                         return { ...prev, [sub.id]: { ...e, checklist: cl } };
                                       });
                                     }}
-                                    className="w-4 h-4 rounded accent-emerald-600"
+                                    className="w-4 h-4 rounded accent-[#0F5132]"
                                   />
-                                  <span className="text-sm" style={{ color: item.checked ? '#087653' : '#5B6B7D' }}>{item.criteria}</span>
+                                  <span className="text-sm" style={{ color: item.checked ? '#0F5132' : '#6B7280' }}>{item.criteria}</span>
                                 </label>
                               ))}
                             </div>
                             <div className="flex items-center gap-3">
-                              <label className="text-sm font-medium" style={{ color: '#1A2332' }}>Điểm:</label>
+                              <label className="text-sm font-medium" style={{ color: '#0F5132' }}>Điểm:</label>
                               <input type="number" min={0} max={100}
                                 value={evaluation[sub.id].score}
                                 onChange={e => setEvaluation(prev => ({ ...prev, [sub.id]: { ...prev[sub.id], score: Math.min(100, Math.max(0, Number(e.target.value))) } }))}
                                 className="w-20 text-sm px-3 py-2 rounded-lg outline-none text-center font-bold"
-                                style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: scoreColor(evaluation[sub.id].score) }}
+                                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: scoreColor(evaluation[sub.id].score) }}
                               />
                               <span className="text-sm" style={{ color: '#94a3b8' }}>/100</span>
                             </div>
@@ -805,23 +794,23 @@ export default function SubmissionsPage() {
                               placeholder="Ghi chú đánh giá..."
                               rows={2}
                               className="w-full text-sm px-3 py-2 rounded-lg outline-none resize-none"
-                              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
+                              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
                             />
                             <button onClick={() => saveEvaluation(sub.id)}
                               disabled={savingEval}
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
-                              style={{ background: '#087653' }}>
+                              style={{ background: '#0F5132' }}>
                               {savingEval ? 'Đang lưu...' : 'Lưu đánh giá'}
                             </button>
 
                             {sub.status !== 'approved' && (
                               <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E2E8F0' }}>
-                                <p className="text-xs mb-2" style={{ color: '#94A3B8' }}>Khi hồ sơ đạt yêu cầu, nhấn nút bên dưới để phê duyệt chính thức:</p>
+                                <p className="text-xs mb-2" style={{ color: '#94A3B8' }}>Khi tất cả tài liệu trong hồ sơ đã đạt yêu cầu, nhấn nút bên dưới để phê duyệt hồ sơ. Cấp chứng nhận là bước riêng, chỉ thực hiện khi mọi hồ sơ active của doanh nghiệp đều đã được phê duyệt:</p>
                                 <button onClick={() => approveFinal(sub.id)}
                                   disabled={approvingFinal}
                                   className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                  style={{ background: 'linear-gradient(135deg, #065E43, #087653)', boxShadow: '0 4px 12px rgba(8,118,83,0.3)' }}>
-                                  {approvingFinal ? 'Đang phê duyệt...' : '✅ Phê duyệt chính thức'}
+                                  style={{ background: 'linear-gradient(135deg, #0A3622, #0F5132)', boxShadow: '0 4px 12px rgba(15,81,50,0.3)' }}>
+                                  {approvingFinal ? 'Đang phê duyệt...' : '✅ Phê duyệt hồ sơ'}
                                 </button>
                               </div>
                             )}
@@ -845,51 +834,55 @@ export default function SubmissionsPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 animate-modal-content"
             style={{ border: '1px solid #E2E8F0' }}
             onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: '#1A2332' }}>Cấp chứng nhận Halal</h3>
+            <h3 className="text-lg font-bold mb-4" style={{ color: '#0F5132' }}>Cấp chứng nhận Halal</h3>
             {certResult ? (
               <div className="space-y-3">
-                <div className="p-4 rounded-xl" style={{ background: 'rgba(8,118,83,0.08)', border: '1px solid rgba(8,118,83,0.2)' }}>
-                  <p className="text-sm font-medium" style={{ color: '#087653' }}>Chứng nhận đã được cấp!</p>
-                  <p className="text-sm mt-1" style={{ color: '#1A2332' }}>Số: <strong>{certResult.cert_number}</strong></p>
+                <div className="p-5 rounded-xl text-center"
+                  style={{ background: 'linear-gradient(135deg, #FFF4D6 0%, #ffffff 100%)', border: '2px solid #D4AF37', boxShadow: '0 4px 16px rgba(212,175,55,0.15)' }}>
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-2" style={{ background: '#D4AF37' }}>
+                    <span className="text-white text-xl">★</span>
+                  </div>
+                  <p className="text-sm font-bold" style={{ color: '#0F5132' }}>Chứng nhận Halal đã được cấp</p>
+                  <p className="text-base mt-1 font-mono font-bold tracking-wider" style={{ color: '#B8941F' }}>{certResult.cert_number}</p>
                 </div>
-                <a href={`${certResult.pdf_url}?token=${encodeURIComponent(token || '')}`} target="_blank" rel="noopener noreferrer"
-                  className="block text-center px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
-                  style={{ background: '#0EA5E9' }}>
+                <button onClick={() => openAuthed(certResult.pdf_url, token || '', { download: true, filename: `${certResult.cert_number}.pdf` })}
+                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-105"
+                  style={{ background: '#0F5132', color: '#D4AF37', border: '1px solid #D4AF37' }}>
                   📥 Tải PDF chứng nhận
-                </a>
+                </button>
                 <button onClick={() => setCertModal(null)}
                   className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                  style={{ background: '#F0F7F4', color: '#5B6B7D', border: '1px solid #E2E8F0' }}>
+                  style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
                   Đóng
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium block mb-1" style={{ color: '#1A2332' }}>Thời hạn (tháng)</label>
+                  <label className="text-sm font-medium block mb-1" style={{ color: '#0F5132' }}>Thời hạn (tháng)</label>
                   <select value={certExpiryMonths} onChange={e => setCertExpiryMonths(Number(e.target.value))}
                     className="w-full text-sm px-3 py-2 rounded-lg outline-none"
-                    style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}>
+                    style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}>
                     {[6, 12, 18, 24].map(m => <option key={m} value={m}>{m} tháng</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium block mb-1" style={{ color: '#1A2332' }}>Ghi chú (tuỳ chọn)</label>
+                  <label className="text-sm font-medium block mb-1" style={{ color: '#0F5132' }}>Ghi chú (tuỳ chọn)</label>
                   <textarea value={certNotes} onChange={e => setCertNotes(e.target.value)}
                     rows={2} placeholder="Ghi chú thêm..."
                     className="w-full text-sm px-3 py-2 rounded-lg outline-none resize-none"
-                    style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }} />
+                    style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setCertModal(null)}
                     className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={{ background: '#F0F7F4', color: '#5B6B7D', border: '1px solid #E2E8F0' }}>
+                    style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
                     Huỷ
                   </button>
                   <button onClick={() => issueCertificate(certModal)}
                     disabled={issuingCert}
                     className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
-                    style={{ background: '#087653' }}>
+                    style={{ background: '#0F5132' }}>
                     {issuingCert ? 'Đang cấp...' : 'Xác nhận cấp'}
                   </button>
                 </div>
@@ -907,20 +900,20 @@ export default function SubmissionsPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 animate-modal-content"
             style={{ border: '1px solid #E2E8F0' }}
             onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: '#1A2332' }}>Đặt hạn chót</h3>
+            <h3 className="text-lg font-bold mb-4" style={{ color: '#0F5132' }}>Đặt hạn chót</h3>
             <input type="date" value={deadlineValue}
               onChange={e => setDeadlineValue(e.target.value)}
               className="w-full text-sm px-3 py-2 rounded-lg outline-none mb-4"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }} />
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
             <div className="flex gap-2">
               <button onClick={() => setDeadlineModal(null)}
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: '#F0F7F4', color: '#5B6B7D', border: '1px solid #E2E8F0' }}>
+                style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
                 Huỷ
               </button>
               <button onClick={() => setDeadline(deadlineModal)}
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
-                style={{ background: '#087653' }}>
+                style={{ background: '#0F5132' }}>
                 Lưu
               </button>
             </div>
@@ -936,15 +929,15 @@ export default function SubmissionsPage() {
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxHeight: 'calc(100vh - 4rem)', boxShadow: '0 25px 60px rgba(0,0,0,0.15)' }}
             onClick={e => e.stopPropagation()}>
             <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <h3 className="text-base font-bold" style={{ color: '#1A2332' }}>Lịch sử phiên bản</h3>
+              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>Lịch sử phiên bản</h3>
               <button onClick={() => setRevisionDocType(null)} className="w-8 h-8 rounded-lg grid place-items-center hover:bg-black/5">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-2">
               {loadingRevisions ? (
                 <div className="flex items-center justify-center gap-2 py-8">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
                 </div>
               ) : revisions.length === 0 ? (
                 <p className="text-sm text-center py-8" style={{ color: '#94A3B8' }}>Chưa có phiên bản nào</p>
@@ -954,16 +947,16 @@ export default function SubmissionsPage() {
                   const isCurrent = subDocs.some(d => d.id === rev.id);
                   return (
                     <div key={rev.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl animate-list-item stagger-${Math.min(i + 1, 12)}`}
-                      style={{ background: isCurrent ? 'rgba(8,118,83,0.06)' : '#FAFCF9', border: `1px solid ${isCurrent ? 'rgba(8,118,83,0.2)' : '#E2E8F0'}` }}>
+                      style={{ background: isCurrent ? 'rgba(15,81,50,0.06)' : '#FFFFFF', border: `1px solid ${isCurrent ? 'rgba(15,81,50,0.2)' : '#E2E8F0'}` }}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: '#F3F4F6', color: '#6B7280' }}>
                             v{revisions.length - i}
                           </span>
                           {isLatest && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#DBEAFE', color: '#2563EB' }}>Mới nhất</span>}
-                          {isCurrent && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#ECFDF5', color: '#059669' }}>Đang dùng</span>}
+                          {isCurrent && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#E8F5EF', color: '#198754' }}>Đang dùng</span>}
                         </div>
-                        <p className="text-sm truncate mt-1" style={{ color: '#1A2332' }}>{rev.original_filename}</p>
+                        <p className="text-sm truncate mt-1" style={{ color: '#0F5132' }}>{rev.original_filename}</p>
                         <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
                           {new Date(rev.uploaded_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           {rev.file_size ? ` · ${(rev.file_size / 1024).toFixed(0)} KB` : ''}
@@ -985,7 +978,7 @@ export default function SubmissionsPage() {
                           }}
                             title="Sử dụng phiên bản này"
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
-                            style={{ background: '#087653' }}>
+                            style={{ background: '#0F5132' }}>
                             Chọn
                           </button>
                         )}

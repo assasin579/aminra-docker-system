@@ -49,24 +49,24 @@ export default function SupplierPortalPage({ params }: { params: Promise<{ token
   };
 
   if (loading) return (
-    <div className="min-h-screen grid place-items-center" style={{ background: '#F0F7F4' }}>
+    <div className="min-h-screen grid place-items-center" style={{ background: '#F7F1E6' }}>
       <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F0F7F4' }}>
+    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F7F1E6' }}>
       <div className="max-w-md text-center">
         <div className="w-16 h-16 rounded-full grid place-items-center mx-auto mb-4" style={{ background: '#FEF2F2' }}>
           <svg className="w-8 h-8" style={{ color: '#DC2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold mb-2" style={{ color: '#1A2332' }}>Không thể truy cập</h1>
+        <h1 className="text-xl font-bold mb-2" style={{ color: '#0F5132' }}>Không thể truy cập</h1>
         <p className="text-sm" style={{ color: '#6B7280' }}>{error}</p>
       </div>
     </div>
@@ -77,15 +77,16 @@ export default function SupplierPortalPage({ params }: { params: Promise<{ token
   const uploadedTypes = new Set(info.uploaded_certificates.map(c => c.cert_type));
 
   return (
-    <div className="min-h-screen" style={{ background: '#F0F7F4' }} data-page>
+    <div className="min-h-screen" style={{ background: '#F7F1E6' }} data-page>
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
 
         {/* Header */}
         <div className="text-center animate-section">
-          <div className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-4" style={{ background: '#087653' }}>
-            <span className="text-white font-black text-2xl">A</span>
+          <div className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-4" style={{ background: '#0F5132' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/aminra-mark.svg" alt="AMINRA" className="w-9 h-9" />
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>Gửi hồ sơ nhà cung cấp</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Gửi hồ sơ nhà cung cấp</h1>
           <p className="text-sm mt-2" style={{ color: '#6B7280' }}>
             <strong style={{ color: '#374151' }}>{info.business_name}</strong> yêu cầu <strong style={{ color: '#374151' }}>{info.supplier_name}</strong> gửi hồ sơ chứng nhận
           </p>
@@ -93,24 +94,24 @@ export default function SupplierPortalPage({ params }: { params: Promise<{ token
 
         {/* Required documents checklist */}
         <div className="rounded-2xl p-6 animate-section" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-          <h2 className="text-sm font-bold mb-4" style={{ color: '#1A2332' }}>Hồ sơ yêu cầu</h2>
+          <h2 className="text-sm font-bold mb-4" style={{ color: '#0F5132' }}>Hồ sơ yêu cầu</h2>
           <div className="space-y-2">
             {info.required_documents.map(doc => {
               const done = uploadedTypes.has(doc.type);
               return (
                 <div key={doc.type} className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                  style={{ background: done ? '#ECFDF5' : '#FAFCF9', border: `1px solid ${done ? '#A7F3D0' : '#E2E8F0'}` }}>
+                  style={{ background: done ? '#E8F5EF' : '#FFFFFF', border: `1px solid ${done ? '#B7CBB8' : '#E2E8F0'}` }}>
                   <div className="w-5 h-5 rounded grid place-items-center flex-shrink-0"
-                    style={{ background: done ? '#059669' : '#E2E8F0', border: `2px solid ${done ? '#059669' : '#D1D5DB'}` }}>
+                    style={{ background: done ? '#198754' : '#E2E8F0', border: `2px solid ${done ? '#198754' : '#D1D5DB'}` }}>
                     {done && <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="#fff" strokeWidth={4}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>}
                   </div>
-                  <span className="text-sm flex-1" style={{ color: done ? '#059669' : '#374151' }}>{doc.label}</span>
+                  <span className="text-sm flex-1" style={{ color: done ? '#198754' : '#374151' }}>{doc.label}</span>
                   {doc.required && !done && (
                     <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#FEF2F2', color: '#DC2626' }}>Bắt buộc</span>
                   )}
-                  {done && <span className="text-xs" style={{ color: '#059669' }}>Đã gửi</span>}
+                  {done && <span className="text-xs" style={{ color: '#198754' }}>Đã gửi</span>}
                 </div>
               );
             })}
@@ -119,13 +120,13 @@ export default function SupplierPortalPage({ params }: { params: Promise<{ token
 
         {/* Upload section */}
         <div className="rounded-2xl p-6 animate-section" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-          <h2 className="text-sm font-bold mb-4" style={{ color: '#1A2332' }}>Gửi hồ sơ</h2>
+          <h2 className="text-sm font-bold mb-4" style={{ color: '#0F5132' }}>Gửi hồ sơ</h2>
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: '#6B7280' }}>Loại hồ sơ</label>
               <select value={uploadType} onChange={e => setUploadType(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none"
-                style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#374151' }}>
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#374151' }}>
                 {info.required_documents.map(d => (
                   <option key={d.type} value={d.type}>{d.label}{d.required ? ' (bắt buộc)' : ''}</option>
                 ))}
@@ -135,14 +136,14 @@ export default function SupplierPortalPage({ params }: { params: Promise<{ token
               onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all"
-              style={{ background: uploading ? '#E2E8F0' : '#087653', color: uploading ? '#9CA3AF' : '#fff' }}>
+              style={{ background: uploading ? '#E2E8F0' : '#0F5132', color: uploading ? '#9CA3AF' : '#fff' }}>
               {uploading ? 'Đang gửi...' : 'Chọn file và gửi'}
             </button>
             <p className="text-xs text-center" style={{ color: '#9CA3AF' }}>PDF, DOCX, JPG, PNG · Tối đa 10MB</p>
           </div>
           {success && (
             <div className="mt-3 px-3 py-2 rounded-lg text-xs animate-toast"
-              style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#059669' }}>
+              style={{ background: '#E8F5EF', border: '1px solid #B7CBB8', color: '#198754' }}>
               {success}
             </div>
           )}
@@ -151,13 +152,13 @@ export default function SupplierPortalPage({ params }: { params: Promise<{ token
         {/* Uploaded files */}
         {info.uploaded_certificates.length > 0 && (
           <div className="rounded-2xl p-6 animate-section" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-            <h2 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Hồ sơ đã gửi ({info.uploaded_certificates.length})</h2>
+            <h2 className="text-sm font-bold mb-3" style={{ color: '#0F5132' }}>Hồ sơ đã gửi ({info.uploaded_certificates.length})</h2>
             <div className="space-y-2">
               {info.uploaded_certificates.map(c => (
                 <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                  style={{ background: '#FAFCF9', border: '1px solid #E2E8F0' }}>
-                  <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: '#ECFDF5' }}>
-                    <svg className="w-4 h-4" style={{ color: '#059669' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
+                  <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: '#E8F5EF' }}>
+                    <svg className="w-4 h-4" style={{ color: '#198754' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>

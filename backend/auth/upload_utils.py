@@ -1,9 +1,15 @@
 import os
+import io
+import zipfile
 import magic  # python-magic for MIME type detection
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE_MB", "50")) * 1024 * 1024  # default 50MB
+# W2-M5 — reject archives whose uncompressed size exceeds this cap or whose
+# compression ratio is suspicious (zip-bomb defense).
+MAX_UNCOMPRESSED_SIZE = int(os.getenv("MAX_UNCOMPRESSED_MB", "200")) * 1024 * 1024
+MAX_COMPRESSION_RATIO = 100  # uncompressed / compressed
 
 ALLOWED_EXTENSIONS = {".pptx", ".ppt", ".pdf", ".txt", ".md", ".docx", ".odt"}
 
@@ -40,6 +46,30 @@ async def validate_upload(file: UploadFile) -> bytes:
         # ZIP-based formats (DOCX, PPTX, ODT) may be detected as octet-stream/zip
         if not (detected_mime in _ZIP_BASED_MIMES and suffix in _ZIP_BASED_EXTENSIONS):
             raise HTTPException(400, f"Invalid file content type: {detected_mime}")
+
+    # 4. W2-M5 — Zip-bomb defense for ZIP-based formats (DOCX/PPTX/ODT)
+    if suffix in _ZIP_BASED_EXTENSIONS:
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as zf:
+                total_uncompressed = 0
+                for info in zf.infolist():
+                    total_uncompressed += info.file_size
+                    if total_uncompressed > MAX_UNCOMPRESSED_SIZE:
+                        raise HTTPException(
+                            400,
+                            f"Archive uncompressed size exceeds limit "
+                            f"({MAX_UNCOMPRESSED_SIZE // (1024*1024)}MB)",
+                        )
+                if len(content) > 0:
+                    ratio = total_uncompressed / max(len(content), 1)
+                    if ratio > MAX_COMPRESSION_RATIO:
+                        raise HTTPException(
+                            400,
+                            f"Suspicious compression ratio ({ratio:.0f}x); "
+                            "possible zip-bomb",
+                        )
+        except zipfile.BadZipFile:
+            raise HTTPException(400, "Corrupted archive")
 
     await file.seek(0)  # reset for downstream readers
     return content

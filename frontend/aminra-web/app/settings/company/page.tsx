@@ -67,19 +67,19 @@ export default function CompanySettingsPage() {
       <div className="min-h-screen grid place-items-center">
         <div className="text-center space-y-4">
           <p style={{ color: '#6B7280' }}>Vui lòng đăng nhập</p>
-          <Link href="/business/login" className="inline-block px-6 py-3 rounded-xl font-semibold text-white" style={{ background: '#087653' }}>Đăng nhập</Link>
+          <Link href="/business/login" className="inline-block px-6 py-3 rounded-xl font-semibold text-white" style={{ background: '#0F5132' }}>Đăng nhập</Link>
         </div>
       </div>
     );
   }
 
   if (loading) {
-    return <div className="min-h-screen grid place-items-center"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" /><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} /><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} /></div></div>;
+    return <div className="min-h-screen grid place-items-center"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" /><div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} /><div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} /></div></div>;
   }
 
   const isOwner = user?.is_owner;
   const cardStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0' };
-  const inputStyle = { background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
 
   const fields: { key: keyof typeof form; label: string; placeholder: string; type?: string }[] = [
     { key: 'company_name', label: 'Tên công ty', placeholder: 'VD: Công ty TNHH Thực phẩm ABC' },
@@ -91,11 +91,11 @@ export default function CompanySettingsPage() {
   ];
 
   return (
-    <div style={{ background: '#FAFCF9' }} data-page>
+    <div style={{ background: '#FFFFFF' }} data-page>
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
 
         <div className="animate-section">
-          <h1 className="text-xl font-bold" style={{ color: '#1A2332' }}>Thông tin doanh nghiệp</h1>
+          <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Thông tin doanh nghiệp</h1>
           <p className="text-sm mt-1" style={{ color: '#6B7280' }}>Thông tin này được sử dụng khi tạo hồ sơ và đăng ký chứng nhận Halal</p>
         </div>
 
@@ -121,13 +121,13 @@ export default function CompanySettingsPage() {
             <div className="px-3 py-2 rounded-lg text-xs animate-toast" style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}>{error}</div>
           )}
           {saved && (
-            <div className="px-3 py-2 rounded-lg text-xs animate-toast" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#059669' }}>Đã lưu thành công</div>
+            <div className="px-3 py-2 rounded-lg text-xs animate-toast" style={{ background: '#E8F5EF', border: '1px solid #B7CBB8', color: '#198754' }}>Đã lưu thành công</div>
           )}
 
           {isOwner && (
             <button onClick={handleSave} disabled={saving}
               className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all text-white"
-              style={{ background: saving ? '#E2E8F0' : '#087653', color: saving ? '#9CA3AF' : '#fff' }}>
+              style={{ background: saving ? '#E2E8F0' : '#0F5132', color: saving ? '#9CA3AF' : '#fff' }}>
               {saving ? 'Đang lưu...' : 'Lưu thông tin'}
             </button>
           )}

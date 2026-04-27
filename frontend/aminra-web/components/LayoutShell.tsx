@@ -52,7 +52,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         {/* Mobile header */}
         <header
           className="md:hidden flex items-center px-4 py-3"
-          style={{ background: '#1E293B', borderBottom: '1px solid #334155' }}
+          style={{ background: '#0A3622', borderBottom: '1px solid #334155' }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
@@ -63,10 +63,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="h-7 w-7 rounded-full bg-emerald-700 flex items-center justify-center mr-2">
-            <span className="text-white font-bold text-sm">A</span>
-          </div>
-          <span className="text-white font-bold">Aminra</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aminra-mark.svg" alt="AMINRA" className="h-7 w-7 mr-2" />
+          <span className="text-white font-bold tracking-wider">AMINRA</span>
         </header>
 
         <main className="flex-1 p-5 md:p-8 lg:p-10 flex flex-col lg:min-h-0 lg:overflow-y-auto">

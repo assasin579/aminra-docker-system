@@ -1,0 +1,20 @@
+Subject: [AMINRA] Chứng nhận Halal đã bị thu hồi
+
+Xin chào {{ user_name | default("bạn") }},
+
+Tổ chức cấp chứng nhận đã thu hồi chứng nhận Halal của doanh nghiệp:
+
+  • Số chứng nhận: {{ cert_number }}
+  • Doanh nghiệp:   {{ company_name }}
+  • Tổ chức cấp:    {{ provider_name }}
+  • Ngày thu hồi:   {{ revoked_at }}
+
+Lý do thu hồi:
+{{ reason }}
+
+Hành động cần làm:
+- Ngừng sử dụng logo Halal trên sản phẩm/marketing material liên quan
+- Liên hệ tổ chức cấp để biết thêm chi tiết và quy trình khiếu nại (nếu có)
+- Tham khảo điều khoản dịch vụ tại {{ app_base_url }}/terms
+
+— Đội ngũ {{ from_name }}

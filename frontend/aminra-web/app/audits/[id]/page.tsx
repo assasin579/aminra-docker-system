@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/components/UserAuthContext';
+import { openAuthed } from '@/lib/authedOpen';
 
 /* ── Types ── */
 interface Visit {
@@ -28,7 +29,7 @@ interface NCR {
 /* ── Constants ── */
 const VISIT_TYPE: Record<string, { label: string; bg: string; color: string }> = {
   initial: { label: 'Lần đầu', bg: '#DBEAFE', color: '#2563EB' },
-  renewal: { label: 'Gia hạn', bg: '#ECFDF5', color: '#087653' },
+  renewal: { label: 'Gia hạn', bg: '#E8F5EF', color: '#0F5132' },
   surprise: { label: 'Đột xuất', bg: '#FEF3C7', color: '#D97706' },
   surveillance: { label: 'Giám sát', bg: '#F3E8FF', color: '#7C3AED' },
   special: { label: 'Đặc biệt', bg: '#FEF3C7', color: '#D97706' },
@@ -36,7 +37,7 @@ const VISIT_TYPE: Record<string, { label: string; bg: string; color: string }> =
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
   scheduled: { label: 'Lên lịch', bg: '#F3F4F6', color: '#6B7280' },
   in_progress: { label: 'Đang kiểm', bg: '#DBEAFE', color: '#2563EB' },
-  completed: { label: 'Hoàn thành', bg: '#ECFDF5', color: '#087653' },
+  completed: { label: 'Hoàn thành', bg: '#E8F5EF', color: '#0F5132' },
   report_submitted: { label: 'Đã gửi BC', bg: '#F3E8FF', color: '#7C3AED' },
 };
 const SEVERITY: Record<string, { label: string; bg: string; color: string }> = {
@@ -47,10 +48,10 @@ const SEVERITY: Record<string, { label: string; bg: string; color: string }> = {
 const NCR_STATUS: Record<string, { label: string; bg: string; color: string }> = {
   open: { label: 'Mở', bg: '#FEF2F2', color: '#DC2626' },
   in_review: { label: 'Đang xét', bg: '#DBEAFE', color: '#2563EB' },
-  closed: { label: 'Đã đóng', bg: '#ECFDF5', color: '#087653' },
+  closed: { label: 'Đã đóng', bg: '#E8F5EF', color: '#0F5132' },
 };
 const RESULTS = [
-  { value: 'conform', label: 'C (Đạt)', color: '#087653' },
+  { value: 'conform', label: 'C (Đạt)', color: '#0F5132' },
   { value: 'minor_nc', label: 'Minor NC', color: '#D97706' },
   { value: 'major_nc', label: 'Major NC', color: '#DC2626' },
   { value: 'na', label: 'N/A', color: '#6B7280' },
@@ -139,9 +140,9 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
   if (authLoading || fetching) return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
       </div>
     </div>
   );
@@ -225,7 +226,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
   };
 
   const downloadReport = () => {
-    window.open(`/api/api/audits/${id}/report-pdf?token=${token}`, '_blank');
+    openAuthed(`/api/api/audits/${id}/report-pdf`, token || '');
   };
 
   const submitDecision = async (decision: string) => {
@@ -254,9 +255,9 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
 
   /* ── Style helpers (Tailwind class strings) ── */
   const card = "bg-white rounded-xl p-4 mb-3 border border-[#E2E8F0]";
-  const btnPrimary = "w-full py-3.5 rounded-xl border-none bg-[#087653] text-white text-base font-bold cursor-pointer transition-all active:scale-[0.98]";
+  const btnPrimary = "w-full py-3.5 rounded-xl border-none bg-[#0F5132] text-white text-base font-bold cursor-pointer transition-all active:scale-[0.98]";
   const btnOutline = "px-4 py-2.5 rounded-lg border-[1.5px] border-[#E2E8F0] bg-white text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] text-center";
-  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[#E2E8F0] text-sm outline-none transition-all focus:border-[rgba(8,118,83,0.4)] focus:shadow-[0_0_0_3px_rgba(8,118,83,0.08)]";
+  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[#E2E8F0] text-sm outline-none transition-all focus:border-[rgba(15,81,50,0.4)] focus:shadow-[0_0_0_3px_rgba(15,81,50,0.08)]";
   const labelCls = "text-xs font-semibold text-[#6B7280] mb-1 block";
 
   /* ── Canvas drawing helpers ── */
@@ -277,7 +278,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
     <div className="animate-tab-content">
       {/* Visit Info */}
       <div className={card}>
-        <h2 className="text-lg font-bold mb-2" style={{ color: '#1A2332' }}>{visit.business_name}</h2>
+        <h2 className="text-lg font-bold mb-2" style={{ color: '#0F5132' }}>{visit.business_name}</h2>
         <div className="flex flex-wrap gap-2 mb-3">
           <Badge map={VISIT_TYPE} value={visit.visit_type} />
           <Badge map={STATUS} value={visit.status} />
@@ -304,10 +305,10 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
 
       {/* GPS */}
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <button className={`${btnOutline} ${visit.start_gps ? 'text-[#087653] border-[#087653]' : ''}`} onClick={() => captureGPS('start')}>
+        <button className={`${btnOutline} ${visit.start_gps ? 'text-[#0F5132] border-[#0F5132]' : ''}`} onClick={() => captureGPS('start')}>
           {visit.start_gps ? '✓ GPS bắt đầu' : 'Ghi GPS bắt đầu'}
         </button>
-        <button className={`${btnOutline} ${visit.end_gps ? 'text-[#087653] border-[#087653]' : ''}`} onClick={() => captureGPS('end')}>
+        <button className={`${btnOutline} ${visit.end_gps ? 'text-[#0F5132] border-[#0F5132]' : ''}`} onClick={() => captureGPS('end')}>
           {visit.end_gps ? '✓ GPS kết thúc' : 'Ghi GPS kết thúc'}
         </button>
       </div>
@@ -316,8 +317,8 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
       {visit.compliance_score != null && (
         <div className={`${card} text-center`}>
           <div className="w-24 h-24 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold"
-            style={{ border: `6px solid ${visit.compliance_score >= 80 ? '#087653' : visit.compliance_score >= 60 ? '#D97706' : '#DC2626'}`,
-                     color: visit.compliance_score >= 80 ? '#087653' : visit.compliance_score >= 60 ? '#D97706' : '#DC2626' }}>
+            style={{ border: `6px solid ${visit.compliance_score >= 80 ? '#0F5132' : visit.compliance_score >= 60 ? '#D97706' : '#DC2626'}`,
+                     color: visit.compliance_score >= 80 ? '#0F5132' : visit.compliance_score >= 60 ? '#D97706' : '#DC2626' }}>
             {visit.compliance_score}%
           </div>
           <div className="text-sm" style={{ color: '#6B7280' }}>Điểm tuân thủ</div>
@@ -327,13 +328,13 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
       {/* Signatures */}
       {(visit.status === 'in_progress' || visit.status === 'completed') && (
         <div className={card}>
-          <h3 className="text-base font-bold mb-3" style={{ color: '#1A2332' }}>Chữ ký</h3>
+          <h3 className="text-base font-bold mb-3" style={{ color: '#0F5132' }}>Chữ ký</h3>
           {(['auditor', 'business'] as const).map(type => {
             const done = type === 'auditor' ? visit.has_auditor_sig : visit.has_business_sig;
             const ref = type === 'auditor' ? auditorCanvasRef : businessCanvasRef;
             return (
               <div key={type} className="mb-4">
-                <label className={labelCls}>{type === 'auditor' ? 'Kiểm tra viên' : 'Doanh nghiệp'} {done && <span className="text-[#087653]">✓ Đã ký</span>}</label>
+                <label className={labelCls}>{type === 'auditor' ? 'Kiểm tra viên' : 'Doanh nghiệp'} {done && <span className="text-[#0F5132]">✓ Đã ký</span>}</label>
                 {!done && (
                   <>
                     <canvas ref={(el) => { (ref as React.MutableRefObject<HTMLCanvasElement | null>).current = el; setupCanvas(el); }}
@@ -365,14 +366,14 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 mb-3">
-        <button className={`${btnOutline} ${showAddItem ? '!text-red-500 !border-red-300' : '!text-[#087653] !border-[#087653]'}`}
+        <button className={`${btnOutline} ${showAddItem ? '!text-red-500 !border-red-300' : '!text-[#0F5132] !border-[#0F5132]'}`}
           onClick={() => setShowAddItem(!showAddItem)}>{showAddItem ? 'Hủy' : '+ Thêm hạng mục'}</button>
         {items.length === 0 && <button className={`${btnOutline} !text-[#2563EB] !border-[#2563EB]`} onClick={populateChecklist}>Tạo từ template</button>}
       </div>
 
       {/* Add item form */}
       {showAddItem && (
-        <div className="bg-[#F0F7F4] rounded-xl p-4 mb-3 border border-[#D1FAE5] space-y-3 animate-modal-content">
+        <div className="bg-[#F7F1E6] rounded-xl p-4 mb-3 border border-[#B7CBB8] space-y-3 animate-modal-content">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div><label className={labelCls}>Mã</label><input className={inputCls} placeholder="VD: HL-01" value={newItem.code} onChange={e => setNewItem({...newItem, code: e.target.value})} /></div>
             <div><label className={labelCls}>Danh mục</label><input className={inputCls} placeholder="VD: Vệ sinh" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} /></div>
@@ -394,7 +395,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
       {/* Items grouped by category */}
       {Object.entries(grouped).map(([cat, catItems]) => (
         <div key={cat} className="mb-4">
-          <h3 className="text-sm font-bold py-2 mb-2 border-b-2 border-[#E2E8F0]" style={{ color: '#1A2332' }}>{cat}</h3>
+          <h3 className="text-sm font-bold py-2 mb-2 border-b-2 border-[#E2E8F0]" style={{ color: '#0F5132' }}>{cat}</h3>
           {catItems.map(item => {
             const sev = SEVERITY[item.severity] || SEVERITY.minor;
             return (
@@ -402,7 +403,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
               {/* Top row */}
               <div className="flex items-start gap-2 mb-2">
                 {item.code && <span className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0" style={{ background: '#DBEAFE', color: '#2563EB' }}>{item.code}</span>}
-                <span className="flex-1 text-sm leading-snug" style={{ color: '#1A2332' }}>{item.criteria}</span>
+                <span className="flex-1 text-sm leading-snug" style={{ color: '#0F5132' }}>{item.criteria}</span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0" style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
                 <button onClick={() => deleteItem(item.id)} className="text-[#9CA3AF] hover:text-red-500 transition-colors text-lg leading-none px-1">×</button>
               </div>
@@ -487,7 +488,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
             <Badge map={NCR_STATUS} value={ncr.status} />
             {ncr.deadline && <span className="text-xs ml-auto" style={{ color: '#6B7280' }}>Hạn: {fmtDate(ncr.deadline)}</span>}
           </div>
-          <p className="text-sm mb-2 leading-relaxed" style={{ color: '#1A2332' }}>{ncr.description}</p>
+          <p className="text-sm mb-2 leading-relaxed" style={{ color: '#0F5132' }}>{ncr.description}</p>
           {ncr.corrective_action && <p className="text-xs" style={{ color: '#374151' }}><strong>Khắc phục:</strong> {ncr.corrective_action}</p>}
           {ncr.photo_paths?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -507,7 +508,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
   const renderReport = () => (
     <div className="animate-tab-content">
       <div className={card}>
-        <h3 className="text-base font-bold mb-3" style={{ color: '#1A2332' }}>Báo cáo PDF</h3>
+        <h3 className="text-base font-bold mb-3" style={{ color: '#0F5132' }}>Báo cáo PDF</h3>
         <button className={`${btnPrimary} mb-2`} onClick={generateReport}>Xuất báo cáo PDF</button>
         {visit.report_pdf_path && (
           <button className={`${btnOutline} w-full text-center !text-[#0EA5E9] !border-[#0EA5E9]`} onClick={downloadReport}>📥 Tải báo cáo PDF</button>
@@ -516,7 +517,7 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
 
       {user?.is_owner && (
         <div className={card}>
-          <h3 className="text-base font-bold mb-3" style={{ color: '#1A2332' }}>Quyết định chứng nhận</h3>
+          <h3 className="text-base font-bold mb-3" style={{ color: '#0F5132' }}>Quyết định chứng nhận</h3>
           <textarea className={`${inputCls} resize-none mb-3`} rows={2} placeholder="Ghi chú quyết định..."
             value={decisionNotes} onChange={e => setDecisionNotes(e.target.value)} />
           <div className="grid grid-cols-3 gap-2">
@@ -537,22 +538,22 @@ export default function AuditVisitDetailPage({ params }: { params: Promise<{ id:
         <button onClick={() => router.push('/audits')}
           className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 transition-all hover:bg-black/5"
           style={{ border: '1px solid #E2E8F0' }}>
-          <svg className="w-5 h-5" style={{ color: '#5F6F80' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" style={{ color: '#6B7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold" style={{ color: '#1A2332' }}>Chi tiết kiểm tra</h1>
+        <h1 className="text-lg font-bold" style={{ color: '#0F5132' }}>Chi tiết kiểm tra</h1>
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-4 gap-1 mb-4 p-1 rounded-xl" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+      <div className="grid grid-cols-4 gap-1 mb-4 p-1 rounded-xl" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className="py-2.5 rounded-lg text-sm font-medium transition-all"
             style={{
-              background: tab === t.key ? '#087653' : 'transparent',
+              background: tab === t.key ? '#0F5132' : 'transparent',
               color: tab === t.key ? '#FFFFFF' : '#6B7280',
-              boxShadow: tab === t.key ? '0 2px 8px rgba(8,118,83,0.25)' : 'none',
+              boxShadow: tab === t.key ? '0 2px 8px rgba(15,81,50,0.25)' : 'none',
             }}>
             {t.label}
           </button>

@@ -113,6 +113,228 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_db)):
     ]}
 
 
+# ── Business dossier (consolidated docs + revisions) ──
+@router.get("/businesses/{business_id}/dossier")
+async def business_dossier(business_id: str, user=Depends(get_current_user), db=Depends(get_db)):
+    """All submissions + all documents (grouped by doc_type with revision history) +
+    audit visits for one business. Provider-only — `business_id` is the business tenant id.
+
+    Doc revisions are pulled from `documents` table for the business tenant. Each doc_type
+    bucket is sorted newest-first so the head is the current revision.
+    """
+    _require_provider(user)
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Chỉ chủ tổ chức")
+    provider_id = user.get("tenant_id") or user["sub"]
+
+    biz = await db.fetchrow(
+        "SELECT id, company_name, email, phone, address FROM users "
+        "WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1",
+        business_id)
+    if not biz:
+        raise HTTPException(404, "Doanh nghiệp không tồn tại")
+
+    submissions = await db.fetch("""
+        SELECT id, status, document_ids, deadline, auditor_id, auditor_notes,
+               submitted_at, updated_at
+        FROM submissions
+        WHERE business_tenant=$1 AND provider_id=$2
+        ORDER BY submitted_at DESC NULLS LAST, updated_at DESC
+    """, business_id, provider_id)
+
+    docs = await db.fetch("""
+        SELECT id, original_filename, doc_type, compliance_score, file_size,
+               uploaded_at, evaluation_result, status
+        FROM documents
+        WHERE tenant_id=$1
+        ORDER BY doc_type, uploaded_at DESC
+    """, business_id)
+
+    by_doc_type: dict[str, list] = {}
+    for d in docs:
+        er = d["evaluation_result"]
+        if isinstance(er, str):
+            try:
+                er = _json.loads(er) if er else {}
+            except Exception:
+                er = {}
+        elif er is None:
+            er = {}
+        by_doc_type.setdefault(d["doc_type"] or "_unsorted", []).append({
+            "id": str(d["id"]),
+            "original_filename": d["original_filename"],
+            "compliance_score": d["compliance_score"],
+            "file_size": d["file_size"],
+            "uploaded_at": d["uploaded_at"].isoformat(),
+            "overall_status": er.get("overall_status"),
+            "cb_approved_by": er.get("cb_approved_by"),
+            "status": d["status"],
+        })
+
+    visits = await db.fetch("""
+        SELECT id, status, visit_type, scheduled_date, compliance_score, auditor_id
+        FROM audit_visits
+        WHERE business_tenant=$1 AND provider_id=$2
+        ORDER BY scheduled_date DESC
+    """, business_id, provider_id)
+
+    return {
+        "business": {
+            "id": str(biz["id"]),
+            "company_name": biz["company_name"] or "N/A",
+            "email": biz["email"] or "",
+            "phone": biz["phone"] or "",
+            "address": biz["address"] or "",
+        },
+        "submissions": [
+            {
+                "id": str(s["id"]),
+                "status": s["status"],
+                "document_ids": [str(x) for x in (s["document_ids"] or [])],
+                "deadline": s["deadline"].isoformat() if s["deadline"] else None,
+                "auditor_id": str(s["auditor_id"]) if s["auditor_id"] else None,
+                "auditor_notes": s["auditor_notes"] or "",
+                "submitted_at": s["submitted_at"].isoformat() if s["submitted_at"] else None,
+                "updated_at": s["updated_at"].isoformat(),
+            } for s in submissions
+        ],
+        "documents_by_type": [
+            {
+                "doc_type": dt,
+                "revisions": revs,
+                "current": revs[0] if revs else None,
+                "revision_count": len(revs),
+            } for dt, revs in by_doc_type.items()
+        ],
+        "audit_visits": [
+            {
+                "id": str(v["id"]),
+                "status": v["status"],
+                "visit_type": v["visit_type"],
+                "scheduled_date": v["scheduled_date"].isoformat(),
+                "compliance_score": v["compliance_score"],
+                "auditor_id": str(v["auditor_id"]) if v["auditor_id"] else None,
+            } for v in visits
+        ],
+    }
+
+
+# ── Business composite score ──
+@router.get("/businesses/{business_id}/score")
+async def business_score(business_id: str, user=Depends(get_current_user), db=Depends(get_db)):
+    """Composite score for a business under this provider's relationship.
+
+    Components:
+    - doc_score: avg compliance_score across the LATEST revision of each doc_type
+                 belonging to this business (limited to docs within approved submissions
+                 of this provider). Documents are the foundation — they prove the dossier
+                 was acceptable on paper.
+    - audit_score: avg compliance_score across COMPLETED on-site visits by this provider.
+                   Audits weigh more because they're field-verified, not paper.
+    - composite: 40% doc + 60% audit when both exist; otherwise whichever is available.
+
+    Why this weighting: documents are necessary but auditable in the office; audit visits
+    are the ground truth. A business with great docs but failing audits should not score
+    high. A business with no audit yet shows doc-only score so providers see early signal.
+    """
+    _require_provider(user)
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Chỉ chủ tổ chức")
+    provider_id = user.get("tenant_id") or user["sub"]
+
+    biz_exists = await db.fetchval(
+        "SELECT 1 FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1",
+        business_id)
+    if not biz_exists:
+        raise HTTPException(404, "Doanh nghiệp không tồn tại")
+
+    # W3-M11 — Restrict doc_score to docs that appear in submissions assigned to
+    # THIS provider. Otherwise a doc evaluated by another CB (or never submitted
+    # at all) would inflate this provider's view of the business.
+    doc_row = await db.fetchrow("""
+        WITH provider_doc_ids AS (
+          SELECT DISTINCT unnest(document_ids)::uuid AS doc_id
+          FROM submissions
+          WHERE business_tenant=$1 AND provider_id=$2
+        ),
+        latest AS (
+          SELECT DISTINCT ON (d.doc_type) d.doc_type, d.compliance_score
+          FROM documents d
+          JOIN provider_doc_ids pd ON pd.doc_id = d.id
+          WHERE d.tenant_id=$1
+            AND d.doc_type IS NOT NULL
+            AND d.compliance_score IS NOT NULL
+          ORDER BY d.doc_type, d.uploaded_at DESC
+        )
+        SELECT
+          COUNT(*)                              AS doc_types,
+          ROUND(AVG(compliance_score)::numeric) AS doc_score,
+          MIN(compliance_score)                 AS doc_min,
+          MAX(compliance_score)                 AS doc_max
+        FROM latest
+    """, business_id, provider_id)
+
+    # W3-M12 — Average only over COMPLETED audit visits. Including in-progress
+    # visits with placeholder scores skewed the composite.
+    audit_row = await db.fetchrow("""
+        SELECT
+          COUNT(*) FILTER (WHERE compliance_score IS NOT NULL
+                            AND status IN ('completed', 'report_submitted')) AS scored_visits,
+          COUNT(*) FILTER (WHERE status IN ('completed', 'report_submitted')) AS completed_visits,
+          ROUND(AVG(compliance_score) FILTER (
+                  WHERE status IN ('completed', 'report_submitted')
+                )::numeric)                                                    AS audit_score,
+          MIN(compliance_score) FILTER (WHERE status IN ('completed', 'report_submitted')) AS audit_min,
+          MAX(compliance_score) FILTER (WHERE status IN ('completed', 'report_submitted')) AS audit_max
+        FROM audit_visits
+        WHERE business_tenant=$1 AND provider_id=$2
+    """, business_id, provider_id)
+
+    doc_score = int(doc_row["doc_score"]) if doc_row["doc_score"] is not None else None
+    audit_score = int(audit_row["audit_score"]) if audit_row["audit_score"] is not None else None
+
+    if doc_score is not None and audit_score is not None:
+        composite = round(doc_score * 0.4 + audit_score * 0.6)
+    elif doc_score is not None:
+        composite = doc_score
+    elif audit_score is not None:
+        composite = audit_score
+    else:
+        composite = None
+
+    if composite is None:
+        rating = "unrated"
+    elif composite >= 90:
+        rating = "excellent"
+    elif composite >= 75:
+        rating = "good"
+    elif composite >= 60:
+        rating = "fair"
+    else:
+        rating = "needs_improvement"
+
+    return {
+        "business_id": business_id,
+        "composite_score": composite,
+        "rating": rating,
+        "doc_component": {
+            "score": doc_score,
+            "doc_types_evaluated": doc_row["doc_types"] or 0,
+            "min": doc_row["doc_min"],
+            "max": doc_row["doc_max"],
+            "weight": 0.4 if doc_score is not None and audit_score is not None else (1.0 if doc_score is not None else 0),
+        },
+        "audit_component": {
+            "score": audit_score,
+            "completed_visits": audit_row["completed_visits"] or 0,
+            "scored_visits": audit_row["scored_visits"] or 0,
+            "min": audit_row["audit_min"],
+            "max": audit_row["audit_max"],
+            "weight": 0.6 if doc_score is not None and audit_score is not None else (1.0 if audit_score is not None else 0),
+        },
+    }
+
+
 # ── Stats ──
 @router.get("/stats")
 async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
@@ -880,6 +1102,12 @@ async def visit_history(business_tenant: str, user=Depends(get_current_user), db
 
 @router.post("/{vid}/decision")
 async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+    """Provider decides on cert state after a visit.
+
+    Fixes from bug audit 2026-04-26:
+      C4 — filter by issued_by so we don't stomp other providers' certs
+      W4-M1 — route revoke through cert_lifecycle.revoke_cert (audit log + reason)
+    """
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
@@ -889,24 +1117,55 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
     if decision not in ("renew", "suspend", "revoke"):
         raise HTTPException(400, "decision: renew | suspend | revoke")
 
-    visit = await db.fetchrow("SELECT business_tenant FROM audit_visits WHERE id=$1", vid)
+    visit = await db.fetchrow("SELECT business_tenant, provider_id FROM audit_visits WHERE id=$1", vid)
     if not visit:
         raise HTTPException(404)
+    provider_id = user.get("tenant_id") or user["sub"]
+    # Cross-check the visit belongs to this CB.
+    if str(visit["provider_id"]) != str(provider_id):
+        raise HTTPException(403, "Visit không thuộc tổ chức của bạn")
 
-    # Update certificate status
-    cert_status = {"renew": "active", "suspend": "suspended", "revoke": "revoked"}.get(decision, "active")
-    await db.execute(
-        "UPDATE halal_certificates SET status=$1 WHERE business_tenant=$2",
-        cert_status, visit["business_tenant"])
-
-    # Notify business
+    notes = req.get("notes", "") or ""
     decision_labels = {"renew": "gia hạn", "suspend": "tạm đình chỉ", "revoke": "thu hồi"}
+
+    if decision == "revoke":
+        # W4-M1 — go through proper lifecycle helper that sets revoked_at +
+        # revocation_reason + revoked_by + writes audit log.
+        if not notes.strip():
+            raise HTTPException(400, "Phải nhập lý do khi thu hồi chứng nhận")
+        from services.cert_lifecycle import revoke_active_certs_for_business
+        affected = await revoke_active_certs_for_business(
+            db,
+            business_tenant=str(visit["business_tenant"]),
+            issued_by=str(provider_id),
+            reason=notes.strip(),
+            revoked_by=user["sub"],
+        )
+        log.info(f"[audit] {affected} cert(s) revoked for {visit['business_tenant']} by {provider_id}")
+    else:
+        # C4 — restrict update to certs issued by THIS provider only.
+        cert_status = {"renew": "active", "suspend": "suspended"}[decision]
+        await db.execute(
+            "UPDATE halal_certificates SET status=$1, updated_at=NOW() "
+            "WHERE business_tenant=$2 AND issued_by=$3 AND status <> 'revoked'",
+            cert_status, visit["business_tenant"], provider_id,
+        )
+        await log_audit(
+            db,
+            user=user,
+            action=f"certificate.{decision}",
+            entity_type="certificate",
+            metadata={"business_tenant": str(visit["business_tenant"]), "notes": notes},
+        )
+
     biz_owner = await db.fetchrow(
-        "SELECT id FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", visit["business_tenant"])
+        "SELECT id FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1",
+        visit["business_tenant"],
+    )
     if biz_owner:
         await notify(db, str(biz_owner["id"]), "certificate",
                      f"Chứng nhận đã được {decision_labels[decision]}",
-                     req.get("notes", ""), "/documents")
+                     notes, "/documents")
 
     log.info(f"[audit] Decision {decision} for business {visit['business_tenant']}")
     return {"message": f"Đã {decision_labels[decision]} chứng nhận"}

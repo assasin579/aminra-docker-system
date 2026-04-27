@@ -116,18 +116,29 @@ async def register_provider(req: ProviderRegisterRequest, db: Connection = Depen
 # ── Login ──────────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=LoginResponse)
-async def login(req: LoginRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
+async def login(req: LoginRequest, request: Request, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
+    from services.audit_log import log_audit
     if req.role and req.role in ("business", "provider"):
         row = await db.fetchrow("SELECT * FROM users WHERE email = $1 AND role = $2", req.email, req.role)
     else:
         row = await db.fetchrow("SELECT * FROM users WHERE email = $1", req.email)
     if not row or not verify_password(req.password, row["password_hash"]):
+        await log_audit(
+            db,
+            action="login.failed",
+            entity_type="user",
+            metadata={"email": req.email, "reason": "invalid_credentials"},
+            request=request,
+        )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email hoặc mật khẩu không đúng")
 
     if row["status"] == "pending":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đang chờ xét duyệt")
     if row["status"] == "suspended":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị tạm khoá")
+    # GDPR/PDPL: deleted accounts can never log in.
+    if row.get("deleted_at") is not None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị xoá")
 
     # Auto-set tenant_id for provider owners (migration for existing accounts)
     if row["role"] == "provider" and row["is_owner"] and not row["tenant_id"]:
@@ -153,6 +164,15 @@ async def login(req: LoginRequest, db: Connection = Depends(get_db), _: None = D
     }
     token = create_access_token(token_data)
     refresh = create_refresh_token(token_data)
+
+    await log_audit(
+        db,
+        user=token_data,
+        action="login.success",
+        entity_type="user",
+        entity_id=str(row["id"]),
+        request=request,
+    )
     return LoginResponse(access_token=token, refresh_token=refresh, user=profile)
 
 
@@ -1103,7 +1123,7 @@ async def change_password(
     db: Connection = Depends(get_db),
 ):
     """Change password for current user."""
-    import re
+    from auth.password import WeakPasswordError, validate_password_strength
     row = await db.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["sub"])
     if not row:
         raise HTTPException(404, "User không tồn tại")
@@ -1111,17 +1131,12 @@ async def change_password(
     if not verify_password(req.current_password, row["password_hash"]):
         raise HTTPException(400, "Mật khẩu hiện tại không đúng")
 
-    pw = req.new_password
-    if len(pw) < 10:
-        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 10 ký tự")
-    if not re.search(r'[A-Z]', pw):
-        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 1 chữ hoa")
-    if not re.search(r'[a-z]', pw):
-        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 1 chữ thường")
-    if not re.search(r'[0-9]', pw):
-        raise HTTPException(400, "Mật khẩu mới phải có ít nhất 1 chữ số")
+    try:
+        validate_password_strength(req.new_password)
+    except WeakPasswordError as e:
+        raise HTTPException(400, str(e))
 
-    new_hash = hash_password(pw)
+    new_hash = hash_password(req.new_password)
     await db.execute("UPDATE users SET password_hash = $1 WHERE id = $2", new_hash, user["sub"])
     log.info(f"[auth] Password changed for {user['sub']}")
     return {"message": "Đã đổi mật khẩu thành công"}

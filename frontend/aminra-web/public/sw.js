@@ -1,6 +1,13 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = 'aminra-v1';
+const CACHE_NAME = 'aminra-v4';
 const OFFLINE_URL = '/audits';
+// URLs the SW must NEVER serve from cache (always go to network).
+// Admin rotates template content; serving stale = wrong file delivered.
+const NEVER_CACHE_PATTERNS = [
+  /\/api\/templates\//,
+  /\/api\/admin\/templates\/.*\/template-file\/view/,
+  /\/api\/admin\/templates\/.*\/files\/.*\/view/,
+];
 
 // Cache critical assets on install
 self.addEventListener('install', (event) => {
@@ -37,17 +44,19 @@ self.addEventListener('fetch', (event) => {
 
   // API calls: network-first, fallback to cache
   if (url.pathname.startsWith('/api/')) {
+    // Some endpoints (template downloads) MUST never be served from cache —
+    // admin rotates content, stale = wrong template delivered to business.
+    const skipCache = NEVER_CACHE_PATTERNS.some((re) => re.test(url.pathname));
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful API responses for offline reading
-          if (response.ok && request.url.includes('/api/api/audits/')) {
+          if (!skipCache && response.ok && request.url.includes('/api/api/audits/')) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => skipCache ? Response.error() : caches.match(request))
     );
     return;
   }
@@ -67,6 +76,39 @@ self.addEventListener('fetch', (event) => {
           return cached || caches.match(OFFLINE_URL);
         });
       })
+  );
+});
+
+// Web push: show notification when server pushes via VAPID
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (e) { payload = { title: event.data ? event.data.text() : 'AMINRA' }; }
+  const title = payload.title || 'AMINRA';
+  const options = {
+    body: payload.message || '',
+    icon: '/aminra-mark.svg',
+    badge: '/aminra-mark.svg',
+    data: { link: payload.link || '/', notification_id: payload.notification_id || null },
+    tag: payload.tag || payload.notification_id || undefined,
+    requireInteraction: false,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Click on notification → open or focus the linked URL
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = (event.notification.data && event.notification.data.link) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if ('focus' in w) {
+          w.navigate(link).catch(() => {});
+          return w.focus();
+        }
+      }
+      return self.clients.openWindow(link);
+    })
   );
 });
 

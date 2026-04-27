@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: #dc2626;">Chứng nhận Halal đã bị thu hồi</h2>
+  <p>Xin chào {{ user_name | default("bạn") }},</p>
+  <p>Tổ chức cấp chứng nhận đã thu hồi chứng nhận của doanh nghiệp.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr><td style="padding:8px;border-bottom:1px solid #E2E8F0;color:#5F6F80;">Số chứng nhận</td><td style="padding:8px;border-bottom:1px solid #E2E8F0;font-weight:600;">{{ cert_number }}</td></tr>
+    <tr><td style="padding:8px;border-bottom:1px solid #E2E8F0;color:#5F6F80;">Doanh nghiệp</td><td style="padding:8px;border-bottom:1px solid #E2E8F0;">{{ company_name }}</td></tr>
+    <tr><td style="padding:8px;border-bottom:1px solid #E2E8F0;color:#5F6F80;">Tổ chức cấp</td><td style="padding:8px;border-bottom:1px solid #E2E8F0;">{{ provider_name }}</td></tr>
+    <tr><td style="padding:8px;color:#5F6F80;">Ngày thu hồi</td><td style="padding:8px;font-weight:600;">{{ revoked_at }}</td></tr>
+  </table>
+  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:12px;margin:16px 0;">
+    <p style="margin:0;font-size:13px;color:#991b1b;"><strong>Lý do thu hồi:</strong></p>
+    <p style="margin:8px 0 0;font-size:14px;color:#7f1d1d;white-space:pre-wrap;">{{ reason }}</p>
+  </div>
+  <h3 style="font-size:14px;color:#1A2332;">Hành động cần làm</h3>
+  <ul style="font-size:14px;color:#374151;">
+    <li>Ngừng sử dụng logo Halal trên sản phẩm/marketing material liên quan</li>
+    <li>Liên hệ tổ chức cấp để biết chi tiết và quy trình khiếu nại</li>
+    <li>Xem <a href="{{ app_base_url }}/terms" style="color:#087653;">điều khoản dịch vụ</a></li>
+  </ul>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size: 12px; color: #9ca3af;">— Đội ngũ {{ from_name }}</p>
+</body>
+</html>

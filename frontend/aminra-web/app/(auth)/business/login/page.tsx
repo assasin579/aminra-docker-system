@@ -32,12 +32,15 @@ export default function BusinessLoginPage() {
     <div className="w-full max-w-md" data-page>
       {/* Logo */}
       <div className="text-center mb-8 animate-section">
-        <div className="inline-grid place-items-center w-14 h-14 rounded-2xl bg-emerald-700 mb-4">
-          <span className="text-white font-bold text-2xl">A</span>
+        <div className="inline-grid place-items-center w-16 h-16 rounded-2xl mb-4"
+          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,81,50,0.12)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aminra-mark.svg" alt="AMINRA" className="w-11 h-11" />
         </div>
-        <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>Chào mừng doanh nghiệp</h1>
-        <p className="mt-1 text-sm" style={{ color: '#5F6F80' }}>
-          Đăng nhập để bắt đầu hành trình chứng nhận Halal
+        <h1 className="text-2xl font-bold tracking-wide" style={{ color: '#0F5132' }}>AMINRA</h1>
+        <p className="text-xs mt-0.5" style={{ color: '#D4AF37', letterSpacing: '0.08em' }}>HALAL INTEGRITY, DIGITAL TRUST</p>
+        <p className="mt-3 text-sm" style={{ color: '#6B7280' }}>
+          Đăng nhập doanh nghiệp để bắt đầu hành trình chứng nhận Halal
         </p>
       </div>
 
@@ -45,36 +48,41 @@ export default function BusinessLoginPage() {
       <div className="rounded-2xl p-8 animate-section" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Email công ty</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Email công ty</label>
             <input
               type="email" required autoFocus
               value={email} onChange={e => setEmail(e.target.value)}
               placeholder="cong ty@example.com"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Mật khẩu</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Mật khẩu</label>
             <input
               type="password" required
               value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
-            <span className="text-sm" style={{ color: '#6B7280' }}>Ghi nhớ đăng nhập</span>
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer select-none min-h-[32px]">
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-[#0F5132] focus:ring-[#0F5132]" />
+              <span className="text-sm" style={{ color: '#6B7280' }}>Ghi nhớ đăng nhập</span>
+            </label>
+            <Link href="/forgot-password" className="text-sm font-medium" style={{ color: '#0F5132' }}>
+              Quên mật khẩu?
+            </Link>
+          </div>
 
           {error && (
             <p className="text-xs px-3 py-2 rounded-lg"
@@ -87,8 +95,8 @@ export default function BusinessLoginPage() {
             type="submit" disabled={loading || !email || !password}
             className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
             style={{
-              background: loading || !email || !password ? '#E2E8F0' : '#087653',
-              color: loading || !email || !password ? '#5B6B7D' : 'white',
+              background: loading || !email || !password ? '#E2E8F0' : '#0F5132',
+              color: loading || !email || !password ? '#6B7280' : 'white',
               cursor: loading || !email || !password ? 'not-allowed' : 'pointer',
             }}
           >
@@ -97,9 +105,9 @@ export default function BusinessLoginPage() {
         </form>
 
         <div className="mt-6 pt-5 text-center" style={{ borderTop: '1px solid #E2E8F0' }}>
-          <p className="text-sm" style={{ color: '#5F6F80' }}>
+          <p className="text-sm" style={{ color: '#6B7280' }}>
             Chưa có tài khoản?{' '}
-            <Link href="/business/register" className="font-medium transition-colors" style={{ color: '#087653' }}>
+            <Link href="/business/register" className="inline-flex items-center min-h-[32px] font-medium transition-colors" style={{ color: '#0F5132' }}>
               Đăng ký ngay
             </Link>
           </p>
@@ -109,7 +117,7 @@ export default function BusinessLoginPage() {
       {/* Footer link */}
       <p className="text-center mt-6 text-xs" style={{ color: '#94A3B8' }}>
         Là tổ chức cấp chứng nhận?{' '}
-        <Link href="/provider/login" className="transition-colors" style={{ color: '#5F6F80' }}>
+        <Link href="/provider/login" className="inline-flex items-center min-h-[32px] transition-colors" style={{ color: '#6B7280' }}>
           Đăng nhập tại đây
         </Link>
       </p>

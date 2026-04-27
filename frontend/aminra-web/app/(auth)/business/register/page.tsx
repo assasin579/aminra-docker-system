@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/components/UserAuthContext';
+import { parseApiError, validatePassword } from '@/lib/apiError';
 
 export default function BusinessRegisterPage() {
   const router = useRouter();
@@ -25,9 +26,8 @@ export default function BusinessRegisterPage() {
     if (form.password !== form.confirm_password) {
       setError('Mật khẩu xác nhận không khớp'); return;
     }
-    if (form.password.length < 8) {
-      setError('Mật khẩu tối thiểu 8 ký tự'); return;
-    }
+    const pwErr = validatePassword(form.password);
+    if (pwErr) { setError(pwErr); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/business/register', {
@@ -41,8 +41,8 @@ export default function BusinessRegisterPage() {
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Đăng ký thất bại');
+        const body = await res.json().catch(() => ({}));
+        throw new Error(parseApiError(body, `Đăng ký thất bại (HTTP ${res.status})`));
       }
       // Auto-login after register
       await loginBusiness(form.email.trim(), form.password);
@@ -55,7 +55,7 @@ export default function BusinessRegisterPage() {
   };
 
   const inputStyle = {
-    background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332',
+    background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132',
   };
   const inputClass = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all";
 
@@ -63,11 +63,13 @@ export default function BusinessRegisterPage() {
     <div className="w-full max-w-lg" data-page>
       {/* Header */}
       <div className="text-center mb-8 animate-section">
-        <div className="inline-grid place-items-center w-14 h-14 rounded-2xl bg-emerald-700 mb-4">
-          <span className="text-white font-bold text-2xl">A</span>
+        <div className="inline-grid place-items-center w-16 h-16 rounded-2xl mb-4"
+          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,81,50,0.12)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aminra-mark.svg" alt="AMINRA" className="w-11 h-11" />
         </div>
-        <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>Đăng ký doanh nghiệp</h1>
-        <p className="mt-1 text-sm" style={{ color: '#5F6F80' }}>
+        <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Đăng ký doanh nghiệp</h1>
+        <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
           Bắt đầu hành trình chứng nhận Halal cho doanh nghiệp của bạn
         </p>
       </div>
@@ -76,49 +78,53 @@ export default function BusinessRegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Company info */}
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Tên công ty *</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Tên công ty *</label>
             <input required value={form.company_name} onChange={set('company_name')}
               placeholder="Công ty TNHH ABC"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>
               Mã số thuế / Mã đăng ký kinh doanh
             </label>
             <input value={form.company_code} onChange={set('company_code')}
               placeholder="0123456789 (tuỳ chọn)"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
           <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1rem', marginTop: '0.5rem' }}>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Email đăng nhập *</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Email đăng nhập *</label>
             <input type="email" required value={form.email} onChange={set('email')}
               placeholder="email@congtycua.com"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Mật khẩu *</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Mật khẩu *</label>
               <input type="password" required value={form.password} onChange={set('password')}
-                placeholder="Tối thiểu 8 ký tự"
+                placeholder="••••••••••"
+                minLength={10}
                 className={inputClass} style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = '#087653')}
+                onFocus={e => (e.target.style.borderColor = '#0F5132')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
+              <p className="text-xs mt-1.5" style={{ color: '#94A3B8' }}>
+                Tối thiểu 10 ký tự, có chữ hoa, chữ thường và số.
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Xác nhận mật khẩu *</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Xác nhận mật khẩu *</label>
               <input type="password" required value={form.confirm_password} onChange={set('confirm_password')}
                 placeholder="Nhập lại mật khẩu"
                 className={inputClass} style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = '#087653')}
+                onFocus={e => (e.target.style.borderColor = '#0F5132')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
             </div>
           </div>
@@ -134,8 +140,8 @@ export default function BusinessRegisterPage() {
             type="submit" disabled={loading}
             className="w-full py-3 rounded-xl font-semibold text-sm transition-all mt-2"
             style={{
-              background: loading ? '#E2E8F0' : '#087653',
-              color: loading ? '#5B6B7D' : 'white',
+              background: loading ? '#E2E8F0' : '#0F5132',
+              color: loading ? '#6B7280' : 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
@@ -144,9 +150,9 @@ export default function BusinessRegisterPage() {
         </form>
 
         <div className="mt-6 pt-5 text-center" style={{ borderTop: '1px solid #E2E8F0' }}>
-          <p className="text-sm" style={{ color: '#5F6F80' }}>
+          <p className="text-sm" style={{ color: '#6B7280' }}>
             Đã có tài khoản?{' '}
-            <Link href="/business/login" className="font-medium transition-colors" style={{ color: '#087653' }}>
+            <Link href="/business/login" className="inline-flex items-center min-h-[32px] font-medium transition-colors" style={{ color: '#0F5132' }}>
               Đăng nhập
             </Link>
           </p>

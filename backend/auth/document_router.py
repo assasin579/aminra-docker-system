@@ -357,16 +357,16 @@ async def preview_document(
             doc_id, user.get("tenant_id"),
         )
     elif user["role"] == "provider":
-        # Provider/auditor can view docs in submissions OR revisions of docs in submissions
+        # C6 fix — provider can ONLY view docs explicitly in their submissions.
+        # Old `OR d.tenant_id = s.business_tenant` granted whole-tenant access
+        # which leaked unrelated docs across submissions. Revisions are in the
+        # documents table but only `submission.document_ids` are CB's scope.
         row = await db.fetchrow(
             """SELECT d.file_path, d.original_filename, d.mime_type FROM documents d
                WHERE d.id = $1 AND EXISTS (
                    SELECT 1 FROM submissions s
                    WHERE (s.provider_id = $2 OR s.auditor_id = $2)
-                   AND (
-                       $1 = ANY(s.document_ids)
-                       OR d.tenant_id = s.business_tenant
-                   )
+                     AND $1 = ANY(s.document_ids)
                )""",
             doc_id, user["sub"],
         )
@@ -458,15 +458,13 @@ async def get_document_file(
             doc_id, user.get("tenant_id"),
         )
     elif user["role"] == "provider":
+        # C6 fix — same scoping as /preview: only docs explicitly in the submission.
         row = await db.fetchrow(
             """SELECT d.file_path, d.original_filename, d.mime_type FROM documents d
                WHERE d.id = $1 AND EXISTS (
                    SELECT 1 FROM submissions s
                    WHERE (s.provider_id = $2 OR s.auditor_id = $2)
-                   AND (
-                       $1 = ANY(s.document_ids)
-                       OR d.tenant_id = s.business_tenant
-                   )
+                     AND $1 = ANY(s.document_ids)
                )""",
             doc_id, user["sub"],
         )

@@ -44,14 +44,15 @@ const TOKEN_KEY   = 'aminra_user_token';
 const PROFILE_KEY = 'aminra_user_profile';
 
 async function apiLogin(email: string, password: string, role?: string) {
+  const { parseApiError } = await import('@/lib/apiError');
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, role }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Đăng nhập thất bại');
+    const body = await res.json().catch(() => ({}));
+    throw new Error(parseApiError(body, `Đăng nhập thất bại (HTTP ${res.status})`));
   }
   return res.json() as Promise<{ access_token: string; user: UserProfile }>;
 }
@@ -121,6 +122,8 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(PROFILE_KEY);
     sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(PROFILE_KEY);
+    // Cross-context cleanup: never leave a stale admin token after user logout
+    localStorage.removeItem('aminra_admin_token');
     document.cookie = 'aminra_session=; path=/; max-age=0';
     try { sessionStorage.clear(); } catch {}
   }, []);

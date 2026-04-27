@@ -104,13 +104,13 @@ interface AuditorReview {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function scoreColor(score: number) {
-  if (score >= 80) return '#087653';
+  if (score >= 80) return '#0F5132';
   if (score >= 50) return '#f59e0b';
   return '#ef4444';
 }
 
 function statusLabel(s: string) {
-  if (s === 'compliant')     return { label: 'Tuân thủ',       color: '#087653', bg: 'rgba(8,118,83,0.08)',    border: 'rgba(8,118,83,0.25)'   };
+  if (s === 'compliant')     return { label: 'Tuân thủ',       color: '#0F5132', bg: 'rgba(15,81,50,0.08)',    border: 'rgba(15,81,50,0.25)'   };
   if (s === 'needs_review')  return { label: 'Cần xem xét',    color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)' };
   return                            { label: 'Không tuân thủ', color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)'  };
 }
@@ -121,8 +121,8 @@ function severityBadge(sev: string) {
     high:     { color: '#f97316', bg: 'rgba(249,115,22,0.15)', label: 'Cao' },
     major:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', label: 'Lớn' },
     medium:   { color: '#eab308', bg: 'rgba(234,179,8,0.15)',  label: 'Trung bình' },
-    minor:    { color: '#5B6B7D', bg: 'rgba(91,107,125,0.1)',  label: 'Nhỏ' },
-    low:      { color: '#5B6B7D', bg: 'rgba(148,163,184,0.1)', label: 'Thấp' },
+    minor:    { color: '#6B7280', bg: 'rgba(91,107,125,0.1)',  label: 'Nhỏ' },
+    low:      { color: '#6B7280', bg: 'rgba(148,163,184,0.1)', label: 'Thấp' },
   };
   return map[sev] ?? map.low;
 }
@@ -154,7 +154,7 @@ function ScoreDial({ score }: { score: number }) {
         style={{ transition: 'stroke-dasharray 1s ease' }}
       />
       <text x="70" y="66" textAnchor="middle" fill={color} fontSize="28" fontWeight="bold" fontFamily="monospace">{score}</text>
-      <text x="70" y="84" textAnchor="middle" fill="#5B6B7D" fontSize="11" fontFamily="sans-serif">/100</text>
+      <text x="70" y="84" textAnchor="middle" fill="#6B7280" fontSize="11" fontFamily="sans-serif">/100</text>
     </svg>
   );
 }
@@ -453,8 +453,8 @@ export default function UploadPage() {
     return (
       <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
         <div className="mb-6 animate-section">
-          <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>Phân tích tài liệu Halal</h1>
-          <p className="mt-2" style={{ color: '#5F6F80' }}>Upload tài liệu để nhận đánh giá compliance toàn diện</p>
+          <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Phân tích tài liệu Halal</h1>
+          <p className="mt-2" style={{ color: '#6B7280' }}>Upload tài liệu để nhận đánh giá compliance toàn diện</p>
         </div>
 
         {/* Coming soon toast */}
@@ -465,16 +465,16 @@ export default function UploadPage() {
         )}
 
         {/* ── Step 1: Document type selector ─────────────────────────────── */}
-        <div className="mb-6 rounded-2xl p-5" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+        <div className="mb-6 rounded-2xl p-5" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
           <div className="grid grid-flow-col items-center gap-2 mb-4 justify-start">
             <span className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold"
-              style={{ background: selectedDocType ? '#087653' : '#E2E8F0', color: selectedDocType ? 'white' : '#5B6B7D' }}>
+              style={{ background: selectedDocType ? '#0F5132' : '#E2E8F0', color: selectedDocType ? 'white' : '#6B7280' }}>
               {selectedDocType ? '✓' : '1'}
             </span>
-            <h2 className="text-sm font-semibold" style={{ color: '#1A2332' }}>Chọn loại tài liệu</h2>
+            <h2 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Chọn loại tài liệu</h2>
             {selectedDocType && (
               <span className="ml-auto text-xs px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(8,118,83,0.08)', color: '#087653', border: '1px solid rgba(8,118,83,0.2)' }}>
+                style={{ background: 'rgba(15,81,50,0.08)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.2)' }}>
                 {[...DOC_TYPE_OPTIONS, ...SOP_SUB_OPTIONS].find(o => o.id === selectedDocType)?.label}
               </span>
             )}
@@ -497,9 +497,9 @@ export default function UploadPage() {
                   }}
                   className="text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
                   style={{
-                    background: selectedDocType === opt.id ? 'rgba(8,118,83,0.08)' : '#FFFFFF',
-                    border: selectedDocType === opt.id ? '1px solid rgba(8,118,83,0.3)' : '1px solid #E2E8F0',
-                    color: locked ? '#94A3B8' : selectedDocType === opt.id ? '#087653' : '#5B6B7D',
+                    background: selectedDocType === opt.id ? 'rgba(15,81,50,0.08)' : '#FFFFFF',
+                    border: selectedDocType === opt.id ? '1px solid rgba(15,81,50,0.3)' : '1px solid #E2E8F0',
+                    color: locked ? '#94A3B8' : selectedDocType === opt.id ? '#0F5132' : '#6B7280',
                     cursor: locked ? 'not-allowed' : 'pointer',
                     opacity: locked ? 0.5 : 1,
                   }}>
@@ -525,9 +525,9 @@ export default function UploadPage() {
               className="w-full grid items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-1"
               style={{
                 gridTemplateColumns: '1fr auto',
-                background: SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? 'rgba(8,118,83,0.06)' : '#FFFFFF',
-                border: SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '1px solid rgba(8,118,83,0.25)' : '1px solid #E2E8F0',
-                color: !isFullAccess ? '#94A3B8' : SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '#087653' : '#5B6B7D',
+                background: SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? 'rgba(15,81,50,0.06)' : '#FFFFFF',
+                border: SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '1px solid rgba(15,81,50,0.25)' : '1px solid #E2E8F0',
+                color: !isFullAccess ? '#94A3B8' : SOP_SUB_OPTIONS.some(o => o.id === selectedDocType) ? '#0F5132' : '#6B7280',
                 cursor: !isFullAccess ? 'default' : 'pointer',
               }}>
               <span>SOP Documentation{!isFullAccess && <span className="ml-1 text-xs opacity-50">🔒</span>}</span>
@@ -543,9 +543,9 @@ export default function UploadPage() {
                   <button key={opt.id} onClick={() => setSelectedDocType(opt.id)}
                     className="text-left px-3 py-2 rounded-lg text-xs font-medium transition-all"
                     style={{
-                      background: selectedDocType === opt.id ? 'rgba(8,118,83,0.08)' : '#FFFFFF',
-                      border: selectedDocType === opt.id ? '1px solid rgba(8,118,83,0.3)' : '1px solid #E2E8F0',
-                      color: selectedDocType === opt.id ? '#087653' : '#5B6B7D',
+                      background: selectedDocType === opt.id ? 'rgba(15,81,50,0.08)' : '#FFFFFF',
+                      border: selectedDocType === opt.id ? '1px solid rgba(15,81,50,0.3)' : '1px solid #E2E8F0',
+                      color: selectedDocType === opt.id ? '#0F5132' : '#6B7280',
                     }}>
                     {opt.label}
                   </button>
@@ -558,8 +558,8 @@ export default function UploadPage() {
         {/* ── Step 2: Upload ──────────────────────────────────────────────── */}
         <div className="mb-1 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ background: '#E2E8F0', color: '#5B6B7D' }}>2</span>
-          <h2 className="text-sm font-semibold text-[#1A2332]">Tải lên tài liệu</h2>
+            style={{ background: '#E2E8F0', color: '#6B7280' }}>2</span>
+          <h2 className="text-sm font-semibold text-[#0F5132]">Tải lên tài liệu</h2>
         </div>
 
         {error && (
@@ -570,24 +570,24 @@ export default function UploadPage() {
 
         <div {...getRootProps()} className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all grid place-items-center ${
           !selectedDocType ? 'border-[#E2E8F0] opacity-40 cursor-not-allowed' :
-          isDragActive ? 'border-emerald-600 bg-emerald-50' : 'border-[#E2E8F0] hover:border-emerald-600 bg-[#FAFCF9]'
+          isDragActive ? 'border-[#0F5132] bg-[#E8F5EF]' : 'border-[#E2E8F0] hover:border-[#0F5132] bg-[#FFFFFF]'
         }`}>
           <input {...getInputProps()} />
           {phase === 'uploading' ? (
             <>
               <div className="spinner w-10 h-10 mb-4" />
-              <p className="text-[#1A2332] font-semibold">Đang tải lên…</p>
+              <p className="text-[#0F5132] font-semibold">Đang tải lên…</p>
             </>
           ) : (
             <>
-              <div className="h-16 w-16 rounded-full grid place-items-center mb-4" style={{ background: 'rgba(8,118,83,0.12)' }}>
-                <svg className="w-8 h-8" style={{ color: '#087653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="h-16 w-16 rounded-full grid place-items-center mb-4" style={{ background: 'rgba(15,81,50,0.12)' }}>
+                <svg className="w-8 h-8" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-[#1A2332] mb-1">{isDragActive ? 'Thả file vào đây' : 'Kéo & thả file vào đây'}</h3>
-              <p className="text-[#5F6F80] text-sm mb-5">PDF, DOCX, PPTX, TXT, MD — tối đa 20 MB</p>
-              <button type="button" className="px-6 py-2.5 font-medium rounded-xl transition-all" style={{ background: '#087653', color: 'white' }}>
+              <h3 className="text-lg font-semibold text-[#0F5132] mb-1">{isDragActive ? 'Thả file vào đây' : 'Kéo & thả file vào đây'}</h3>
+              <p className="text-[#6B7280] text-sm mb-5">PDF, DOCX, PPTX, TXT, MD — tối đa 20 MB</p>
+              <button type="button" className="px-6 py-2.5 font-medium rounded-xl transition-all" style={{ background: '#0F5132', color: 'white' }}>
                 Chọn file
               </button>
             </>
@@ -597,7 +597,7 @@ export default function UploadPage() {
         {/* Version history preview — admin only */}
         {isFullAccess && fileVersions.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-sm font-semibold mb-3" style={{ color: '#5B6B7D' }}>Lịch sử phiên bản</h3>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#6B7280' }}>Lịch sử phiên bản</h3>
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
               {fileVersions.slice(0, 5).map((v, i) => {
                 const st = statusLabel(v.status);
@@ -605,8 +605,8 @@ export default function UploadPage() {
                   <div key={i} className="grid items-center gap-3 px-4 py-3" style={{ gridTemplateColumns: 'auto 1fr', borderBottom: i < Math.min(4, fileVersions.length - 1) ? '1px solid #E2E8F0' : 'none' }}>
                     <span className="text-lg font-bold tabular-nums" style={{ color: scoreColor(v.score), width: 36 }}>{v.score}</span>
                     <div className="min-w-0">
-                      <p className="text-sm text-[#1A2332] truncate">v{v.version} · {v.doc_type_label}</p>
-                      <p className="text-xs" style={{ color: '#5B6B7D' }}>{v.issues_count} vấn đề · {new Date(v.timestamp).toLocaleDateString('vi-VN')}</p>
+                      <p className="text-sm text-[#0F5132] truncate">v{v.version} · {v.doc_type_label}</p>
+                      <p className="text-xs" style={{ color: '#6B7280' }}>{v.issues_count} vấn đề · {new Date(v.timestamp).toLocaleDateString('vi-VN')}</p>
                     </div>
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>{st.label}</span>
                   </div>
@@ -624,28 +624,28 @@ export default function UploadPage() {
       <div className="flex-1 lg:min-h-0 w-full grid place-items-center"><div className="w-full text-center">
         <div className="mb-6 relative w-fit mx-auto">
           <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="50" fill="none" stroke="#E8F0EC" strokeWidth="8" />
-            <circle cx="60" cy="60" r="50" fill="none" stroke="#087653" strokeWidth="8"
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#E8F5EF" strokeWidth="8" />
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#0F5132" strokeWidth="8"
               strokeDasharray={`${(analyzeProgress / 100) * 314} 314`}
               strokeLinecap="round" transform="rotate(-90 60 60)"
               style={{ transition: 'stroke-dasharray 0.4s ease' }}
             />
           </svg>
           <div className="absolute inset-0 grid place-items-center">
-            <span className="text-2xl font-bold" style={{ color: '#087653' }}>{analyzeProgress}%</span>
+            <span className="text-2xl font-bold" style={{ color: '#0F5132' }}>{analyzeProgress}%</span>
           </div>
         </div>
-        <h2 className="text-xl font-bold mb-2" style={{ color: '#1A2332' }}>Đang phân tích tài liệu…</h2>
-        <p className="text-sm mb-1" style={{ color: '#5F6F80' }}>AI đang đọc và đối chiếu với tiêu chuẩn JAKIM/HDC</p>
+        <h2 className="text-xl font-bold mb-2" style={{ color: '#0F5132' }}>Đang phân tích tài liệu…</h2>
+        <p className="text-sm mb-1" style={{ color: '#6B7280' }}>AI đang đọc và đối chiếu với tiêu chuẩn JAKIM/HDC</p>
         {previousReport && (
-          <p className="text-xs mb-6" style={{ color: '#087653' }}>↺ Phát hiện phiên bản trước (điểm {previousReport.compliance_score}) · Đang so sánh thay đổi</p>
+          <p className="text-xs mb-6" style={{ color: '#0F5132' }}>↺ Phát hiện phiên bản trước (điểm {previousReport.compliance_score}) · Đang so sánh thay đổi</p>
         )}
         {!previousReport && <div className="mb-6" />}
-        <div className="space-y-2 text-sm" style={{ color: '#5B6B7D' }}>
+        <div className="space-y-2 text-sm" style={{ color: '#6B7280' }}>
           {['Trích xuất nội dung văn bản', 'Đối chiếu tiêu chuẩn Halal', 'Phân tích rủi ro inline', 'Tổng hợp Gap Analysis'].map((step, i) => (
             <div key={i} className="grid grid-flow-col items-center gap-2 justify-center">
               {analyzeProgress > i * 22 ? (
-                <span style={{ color: '#087653' }}>✓</span>
+                <span style={{ color: '#0F5132' }}>✓</span>
               ) : (
                 <span className="w-3.5 h-3.5 rounded-full border border-[#E2E8F0] inline-block" />
               )}
@@ -666,10 +666,10 @@ export default function UploadPage() {
       {/* Saved banner */}
       {isFullAccess && (
         <div className="grid items-center mb-4 px-4 py-2.5 rounded-xl text-sm"
-          style={{ gridTemplateColumns: '1fr auto', background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(8,118,83,0.15)' }}>
-          <span style={{ color: '#087653' }}>✓ Tài liệu đã được lưu và đánh giá thành công</span>
+          style={{ gridTemplateColumns: '1fr auto', background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(15,81,50,0.15)' }}>
+          <span style={{ color: '#0F5132' }}>✓ Tài liệu đã được lưu và đánh giá thành công</span>
           {isBusiness && (
-            <Link href="/documents" className="text-xs font-medium hover:underline" style={{ color: '#087653' }}>
+            <Link href="/documents" className="text-xs font-medium hover:underline" style={{ color: '#0F5132' }}>
               Xem tất cả tài liệu →
             </Link>
           )}
@@ -679,8 +679,8 @@ export default function UploadPage() {
       {/* Header */}
       <div className="grid items-start mb-6 gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
         <div>
-          <h1 className="text-xl font-bold text-[#1A2332]">{report.filename}</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#5B6B7D' }}>{report.doc_type_label} · {report.word_count.toLocaleString()} từ · {report.standards_found} tiêu chuẩn tham chiếu</p>
+          <h1 className="text-xl font-bold text-[#0F5132]">{report.filename}</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>{report.doc_type_label} · {report.word_count.toLocaleString()} từ · {report.standards_found} tiêu chuẩn tham chiếu</p>
         </div>
         <button
           onClick={() => {
@@ -692,7 +692,7 @@ export default function UploadPage() {
             setActiveTab('overview');
           }}
           className="grid items-center gap-2 text-sm px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95"
-          style={{ gridTemplateColumns: 'auto 1fr', background: '#087653', color: 'white', boxShadow: '0 4px 12px rgba(8,118,83,0.3)' }}>
+          style={{ gridTemplateColumns: 'auto 1fr', background: '#0F5132', color: 'white', boxShadow: '0 4px 12px rgba(15,81,50,0.3)' }}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
           </svg>
@@ -711,7 +711,7 @@ export default function UploadPage() {
           <div style={{
             display: 'grid', gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)`, gap: 4,
             padding: 4, borderRadius: 12, marginBottom: '1.5rem',
-            background: '#F0F7F4', border: '1px solid #E2E8F0',
+            background: '#F7F1E6', border: '1px solid #E2E8F0',
           }}>
             {visibleTabs.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
@@ -721,8 +721,8 @@ export default function UploadPage() {
                 cursor: 'pointer', transition: 'all 0.15s',
                 borderRadius: 8, border: 'none',
                 color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
-                background: activeTab === tab.id ? '#087653' : 'transparent',
-                boxShadow: activeTab === tab.id ? '0 2px 8px rgba(8,118,83,0.25)' : 'none',
+                background: activeTab === tab.id ? '#0F5132' : 'transparent',
+                boxShadow: activeTab === tab.id ? '0 2px 8px rgba(15,81,50,0.25)' : 'none',
               }}>
                 <span style={{ marginRight: 4, fontSize: '0.75rem' }}>{tab.icon}</span>
                 {tab.label}
@@ -736,24 +736,24 @@ export default function UploadPage() {
       {activeTab === 'overview' && (
         <div className="space-y-5">
           {/* Score + Status */}
-          <div className="rounded-2xl p-6 grid gap-6 items-center" style={{ gridTemplateColumns: 'auto 1fr', background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+          <div className="rounded-2xl p-6 grid gap-6 items-center" style={{ gridTemplateColumns: 'auto 1fr', background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
             <ScoreDial score={report.compliance_score} />
             <div className="min-w-0">
               <span className="inline-block text-sm px-3 py-1 rounded-full font-semibold mb-3"
                 style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
                 {st.label}
               </span>
-              <p className="text-[#1A2332] text-base leading-relaxed">{report.summary}</p>
+              <p className="text-[#0F5132] text-base leading-relaxed">{report.summary}</p>
             </div>
           </div>
 
           {/* Strengths */}
           {report.strengths.length > 0 && (
-            <div className="rounded-xl p-5" style={{ background: 'rgba(8,118,83,0.06)', border: '1px solid rgba(8,118,83,0.15)' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: '#087653' }}>✓ Điểm mạnh</h3>
+            <div className="rounded-xl p-5" style={{ background: 'rgba(15,81,50,0.06)', border: '1px solid rgba(15,81,50,0.15)' }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: '#0F5132' }}>✓ Điểm mạnh</h3>
               <ul className="space-y-2">
                 {report.strengths.map((s, i) => (
-                  <li key={i} className="grid gap-2 text-sm text-[#1A2332]" style={{ gridTemplateColumns: 'auto 1fr' }}><span style={{ color: '#087653' }}>·</span>{s}</li>
+                  <li key={i} className="grid gap-2 text-sm text-[#0F5132]" style={{ gridTemplateColumns: 'auto 1fr' }}><span style={{ color: '#0F5132' }}>·</span>{s}</li>
                 ))}
               </ul>
             </div>
@@ -761,30 +761,30 @@ export default function UploadPage() {
 
           {/* Diff vs previous version */}
           {previousReport && (
-            <div className="rounded-xl p-5" style={{ background: 'rgba(8,118,83,0.06)', border: '1px solid rgba(8,118,83,0.2)' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: '#5B6B7D' }}>↺ So sánh với lần phân tích trước</h3>
+            <div className="rounded-xl p-5" style={{ background: 'rgba(15,81,50,0.06)', border: '1px solid rgba(15,81,50,0.2)' }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: '#6B7280' }}>↺ So sánh với lần phân tích trước</h3>
               <div className="grid grid-flow-col items-center gap-6 mb-3 justify-start">
                 <div className="text-center">
-                  <p className="text-xs mb-1" style={{ color: '#5B6B7D' }}>Lần trước</p>
+                  <p className="text-xs mb-1" style={{ color: '#6B7280' }}>Lần trước</p>
                   <span className="text-2xl font-bold" style={{ color: scoreColor(previousReport.compliance_score) }}>{previousReport.compliance_score}</span>
                 </div>
-                <span style={{ color: '#5B6B7D', fontSize: 18 }}>→</span>
+                <span style={{ color: '#6B7280', fontSize: 18 }}>→</span>
                 <div className="text-center">
-                  <p className="text-xs mb-1" style={{ color: '#5B6B7D' }}>Lần này</p>
+                  <p className="text-xs mb-1" style={{ color: '#6B7280' }}>Lần này</p>
                   <span className="text-2xl font-bold" style={{ color: scoreColor(report.compliance_score) }}>{report.compliance_score}</span>
                 </div>
                 {report.compliance_score !== previousReport.compliance_score && (
-                  <span className="text-sm font-bold" style={{ color: report.compliance_score > previousReport.compliance_score ? '#087653' : '#ef4444' }}>
+                  <span className="text-sm font-bold" style={{ color: report.compliance_score > previousReport.compliance_score ? '#0F5132' : '#ef4444' }}>
                     {report.compliance_score > previousReport.compliance_score ? '▲' : '▼'} {Math.abs(report.compliance_score - previousReport.compliance_score)} điểm
                   </span>
                 )}
                 {report.compliance_score === previousReport.compliance_score && (
-                  <span className="text-sm" style={{ color: '#5F6F80' }}>= Không thay đổi</span>
+                  <span className="text-sm" style={{ color: '#6B7280' }}>= Không thay đổi</span>
                 )}
               </div>
-              <div className="flex flex-wrap gap-4 text-xs" style={{ color: '#5B6B7D' }}>
-                <span>Vấn đề: <strong style={{ color: report.issues.length < previousReport.issues.length ? '#087653' : report.issues.length > previousReport.issues.length ? '#ef4444' : '#5B6B7D' }}>{previousReport.issues.length} → {report.issues.length}</strong></span>
-                <span>Điểm mạnh: <strong style={{ color: '#5B6B7D' }}>{previousReport.strengths.length} → {report.strengths.length}</strong></span>
+              <div className="flex flex-wrap gap-4 text-xs" style={{ color: '#6B7280' }}>
+                <span>Vấn đề: <strong style={{ color: report.issues.length < previousReport.issues.length ? '#0F5132' : report.issues.length > previousReport.issues.length ? '#ef4444' : '#6B7280' }}>{previousReport.issues.length} → {report.issues.length}</strong></span>
+                <span>Điểm mạnh: <strong style={{ color: '#6B7280' }}>{previousReport.strengths.length} → {report.strengths.length}</strong></span>
                 {report.overall_status !== previousReport.overall_status && (
                   <span>Trạng thái: <strong style={{ color: '#f59e0b' }}>{statusLabel(previousReport.overall_status).label} → {statusLabel(report.overall_status).label}</strong></span>
                 )}
@@ -794,39 +794,39 @@ export default function UploadPage() {
 
           {/* Issues summary */}
           {report.issues.length > 0 && (
-            <div className="rounded-xl p-5" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
-              <h3 className="text-sm font-semibold mb-3 text-[#1A2332]">Vấn đề phát hiện ({report.issues.length})</h3>
+            <div className="rounded-xl p-5" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+              <h3 className="text-sm font-semibold mb-3 text-[#0F5132]">Vấn đề phát hiện ({report.issues.length})</h3>
               <div className="space-y-3">
                 {report.issues.map((issue, i) => {
                   const sev = severityBadge(issue.severity);
                   const key = `issue-${i}`;
                   return (
-                    <div key={i} className="rounded-xl p-4" style={{ background: '#FAFCF9', border: '1px solid #E2E8F0' }}>
+                    <div key={i} className="rounded-xl p-4" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
                       <div className="flex items-start gap-3 flex-wrap">
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                           style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                          style={{ background: 'rgba(148,163,184,0.1)', color: '#5B6B7D' }}>{issue.section}</span>
+                          style={{ background: 'rgba(148,163,184,0.1)', color: '#6B7280' }}>{issue.section}</span>
                       </div>
-                      <p className="text-sm text-[#1A2332] mt-2">{issue.issue}</p>
-                      <p className="text-xs mt-1.5" style={{ color: '#5F6F80' }}>💡 {issue.recommendation}</p>
-                      {issue.reference && <p className="text-xs mt-1" style={{ color: '#087653' }}>§ {issue.reference}</p>}
+                      <p className="text-sm text-[#0F5132] mt-2">{issue.issue}</p>
+                      <p className="text-xs mt-1.5" style={{ color: '#6B7280' }}>💡 {issue.recommendation}</p>
+                      {issue.reference && <p className="text-xs mt-1" style={{ color: '#0F5132' }}>§ {issue.reference}</p>}
                       {/* F-06: Rewrite button */}
                       {!rewrites[key] && (
                         <button onClick={() => suggestRewrite(key, issue.issue + ' ' + issue.recommendation, issue.issue)}
                           disabled={rewriteLoading === key}
                           className="mt-3 text-xs px-3 py-1.5 rounded-lg transition-all"
-                          style={{ background: 'rgba(8,118,83,0.1)', color: '#5B6B7D', border: '1px solid rgba(8,118,83,0.2)' }}>
+                          style={{ background: 'rgba(15,81,50,0.1)', color: '#6B7280', border: '1px solid rgba(15,81,50,0.2)' }}>
                           {rewriteLoading === key ? '⏳ Đang tạo gợi ý…' : '✨ Gợi ý viết lại'}
                         </button>
                       )}
                       {rewrites[key] && (
-                        <div className="mt-3 rounded-lg p-3" style={{ background: 'rgba(8,118,83,0.08)', border: '1px solid rgba(8,118,83,0.2)' }}>
-                          <p className="text-xs font-medium mb-1" style={{ color: '#5B6B7D' }}>✨ Gợi ý viết lại:</p>
-                          <p className="text-sm text-[#1A2332] leading-relaxed">{rewrites[key].rewritten}</p>
-                          {rewrites[key].explanation && <p className="text-xs mt-2" style={{ color: '#5B6B7D' }}>{rewrites[key].explanation}</p>}
+                        <div className="mt-3 rounded-lg p-3" style={{ background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)' }}>
+                          <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>✨ Gợi ý viết lại:</p>
+                          <p className="text-sm text-[#0F5132] leading-relaxed">{rewrites[key].rewritten}</p>
+                          {rewrites[key].explanation && <p className="text-xs mt-2" style={{ color: '#6B7280' }}>{rewrites[key].explanation}</p>}
                           {rewrites[key].standards_referenced?.length > 0 && (
-                            <p className="text-xs mt-1" style={{ color: '#087653' }}>§ {rewrites[key].standards_referenced.join(', ')}</p>
+                            <p className="text-xs mt-1" style={{ color: '#0F5132' }}>§ {rewrites[key].standards_referenced.join(', ')}</p>
                           )}
                         </div>
                       )}
@@ -839,12 +839,12 @@ export default function UploadPage() {
 
           {/* F-04: Standards Checklist */}
           {report.standards_checked.length > 0 && (
-            <div className="rounded-xl p-5" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
-              <h3 className="text-sm font-semibold mb-3 text-[#1A2332]">Tiêu chuẩn đã đối chiếu</h3>
+            <div className="rounded-xl p-5" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+              <h3 className="text-sm font-semibold mb-3 text-[#0F5132]">Tiêu chuẩn đã đối chiếu</h3>
               <div className="flex flex-wrap gap-2">
                 {report.standards_checked.map((s, i) => (
                   <span key={i} className="text-xs px-2.5 py-1 rounded-full"
-                    style={{ background: 'rgba(8,118,83,0.06)', color: '#087653', border: '1px solid rgba(8,118,83,0.15)' }}>
+                    style={{ background: 'rgba(15,81,50,0.06)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.15)' }}>
                     ✓ {s}
                   </span>
                 ))}
@@ -856,10 +856,10 @@ export default function UploadPage() {
             const sig = (report as any).signature_detection;
             const status = sig.signature_status || 'none';
             const styles: Record<string, { icon: string; color: string; bg: string; border: string; label: string }> = {
-              confirmed:   { icon: '✓', color: '#087653', bg: 'rgba(8,118,83,0.06)', border: 'rgba(8,118,83,0.25)', label: 'Đã xác nhận' },
-              likely:      { icon: '?', color: '#5B6B7D', bg: 'rgba(8,118,83,0.06)', border: 'rgba(8,118,83,0.3)', label: 'Cần xác nhận' },
+              confirmed:   { icon: '✓', color: '#0F5132', bg: 'rgba(15,81,50,0.06)', border: 'rgba(15,81,50,0.25)', label: 'Đã xác nhận' },
+              likely:      { icon: '?', color: '#6B7280', bg: 'rgba(15,81,50,0.06)', border: 'rgba(15,81,50,0.3)', label: 'Cần xác nhận' },
               placeholder: { icon: '✕', color: '#f87171', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.3)', label: 'Chưa có chữ ký thật' },
-              none:        { icon: '—', color: '#5F6F80', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.3)', label: 'Không phát hiện' },
+              none:        { icon: '—', color: '#6B7280', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.3)', label: 'Không phát hiện' },
             };
             const statusStyle = styles[status] || styles.none;
 
@@ -873,13 +873,13 @@ export default function UploadPage() {
                     </div>
                     <div>
                       <div className="grid grid-flow-col items-center gap-2 justify-start">
-                        <h3 className="text-sm font-semibold text-[#1A2332]">Chữ ký & Con dấu</h3>
+                        <h3 className="text-sm font-semibold text-[#0F5132]">Chữ ký & Con dấu</h3>
                         <span className="text-xs px-2 py-0.5 rounded-full"
                           style={{ background: `${statusStyle.color}20`, color: statusStyle.color }}>
                           {statusStyle.label}
                         </span>
                       </div>
-                      <p className="text-xs mt-1" style={{ color: '#5B6B7D' }}>{sig.summary}</p>
+                      <p className="text-xs mt-1" style={{ color: '#6B7280' }}>{sig.summary}</p>
                     </div>
                   </div>
                 </div>
@@ -887,10 +887,10 @@ export default function UploadPage() {
                   <div className="px-5 py-3 space-y-1.5">
                     {sig.signature_zones.slice(0, 8).map((z: any, i: number) => (
                       <div key={i} className="grid grid-flow-col items-center gap-2 justify-start text-xs">
-                        <span style={{ color: z.type === 'image' ? '#087653' : z.type === 'text_pattern' ? '#5F6F80' : '#fbbf24' }}>
+                        <span style={{ color: z.type === 'image' ? '#0F5132' : z.type === 'text_pattern' ? '#6B7280' : '#fbbf24' }}>
                           {z.type === 'image' ? '🖼' : z.type === 'text_pattern' ? '📝' : '🔐'}
                         </span>
-                        <span style={{ color: z.type === 'text_pattern' ? '#5F6F80' : '#5B6B7D' }}>
+                        <span style={{ color: z.type === 'text_pattern' ? '#6B7280' : '#6B7280' }}>
                           {z.description}
                           {z.type === 'text_pattern' && ' (chỉ là text, chưa có chữ ký thật)'}
                         </span>
@@ -908,13 +908,13 @@ export default function UploadPage() {
       {activeTab === 'gaps' && (
         <div className="space-y-4">
           {!report.gap_analysis ? (
-            <p className="text-[#5F6F80] text-sm py-8 text-center">Không có dữ liệu Gap Analysis</p>
+            <p className="text-[#6B7280] text-sm py-8 text-center">Không có dữ liệu Gap Analysis</p>
           ) : (
             <>
               {[
                 { key: 'critical_gaps', label: 'Lỗ hổng nghiêm trọng', color: '#ef4444', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.2)', icon: '⛔' },
                 { key: 'major_gaps',    label: 'Lỗ hổng lớn',          color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.2)', icon: '⚠' },
-                { key: 'minor_gaps',    label: 'Điểm cải thiện nhỏ',   color: '#5B6B7D', bg: 'rgba(91,107,125,0.06)', border: 'rgba(91,107,125,0.15)', icon: 'ℹ' },
+                { key: 'minor_gaps',    label: 'Điểm cải thiện nhỏ',   color: '#6B7280', bg: 'rgba(91,107,125,0.06)', border: 'rgba(91,107,125,0.15)', icon: 'ℹ' },
               ].map(group => {
                 const items = report.gap_analysis![group.key as keyof GapAnalysis] as string[];
                 if (!items?.length) return null;
@@ -929,20 +929,20 @@ export default function UploadPage() {
                         const rewriteKey = `${key}-${i}`;
                         return (
                           <li key={i} className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.03)' }}>
-                            <p className="text-sm text-[#1A2332]">{gap}</p>
+                            <p className="text-sm text-[#0F5132]">{gap}</p>
                             {/* F-06: Rewrite for gaps */}
                             {!rewrites[rewriteKey] && (
                               <button onClick={() => suggestRewrite(rewriteKey, gap, gap)}
                                 disabled={rewriteLoading === rewriteKey}
                                 className="mt-2 text-xs px-2.5 py-1 rounded-lg transition-all"
-                                style={{ background: 'rgba(8,118,83,0.1)', color: '#5B6B7D', border: '1px solid rgba(8,118,83,0.15)' }}>
+                                style={{ background: 'rgba(15,81,50,0.1)', color: '#6B7280', border: '1px solid rgba(15,81,50,0.15)' }}>
                                 {rewriteLoading === rewriteKey ? '⏳ Đang tạo…' : '✨ Gợi ý khắc phục'}
                               </button>
                             )}
                             {rewrites[rewriteKey] && (
-                              <div className="mt-2 rounded-lg p-2.5" style={{ background: 'rgba(8,118,83,0.08)', border: '1px solid rgba(8,118,83,0.2)' }}>
-                                <p className="text-xs font-medium mb-1" style={{ color: '#5B6B7D' }}>✨ Gợi ý:</p>
-                                <p className="text-sm text-[#1A2332]">{rewrites[rewriteKey].rewritten}</p>
+                              <div className="mt-2 rounded-lg p-2.5" style={{ background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)' }}>
+                                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>✨ Gợi ý:</p>
+                                <p className="text-sm text-[#0F5132]">{rewrites[rewriteKey].rewritten}</p>
                               </div>
                             )}
                           </li>
@@ -954,11 +954,11 @@ export default function UploadPage() {
               })}
               {/* Recommendations */}
               {report.recommendations.length > 0 && (
-                <div className="rounded-xl p-5" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
-                  <h3 className="text-sm font-semibold mb-3 text-[#1A2332]">Khuyến nghị tổng quát</h3>
+                <div className="rounded-xl p-5" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+                  <h3 className="text-sm font-semibold mb-3 text-[#0F5132]">Khuyến nghị tổng quát</h3>
                   <ul className="space-y-2">
                     {report.recommendations.map((r, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-[#1A2332]"><span style={{ color: '#087653' }}>{i + 1}.</span>{r}</li>
+                      <li key={i} className="flex gap-2 text-sm text-[#0F5132]"><span style={{ color: '#0F5132' }}>{i + 1}.</span>{r}</li>
                     ))}
                   </ul>
                 </div>
@@ -969,42 +969,42 @@ export default function UploadPage() {
           {/* Risk Flags (merged from former Risks tab) */}
           {report.risk_flags.length > 0 && (
             <div className="space-y-4 mt-6">
-              <h3 className="text-sm font-semibold text-[#1A2332] flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-[#0F5132] flex items-center gap-2">
                 <span style={{ color: '#f87171' }}>⚑</span> Cảnh báo rủi ro ({report.risk_flags.length})
               </h3>
               {report.risk_flags.map((flag, i) => {
                 const sev = severityBadge(flag.severity);
                 const key = `risk-${i}`;
                 return (
-                  <div key={i} className="rounded-xl p-5" style={{ background: '#F0F7F4', border: `1px solid ${sev.color}30` }}>
+                  <div key={i} className="rounded-xl p-5" style={{ background: '#F7F1E6', border: `1px solid ${sev.color}30` }}>
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                         style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(148,163,184,0.1)', color: '#5B6B7D' }}>
+                        style={{ background: 'rgba(148,163,184,0.1)', color: '#6B7280' }}>
                         {riskTypeLabel(flag.risk_type)}
                       </span>
                     </div>
                     <blockquote className="rounded-lg px-4 py-3 mb-3 text-sm italic border-l-2"
-                      style={{ background: `${sev.color}12`, borderColor: sev.color, color: '#1A2332' }}>
+                      style={{ background: `${sev.color}12`, borderColor: sev.color, color: '#0F5132' }}>
                       "{flag.text_snippet}"
                     </blockquote>
-                    <p className="text-sm" style={{ color: '#5B6B7D' }}>{flag.explanation}</p>
+                    <p className="text-sm" style={{ color: '#6B7280' }}>{flag.explanation}</p>
                     {!rewrites[key] && (
                       <button onClick={() => suggestRewrite(key, flag.text_snippet, flag.explanation)}
                         disabled={rewriteLoading === key}
                         className="mt-3 text-xs px-3 py-1.5 rounded-lg transition-all"
-                        style={{ background: 'rgba(8,118,83,0.1)', color: '#5B6B7D', border: '1px solid rgba(8,118,83,0.2)' }}>
+                        style={{ background: 'rgba(15,81,50,0.1)', color: '#6B7280', border: '1px solid rgba(15,81,50,0.2)' }}>
                         {rewriteLoading === key ? '⏳ Đang tạo gợi ý…' : '✨ Gợi ý viết lại đoạn này'}
                       </button>
                     )}
                     {rewrites[key] && (
-                      <div className="mt-3 rounded-lg p-3" style={{ background: 'rgba(8,118,83,0.08)', border: '1px solid rgba(8,118,83,0.2)' }}>
-                        <p className="text-xs font-medium mb-1" style={{ color: '#5B6B7D' }}>✨ Đề xuất viết lại:</p>
-                        <p className="text-sm text-[#1A2332] leading-relaxed">{rewrites[key].rewritten}</p>
-                        {rewrites[key].explanation && <p className="text-xs mt-2" style={{ color: '#5B6B7D' }}>{rewrites[key].explanation}</p>}
+                      <div className="mt-3 rounded-lg p-3" style={{ background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)' }}>
+                        <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>✨ Đề xuất viết lại:</p>
+                        <p className="text-sm text-[#0F5132] leading-relaxed">{rewrites[key].rewritten}</p>
+                        {rewrites[key].explanation && <p className="text-xs mt-2" style={{ color: '#6B7280' }}>{rewrites[key].explanation}</p>}
                         {rewrites[key].standards_referenced?.length > 0 && (
-                          <p className="text-xs mt-1" style={{ color: '#087653' }}>§ {rewrites[key].standards_referenced.join(', ')}</p>
+                          <p className="text-xs mt-1" style={{ color: '#0F5132' }}>§ {rewrites[key].standards_referenced.join(', ')}</p>
                         )}
                       </div>
                     )}
@@ -1020,29 +1020,29 @@ export default function UploadPage() {
       {activeTab === 'citations' && (
         <div className="space-y-4">
           {report.citations.length === 0 ? (
-            <p className="text-[#5F6F80] text-sm py-8 text-center">Chưa có trích dẫn tiêu chuẩn</p>
+            <p className="text-[#6B7280] text-sm py-8 text-center">Chưa có trích dẫn tiêu chuẩn</p>
           ) : (
             report.citations.map((cit, i) => (
-              <div key={i} className="rounded-xl p-5" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+              <div key={i} className="rounded-xl p-5" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                    style={{ background: 'rgba(8,118,83,0.1)', color: '#5B6B7D', border: '1px solid rgba(8,118,83,0.2)' }}>
+                    style={{ background: 'rgba(15,81,50,0.1)', color: '#6B7280', border: '1px solid rgba(15,81,50,0.2)' }}>
                     {cit.standard}
                   </span>
                   {cit.clause && (
                     <span className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ background: 'rgba(148,163,184,0.08)', color: '#5B6B7D' }}>
+                      style={{ background: 'rgba(148,163,184,0.08)', color: '#6B7280' }}>
                       Điều {cit.clause}
                     </span>
                   )}
                 </div>
                 {/* F-05: Direct citation text */}
                 <blockquote className="rounded-lg px-4 py-3 mb-3 text-sm border-l-2"
-                  style={{ background: 'rgba(8,118,83,0.06)', borderColor: '#087653', color: '#3D4F5F', fontStyle: 'italic' }}>
+                  style={{ background: 'rgba(15,81,50,0.06)', borderColor: '#0F5132', color: '#374151', fontStyle: 'italic' }}>
                   "{cit.text}"
                 </blockquote>
-                <p className="text-xs" style={{ color: '#5F6F80' }}>
-                  <span style={{ color: '#087653' }}>Áp dụng:</span> {cit.relevance}
+                <p className="text-xs" style={{ color: '#6B7280' }}>
+                  <span style={{ color: '#0F5132' }}>Áp dụng:</span> {cit.relevance}
                 </p>
               </div>
             ))
@@ -1053,19 +1053,19 @@ export default function UploadPage() {
       {/* ── Tab: History — per-file versions (admin only) ────────────────────────── */}
       {activeTab === 'history' && (
         <div className="space-y-4">
-          <div className="rounded-xl p-4 text-sm" style={{ background: 'rgba(8,118,83,0.06)', border: '1px solid rgba(8,118,83,0.2)', color: '#5B6B7D' }}>
-            Lịch sử phiên bản của: <strong className="text-[#1A2332]">{fileName}</strong>
+          <div className="rounded-xl p-4 text-sm" style={{ background: 'rgba(15,81,50,0.06)', border: '1px solid rgba(15,81,50,0.2)', color: '#6B7280' }}>
+            Lịch sử phiên bản của: <strong className="text-[#0F5132]">{fileName}</strong>
           </div>
 
           {/* Score progression */}
           {fileVersions.length > 1 && (
-            <div className="rounded-xl p-5" style={{ background: 'rgba(8,118,83,0.06)', border: '1px solid rgba(8,118,83,0.15)' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: '#087653' }}>Tiến độ cải thiện</h3>
+            <div className="rounded-xl p-5" style={{ background: 'rgba(15,81,50,0.06)', border: '1px solid rgba(15,81,50,0.15)' }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: '#0F5132' }}>Tiến độ cải thiện</h3>
               <div className="flex items-center gap-3 flex-wrap">
                 {[...fileVersions].reverse().map((v, i, arr) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="text-center">
-                      <p className="text-xs mb-0.5" style={{ color: '#5B6B7D' }}>v{v.version}</p>
+                      <p className="text-xs mb-0.5" style={{ color: '#6B7280' }}>v{v.version}</p>
                       <span className="text-xl font-bold" style={{ color: scoreColor(v.score) }}>{v.score}</span>
                     </div>
                     {i < arr.length - 1 && <span style={{ color: '#94A3B8' }}>→</span>}
@@ -1077,10 +1077,10 @@ export default function UploadPage() {
 
           {/* Version list */}
           {fileVersions.length === 0 ? (
-            <p className="text-[#5F6F80] text-sm py-8 text-center">Chưa có lịch sử phiên bản</p>
+            <p className="text-[#6B7280] text-sm py-8 text-center">Chưa có lịch sử phiên bản</p>
           ) : (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
-              <div className="px-4 py-3 text-xs font-semibold" style={{ color: '#5B6B7D', background: '#FAFCF9', borderBottom: '1px solid #E2E8F0' }}>
+              <div className="px-4 py-3 text-xs font-semibold" style={{ color: '#6B7280', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0' }}>
                 {fileVersions.length} phiên bản đã lưu
               </div>
               {fileVersions.map((v, i) => {
@@ -1092,15 +1092,15 @@ export default function UploadPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-lg font-bold tabular-nums w-8" style={{ color: scoreColor(v.score) }}>{v.score}</span>
                       <div className="min-w-0">
-                        <p className="text-sm text-[#1A2332] flex items-center gap-2">
+                        <p className="text-sm text-[#0F5132] flex items-center gap-2">
                           Phiên bản {v.version}
-                          {isCurrent && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(8,118,83,0.06)', color: '#087653' }}>mới nhất</span>}
+                          {isCurrent && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(15,81,50,0.06)', color: '#0F5132' }}>mới nhất</span>}
                         </p>
-                        <p className="text-xs" style={{ color: '#5B6B7D' }}>{v.doc_type_label} · {v.issues_count} vấn đề · {new Date(v.timestamp).toLocaleString('vi-VN')}</p>
+                        <p className="text-xs" style={{ color: '#6B7280' }}>{v.doc_type_label} · {v.issues_count} vấn đề · {new Date(v.timestamp).toLocaleString('vi-VN')}</p>
                       </div>
                       <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: hst.bg, color: hst.color, border: `1px solid ${hst.border}` }}>{hst.label}</span>
                     </div>
-                    {v.summary && <p className="text-xs mt-2 pl-11 line-clamp-2" style={{ color: '#5B6B7D' }}>{v.summary}</p>}
+                    {v.summary && <p className="text-xs mt-2 pl-11 line-clamp-2" style={{ color: '#6B7280' }}>{v.summary}</p>}
                   </div>
                 );
               })}
@@ -1130,17 +1130,17 @@ export default function UploadPage() {
         <div className="space-y-5">
           {/* Header card */}
           <div className="rounded-2xl p-5"
-            style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+            style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
             <div className="grid items-center gap-4" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
               <div className="w-12 h-12 rounded-xl grid place-items-center"
-                style={{ background: 'rgba(8,118,83,0.15)', border: '1px solid rgba(8,118,83,0.3)' }}>
-                <svg className="w-6 h-6" style={{ color: '#5B6B7D' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                style={{ background: 'rgba(15,81,50,0.15)', border: '1px solid rgba(15,81,50,0.3)' }}>
+                <svg className="w-6 h-6" style={{ color: '#6B7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-bold text-[#1A2332]">Review kiểm toán viên</h3>
-                <p className="text-sm mt-0.5" style={{ color: '#5F6F80' }}>
+                <h3 className="text-base font-bold text-[#0F5132]">Review kiểm toán viên</h3>
+                <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>
                   Xem xét kết quả AI, thêm nhận xét, chấm điểm cuối cùng
                 </p>
               </div>
@@ -1148,7 +1148,7 @@ export default function UploadPage() {
                 <span className="px-3 py-1 rounded-full text-xs font-medium"
                   style={{
                     background: existingReview.status === 'approved' ? 'rgba(34,197,94,0.15)' : existingReview.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
-                    color: existingReview.status === 'approved' ? '#087653' : existingReview.status === 'rejected' ? '#f87171' : '#fbbf24',
+                    color: existingReview.status === 'approved' ? '#0F5132' : existingReview.status === 'rejected' ? '#f87171' : '#fbbf24',
                   }}>
                   {existingReview.status === 'approved' ? '✓ Đã phê duyệt' : existingReview.status === 'rejected' ? '✗ Đã từ chối' : '⏳ Đang xem xét'}
                 </span>
@@ -1158,19 +1158,19 @@ export default function UploadPage() {
 
           {/* AI score vs Final score */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl p-4 text-center" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
-              <p className="text-xs mb-1" style={{ color: '#5F6F80' }}>Điểm AI</p>
+            <div className="rounded-xl p-4 text-center" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+              <p className="text-xs mb-1" style={{ color: '#6B7280' }}>Điểm AI</p>
               <p className="text-2xl font-bold" style={{ color: scoreColor(report.compliance_score) }}>{report.compliance_score}</p>
             </div>
-            <div className="rounded-xl p-4 text-center" style={{ background: '#F0F7F4', border: '1px solid rgba(8,118,83,0.3)' }}>
-              <p className="text-xs mb-1" style={{ color: '#5B6B7D' }}>Điểm kiểm toán viên</p>
+            <div className="rounded-xl p-4 text-center" style={{ background: '#F7F1E6', border: '1px solid rgba(15,81,50,0.3)' }}>
+              <p className="text-xs mb-1" style={{ color: '#6B7280' }}>Điểm kiểm toán viên</p>
               <input
                 type="number" min={0} max={100}
                 value={review.final_score ?? ''}
                 onChange={e => setReview(r => ({ ...r, final_score: e.target.value ? Number(e.target.value) : null }))}
                 placeholder="—"
                 className="w-full text-2xl font-bold text-center outline-none"
-                style={{ background: 'transparent', color: review.final_score != null ? scoreColor(review.final_score) : '#5B6B7D' }}
+                style={{ background: 'transparent', color: review.final_score != null ? scoreColor(review.final_score) : '#6B7280' }}
               />
             </div>
           </div>
@@ -1178,25 +1178,25 @@ export default function UploadPage() {
           {/* Reviewer info + status */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium mb-1.5 block" style={{ color: '#5B6B7D' }}>Kiểm toán viên *</label>
+              <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>Kiểm toán viên *</label>
               <input value={review.reviewer} onChange={e => setReview(r => ({ ...r, reviewer: e.target.value }))}
                 placeholder="Họ tên kiểm toán viên"
-                className="w-full px-4 py-2.5 rounded-xl text-sm text-[#1A2332] outline-none"
-                style={{ background: '#FAFCF9', border: '1px solid #E2E8F0' }} />
+                className="w-full px-4 py-2.5 rounded-xl text-sm text-[#0F5132] outline-none"
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }} />
             </div>
             <div>
-              <label className="text-xs font-medium mb-1.5 block" style={{ color: '#5B6B7D' }}>Quyết định</label>
+              <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>Quyết định</label>
               <div className="grid grid-cols-3 gap-2">
                 {([
                   ['pending', '⏳ Chờ', 'rgba(245,158,11,0.15)', '#fbbf24', 'rgba(245,158,11,0.3)'],
-                  ['approved', '✓ Duyệt', 'rgba(34,197,94,0.15)', '#087653', 'rgba(8,118,83,0.25)'],
+                  ['approved', '✓ Duyệt', 'rgba(34,197,94,0.15)', '#0F5132', 'rgba(15,81,50,0.25)'],
                   ['rejected', '✗ Từ chối', 'rgba(239,68,68,0.15)', '#f87171', 'rgba(239,68,68,0.3)'],
                 ] as const).map(([val, lbl, bg, color, border]) => (
                   <button key={val} onClick={() => setReview(r => ({ ...r, status: val as AuditorReview['status'] }))}
                     className="py-2 rounded-xl text-xs font-medium transition-all"
                     style={{
                       background: review.status === val ? bg : '#FFFFFF',
-                      color: review.status === val ? color : '#5F6F80',
+                      color: review.status === val ? color : '#6B7280',
                       border: `1px solid ${review.status === val ? border : '#E2E8F0'}`,
                     }}>{lbl}</button>
                 ))}
@@ -1207,7 +1207,7 @@ export default function UploadPage() {
           {/* Review each AI issue */}
           {report.issues.length > 0 && (
             <div>
-              <h4 className="text-sm font-bold text-[#1A2332] mb-3">
+              <h4 className="text-sm font-bold text-[#0F5132] mb-3">
                 Xem xét từng vấn đề AI phát hiện ({report.issues.length})
               </h4>
               <div className="space-y-3">
@@ -1218,22 +1218,22 @@ export default function UploadPage() {
                   const comment = review.issue_comments[key] || '';
                   return (
                     <div key={i} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
-                      <div className="px-4 py-3" style={{ background: '#F0F7F4' }}>
+                      <div className="px-4 py-3" style={{ background: '#F7F1E6' }}>
                         <div className="grid items-start gap-3" style={{ gridTemplateColumns: '1fr auto' }}>
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-bold px-2 py-0.5 rounded"
                                 style={{
-                                  color: issue.severity === 'critical' ? '#f87171' : issue.severity === 'major' ? '#fbbf24' : '#5B6B7D',
+                                  color: issue.severity === 'critical' ? '#f87171' : issue.severity === 'major' ? '#fbbf24' : '#6B7280',
                                   background: issue.severity === 'critical' ? 'rgba(239,68,68,0.12)' : issue.severity === 'major' ? 'rgba(245,158,11,0.12)' : 'rgba(148,163,184,0.1)',
                                 }}>
                                 {issue.severity?.toUpperCase()}
                               </span>
-                              <span className="text-xs" style={{ color: '#5B6B7D' }}>{issue.section}</span>
+                              <span className="text-xs" style={{ color: '#6B7280' }}>{issue.section}</span>
                             </div>
-                            <p className="text-sm text-[#1A2332]">{issue.issue}</p>
+                            <p className="text-sm text-[#0F5132]">{issue.issue}</p>
                             {issue.recommendation && (
-                              <p className="text-sm mt-1" style={{ color: '#087653' }}>→ {issue.recommendation}</p>
+                              <p className="text-sm mt-1" style={{ color: '#0F5132' }}>→ {issue.recommendation}</p>
                             )}
                           </div>
                           {/* Confirm / Reject buttons */}
@@ -1246,9 +1246,9 @@ export default function UploadPage() {
                               className="w-8 h-8 rounded-lg grid place-items-center text-xs font-bold transition-all"
                               title="Xác nhận đúng"
                               style={{
-                                background: isConfirmed ? 'rgba(8,118,83,0.15)' : '#F0F7F4',
-                                color: isConfirmed ? '#087653' : '#5B6B7D',
-                                border: isConfirmed ? '1px solid rgba(8,118,83,0.3)' : '1px solid #E2E8F0',
+                                background: isConfirmed ? 'rgba(15,81,50,0.15)' : '#F7F1E6',
+                                color: isConfirmed ? '#0F5132' : '#6B7280',
+                                border: isConfirmed ? '1px solid rgba(15,81,50,0.3)' : '1px solid #E2E8F0',
                               }}>✓</button>
                             <button onClick={() => setReview(r => ({
                               ...r,
@@ -1258,28 +1258,28 @@ export default function UploadPage() {
                               className="w-8 h-8 rounded-lg grid place-items-center text-xs font-bold transition-all"
                               title="False positive — AI sai"
                               style={{
-                                background: isFP ? 'rgba(239,68,68,0.2)' : '#F0F7F4',
-                                color: isFP ? '#f87171' : '#5B6B7D',
+                                background: isFP ? 'rgba(239,68,68,0.2)' : '#F7F1E6',
+                                color: isFP ? '#f87171' : '#6B7280',
                                 border: isFP ? '1px solid rgba(239,68,68,0.4)' : '1px solid #E2E8F0',
                               }}>✗</button>
                           </div>
                         </div>
                       </div>
                       {/* Auditor comment for this issue */}
-                      <div className="px-4 py-2" style={{ background: '#FAFCF9', borderTop: '1px solid #E2E8F0' }}>
+                      <div className="px-4 py-2" style={{ background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
                         <input
                           value={comment}
                           onChange={e => setReview(r => ({ ...r, issue_comments: { ...r.issue_comments, [key]: e.target.value } }))}
                           placeholder="Nhận xét của kiểm toán viên về vấn đề này..."
-                          className="w-full text-sm text-[#1A2332] outline-none"
-                          style={{ background: 'transparent', color: '#3D4F5F' }}
+                          className="w-full text-sm text-[#0F5132] outline-none"
+                          style={{ background: 'transparent', color: '#374151' }}
                         />
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: '#5B6B7D' }}>
+              <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: '#6B7280' }}>
                 <span>✓ Xác nhận: {review.confirmed_issues.length}</span>
                 <span>✗ False positive: {review.false_positives.length}</span>
                 <span>Chưa xem: {report.issues.length - review.confirmed_issues.length - review.false_positives.length}</span>
@@ -1289,40 +1289,40 @@ export default function UploadPage() {
 
           {/* General notes */}
           <div>
-            <label className="text-xs font-medium mb-1.5 block" style={{ color: '#5B6B7D' }}>Nhận xét chung</label>
+            <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>Nhận xét chung</label>
             <textarea value={review.notes} onChange={e => setReview(r => ({ ...r, notes: e.target.value }))}
               placeholder="Nhận xét tổng quát, lưu ý cho doanh nghiệp…"
               rows={4}
-              className="w-full px-4 py-3 rounded-xl text-sm text-[#1A2332] outline-none resize-none"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0' }} />
+              className="w-full px-4 py-3 rounded-xl text-sm text-[#0F5132] outline-none resize-none"
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }} />
           </div>
 
           {/* Additional findings */}
           <div>
-            <label className="text-xs font-medium mb-1.5 block" style={{ color: '#5B6B7D' }}>Phát hiện thêm (AI chưa phát hiện)</label>
+            <label className="text-xs font-medium mb-1.5 block" style={{ color: '#6B7280' }}>Phát hiện thêm (AI chưa phát hiện)</label>
             <textarea
               value={review.additional_findings.join('\n')}
               onChange={e => setReview(r => ({ ...r, additional_findings: e.target.value.split('\n').filter(Boolean) }))}
               placeholder="Mỗi dòng một vấn đề mà AI bỏ sót…"
               rows={3}
-              className="w-full px-4 py-3 rounded-xl text-sm text-[#1A2332] outline-none resize-none"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0' }} />
+              className="w-full px-4 py-3 rounded-xl text-sm text-[#0F5132] outline-none resize-none"
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }} />
           </div>
 
           {/* Save bar */}
           <div className="grid items-center gap-4 rounded-xl p-4"
-            style={{ gridTemplateColumns: 'auto 1fr auto', background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+            style={{ gridTemplateColumns: 'auto 1fr auto', background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
             <button onClick={saveReview} disabled={!review.reviewer.trim()}
               className="px-6 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
               style={{
-                background: review.reviewer.trim() ? '#087653' : '#E2E8F0',
-                color: review.reviewer.trim() ? 'white' : '#5B6B7D',
+                background: review.reviewer.trim() ? '#0F5132' : '#E2E8F0',
+                color: review.reviewer.trim() ? 'white' : '#6B7280',
                 boxShadow: review.reviewer.trim() ? '0 4px 12px rgba(22,163,74,0.3)' : 'none',
               }}>
               Lưu & Hoàn tất Review
             </button>
             <div>
-              {reviewSaved && <span className="text-sm font-medium" style={{ color: '#087653' }}>✓ Đã lưu thành công</span>}
+              {reviewSaved && <span className="text-sm font-medium" style={{ color: '#0F5132' }}>✓ Đã lưu thành công</span>}
             </div>
             <span className="text-xs" style={{ color: '#94A3B8' }}>
               {review.confirmed_issues.length + review.false_positives.length}/{report.issues.length} vấn đề đã xem xét
@@ -1334,13 +1334,13 @@ export default function UploadPage() {
       {/* ── Tab: Export (F-10) ───────────────────────────────────────────────────── */}
       {activeTab === 'export' && (
         <div className="space-y-4">
-          <div className="rounded-xl p-6" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
-            <h3 className="text-base font-semibold mb-2 text-[#1A2332]">Xuất báo cáo đánh giá</h3>
-            <p className="text-sm mb-5" style={{ color: '#5F6F80' }}>Tạo báo cáo đầy đủ gồm Compliance Score, Gap Analysis, Risk Flags và Citations.</p>
+          <div className="rounded-xl p-6" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+            <h3 className="text-base font-semibold mb-2 text-[#0F5132]">Xuất báo cáo đánh giá</h3>
+            <p className="text-sm mb-5" style={{ color: '#6B7280' }}>Tạo báo cáo đầy đủ gồm Compliance Score, Gap Analysis, Risk Flags và Citations.</p>
             <div className="grid grid-flow-col gap-3 justify-start">
               <button onClick={exportReport}
                 className="px-5 py-2.5 text-sm font-medium rounded-xl transition-all grid items-center gap-2"
-                style={{ gridTemplateColumns: 'auto 1fr', background: '#087653', color: 'white' }}>
+                style={{ gridTemplateColumns: 'auto 1fr', background: '#0F5132', color: 'white' }}>
                 <span>↓</span> In / Lưu PDF
               </button>
               <button onClick={() => {
@@ -1349,15 +1349,15 @@ export default function UploadPage() {
                 a.download = `${report.filename.replace(/\.[^.]+$/, '')}_eval.json`; a.click();
               }}
                 className="px-5 py-2.5 text-sm font-medium rounded-xl transition-all grid items-center gap-2"
-                style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(8,118,83,0.1)', color: '#5B6B7D', border: '1px solid rgba(8,118,83,0.25)' }}>
+                style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(15,81,50,0.1)', color: '#6B7280', border: '1px solid rgba(15,81,50,0.25)' }}>
                 <span>{ }</span> Xuất JSON
               </button>
             </div>
           </div>
 
           {/* Report preview */}
-          <div className="rounded-xl p-5 text-sm" style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', fontFamily: 'monospace', color: '#5B6B7D' }}>
-            <p className="text-[#1A2332] font-bold mb-3">BÁO CÁO ĐÁNH GIÁ HALAL COMPLIANCE</p>
+          <div className="rounded-xl p-5 text-sm" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', fontFamily: 'monospace', color: '#6B7280' }}>
+            <p className="text-[#0F5132] font-bold mb-3">BÁO CÁO ĐÁNH GIÁ HALAL COMPLIANCE</p>
             <p>Tài liệu: {report.filename}</p>
             <p>Loại: {report.doc_type_label}</p>
             <p>Điểm: {report.compliance_score}/100 — {statusLabel(report.overall_status).label}</p>
@@ -1380,18 +1380,18 @@ export default function UploadPage() {
 // ─── F-10: HTML Report Generator ─────────────────────────────────────────────
 
 function generateReportHTML(report: EvaluationReport, review: AuditorReview | null): string {
-  const st = report.overall_status === 'compliant' ? '#087653' : report.overall_status === 'needs_review' ? '#f59e0b' : '#ef4444';
+  const st = report.overall_status === 'compliant' ? '#0F5132' : report.overall_status === 'needs_review' ? '#f59e0b' : '#ef4444';
   const stLabel = report.overall_status === 'compliant' ? 'Tuân thủ' : report.overall_status === 'needs_review' ? 'Cần xem xét' : 'Không tuân thủ';
   return `<!DOCTYPE html><html lang="vi"><head>
 <meta charset="UTF-8"><title>Báo cáo Halal — ${report.filename}</title>
 <style>
   body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; color: #111; line-height: 1.6; }
   h1 { color: #166534; border-bottom: 2px solid #166534; padding-bottom: 8px; }
-  h2 { color: #14532d; margin-top: 28px; font-size: 16px; }
+  h2 { color: #0A3622; margin-top: 28px; font-size: 16px; }
   .score { font-size: 48px; font-weight: bold; color: ${st}; }
   .status { display: inline-block; padding: 4px 12px; border-radius: 20px; background: ${st}22; color: ${st}; font-weight: bold; margin-left: 12px; font-size: 14px; }
   .issue { border-left: 3px solid #dc2626; padding: 10px 16px; margin: 8px 0; background: #fef2f2; border-radius: 4px; }
-  .citation { border-left: 3px solid #065E43; padding: 10px 16px; margin: 8px 0; background: #eff6ff; border-radius: 4px; }
+  .citation { border-left: 3px solid #0A3622; padding: 10px 16px; margin: 8px 0; background: #eff6ff; border-radius: 4px; }
   .risk { border-left: 3px solid #d97706; padding: 10px 16px; margin: 8px 0; background: #fffbeb; border-radius: 4px; }
   blockquote { font-style: italic; color: #374151; margin: 0; }
   .meta { color: #6b7280; font-size: 13px; }
@@ -1407,7 +1407,7 @@ ${report.issues.length ? `<h2>Vấn đề phát hiện (${report.issues.length})
 ${report.gap_analysis ? `<h2>Gap Analysis</h2>
 ${report.gap_analysis.critical_gaps.length ? `<h3 style="color:#dc2626">Nghiêm trọng</h3><ul>${report.gap_analysis.critical_gaps.map(g => `<li>${g}</li>`).join('')}</ul>` : ''}
 ${report.gap_analysis.major_gaps.length ? `<h3 style="color:#d97706">Lớn</h3><ul>${report.gap_analysis.major_gaps.map(g => `<li>${g}</li>`).join('')}</ul>` : ''}
-${report.gap_analysis.minor_gaps.length ? `<h3 style="color:#065E43">Nhỏ</h3><ul>${report.gap_analysis.minor_gaps.map(g => `<li>${g}</li>`).join('')}</ul>` : ''}` : ''}
+${report.gap_analysis.minor_gaps.length ? `<h3 style="color:#0A3622">Nhỏ</h3><ul>${report.gap_analysis.minor_gaps.map(g => `<li>${g}</li>`).join('')}</ul>` : ''}` : ''}
 ${report.risk_flags.length ? `<h2>Rủi ro Inline (${report.risk_flags.length})</h2>${report.risk_flags.map(r => `<div class="risk"><span style="color:#d97706;font-weight:bold">[${r.severity.toUpperCase()}] ${r.risk_type}</span><br><blockquote>"${r.text_snippet}"</blockquote><br>${r.explanation}</div>`).join('')}` : ''}
 ${report.citations.length ? `<h2>Trích dẫn Tiêu chuẩn (${report.citations.length})</h2>${report.citations.map(c => `<div class="citation"><strong>${c.standard} — Điều ${c.clause}</strong><br><blockquote>"${c.text}"</blockquote><br><small>${c.relevance}</small></div>`).join('')}` : ''}
 ${review ? `<h2>Review của Kiểm toán viên</h2><p>Reviewer: <strong>${review.reviewer}</strong> · Trạng thái: <strong>${review.status}</strong></p><p>${review.notes}</p>` : ''}

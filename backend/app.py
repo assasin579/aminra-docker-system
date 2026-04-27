@@ -1,4 +1,4 @@
-import os, sys, shutil, logging, json as _json, secrets, time
+import os, sys, shutil, logging, json as _json, secrets, time, uuid
 import httpx
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -77,13 +77,23 @@ from auth.submission_router import router as submission_router
 from auth.certificate_router import router as certificate_router
 from auth.notification_router import router as notification_router
 from auth.audit_router import router as audit_router
-app.include_router(auth_router,         prefix="/auth", tags=["auth"])
-app.include_router(admin_auth_router,   prefix="/auth", tags=["auth-admin"])
+from auth.assessment_router import router as assessment_router
+from auth.audit_log_router import router as audit_log_router
+from auth.password_reset_router import router as password_reset_router
+from auth.admin_analytics_router import router as admin_analytics_router
+from auth.gdpr_router import router as gdpr_router
+app.include_router(auth_router,             prefix="/auth", tags=["auth"])
+app.include_router(admin_auth_router,       prefix="/auth", tags=["auth-admin"])
+app.include_router(audit_log_router,        prefix="/auth", tags=["audit-logs"])
+app.include_router(password_reset_router,   prefix="/auth", tags=["password-reset"])
+app.include_router(admin_analytics_router,  prefix="/auth", tags=["admin-analytics"])
+app.include_router(gdpr_router,             prefix="/api/users", tags=["data-rights"])
 app.include_router(document_router,     prefix="/api",  tags=["documents"])
 app.include_router(submission_router,   prefix="/api/submissions", tags=["submissions"])
 app.include_router(certificate_router,  prefix="/api/submissions", tags=["certificates"])
 app.include_router(notification_router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(audit_router,        prefix="/api/audits", tags=["audits"])
+app.include_router(assessment_router,   prefix="/api/assessments", tags=["assessments"])
 
 from supply_chain.supplier_router import router as supplier_router
 from supply_chain.material_router import router as material_router
@@ -207,17 +217,21 @@ def _load_template(doc_type: str) -> Optional[Dict]:
 
 def _load_template_files_content(doc_type: str, lang: str = "vi") -> str:
     from pipeline.evaluate import load_template_files_content
-    # Try language-specific dir first, fall back to root dir
+    # W1-M1 — Strict lang-specific dir only. The previous fallback to root_dir
+    # mixed languages (e.g. an English-only halal_policy template surfaced for
+    # vi requests because root contained only EN files), polluting the LLM
+    # context. If lang_dir is empty/missing, return empty content rather than
+    # leaking another lang's reference material.
     lang_dir = TEMPLATE_FILES_DIR / doc_type / lang
-    root_dir = TEMPLATE_FILES_DIR / doc_type
-    dir_path = lang_dir if lang_dir.exists() and any(lang_dir.iterdir()) else root_dir
+    if not (lang_dir.exists() and any(lang_dir.iterdir())):
+        return ""
 
     cache_key = f"{doc_type}_{lang}"
-    mtime_sum = _dir_mtime_sum(dir_path)
+    mtime_sum = _dir_mtime_sum(lang_dir)
     cached = _template_files_cache.get(cache_key)
     if cached and cached[1] == mtime_sum:
         return cached[0]
-    content = load_template_files_content(dir_path)
+    content = load_template_files_content(lang_dir)
     _template_files_cache[cache_key] = (content, mtime_sum)
     log.info(f"[cache] Template files re-extracted for {cache_key} ({len(content)} chars)")
     return content
@@ -247,6 +261,7 @@ class IngestStatus(BaseModel):
     filename: str
     chunks:   int
     status:   str
+    job_id:   str | None = None
 
 class EvalIssue(BaseModel):
     section:        str
@@ -571,18 +586,162 @@ def list_template_files_lang(doc_type: str, request: Request):
     return {"templates": result}
 
 
+# ── Admin file preview endpoints ──────────────────────────────────────────────
+
+def _verify_admin_token_string(token: str) -> bool:
+    """Validate a legacy admin opaque token without going through Bearer header.
+    Used for query-param auth on file preview links opened in new browser tabs.
+    """
+    if not token:
+        return False
+    sessions = _load_sessions()
+    exp = sessions.get(token)
+    if not exp or time.time() > exp:
+        return False
+    return True
+
+
+def _require_admin_or_token(request: Request, token: Optional[str]):
+    """Accept either a `Bearer` admin session OR `?token=` query string."""
+    if token and _verify_admin_token_string(token):
+        return
+    _require_admin(request)
+
+
+def _guess_media_type(filename: str) -> str:
+    """Map common extensions to media types so browsers preview when possible."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return {
+        "pdf":  "application/pdf",
+        "txt":  "text/plain; charset=utf-8",
+        "md":   "text/plain; charset=utf-8",
+        "png":  "image/png",
+        "jpg":  "image/jpeg",
+        "jpeg": "image/jpeg",
+        "webp": "image/webp",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    }.get(ext, "application/octet-stream")
+
+
+# Office formats browsers cannot render natively — convert to PDF for inline view.
+_OFFICE_CONVERT_EXTS = {"docx", "doc", "pptx", "ppt", "xlsx", "xls", "odt"}
+_PDF_PREVIEW_CACHE_DIR = Path("/tmp/aminra_pdf_preview")
+
+
+def _convert_office_to_pdf_cached(src: Path) -> Optional[Path]:
+    """Convert an Office doc to PDF for in-browser preview.
+
+    Cache key = source path hash + mtime. Re-converts only when source is newer
+    than cached PDF. Uses LibreOffice headless (~3 sec for typical DOCX).
+    Returns None on conversion failure (caller falls back to original file).
+    """
+    import hashlib, subprocess
+    if not src.exists():
+        return None
+    cache_key = hashlib.sha1(f"{src}|{src.stat().st_mtime}".encode()).hexdigest()[:16]
+    _PDF_PREVIEW_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cached = _PDF_PREVIEW_CACHE_DIR / f"{cache_key}.pdf"
+    if cached.exists() and cached.stat().st_mtime >= src.stat().st_mtime:
+        return cached
+    try:
+        result = subprocess.run(
+            ["libreoffice", "--headless",
+             "--convert-to", "pdf",
+             "--outdir", str(_PDF_PREVIEW_CACHE_DIR),
+             str(src)],
+            capture_output=True, timeout=60,
+        )
+        if result.returncode != 0:
+            log.warning(f"[pdf_preview] libreoffice failed for {src}: {result.stderr.decode(errors='ignore')[:200]}")
+            return None
+        # LibreOffice writes <stem>.pdf — rename to our cache key
+        produced = _PDF_PREVIEW_CACHE_DIR / f"{src.stem}.pdf"
+        if not produced.exists():
+            return None
+        produced.rename(cached)
+        return cached
+    except subprocess.TimeoutExpired:
+        log.warning(f"[pdf_preview] timeout converting {src}")
+        return None
+    except FileNotFoundError:
+        log.warning("[pdf_preview] libreoffice not installed — skipping conversion")
+        return None
+    except Exception as e:
+        log.warning(f"[pdf_preview] unexpected error: {e}")
+        return None
+
+
+def _maybe_serve_as_pdf(file: Path) -> tuple[Path, str]:
+    """If `file` is an Office doc, return (pdf_path, 'application/pdf').
+    Otherwise return (file, original_media_type). PDF preview supersedes
+    download for any browser-renderable preview.
+    """
+    ext = file.suffix.lstrip(".").lower()
+    if ext in _OFFICE_CONVERT_EXTS:
+        pdf = _convert_office_to_pdf_cached(file)
+        if pdf:
+            return pdf, "application/pdf"
+    return file, _guess_media_type(file.name)
+
+
+@app.get("/admin/templates/{doc_type}/template-file/view")
+def view_template_file(doc_type: str, request: Request, lang: str = "vi", token: Optional[str] = None):
+    """Serve the canonical {doc_type}_{lang}.docx for admin preview/verification."""
+    _require_admin_or_token(request, token)
+    if doc_type not in HALAL_DOC_TYPES:
+        raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
+    if lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ")
+    f = TEMPLATE_FILES_DIR / doc_type / f"{doc_type}_{lang}.docx"
+    if not f.exists():
+        raise HTTPException(404, f"Template {lang.upper()} chưa được upload")
+    served, media = _maybe_serve_as_pdf(f)
+    display_name = served.name if served != f else f.name
+    return FileResponse(
+        path=str(served),
+        media_type=media,
+        filename=display_name,
+        headers={"Content-Disposition": f'inline; filename="{display_name}"'},
+    )
+
+
+@app.get("/admin/templates/{doc_type}/files/{filename}/view")
+def view_reference_file(doc_type: str, filename: str, request: Request, lang: str = "vi", token: Optional[str] = None):
+    """Serve a reference file from the lang subfolder for admin preview."""
+    _require_admin_or_token(request, token)
+    if doc_type not in HALAL_DOC_TYPES:
+        raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
+    if lang not in ("vi", "en"):
+        raise HTTPException(400, "Ngôn ngữ không hợp lệ")
+    safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in filename).strip()
+    base_dir = TEMPLATE_FILES_DIR / doc_type / lang
+    f = base_dir / safe_name
+    if not f.resolve().is_relative_to(base_dir.resolve()):
+        raise HTTPException(400, "Invalid file path")
+    if not f.exists() or not f.is_file():
+        raise HTTPException(404, "File không tồn tại")
+    served, media = _maybe_serve_as_pdf(f)
+    display_name = served.name if served != f else f.name
+    return FileResponse(
+        path=str(served),
+        media_type=media,
+        filename=display_name,
+        headers={"Content-Disposition": f'inline; filename="{display_name}"'},
+    )
+
+
 # ── Public template endpoints (for document creation) ─────────────────────────
 
 def _find_template_file(doc_type: str, lang: str) -> Optional[Path]:
-    """Find template DOCX for a doc_type + language (vi/en)."""
-    dir_path = TEMPLATE_FILES_DIR / doc_type
-    if not dir_path.exists():
-        return None
-    # Priority: exact lang suffix → any docx
-    for f in dir_path.iterdir():
-        if f.suffix.lower() == ".docx" and f.stem.endswith(f"_{lang}"):
-            return f
-    return None
+    """Find template DOCX for a doc_type + language (vi/en).
+
+    Strict match on `{doc_type}_{lang}.docx` to prevent cross-contamination
+    when the directory contains stray files (e.g., manual uploads with custom
+    filenames). Only the canonical filename is served to end users.
+    """
+    canonical = TEMPLATE_FILES_DIR / doc_type / f"{doc_type}_{lang}.docx"
+    return canonical if canonical.exists() else None
 
 
 @app.get("/templates/available")
@@ -613,7 +772,12 @@ def download_template(
     lang: str = "vi",
     _: dict = Depends(get_current_user),
 ):
-    """Download template DOCX for a specific language."""
+    """Download template DOCX for a specific language.
+
+    Cache-Control no-store: admin may rotate template content; serving stale
+    cached copies (browser HTTP cache OR PWA service worker) is what caused
+    the 2026-04-26 'halal_policy → rửa dọn' incident even after data fix.
+    """
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang not in ("vi", "en"):
@@ -621,10 +785,18 @@ def download_template(
     template = _find_template_file(doc_type, lang)
     if not template:
         raise HTTPException(404, f"Template {lang.upper()} chưa được upload cho {doc_type}")
+    # ETag based on file mtime so browsers know when content changes.
+    etag = f'"{int(template.stat().st_mtime)}-{template.stat().st_size}"'
     return FileResponse(
         path=str(template),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         filename=template.name,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma":        "no-cache",
+            "Expires":       "0",
+            "ETag":          etag,
+        },
     )
 
 
@@ -963,47 +1135,85 @@ async def chat_stream(req: ChatRequest, _: None = Depends(rate_limit_api)):
     return StreamingResponse(generate(), media_type="text/plain")
 
 @app.post("/ingest", response_model=IngestStatus)
-async def ingest_document(background_tasks: BackgroundTasks, file: UploadFile = File(...), _: None = Depends(rate_limit_upload)):
+async def ingest_document(
+    file: UploadFile = File(...),
+    _: None = Depends(rate_limit_upload),
+    user: dict = Depends(get_current_user),  # C12 fix — require auth
+):
+    """Upload + queue RAG ingest. Returns job_id; poll /jobs/{job_id} for progress."""
     content = await validate_upload(file)
-    save_path = UPLOAD_DIR / file.filename
+
+    # C7 fix — sanitize filename + UUID prefix to prevent traversal & cross-tenant overwrites.
+    raw_name = file.filename or "doc.bin"
+    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in raw_name).strip("._") or "doc.bin"
+    if len(safe_name) > 100:
+        safe_name = safe_name[-100:]
+    save_path = UPLOAD_DIR / f"{uuid.uuid4().hex[:12]}_{safe_name}"
     if not save_path.resolve().is_relative_to(UPLOAD_DIR.resolve()):
         raise HTTPException(400, "Invalid file path")
     save_path.write_bytes(content)
-    background_tasks.add_task(_run_ingest, save_path)
-    return IngestStatus(filename=file.filename, chunks=0, status="queued")
+
+    from services.jobs import enqueue
+    try:
+        job = await enqueue("ingest_document", path=str(save_path))
+    except Exception as e:
+        log.exception("[ingest] enqueue failed")
+        raise HTTPException(503, f"Job queue unavailable: {e}")
+
+    return IngestStatus(filename=safe_name, chunks=0, status="queued", job_id=job.job_id)
+
+
+@app.get("/jobs/{job_id}")
+async def get_job(job_id: str):
+    """Poll a background job by ID. Used by clients after /ingest."""
+    from services.jobs import get_job_status
+    view = await get_job_status(job_id)
+    return {
+        "job_id": view.job_id,
+        "status": view.status,
+        "result": view.result,
+        "error":  view.error,
+    }
 
 @app.post("/evaluate", response_model=EvaluationReport)
 async def evaluate_doc(
     request: Request,
     file: UploadFile = File(...),
     _rate_limit: None = Depends(rate_limit_upload),
+    user: dict = Depends(get_current_user),  # C12 fix — require auth
     doc_type: Optional[str] = Form(None),
     previous_context: Optional[str] = Form(None),
     lang: Optional[str] = Form(None),
 ):
     content = await validate_upload(file)
     suffix  = Path(file.filename or "").suffix.lower()
+    jwt_user = user  # auth now required, no anonymous fallback
 
-    # Extract JWT user if present (optional — anonymous evaluate still works)
-    jwt_user = None
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        try:
-            jwt_user = decode_token(auth_header[7:])
-        except Exception:
-            pass  # treat as anonymous
+    # C8 fix — sanitize FE-supplied previous_context to neutralize prompt-injection
+    # vectors (role markers, system delimiters, oversized payload).
+    if previous_context:
+        prev = previous_context[:2000]  # hard cap
+        # Strip ASCII control chars except whitespace
+        prev = "".join(c for c in prev if c == "\n" or c == "\t" or (ord(c) >= 32))
+        # Neutralize delimiter markers commonly used in prompt templates
+        for marker in ("===", "###", "---SYSTEM", "[SYSTEM]", "<|", "|>", "<<SYS>>"):
+            prev = prev.replace(marker, "·" * 3)
+        previous_context = prev
 
     eval_lang = lang or "vi"
     forced_doc_type   = doc_type if doc_type and doc_type in HALAL_DOC_TYPES else None
     forced_doc_label  = HALAL_DOC_TYPES.get(forced_doc_type, "") if forced_doc_type else ""
     template_criteria         = _load_template(forced_doc_type) if forced_doc_type else None
     template_files_content    = _load_template_files_content(forced_doc_type, eval_lang) if forced_doc_type else ""
-    # Use lang-specific dir if exists, fallback to root
+    # W1-M1 fix — strict lang-specific dir; never fall back to root which can
+    # contain other-language files (caused halal_policy English content reaching
+    # vi evaluation flow in the original incident).
     template_files_dir        = None
     if forced_doc_type:
         lang_dir = TEMPLATE_FILES_DIR / forced_doc_type / eval_lang
-        root_dir = TEMPLATE_FILES_DIR / forced_doc_type
-        template_files_dir = lang_dir if lang_dir.exists() else root_dir
+        if lang_dir.exists():
+            template_files_dir = lang_dir
+    # If no lang-specific dir → empty content (don't pollute LLM with wrong-lang refs)
 
     import tempfile, uuid as _uuid
     file_bytes = content
@@ -1091,7 +1301,11 @@ async def evaluate_doc(
 
 
 @app.post("/rewrite", response_model=RewriteResponse)
-async def suggest_rewrite(req: RewriteRequest):
+async def suggest_rewrite(
+    req: RewriteRequest,
+    _rate_limit: None = Depends(rate_limit_upload),  # C13 — share LLM rate limiter
+    user: dict = Depends(get_current_user),  # C13 — require auth
+):
     if not req.section_text.strip():
         raise HTTPException(status_code=400, detail="section_text không được để trống")
 
@@ -1148,7 +1362,11 @@ class GenerateDocRequest(BaseModel):
     gap_analysis:   Optional[Dict] = None
 
 @app.post("/generate-document")
-async def generate_document(req: GenerateDocRequest):
+async def generate_document(
+    req: GenerateDocRequest,
+    _rate_limit: None = Depends(rate_limit_upload),  # C13 — LLM rate limiter
+    user: dict = Depends(get_current_user),  # C13 — require auth
+):
     template  = _load_template(req.doc_type)
     criteria  = template.get("mandatory_criteria", []) if template else []
     ref_ctx   = _load_template_files_content(req.doc_type) if req.doc_type else ""

@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "AMINRA Auditor",
+    "slug": "aminra-auditor",
+    "scheme": "aminra-auditor",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#087653"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "vn.aminra.auditor",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AMINRA Auditor cần truy cập camera để chụp ảnh bằng chứng audit tại nhà máy.",
+        "NSLocationWhenInUseUsageDescription": "AMINRA Auditor ghi nhận vị trí GPS khi check-in/out audit để xác minh hiện diện thực tế.",
+        "NSPhotoLibraryUsageDescription": "AMINRA Auditor cần lưu ảnh audit để upload sau khi quay lại văn phòng."
+      }
+    },
+    "android": {
+      "package": "vn.aminra.auditor",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#087653"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      ["expo-camera", {
+        "cameraPermission": "AMINRA Auditor cần truy cập camera để chụp ảnh bằng chứng audit."
+      }],
+      ["expo-location", {
+        "locationAlwaysAndWhenInUsePermission": "AMINRA Auditor ghi nhận vị trí GPS khi audit."
+      }]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://dev-web.silvergem.org",
+      "router": {}
+    }
+  }
+}

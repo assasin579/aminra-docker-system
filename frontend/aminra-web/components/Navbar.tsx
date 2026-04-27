@@ -23,20 +23,23 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-blue-500"></div>
-          <span className="text-xl font-bold text-gray-800">Aminra</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aminra-mark.svg" alt="AMINRA" className="h-8 w-8" />
+          <span className="text-xl font-bold tracking-wider" style={{ color: '#0F5132' }}>AMINRA</span>
         </div>
 
         <nav className="hidden md:flex items-center space-x-8">
           <Link
             href="/"
-            className="text-gray-700 hover:text-green-600 font-medium transition-colors"
+            className="font-medium transition-colors"
+            style={{ color: '#374151' }}
           >
             {t('navbar.home')}
           </Link>
           <Link
             href="/upload"
-            className="text-gray-700 hover:text-green-600 font-medium transition-colors"
+            className="font-medium transition-colors"
+            style={{ color: '#374151' }}
           >
             {t('navbar.upload')}
           </Link>
@@ -45,7 +48,8 @@ export default function Navbar() {
         <div className="relative">
           <button
             onClick={() => setIsLangOpen(!isLangOpen)}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 hover:border-green-500 transition-colors bg-white"
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 transition-colors bg-white"
+            style={{ borderColor: '#E2E8F0' }}
           >
             <span className="text-gray-700">{t('navbar.language')}</span>
             <svg
@@ -70,7 +74,8 @@ export default function Navbar() {
                 <button
                   key={lang.code}
                   onClick={() => changeLanguage(lang.code)}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${i18n.language === lang.code ? 'bg-green-50 text-green-700' : 'text-gray-700'}`}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                  style={{ color: i18n.language === lang.code ? '#0F5132' : '#374151', background: i18n.language === lang.code ? '#E8F5EF' : 'transparent', fontWeight: i18n.language === lang.code ? 600 : 400 }}
                 >
                   {lang.name}
                 </button>

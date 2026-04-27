@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: #dc2626;">Confirm AMINRA account deletion</h2>
+  <p>Hello {{ user_name | default("there") }},</p>
+  <p>We received a request to delete <strong>{{ user_email }}</strong>.</p>
+  <p>
+    <a href="{{ confirm_url }}"
+       style="display:inline-block;padding:12px 24px;background:#dc2626;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">
+      Confirm deletion
+    </a>
+  </p>
+  <p style="font-size: 13px; color: #6b7280;">
+    Link expires in {{ ttl_minutes | default(60) }} minutes.
+  </p>
+  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:16px;margin:20px 0;font-size:13px;">
+    <strong style="color:#991b1b;">When you confirm:</strong>
+    <ul style="margin:8px 0 0;padding-left:18px;color:#7f1d1d;">
+      <li>Account is <strong>permanently disabled</strong> (no recovery)</li>
+      <li>Email, company name, contact info are anonymized</li>
+      <li>Audit logs may be retained up to 5 years per legal obligation</li>
+      <li>Halal certificates already issued remain on the public registry</li>
+    </ul>
+  </div>
+  <p style="font-size: 12px; color: #9ca3af;">
+    If you did NOT request deletion, ignore this email and change your password.
+  </p>
+  <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+  <p style="font-size: 12px; color: #9ca3af;">— The {{ from_name }} team</p>
+</body>
+</html>

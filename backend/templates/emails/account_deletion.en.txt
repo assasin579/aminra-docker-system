@@ -1,0 +1,21 @@
+Subject: [AMINRA] Confirm account deletion request
+
+Hello {{ user_name | default("there") }},
+
+We received a request to delete your AMINRA account ({{ user_email }}).
+
+If this was you, click the link below to confirm. The link expires in
+{{ ttl_minutes | default(60) }} minutes:
+
+  {{ confirm_url }}
+
+WHEN YOU CONFIRM:
+- Your account is permanently disabled (cannot be recovered)
+- Your email, company name, and contact info are anonymized
+- Audit logs may be retained for up to 5 years per legal obligation
+- Halal certificates already issued remain on the public verify registry
+  (legal record — not your personal data)
+
+If you did NOT request deletion, ignore this email and change your password.
+
+— The {{ from_name }} team

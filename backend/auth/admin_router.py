@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from asyncpg import Connection
 from pydantic import BaseModel
 from typing import Optional
@@ -7,6 +7,7 @@ from typing import Optional
 from .db import get_db
 from .jwt_utils import require_admin
 from .models import PendingProvidersResponse, PendingProviderItem
+from services.audit_log import log_audit
 
 log = logging.getLogger("aminra.auth.admin")
 router = APIRouter()
@@ -35,6 +36,7 @@ async def pending_providers(admin: dict = Depends(require_admin), db: Connection
 @router.post("/admin/providers/{provider_id}/approve")
 async def approve_provider(
     provider_id: str,
+    request: Request,
     admin: dict = Depends(require_admin),
     db: Connection = Depends(get_db),
 ):
@@ -49,13 +51,39 @@ async def approve_provider(
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not found or not pending")
     log.info(f"[auth] Provider approved: {row['email']}")
+    await log_audit(
+        db,
+        user=admin,
+        action="provider.approve",
+        entity_type="user",
+        entity_id=str(row["id"]),
+        changes={"status": ["pending", "active"]},
+        metadata={"provider_email": row["email"]},
+        request=request,
+    )
     return {"id": str(row["id"]), "email": row["email"], "status": row["status"]}
+
+
+@router.get("/admin/overdue-submissions")
+async def admin_overdue_submissions(
+    limit: int = 100,
+    admin: dict = Depends(require_admin),
+    db: Connection = Depends(get_db),
+):
+    """Admin escalation queue — all submissions past their deadline still active.
+
+    Used to nudge providers when SLA breached. Sorted oldest-deadline first.
+    """
+    from services.submission_sla import list_overdue_submissions
+    items = await list_overdue_submissions(db, limit=limit)
+    return {"items": items, "count": len(items)}
 
 
 @router.post("/admin/providers/{provider_id}/reject")
 async def reject_provider(
     provider_id: str,
     req: RejectRequest,
+    request: Request,
     admin: dict = Depends(require_admin),
     db: Connection = Depends(get_db),
 ):
@@ -70,4 +98,14 @@ async def reject_provider(
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not found or not pending")
     log.info(f"[auth] Provider rejected: {row['email']}")
+    await log_audit(
+        db,
+        user=admin,
+        action="provider.reject",
+        entity_type="user",
+        entity_id=str(row["id"]),
+        changes={"status": ["pending", "suspended"]},
+        metadata={"provider_email": row["email"], "reason": req.reason or ""},
+        request=request,
+    )
     return {"id": str(row["id"]), "email": row["email"], "status": row["status"]}

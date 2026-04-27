@@ -1,5 +1,8 @@
 import os
+import json as _json
+import time as _time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path as _Path
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
@@ -15,6 +18,20 @@ REFRESH_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", "7"))
 _bearer = HTTPBearer(auto_error=False)
 
 ADMIN_EMAIL = "admin@aminra.com"
+
+# Old-admin session file written by /admin/login in app.py
+_ADMIN_SESSIONS_FILE = _Path("data/admin_sessions.json")
+
+
+def _validate_old_admin_session(token: str) -> bool:
+    try:
+        if not _ADMIN_SESSIONS_FILE.exists():
+            return False
+        sessions = _json.loads(_ADMIN_SESSIONS_FILE.read_text())
+        exp = sessions.get(token)
+        return bool(exp and _time.time() <= exp)
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_hours: Optional[int] = None) -> str:
@@ -77,7 +94,47 @@ def require_active_user(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
-def require_admin(user: dict = Depends(get_current_user)) -> dict:
-    if user.get("email") != ADMIN_EMAIL or user.get("role") != "provider":
+async def require_admin(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+) -> dict:
+    """Accept either a JWT user token (admin email + provider role) or the
+    opaque session token from /admin/login. Returns a user-shaped dict.
+
+    Falling back to the old-admin session keeps the /admin UI working with
+    routes registered under /api/auth/admin/* (analytics, audit-logs, etc.)
+    while a single backend dependency continues to gate access.
+    """
+    if not creds:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    token = creds.credentials
+
+    try:
+        user = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
+        if user.get("email") == ADMIN_EMAIL and user.get("role") == "provider":
+            return user
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    return user
+    except JWTError:
+        pass
+
+    if not _validate_old_admin_session(token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    from auth.db import get_pool
+    pool = get_pool()
+    async with pool.acquire() as db:
+        row = await db.fetchrow(
+            "SELECT id, email, role FROM users WHERE email = $1",
+            ADMIN_EMAIL,
+        )
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin user record missing — run admin bootstrap",
+        )
+    return {
+        "sub": str(row["id"]),
+        "email": row["email"],
+        "role": row["role"] or "provider",
+        "is_owner": True,
+    }

@@ -26,6 +26,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
 # Copy source
 COPY pipeline/ ./pipeline/
 COPY auth/ ./auth/
+COPY services/ ./services/
 COPY templates_docx/ ./templates_docx/
 COPY supply_chain/ ./supply_chain/
 COPY alembic.ini .
@@ -39,4 +40,10 @@ RUN mkdir -p /app/docs /app/data /app/doc_text_cache
 EXPOSE 8000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["gunicorn", "app:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "240"]
+CMD ["sh", "-c", "gunicorn app:app \
+    --workers ${WEB_CONCURRENCY:-2} \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 0.0.0.0:8000 \
+    --timeout ${WORKER_TIMEOUT:-240} \
+    --max-requests ${MAX_REQUESTS:-1000} \
+    --max-requests-jitter ${MAX_REQUESTS_JITTER:-100}"]

@@ -1,19 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAFCF9;
-  --foreground: #1A2332;
-  --surface: #FFFFFF;
-  --surface-alt: #F0F7F4;
-  --primary: #087653;
-  --primary-light: #E6F5EE;
-  --primary-dark: #065E43;
-  --text-primary: #1A2332;
-  --text-body: #374151;
+  /* AMINRA brand — Primary Green + Secondary Green + Gold Accent (rebrand 2026-04-27)
+     Halal Integrity, Digital Trust */
+  --background:    #FFFFFF;        /* clean white per brand guideline */
+  --foreground:    #0F5132;        /* primary green */
+  --surface:       #FFFFFF;
+  --surface-alt:   #F7F1E6;        /* beige, supporting tone */
+
+  /* Primary = Primary Green */
+  --primary:       #0F5132;
+  --primary-light: #E8F5EF;        /* mint */
+  --primary-dark:  #0A3622;
+
+  /* Secondary = Secondary Green (20% usage in palette) */
+  --secondary:       #198754;
+  --secondary-light: #B7CBB8;      /* sage green */
+  --secondary-dark:  #146C43;
+
+  /* Accent = Gold (use sparingly: cert seal, premium CTAs) */
+  --accent:        #D4AF37;
+  --accent-light:  #FFF4D6;        /* light gold */
+  --accent-dark:   #B8941F;
+
+  --text-primary:   #0F5132;       /* unified with primary */
+  --text-body:      #374151;
   --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
-  --border: #E2E8F0;
-  --sidebar: #1E293B;
+  --text-muted:     #9CA3AF;
+  --border:         #E2E8F0;
+  --sidebar:        #0A3622;       /* deeper green for sidebar */
 
   /* ── Animation tokens ── */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -73,8 +88,8 @@ input, textarea, select {
   transition: border-color 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease;
 }
 input:focus, textarea:focus, select:focus {
-  border-color: rgba(8,118,83,0.4) !important;
-  box-shadow: 0 0 0 3px rgba(8,118,83,0.08);
+  border-color: rgba(15,81,50,0.4) !important;
+  box-shadow: 0 0 0 3px rgba(15,81,50,0.08);
   outline: none;
 }
 
@@ -85,8 +100,8 @@ input:focus, textarea:focus, select:focus {
               transform 0.2s var(--ease-spring);
 }
 .doc-card-hover:hover {
-  border-color: rgba(8,118,83,0.3) !important;
-  box-shadow: 0 4px 20px rgba(8,118,83,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  border-color: rgba(15,81,50,0.3) !important;
+  box-shadow: 0 4px 20px rgba(15,81,50,0.06), 0 1px 3px rgba(0,0,0,0.04);
   transform: translateY(-2px);
 }
 .doc-card-hover:active {
@@ -286,7 +301,7 @@ main, [data-page] {
   100% { background-position: 200% center; }
 }
 .shimmer, .admin-shimmer {
-  background: linear-gradient(90deg, #E2E8F0 25%, #F0F7F4 50%, #E2E8F0 75%);
+  background: linear-gradient(90deg, #E2E8F0 25%, #F7F1E6 50%, #E2E8F0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 6px;
@@ -366,8 +381,8 @@ main, [data-page] {
 
 /* Pulse glow (attention) */
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(8,118,83,0); }
-  50%      { box-shadow: 0 0 16px 4px rgba(8,118,83,0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15,81,50,0); }
+  50%      { box-shadow: 0 0 16px 4px rgba(15,81,50,0.15); }
 }
 .animate-pulse-glow { animation: pulseGlow 1.5s ease-in-out 2; }
 
@@ -457,12 +472,12 @@ main, [data-page] {
    ═══════════════════════════════════════════════════ */
 
 .admin-input:focus, .admin-textarea:focus {
-  border-color: rgba(8,118,83,0.5) !important;
-  box-shadow: 0 0 0 3px rgba(8,118,83,0.1);
+  border-color: rgba(15,81,50,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(15,81,50,0.1);
   outline: none;
 }
 
-::selection { background: rgba(8,118,83,0.15); color: #065E43; }
+::selection { background: rgba(15,81,50,0.15); color: #0A3622; }
 
 /* ═══════════════════════════════════════════════════
    17. EMPTY STATE

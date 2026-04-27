@@ -63,3 +63,23 @@ async def rate_limit_upload(request: Request):
             pass
     key = _get_client_key(request, user)
     _limiter.check(f"upload:{key}", UPLOAD_RATE_LIMIT, UPLOAD_RATE_WINDOW)
+
+
+async def rate_limit_data_export(request: Request):
+    """Heavily-throttled limit for GDPR/PDPL data exports.
+
+    Defaults: 3 exports per hour per user. Tunable via env so tests can
+    relax this without monkey-patching.
+    """
+    limit = int(os.getenv("DATA_EXPORT_LIMIT", "3"))
+    window = int(os.getenv("DATA_EXPORT_WINDOW", "3600"))
+    user = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        try:
+            from .jwt_utils import decode_token
+            user = decode_token(auth[7:])
+        except Exception:
+            pass
+    key = _get_client_key(request, user)
+    _limiter.check(f"data_export:{key}", limit, window)

@@ -39,7 +39,7 @@ interface AuditorStats {
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
   pending:   { label: 'Chờ duyệt', bg: '#F3F4F6', color: '#6B7280' },
   reviewing: { label: 'Đang xét',  bg: '#DBEAFE', color: '#2563EB' },
-  approved:  { label: 'Đã duyệt', bg: '#ECFDF5', color: '#059669' },
+  approved:  { label: 'Đã duyệt', bg: '#E8F5EF', color: '#198754' },
   returned:  { label: 'Trả lại',  bg: '#FEF3C7', color: '#D97706' },
 };
 
@@ -61,7 +61,7 @@ function timeAgo(iso: string) {
 }
 
 function scoreColor(v: number): string {
-  if (v >= 80) return '#087653';
+  if (v >= 80) return '#0F5132';
   if (v >= 60) return '#D97706';
   return '#DC2626';
 }
@@ -69,7 +69,7 @@ function scoreColor(v: number): string {
 function daysColor(d: number): { text: string; bg: string } {
   if (d <= 30) return { text: '#DC2626', bg: '#FEF2F2' };
   if (d <= 90) return { text: '#D97706', bg: '#FFFBEB' };
-  return { text: '#087653', bg: '#ECFDF5' };
+  return { text: '#0F5132', bg: '#E8F5EF' };
 }
 
 /* ── SVG icon paths ─────────────────────────────────────────── */
@@ -93,9 +93,9 @@ function PulseLoader() {
   return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
       </div>
     </div>
   );
@@ -144,7 +144,7 @@ function HBar({ value, max, color, label }: { value: number; max: number; color:
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="w-20 truncate" style={{ color: '#5F6F80' }}>{label}</span>
+      <span className="w-20 truncate" style={{ color: '#6B7280' }}>{label}</span>
       <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#E2E8F0' }}>
         <div className="h-full rounded-full animate-progress" style={{ width: `${pct}%`, background: color }} />
       </div>
@@ -217,19 +217,19 @@ export default function ProviderDashboard() {
       <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
         {/* Header */}
         <div className="mb-6 animate-section">
-          <p className="text-sm mb-1" style={{ color: '#5F6F80' }}>{greeting()},</p>
-          <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>{user.company_name}</h1>
+          <p className="text-sm mb-1" style={{ color: '#6B7280' }}>{greeting()},</p>
+          <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>{user.company_name}</h1>
           <div className="flex items-center gap-3 mt-2">
-            <p className="text-sm" style={{ color: '#5B6B7D' }}>{user.email}</p>
+            <p className="text-sm" style={{ color: '#6B7280' }}>{user.email}</p>
             <span
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
               style={{
-                background: user.status === 'active' ? 'rgba(8,118,83,0.08)' : 'rgba(245,158,11,0.1)',
-                color: user.status === 'active' ? '#087653' : '#D97706',
-                border: `1px solid ${user.status === 'active' ? 'rgba(8,118,83,0.2)' : 'rgba(245,158,11,0.3)'}`,
+                background: user.status === 'active' ? 'rgba(15,81,50,0.08)' : 'rgba(245,158,11,0.1)',
+                color: user.status === 'active' ? '#0F5132' : '#D97706',
+                border: `1px solid ${user.status === 'active' ? 'rgba(15,81,50,0.2)' : 'rgba(245,158,11,0.3)'}`,
               }}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'active' ? 'bg-emerald-500' : 'bg-yellow-400'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'active' ? 'bg-[#0F5132]' : 'bg-yellow-400'}`} />
               {user.status === 'active' ? 'Quản trị CB' : 'Đang chờ duyệt'}
             </span>
           </div>
@@ -242,7 +242,7 @@ export default function ProviderDashboard() {
               <Icon d={ICONS.clock} color="#F59E0B" size={5} />
               <div>
                 <p className="text-sm font-medium" style={{ color: '#F59E0B' }}>Tài khoản đang chờ xét duyệt</p>
-                <p className="text-xs mt-1" style={{ color: '#5F6F80' }}>
+                <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
                   Đội ngũ AMINRA đang xem xét hồ sơ của tổ chức bạn. Trong thời gian chờ, bạn có thể khám phá tính năng AI.
                 </p>
               </div>
@@ -254,7 +254,7 @@ export default function ProviderDashboard() {
         {cb && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-section">
             {([
-              { label: 'Doanh nghiệp', value: cb.portfolio_size, color: '#087653', bg: '#ECFDF5', icon: ICONS.building },
+              { label: 'Doanh nghiệp', value: cb.portfolio_size, color: '#0F5132', bg: '#E8F5EF', icon: ICONS.building },
               { label: 'Chứng nhận',    value: cb.certs.active,   color: '#2563EB', bg: '#DBEAFE', icon: ICONS.shield },
               { label: 'Sắp hết hạn',   value: cb.certs.expiring_soon, color: cb.certs.expiring_soon > 0 ? '#DC2626' : '#D97706', bg: cb.certs.expiring_soon > 0 ? '#FEF2F2' : '#FFFBEB', icon: ICONS.clock },
               { label: 'KĐ hoàn thành', value: cb.audits.completed, color: '#7C3AED', bg: '#F5F3FF', icon: ICONS.clipboard },
@@ -266,7 +266,7 @@ export default function ProviderDashboard() {
                   </span>
                 </div>
                 <div className="text-2xl font-bold animate-count" style={{ color: c.color }}>{c.value}</div>
-                <div className="text-xs font-medium mt-0.5" style={{ color: '#5F6F80' }}>{c.label}</div>
+                <div className="text-xs font-medium mt-0.5" style={{ color: '#6B7280' }}>{c.label}</div>
               </div>
             ))}
           </div>
@@ -287,7 +287,7 @@ export default function ProviderDashboard() {
                 <Icon d={ICONS.clock} color="#2563EB" size={5} />
               </div>
               <p className="text-xs font-medium" style={{ color: '#94A3B8' }}>Thời gian phản hồi TB</p>
-              <p className="text-2xl font-bold mt-1 animate-count" style={{ color: '#1A2332' }}>
+              <p className="text-2xl font-bold mt-1 animate-count" style={{ color: '#0F5132' }}>
                 {cb.submissions.avg_hours !== null ? `${cb.submissions.avg_hours}h` : '---'}
               </p>
             </div>
@@ -298,7 +298,7 @@ export default function ProviderDashboard() {
                 <Icon d={ICONS.inbox} color="#D97706" size={5} />
               </div>
               <p className="text-xs font-medium" style={{ color: '#94A3B8' }}>Hồ sơ chờ xử lý</p>
-              <p className="text-2xl font-bold mt-1 animate-count" style={{ color: (cb.submissions.pending + cb.submissions.reviewing) > 0 ? '#D97706' : '#1A2332' }}>
+              <p className="text-2xl font-bold mt-1 animate-count" style={{ color: (cb.submissions.pending + cb.submissions.reviewing) > 0 ? '#D97706' : '#0F5132' }}>
                 {cb.submissions.pending + cb.submissions.reviewing}
               </p>
             </div>
@@ -311,8 +311,8 @@ export default function ProviderDashboard() {
             {/* Expiring certs */}
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
               <div className="px-4 py-3 flex items-center justify-between" style={{ background: '#FAFBFC', borderBottom: '1px solid #E2E8F0' }}>
-                <h3 className="text-sm font-bold" style={{ color: '#1A2332' }}>Chứng nhận sắp hết hạn</h3>
-                <Link href="/certificates" className="text-xs font-medium" style={{ color: '#087653' }}>Xem tất cả &rarr;</Link>
+                <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>Chứng nhận sắp hết hạn</h3>
+                <Link href="/certificates" className="text-xs font-medium" style={{ color: '#0F5132' }}>Xem tất cả &rarr;</Link>
               </div>
               {cb.expiring_certs.length === 0 ? (
                 <div className="p-6 text-center">
@@ -326,7 +326,7 @@ export default function ProviderDashboard() {
                     return (
                       <div key={c.cert_number} className={`px-4 py-3 flex items-center justify-between animate-list-item stagger-${Math.min(i + 1, 12)}`}>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: '#1A2332' }}>{c.company_name}</p>
+                          <p className="text-sm font-medium truncate" style={{ color: '#0F5132' }}>{c.company_name}</p>
                           <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{c.cert_number}</p>
                         </div>
                         <span className="px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ml-2" style={{ background: dc.bg, color: dc.text }}>
@@ -342,8 +342,8 @@ export default function ProviderDashboard() {
             {/* Auditor workload */}
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
               <div className="px-4 py-3 flex items-center justify-between" style={{ background: '#FAFBFC', borderBottom: '1px solid #E2E8F0' }}>
-                <h3 className="text-sm font-bold" style={{ color: '#1A2332' }}>Tải công việc Auditor</h3>
-                <Link href="/auditors" className="text-xs font-medium" style={{ color: '#087653' }}>Quản lý &rarr;</Link>
+                <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>Tải công việc Auditor</h3>
+                <Link href="/auditors" className="text-xs font-medium" style={{ color: '#0F5132' }}>Quản lý &rarr;</Link>
               </div>
               {cb.auditor_workload.length === 0 ? (
                 <div className="p-6 text-center">
@@ -359,7 +359,7 @@ export default function ProviderDashboard() {
                     );
                     return (
                       <div key={a.id} className={`animate-list-item stagger-${Math.min(i + 1, 12)}`}>
-                        <p className="text-sm font-medium mb-1.5" style={{ color: '#1A2332' }}>{a.name}</p>
+                        <p className="text-sm font-medium mb-1.5" style={{ color: '#0F5132' }}>{a.name}</p>
                         <HBar value={a.active_visits} max={maxVal} color="#2563EB" label="Kiểm định" />
                         <div className="mt-1">
                           <HBar value={a.active_submissions} max={maxVal} color="#7C3AED" label="Hồ sơ" />
@@ -375,10 +375,10 @@ export default function ProviderDashboard() {
 
         {/* Row 4 — Quick actions */}
         <div className="animate-section">
-          <h3 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>Thao tác nhanh</h3>
+          <h3 className="text-sm font-bold mb-3" style={{ color: '#0F5132' }}>Thao tác nhanh</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
-              { href: '/submissions',  label: 'Hồ sơ nhận',     desc: 'Xem & đánh giá hồ sơ',       color: '#087653', icon: ICONS.inbox },
+              { href: '/submissions',  label: 'Hồ sơ nhận',     desc: 'Xem & đánh giá hồ sơ',       color: '#0F5132', icon: ICONS.inbox },
               { href: '/portfolio',    label: 'Portfolio',       desc: 'Quản lý doanh nghiệp',       color: '#2563EB', icon: ICONS.folder },
               { href: '/certificates', label: 'Chứng nhận',     desc: 'Quản lý chứng nhận',          color: '#D97706', icon: ICONS.cert },
               { href: '/auditors',     label: 'Quản lý Auditor',desc: 'Thêm & quản lý auditor',      color: '#7C3AED', icon: ICONS.users },
@@ -392,8 +392,8 @@ export default function ProviderDashboard() {
                   <Icon d={a.icon} color={a.color} size={5} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate" style={{ color: '#1A2332' }}>{a.label}</div>
-                  <div className="text-xs truncate" style={{ color: '#5F6F80' }}>{a.desc}</div>
+                  <div className="text-sm font-semibold truncate" style={{ color: '#0F5132' }}>{a.label}</div>
+                  <div className="text-xs truncate" style={{ color: '#6B7280' }}>{a.desc}</div>
                 </div>
               </Link>
             ))}
@@ -417,10 +417,10 @@ export default function ProviderDashboard() {
     <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
       {/* Header */}
       <div className="mb-6 animate-section">
-        <p className="text-sm mb-1" style={{ color: '#5F6F80' }}>{greeting()},</p>
-        <h1 className="text-2xl font-bold" style={{ color: '#1A2332' }}>{user.company_name}</h1>
+        <p className="text-sm mb-1" style={{ color: '#6B7280' }}>{greeting()},</p>
+        <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>{user.company_name}</h1>
         <div className="flex items-center gap-3 mt-2">
-          <p className="text-sm" style={{ color: '#5B6B7D' }}>{user.email}</p>
+          <p className="text-sm" style={{ color: '#6B7280' }}>{user.email}</p>
           <span className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: '#DBEAFE', color: '#2563EB', border: '1px solid #BFDBFE' }}>
             Auditor
           </span>
@@ -433,12 +433,12 @@ export default function ProviderDashboard() {
           {([
             { label: 'Chờ duyệt',  value: au.pending,   color: '#6B7280', bg: '#F3F4F6' },
             { label: 'Đang xét',   value: au.reviewing, color: '#2563EB', bg: '#DBEAFE' },
-            { label: 'Đã duyệt',  value: au.approved,  color: '#059669', bg: '#ECFDF5' },
+            { label: 'Đã duyệt',  value: au.approved,  color: '#198754', bg: '#E8F5EF' },
             { label: 'Trả lại',   value: au.returned,  color: '#D97706', bg: '#FEF3C7' },
           ] as const).map((st, i) => (
             <div key={st.label} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
               <div className="text-2xl font-bold animate-count" style={{ color: st.color }}>{st.value}</div>
-              <div className="text-xs font-medium mt-0.5" style={{ color: '#5F6F80' }}>{st.label}</div>
+              <div className="text-xs font-medium mt-0.5" style={{ color: '#6B7280' }}>{st.label}</div>
             </div>
           ))}
         </div>
@@ -449,11 +449,11 @@ export default function ProviderDashboard() {
         <div className="grid grid-cols-2 gap-4 mb-6 animate-section">
           <div className="rounded-xl p-4" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <p className="text-xs font-medium" style={{ color: '#94A3B8' }}>Tổng hồ sơ nhận</p>
-            <p className="text-xl font-bold mt-1 animate-count" style={{ color: '#1A2332' }}>{au.total}</p>
+            <p className="text-xl font-bold mt-1 animate-count" style={{ color: '#0F5132' }}>{au.total}</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <p className="text-xs font-medium" style={{ color: '#94A3B8' }}>Thời gian phản hồi TB</p>
-            <p className="text-xl font-bold mt-1 animate-count" style={{ color: '#1A2332' }}>
+            <p className="text-xl font-bold mt-1 animate-count" style={{ color: '#0F5132' }}>
               {au.avg_response_hours !== null ? `${au.avg_response_hours}h` : '---'}
             </p>
           </div>
@@ -464,8 +464,8 @@ export default function ProviderDashboard() {
         {/* Recent submissions */}
         <div className="flex flex-col lg:min-h-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold" style={{ color: '#1A2332' }}>Hồ sơ gần đây</h3>
-            <Link href="/submissions" className="text-xs font-medium" style={{ color: '#087653' }}>Xem tất cả &rarr;</Link>
+            <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>Hồ sơ gần đây</h3>
+            <Link href="/submissions" className="text-xs font-medium" style={{ color: '#0F5132' }}>Xem tất cả &rarr;</Link>
           </div>
           <div className="rounded-xl overflow-hidden flex-1 lg:min-h-0 lg:overflow-y-auto" style={{ border: '1px solid #E2E8F0' }}>
             {loadingStats ? (
@@ -482,7 +482,7 @@ export default function ProviderDashboard() {
                 <svg className="w-12 h-12 mx-auto mb-3 animate-empty-icon" style={{ color: '#CBD5E1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d={ICONS.inbox} />
                 </svg>
-                <p className="text-sm font-medium" style={{ color: '#1A2332' }}>Chưa có hồ sơ nào</p>
+                <p className="text-sm font-medium" style={{ color: '#0F5132' }}>Chưa có hồ sơ nào</p>
                 <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Doanh nghiệp sẽ gửi hồ sơ cho bạn khi sẵn sàng</p>
               </div>
             ) : (
@@ -493,7 +493,7 @@ export default function ProviderDashboard() {
                     <Link key={r.id} href="/submissions"
                       className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors animate-list-item stagger-${Math.min(i + 1, 12)}`}>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: '#1A2332' }}>{r.company_name}</p>
+                        <p className="text-sm font-medium truncate" style={{ color: '#0F5132' }}>{r.company_name}</p>
                         <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
                           {r.doc_count} tài liệu &middot; {timeAgo(r.submitted_at)}
                         </p>
@@ -511,9 +511,9 @@ export default function ProviderDashboard() {
 
         {/* Quick actions */}
         <div className="space-y-3">
-          <h3 className="text-sm font-bold" style={{ color: '#1A2332' }}>Thao tác nhanh</h3>
+          <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>Thao tác nhanh</h3>
           {[
-            { href: '/submissions', label: 'Hồ sơ nhận',       desc: 'Xem & đánh giá hồ sơ',     color: '#087653', icon: ICONS.inbox },
+            { href: '/submissions', label: 'Hồ sơ nhận',       desc: 'Xem & đánh giá hồ sơ',     color: '#0F5132', icon: ICONS.inbox },
             { href: '/chat',        label: 'Hỏi đáp AI',       desc: 'Tra cứu tiêu chuẩn Halal',  color: '#64748B', icon: ICONS.chat },
             { href: '/upload',      label: 'Đánh giá tài liệu', desc: 'Upload & kiểm tra compliance', color: '#0EA5E9', icon: ICONS.upload },
           ].map((a, i) => (
@@ -525,8 +525,8 @@ export default function ProviderDashboard() {
                 <Icon d={a.icon} color={a.color} size={5} />
               </div>
               <div>
-                <div className="text-sm font-semibold" style={{ color: '#1A2332' }}>{a.label}</div>
-                <div className="text-xs" style={{ color: '#5F6F80' }}>{a.desc}</div>
+                <div className="text-sm font-semibold" style={{ color: '#0F5132' }}>{a.label}</div>
+                <div className="text-xs" style={{ color: '#6B7280' }}>{a.desc}</div>
               </div>
             </Link>
           ))}

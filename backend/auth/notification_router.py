@@ -22,14 +22,30 @@ def _validate_uuid(v: str) -> str:
 # ── Helper: create notification (call from other routers) ────────────────────
 
 async def notify(db, user_id: str, type: str, title: str, message: str = "", link: str = ""):
-    """Create a notification for a user. Call this from other endpoints."""
+    """Create a notification for a user + best-effort web push delivery."""
+    notification_id: str | None = None
     try:
-        await db.execute(
-            "INSERT INTO notifications (user_id, type, title, message, link) VALUES ($1, $2, $3, $4, $5)",
+        row = await db.fetchrow(
+            "INSERT INTO notifications (user_id, type, title, message, link) "
+            "VALUES ($1, $2, $3, $4, $5) RETURNING id",
             user_id, type, title, message, link,
         )
+        notification_id = str(row["id"]) if row else None
     except Exception as e:
         log.warning(f"[notify] Failed to create notification: {e}")
+        return
+
+    try:
+        from services.web_push import push_to_user
+        await push_to_user(db, user_id, {
+            "title":           title,
+            "message":         message,
+            "link":            link,
+            "tag":             type,
+            "notification_id": notification_id,
+        })
+    except Exception as e:
+        log.warning(f"[notify] web push delivery error (non-fatal): {e}")
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
@@ -95,3 +111,58 @@ async def mark_all_read(
 ):
     await db.execute("UPDATE notifications SET read=true WHERE user_id=$1 AND read=false", user["sub"])
     return {"message": "OK"}
+
+
+# ── Web Push subscriptions (PWA) ─────────────────────────────────────────────
+
+import os as _os
+from pydantic import BaseModel as _BaseModel
+
+
+class PushSubscriptionRequest(_BaseModel):
+    endpoint:   str
+    p256dh:     str
+    auth:       str
+    user_agent: str | None = None
+
+
+@router.get("/push-public-key")
+async def get_vapid_public_key():
+    return {"key": _os.getenv("VAPID_PUBLIC_KEY", "")}
+
+
+@router.post("/push-subscriptions")
+async def subscribe_push(
+    req: PushSubscriptionRequest,
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Register a PushSubscription for this device. Idempotent on `endpoint`.
+
+    The browser may rotate the endpoint; treat each as a distinct subscription.
+    """
+    await db.execute(
+        """INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, user_agent)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (endpoint) DO UPDATE SET
+               user_id=EXCLUDED.user_id,
+               p256dh=EXCLUDED.p256dh,
+               auth=EXCLUDED.auth,
+               user_agent=EXCLUDED.user_agent,
+               last_used_at=NOW()""",
+        user["sub"], req.endpoint, req.p256dh, req.auth, req.user_agent,
+    )
+    return {"message": "subscribed"}
+
+
+@router.delete("/push-subscriptions")
+async def unsubscribe_push(
+    endpoint: str = Query(..., min_length=10),
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    await db.execute(
+        "DELETE FROM push_subscriptions WHERE endpoint=$1 AND user_id=$2",
+        endpoint, user["sub"],
+    )
+    return {"message": "unsubscribed"}

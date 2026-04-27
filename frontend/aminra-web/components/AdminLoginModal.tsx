@@ -41,11 +41,11 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-bold" style={{ color: '#1A2332' }}>Đăng nhập Admin</h2>
-            <p className="text-xs mt-0.5" style={{ color: '#5F6F80' }}>Quản lý template và tiêu chí đánh giá</p>
+            <h2 className="text-lg font-bold" style={{ color: '#0F5132' }}>Đăng nhập Admin</h2>
+            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Quản lý template và tiêu chí đánh giá</p>
           </div>
           <button onClick={() => onClose()} className="p-1.5 rounded-lg transition-colors"
-            style={{ background: 'rgba(0,0,0,0.05)', color: '#5F6F80' }}>
+            style={{ background: 'rgba(0,0,0,0.05)', color: '#6B7280' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -54,7 +54,7 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5B6B7D' }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>
               Tên đăng nhập
             </label>
             <input
@@ -62,14 +62,14 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
               value={username} onChange={e => setUsername(e.target.value)}
               placeholder="admin"
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: '#5B6B7D' }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>
               Mật khẩu
             </label>
             <input
@@ -77,8 +77,8 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
               value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
-              style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}
-              onFocus={e => (e.target.style.borderColor = '#087653')}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+              onFocus={e => (e.target.style.borderColor = '#0F5132')}
               onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
@@ -92,8 +92,8 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
           <button type="submit" disabled={loading || !username || !password}
             className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all"
             style={{
-              background: loading || !username || !password ? '#E2E8F0' : '#087653',
-              color: loading || !username || !password ? '#5B6B7D' : 'white',
+              background: loading || !username || !password ? '#E2E8F0' : '#0F5132',
+              color: loading || !username || !password ? '#6B7280' : 'white',
               cursor: loading || !username || !password ? 'not-allowed' : 'pointer',
             }}>
             {loading ? 'Đang xác thực…' : 'Đăng nhập'}

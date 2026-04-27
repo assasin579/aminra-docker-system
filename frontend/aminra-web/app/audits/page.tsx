@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/components/UserAuthContext';
+import { parseApiError } from '@/lib/apiError';
 
 interface AuditVisit {
   id: string;
@@ -38,13 +39,13 @@ const VISIT_TYPE_MAP: Record<string, { label: string; color: string; bg: string 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   scheduled:        { label: 'Đã lên lịch', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
   in_progress:      { label: 'Đang kiểm',   color: '#2563EB', bg: 'rgba(37,99,235,0.12)' },
-  completed:        { label: 'Hoàn thành',   color: '#059669', bg: 'rgba(5,150,105,0.12)' },
+  completed:        { label: 'Hoàn thành',   color: '#198754', bg: 'rgba(5,150,105,0.12)' },
   report_submitted: { label: 'Đã báo cáo',  color: '#7C3AED', bg: 'rgba(124,58,237,0.12)' },
 };
 
 function scoreColor(s: number | null) {
-  if (s === null) return '#5B6B7D';
-  if (s >= 75) return '#087653';
+  if (s === null) return '#6B7280';
+  if (s >= 75) return '#0F5132';
   if (s >= 50) return '#F59E0B';
   return '#f87171';
 }
@@ -137,7 +138,7 @@ export default function AuditsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Tạo thất bại');
+        throw new Error(parseApiError(err, 'Tạo thất bại'));
       }
       setShowCreate(false);
       setForm({ business_name: '', visit_type: 'initial', scheduled_date: '', location: '', notes: '', template_id: '' });
@@ -166,9 +167,9 @@ export default function AuditsPage() {
   if (loading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
       </div>
     </div>
   );
@@ -177,24 +178,24 @@ export default function AuditsPage() {
     <div className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden" data-page>
       {/* Header */}
       <div className="rounded-2xl p-6 mb-6 animate-section"
-        style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+        style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl grid place-items-center"
-              style={{ background: 'rgba(8,118,83,0.12)', border: '1px solid rgba(8,118,83,0.25)' }}>
-              <svg className="w-5 h-5" style={{ color: '#087653' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
+              <svg className="w-5 h-5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold" style={{ color: '#1A2332' }}>Kiểm định thực địa</h1>
-              <p className="text-sm" style={{ color: '#5F6F80' }}>{visits.length} lượt kiểm định · {user.company_name}</p>
+              <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Kiểm định thực địa</h1>
+              <p className="text-sm" style={{ color: '#6B7280' }}>{visits.length} lượt kiểm định · {user.company_name}</p>
             </div>
           </div>
           {user.is_owner && (
             <button onClick={() => { setShowCreate(true); fetchTemplates(); }}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-              style={{ background: '#087653', boxShadow: '0 4px 12px rgba(8,118,83,0.3)' }}>
+              style={{ background: '#0F5132', boxShadow: '0 4px 12px rgba(15,81,50,0.3)' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
               </svg>
@@ -208,15 +209,15 @@ export default function AuditsPage() {
       <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
         {fetching ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#F0F7F4', opacity: 1 - i * 0.15 }} />)}
+            {[1, 2, 3].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#F7F1E6', opacity: 1 - i * 0.15 }} />)}
           </div>
         ) : visits.length === 0 ? (
-          <div className="rounded-2xl p-12 text-center animate-section" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+          <div className="rounded-2xl p-12 text-center animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
             <svg className="w-16 h-16 mx-auto mb-4 animate-empty-icon" style={{ color: '#E2E8F0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
-            <p className="font-semibold mb-2" style={{ color: '#1A2332' }}>Chưa có lượt kiểm định nào</p>
-            <p className="text-sm" style={{ color: '#5B6B7D' }}>Tạo lượt kiểm định thực địa để đánh giá doanh nghiệp tại chỗ</p>
+            <p className="font-semibold mb-2" style={{ color: '#0F5132' }}>Chưa có lượt kiểm định nào</p>
+            <p className="text-sm" style={{ color: '#6B7280' }}>Tạo lượt kiểm định thực địa để đánh giá doanh nghiệp tại chỗ</p>
           </div>
         ) : (
           visits.map((v, idx) => {
@@ -231,7 +232,7 @@ export default function AuditsPage() {
                   {/* Left: info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="text-sm font-semibold" style={{ color: '#1A2332' }}>{v.business_name}</p>
+                      <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>{v.business_name}</p>
                       <span className="px-2 py-0.5 rounded-lg text-xs font-medium"
                         style={{ background: vt.bg, color: vt.color }}>
                         {vt.label}
@@ -241,7 +242,7 @@ export default function AuditsPage() {
                         {st.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-xs" style={{ color: '#5B6B7D' }}>
+                    <div className="flex items-center gap-4 text-xs" style={{ color: '#6B7280' }}>
                       {v.scheduled_date && (
                         <span className="flex items-center gap-1">
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,7 +290,7 @@ export default function AuditsPage() {
           <div className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 25px 60px rgba(0,0,0,0.15)' }}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold" style={{ color: '#1A2332' }}>Tạo lượt kiểm định</h3>
+              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>Tạo lượt kiểm định</h3>
               <button onClick={() => setShowCreate(false)}
                 className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(0,0,0,0.05)' }}>
                 <span className="hover:text-gray-700">✕</span>
@@ -297,66 +298,66 @@ export default function AuditsPage() {
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Tên doanh nghiệp *</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Tên doanh nghiệp *</label>
                 <input type="text" required value={form.business_name}
                   onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))}
                   placeholder="Nhập tên doanh nghiệp"
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Loại kiểm định *</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Loại kiểm định *</label>
                   <select value={form.visit_type}
                     onChange={e => setForm(f => ({ ...f, visit_type: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}>
+                    style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}>
                     <option value="initial">Lần đầu</option>
                     <option value="renewal">Tái đánh giá</option>
                     <option value="surprise">Đột xuất</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Ngày kiểm định</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Ngày kiểm định</label>
                   <input type="date" value={form.scheduled_date}
                     onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }} />
+                    style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Địa điểm</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Địa điểm</label>
                 <input value={form.location}
                   onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
                   placeholder="Địa chỉ kiểm định"
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
               </div>
               {templates.length > 0 && (
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Mẫu kiểm định</label>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Mẫu kiểm định</label>
                   <select value={form.template_id}
                     onChange={e => setForm(f => ({ ...f, template_id: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}>
+                    style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}>
                     <option value="">-- Chọn mẫu --</option>
                     {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#5F6F80' }}>Ghi chú</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Ghi chú</label>
                 <textarea value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Ghi chú thêm..."
                   rows={3}
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none resize-none"
-                  style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
               </div>
               {createError && <p className="text-xs text-red-400">{createError}</p>}
               <button type="submit" disabled={creating}
                 className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
-                style={{ background: creating ? '#E2E8F0' : '#087653', color: creating ? '#5B6B7D' : 'white' }}>
+                style={{ background: creating ? '#E2E8F0' : '#0F5132', color: creating ? '#6B7280' : 'white' }}>
                 {creating ? 'Đang tạo...' : 'Tạo lượt kiểm định'}
               </button>
             </form>
@@ -373,26 +374,26 @@ export default function AuditsPage() {
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 25px 60px rgba(0,0,0,0.15)' }}
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold" style={{ color: '#1A2332' }}>Gán Auditor</h3>
+              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>Gán Auditor</h3>
               <button onClick={() => { setAssignId(null); setSelectedAuditor(''); }}
                 className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(0,0,0,0.05)' }}>
                 <span className="hover:text-gray-700">✕</span>
               </button>
             </div>
             {auditors.length === 0 ? (
-              <p className="text-sm text-center py-4" style={{ color: '#5B6B7D' }}>Chưa có auditor nào. Vui lòng tạo auditor trước.</p>
+              <p className="text-sm text-center py-4" style={{ color: '#6B7280' }}>Chưa có auditor nào. Vui lòng tạo auditor trước.</p>
             ) : (
               <>
                 <select value={selectedAuditor}
                   onChange={e => setSelectedAuditor(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none mb-4"
-                  style={{ background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' }}>
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}>
                   <option value="">-- Chọn auditor --</option>
                   {auditors.map(a => <option key={a.id} value={a.id}>{a.display_name} ({a.email})</option>)}
                 </select>
                 <button onClick={handleAssign} disabled={!selectedAuditor || assigning}
                   className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
-                  style={{ background: (!selectedAuditor || assigning) ? '#E2E8F0' : '#087653', color: (!selectedAuditor || assigning) ? '#5B6B7D' : 'white' }}>
+                  style={{ background: (!selectedAuditor || assigning) ? '#E2E8F0' : '#0F5132', color: (!selectedAuditor || assigning) ? '#6B7280' : 'white' }}>
                   {assigning ? 'Đang gán...' : 'Xác nhận gán'}
                 </button>
               </>

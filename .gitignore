@@ -27,3 +27,9 @@ monitoring/.env.monitoring
 
 # Deploy state
 .deploy-tag
+
+# Frontend test artifacts
+frontend/aminra-web/test-results/
+frontend/aminra-web/playwright-report/
+**/tsconfig.tsbuildinfo
+*.tmp

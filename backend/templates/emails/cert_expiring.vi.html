@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: {% if days_until_expiry <= 30 %}#dc2626{% else %}#f59e0b{% endif %};">
+    Chứng nhận Halal sắp hết hạn
+  </h2>
+  <p>Xin chào {{ user_name | default("bạn") }},</p>
+  <p>Chứng nhận của doanh nghiệp bạn sắp hết hạn:</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr><td style="padding:8px;border-bottom:1px solid #E2E8F0;color:#5F6F80;">Số chứng nhận</td><td style="padding:8px;border-bottom:1px solid #E2E8F0;font-weight:600;">{{ cert_number }}</td></tr>
+    <tr><td style="padding:8px;border-bottom:1px solid #E2E8F0;color:#5F6F80;">Doanh nghiệp</td><td style="padding:8px;border-bottom:1px solid #E2E8F0;">{{ company_name }}</td></tr>
+    <tr><td style="padding:8px;border-bottom:1px solid #E2E8F0;color:#5F6F80;">Ngày hết hạn</td><td style="padding:8px;border-bottom:1px solid #E2E8F0;font-weight:600;">{{ expiry_date }}</td></tr>
+    <tr><td style="padding:8px;color:#5F6F80;">Còn lại</td><td style="padding:8px;font-weight:600;color:{% if days_until_expiry <= 30 %}#dc2626{% else %}#f59e0b{% endif %};">{{ days_until_expiry }} ngày</td></tr>
+  </table>
+  {% if days_until_expiry <= 30 %}
+  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:12px;font-size:14px;color:#991b1b;">
+    <strong>KHẨN CẤP:</strong> Liên hệ tổ chức cấp chứng nhận để chuẩn bị gia hạn ngay.
+  </div>
+  {% else %}
+  <p style="color:#6b7280;font-size:14px;">Đề xuất bắt đầu quy trình gia hạn càng sớm càng tốt để tránh gián đoạn.</p>
+  {% endif %}
+  <p>
+    <a href="{{ cert_url }}" style="display:inline-block;padding:10px 20px;background:#087653;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">
+      Xem chi tiết chứng nhận
+    </a>
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size: 12px; color: #9ca3af;">— Đội ngũ {{ from_name }}</p>
+</body>
+</html>

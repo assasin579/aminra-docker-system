@@ -1,0 +1,11 @@
+Subject: [AMINRA] Xác thực địa chỉ email của bạn
+
+Xin chào {{ user_name | default("bạn") }},
+
+Cảm ơn bạn đã đăng ký AMINRA. Vui lòng xác thực email bằng cách nhấn vào liên kết bên dưới:
+
+  {{ verify_url }}
+
+Liên kết có hiệu lực trong {{ ttl_minutes | default(1440) }} phút.
+
+— Đội ngũ {{ from_name }}

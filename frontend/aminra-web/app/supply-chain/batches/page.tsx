@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/components/UserAuthContext';
+import { openAuthed } from '@/lib/authedOpen';
 
 interface Batch {
   id: string; batch_code: string; product_name: string;
@@ -18,7 +19,7 @@ interface MaterialOption { id: string; name: string; unit: string | null; }
 const STATUS = {
   draft:       { label: 'Nháp',       bg: '#F3F4F6', color: '#6B7280' },
   in_progress: { label: 'Đang SX',    bg: '#FFFBEB', color: '#B45309' },
-  completed:   { label: 'Hoàn thành', bg: '#ECFDF5', color: '#059669' },
+  completed:   { label: 'Hoàn thành', bg: '#E8F5EF', color: '#198754' },
   rejected:    { label: 'Từ chối',    bg: '#FEF2F2', color: '#DC2626' },
 };
 
@@ -180,18 +181,18 @@ export default function BatchesPage() {
 
   if (authLoading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
-      <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#0F5132] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
-  const inputStyle = { background: '#FAFCF9', border: '1px solid #E2E8F0', color: '#1A2332' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
   const cardStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
 
   return (
     <div data-page className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden">
 
       {/* Header */}
-      <div className="rounded-2xl p-5 mb-4 animate-section" style={{ background: '#F0F7F4', border: '1px solid #E2E8F0' }}>
+      <div className="rounded-2xl p-5 mb-4 animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl grid place-items-center"
@@ -201,11 +202,11 @@ export default function BatchesPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold" style={{ color: '#1A2332' }}>Lô hàng</h1>
+              <h1 className="text-lg font-bold" style={{ color: '#0F5132' }}>Lô hàng</h1>
               <p className="text-xs" style={{ color: '#6B7280' }}>{batches.length} lô hàng</p>
             </div>
           </div>
-          <button onClick={openCreate} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#087653' }}>
+          <button onClick={openCreate} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F5132' }}>
             + Tạo lô hàng
           </button>
         </div>
@@ -231,16 +232,16 @@ export default function BatchesPage() {
       <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
         {loading ? (
           <div className="py-12 flex items-center justify-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" />
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
           </div>
         ) : batches.length === 0 ? (
           <div className="rounded-2xl p-12 text-center animate-scale-in" style={cardStyle}>
             <svg className="w-16 h-16 mx-auto mb-4 animate-empty-icon" style={{ color: '#CBD5E1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
-            <p className="font-semibold" style={{ color: '#1A2332' }}>Chưa có lô hàng nào</p>
+            <p className="font-semibold" style={{ color: '#0F5132' }}>Chưa có lô hàng nào</p>
             <p className="text-sm mt-1" style={{ color: '#6B7280' }}>Tạo quy trình trước, sau đó tạo lô hàng</p>
           </div>
         ) : (
@@ -253,10 +254,10 @@ export default function BatchesPage() {
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-sm font-bold" style={{ color: '#1A2332' }}>{b.batch_code}</span>
+                      <span className="text-sm font-bold" style={{ color: '#0F5132' }}>{b.batch_code}</span>
                       <span className="text-xs px-2 py-0.5 rounded animate-chip" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                       {b.compliance_score != null && (
-                        <span className="text-xs font-bold" style={{ color: b.compliance_score >= 75 ? '#059669' : b.compliance_score >= 50 ? '#B45309' : '#DC2626' }}>
+                        <span className="text-xs font-bold" style={{ color: b.compliance_score >= 75 ? '#198754' : b.compliance_score >= 50 ? '#B45309' : '#DC2626' }}>
                           {b.compliance_score}%
                         </span>
                       )}
@@ -270,7 +271,7 @@ export default function BatchesPage() {
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex-1 h-1.5 rounded-full" style={{ background: '#E2E8F0' }}>
                           <div className="h-full rounded-full transition-all animate-progress"
-                            style={{ width: `${progress}%`, background: progress >= 100 ? '#059669' : '#087653' }} />
+                            style={{ width: `${progress}%`, background: progress >= 100 ? '#198754' : '#0F5132' }} />
                         </div>
                         <span className="text-xs flex-shrink-0" style={{ color: '#9CA3AF' }}>{b.step_completed}/{b.step_count}</span>
                       </div>
@@ -312,7 +313,7 @@ export default function BatchesPage() {
           style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={() => setShowCreate(false)}>
           <div className="w-full max-w-lg rounded-2xl p-6 animate-modal-content overflow-y-auto"
             style={{ ...cardStyle, maxHeight: 'calc(100vh - 4rem)' }} onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-bold mb-4" style={{ color: '#1A2332' }}>Tạo lô hàng mới</h3>
+            <h3 className="text-base font-bold mb-4" style={{ color: '#0F5132' }}>Tạo lô hàng mới</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -363,7 +364,7 @@ export default function BatchesPage() {
               </div>
               <button onClick={handleCreate} disabled={creating || !createForm.product_name}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
-                style={{ background: !createForm.product_name ? '#E2E8F0' : '#087653', color: !createForm.product_name ? '#9CA3AF' : '#fff' }}>
+                style={{ background: !createForm.product_name ? '#E2E8F0' : '#0F5132', color: !createForm.product_name ? '#9CA3AF' : '#fff' }}>
                 {creating ? 'Đang tạo...' : 'Tạo lô hàng'}
               </button>
             </div>
@@ -378,14 +379,14 @@ export default function BatchesPage() {
           <div className="w-full max-w-2xl rounded-2xl animate-modal-content overflow-hidden"
             style={{ ...cardStyle, maxHeight: 'calc(100vh - 4rem)' }} onClick={e => e.stopPropagation()}>
             {detailLoading ? (
-              <div className="py-16 text-center"><div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+              <div className="py-16 text-center"><div className="w-8 h-8 border-2 border-[#0F5132] border-t-transparent rounded-full animate-spin mx-auto" /></div>
             ) : detail && (
               <>
                 {/* Header */}
-                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E2E8F0', background: '#F0F7F4' }}>
+                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E2E8F0', background: '#F7F1E6' }}>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold" style={{ color: '#1A2332' }}>{detail.batch.batch_code}</h3>
+                      <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>{detail.batch.batch_code}</h3>
                       {(() => { const st = STATUS[detail.batch.status as keyof typeof STATUS]; return st ? <span className="text-xs px-2 py-0.5 rounded animate-chip" style={{ background: st.bg, color: st.color }}>{st.label}</span> : null; })()}
                     </div>
                     <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>{detail.batch.product_name}</p>
@@ -399,7 +400,7 @@ export default function BatchesPage() {
                     )}
                     {detail.batch.status === 'in_progress' && (
                       <button onClick={() => updateBatchStatus(detail.batch.id, 'completed')}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: '#059669' }}>
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: '#198754' }}>
                         Hoàn thành
                       </button>
                     )}
@@ -416,7 +417,7 @@ export default function BatchesPage() {
                           openDetail(detail.batch.id);
                           fetchBatches();
                         }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: '#087653' }}>
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: '#0F5132' }}>
                         Seal & Xác nhận
                       </button>
                     )}
@@ -431,7 +432,7 @@ export default function BatchesPage() {
                           }
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
+                        style={{ background: '#E8F5EF', color: '#198754', border: '1px solid #B7CBB8' }}>
                         Xác minh toàn vẹn
                       </button>
                     )}
@@ -446,15 +447,15 @@ export default function BatchesPage() {
                     {detail.batch.started_at && <span>Bắt đầu: <strong style={{ color: '#374151' }}>{new Date(detail.batch.started_at).toLocaleString('vi-VN')}</strong></span>}
                     {detail.batch.completed_at && <span>Hoàn thành: <strong style={{ color: '#374151' }}>{new Date(detail.batch.completed_at).toLocaleString('vi-VN')}</strong></span>}
                     {detail.batch.approved_by && (
-                      <span style={{ color: '#059669' }}>
+                      <span style={{ color: '#198754' }}>
                         Xác nhận bởi: <strong>{detail.batch.approved_by}</strong> · {new Date(detail.batch.approved_at).toLocaleString('vi-VN')}
                       </span>
                     )}
                     {detail.batch.compliance_score != null && (
-                      <span>Tiến độ: <strong style={{ color: detail.batch.compliance_score >= 100 ? '#059669' : '#B45309' }}>{detail.batch.compliance_score}%</strong></span>
+                      <span>Tiến độ: <strong style={{ color: detail.batch.compliance_score >= 100 ? '#198754' : '#B45309' }}>{detail.batch.compliance_score}%</strong></span>
                     )}
                     {detail.batch.integrity_hash && (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium animate-chip" style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
+                      <span className="px-2 py-0.5 rounded text-xs font-medium animate-chip" style={{ background: '#E8F5EF', color: '#198754', border: '1px solid #B7CBB8' }}>
                         SEALED · {detail.batch.integrity_hash.substring(0, 12)}...
                       </span>
                     )}
@@ -471,7 +472,7 @@ export default function BatchesPage() {
                             onChange={e => { if (e.target.value) assignMember(detail.batch.id, e.target.value); }}
                             disabled={assigning}
                             className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                            style={{ background: '#FFFFFF', border: '1px solid #DDD6FE', color: '#1A2332' }}>
+                            style={{ background: '#FFFFFF', border: '1px solid #DDD6FE', color: '#0F5132' }}>
                             <option value="">Chọn thành viên...</option>
                             {members.map(m => (
                               <option key={m.id} value={m.id}>{m.name} — {m.role}</option>
@@ -495,25 +496,25 @@ export default function BatchesPage() {
 
                   {detail.steps?.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-sm font-bold mb-3" style={{ color: '#1A2332' }}>
+                      <h4 className="text-sm font-bold mb-3" style={{ color: '#0F5132' }}>
                         Các bước ({detail.steps.filter((s: any) => s.status === 'completed').length}/{detail.steps.length})
                       </h4>
                       <div className="space-y-2">
                         {detail.steps.map((step: any, i: number) => (
                           <div key={step.id} className={`rounded-lg p-3 animate-list-item stagger-${Math.min(i + 1, 12)}`}
                             style={{
-                              background: step.approved_by ? '#F0FDF4' : step.status === 'completed' ? '#ECFDF5' : '#FAFCF9',
-                              border: `1px solid ${step.approved_by ? '#86EFAC' : '#E2E8F0'}`,
+                              background: step.approved_by ? '#F0FDF4' : step.status === 'completed' ? '#E8F5EF' : '#FFFFFF',
+                              border: `1px solid ${step.approved_by ? '#B7CBB8' : '#E2E8F0'}`,
                             }}>
                             {/* Row 1: Step name + status */}
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-xs font-bold px-2 py-0.5 rounded"
-                                style={{ background: step.status === 'completed' ? '#059669' : '#E2E8F0', color: step.status === 'completed' ? '#fff' : '#6B7280' }}>
+                                style={{ background: step.status === 'completed' ? '#198754' : '#E2E8F0', color: step.status === 'completed' ? '#fff' : '#6B7280' }}>
                                 #{i + 1}
                               </span>
-                              <span className="text-sm font-medium" style={{ color: '#1A2332' }}>{step.step_name}</span>
+                              <span className="text-sm font-medium" style={{ color: '#0F5132' }}>{step.step_name}</span>
                               {step.approved_by && (
-                                <svg className="w-4 h-4 ml-auto" style={{ color: '#059669' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 ml-auto" style={{ color: '#198754' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
                               )}
@@ -532,7 +533,7 @@ export default function BatchesPage() {
                                     }
                                   }}
                                   className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#1A2332' }}
+                                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
                                 />
                                 <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all hover:scale-105"
                                   style={{ background: '#F0F9FF', color: '#0369A1', border: '1px solid #BAE6FD' }}>
@@ -559,7 +560,7 @@ export default function BatchesPage() {
                               {step.started_at && <span>BĐ: {new Date(step.started_at).toLocaleString('vi-VN')}</span>}
                               {step.completed_at && <span>KT: {new Date(step.completed_at).toLocaleString('vi-VN')}</span>}
                               {step.photo_path && (
-                                <button onClick={() => window.open(`/api/api/supply-chain/batches/${detail.batch.id}/steps/${step.id}/photo/view?token=${encodeURIComponent(token || '')}`, '_blank')}
+                                <button onClick={() => openAuthed(`/api/api/supply-chain/batches/${detail.batch.id}/steps/${step.id}/photo/view`, token || '')}
                                   className="flex items-center gap-1 px-2 py-0.5 rounded transition-all hover:scale-105"
                                   style={{ background: '#F0F9FF', color: '#0369A1', border: '1px solid #BAE6FD' }}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -573,7 +574,7 @@ export default function BatchesPage() {
 
                             {/* Row 4: Approval */}
                             {step.approved_by ? (
-                              <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: '#059669' }}>
+                              <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: '#198754' }}>
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
@@ -583,7 +584,7 @@ export default function BatchesPage() {
                               <div className="flex items-center gap-2 mt-2">
                                 {step.status !== 'completed' ? (
                                   <button onClick={() => updateStep(detail.batch.id, step.id, { status: 'completed' })}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: '#087653' }}>
+                                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: '#0F5132' }}>
                                     Hoàn thành bước
                                   </button>
                                 ) : (
@@ -613,10 +614,10 @@ export default function BatchesPage() {
                   {/* Materials used */}
                   {detail.materials?.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-bold mb-2" style={{ color: '#1A2332' }}>Nguyên liệu ({detail.materials.length})</h4>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: '#0F5132' }}>Nguyên liệu ({detail.materials.length})</h4>
                       <div className="space-y-1">
                         {detail.materials.map((m: any) => (
-                          <div key={m.material_id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg" style={{ background: '#FAFCF9' }}>
+                          <div key={m.material_id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg" style={{ background: '#FFFFFF' }}>
                             <span style={{ color: '#374151' }}>{m.material_name} {m.sku && `(${m.sku})`}</span>
                             <span style={{ color: '#9CA3AF' }}>{m.quantity} {m.unit} · {m.supplier_name}</span>
                           </div>

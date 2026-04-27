@@ -50,7 +50,7 @@ function Particles() {
         if (p.y > h) p.y = 0;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(8, 118, 83, ${p.o})`;
+        ctx.fillStyle = `rgba(15,81,50, ${p.o * 0.6})`;
         ctx.fill();
       }
       // Draw connections
@@ -63,7 +63,7 @@ function Particles() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(8, 118, 83, ${0.06 * (1 - dist / 150)})`;
+            ctx.strokeStyle = `rgba(15,81,50, ${0.05 * (1 - dist / 150)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -148,11 +148,11 @@ function OrbitRings() {
         <div key={i} className="absolute rounded-full"
           style={{
             width: size, height: size,
-            border: `1px solid rgba(8,118,83,${0.12 - i * 0.03})`,
+            border: `1px solid rgba(15,81,50,${0.12 - i * 0.03})`,
             animation: `orbit-spin ${20 + i * 10}s linear infinite ${i % 2 === 0 ? '' : 'reverse'}`,
           }}>
           <div className="absolute w-2 h-2 rounded-full"
-            style={{ top: 0, left: '50%', transform: 'translate(-50%,-50%)', background: `rgba(8,118,83,${0.4 - i * 0.1})`, boxShadow: `0 0 8px rgba(8,118,83,${0.3})` }} />
+            style={{ top: 0, left: '50%', transform: 'translate(-50%,-50%)', background: `rgba(15,81,50,${0.4 - i * 0.1})`, boxShadow: `0 0 8px rgba(15,81,50,${0.3})` }} />
         </div>
       ))}
     </div>
@@ -171,17 +171,13 @@ export default function LandingPage() {
 
   const features = [
     { icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-      title: 'Đánh giá tuân thủ bằng AI', desc: 'Phân tích tài liệu Halal theo tiêu chuẩn JAKIM/HDC trong vài giây, thay vì hàng tuần.' },
+      title: 'AI đánh giá tuân thủ', desc: 'Phân tích theo JAKIM/HDC trong vài giây.' },
     { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-      title: 'Tạo hồ sơ thông minh', desc: 'Tự động tạo tài liệu đạt chuẩn từ mẫu chuyên nghiệp — hỗ trợ song ngữ Việt/Anh.' },
+      title: 'Tạo hồ sơ tự động', desc: 'Mẫu chuẩn, song ngữ Việt – Anh.' },
     { icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-      title: 'Cổng Halal toàn cầu', desc: 'Kết nối doanh nghiệp Việt Nam với thị trường Halal 7 nghìn tỷ USD theo chuẩn quốc tế.' },
-    { icon: 'M13 10V3L4 14h7v7l9-11h-7z',
-      title: 'Chấm điểm tức thì', desc: 'Điểm tuân thủ theo thời gian thực kèm phân tích chi tiết — nắm rõ vị trí của bạn.' },
-    { icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-      title: 'Cộng tác đa vai trò', desc: 'Chủ doanh nghiệp, thành viên và kiểm toán viên cùng làm việc trên một nền tảng.' },
+      title: 'Cổng Halal toàn cầu', desc: 'Tiếp cận thị trường 7 nghìn tỷ USD.' },
     { icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
-      title: 'Bảo mật doanh nghiệp', desc: 'Hệ thống Vault, xác thực JWT và kiến trúc dữ liệu cách ly theo từng tổ chức.' },
+      title: 'Bảo mật đa tổ chức', desc: 'Vault, JWT, dữ liệu cách ly tenant.' },
   ];
 
   const stats = [
@@ -192,7 +188,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="relative overflow-hidden" style={{ background: '#060d1a' }}>
+    <div className="relative overflow-hidden" style={{ background: '#FFFFFF' }}>
       <Particles />
 
       {/* ── CSS Animations ── */}
@@ -200,33 +196,40 @@ export default function LandingPage() {
         @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
         @keyframes glow-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
-        @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes slide-up { from { opacity:0; transform:translateY(60px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
-      {/* ── Hero ── */}
-      <section className="relative min-h-screen grid place-items-center px-6" style={{ zIndex: 2 }}>
+      {/* ── Hero (light, brand-aligned) ── */}
+      <section className="relative min-h-screen grid place-items-center px-6"
+        style={{ zIndex: 2, background: 'linear-gradient(180deg, #E8F5EF 0%, #F7F1E6 50%, #FFFFFF 100%)' }}>
         <OrbitRings />
 
         {/* Radial glow */}
         <div className="absolute w-[600px] h-[600px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(8,118,83,0.08) 0%, transparent 70%)', animation: 'glow-pulse 4s ease-in-out infinite' }} />
+          style={{ background: 'radial-gradient(circle, rgba(15,81,50,0.06) 0%, transparent 70%)', animation: 'glow-pulse 4s ease-in-out infinite' }} />
 
-        <div className="relative text-center max-w-4xl" style={{ zIndex: 3 }}>
+        <div className="relative text-center max-w-4xl py-16" style={{ zIndex: 3 }}>
           {/* Badge */}
           <FadeIn>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8"
-              style={{ background: 'rgba(8,118,83,0.08)', border: '1px solid rgba(8,118,83,0.2)' }}>
-              <div className="w-2 h-2 rounded-full" style={{ background: '#10B981', animation: 'glow-pulse 2s ease-in-out infinite' }} />
-              <span className="text-xs font-medium" style={{ color: '#10B981' }}>Nền tảng Chứng nhận Halal bằng AI</span>
+              style={{ background: '#FFFFFF', border: '1px solid #B7CBB8', boxShadow: '0 2px 8px rgba(15,81,50,0.06)' }}>
+              <div className="w-2 h-2 rounded-full" style={{ background: '#198754', animation: 'glow-pulse 2s ease-in-out infinite' }} />
+              <span className="text-xs font-semibold" style={{ color: '#0F5132' }}>Halal × AI</span>
             </div>
           </FadeIn>
 
-          {/* Logo */}
+          {/* Logo on neutral plaque */}
           <FadeIn delay={0.1}>
-            <div className="inline-flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-2xl grid place-items-center" style={{ background: '#087653', boxShadow: '0 0 40px rgba(8,118,83,0.3)' }}>
-                <span className="text-white font-black text-3xl">A</span>
+            <div className="inline-flex flex-col items-center gap-3 mb-8">
+              <div className="w-28 h-28 rounded-3xl grid place-items-center p-3"
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 12px 40px rgba(15,81,50,0.12)' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/aminra-mark.svg" alt="AMINRA" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="block w-10 h-px" style={{ background: '#D4AF37' }} />
+                <span className="text-xs font-medium" style={{ color: '#0F5132', letterSpacing: '0.18em' }}>HALAL INTEGRITY · DIGITAL TRUST</span>
+                <span className="block w-10 h-px" style={{ background: '#D4AF37' }} />
               </div>
             </div>
           </FadeIn>
@@ -234,24 +237,16 @@ export default function LandingPage() {
           {/* Headline */}
           <FadeIn delay={0.2}>
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight mb-6"
-              style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #10B981 40%, #087653 60%, #065E43 100%)',
-                backgroundSize: '200% 200%',
-                animation: 'gradient-shift 6s ease infinite',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                lineHeight: 1.1,
-              }}>
-              Chứng nhận Halal,<br />Chuẩn quốc tế.
+              style={{ color: '#0F5132', lineHeight: 1.1 }}>
+              Chứng nhận Halal,<br />
+              <span style={{ color: '#198754' }}>Chuẩn quốc tế.</span>
             </h1>
           </FadeIn>
 
           {/* Slogan */}
           <FadeIn delay={0.35}>
-            <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: '#94a3b8' }}>
-              Nền tảng AI giúp doanh nghiệp Việt Nam kết nối với
-              <span className="font-semibold text-white"> thị trường Halal toàn cầu</span>.
-              Từ hồ sơ đến chứng nhận — <span style={{ color: '#10B981' }}>nhanh hơn, thông minh hơn, chuẩn hơn</span>.
+            <p className="text-lg md:text-xl max-w-xl mx-auto mb-10 leading-relaxed" style={{ color: '#374151' }}>
+              AI hỗ trợ doanh nghiệp Việt đạt chứng nhận Halal — <span className="font-semibold" style={{ color: '#198754' }}>nhanh hơn, chuẩn hơn</span>.
             </p>
           </FadeIn>
 
@@ -261,14 +256,14 @@ export default function LandingPage() {
               <Link href="/business/register"
                 className="px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:scale-105 active:scale-95"
                 style={{
-                  background: 'linear-gradient(135deg, #065E43, #087653)',
-                  boxShadow: '0 8px 32px rgba(8,118,83,0.35), 0 0 0 1px rgba(8,118,83,0.2)',
+                  background: 'linear-gradient(135deg, #0F5132, #198754)',
+                  boxShadow: '0 8px 32px rgba(15,81,50,0.30)',
                 }}>
                 Bắt đầu miễn phí
               </Link>
               <Link href="/business/login"
                 className="px-8 py-4 rounded-2xl font-bold text-base transition-all hover:scale-105"
-                style={{ color: '#94a3b8', border: '1px solid rgba(8,118,83,0.15)', background: 'rgba(15,30,53,0.5)', backdropFilter: 'blur(8px)' }}>
+                style={{ color: '#0F5132', border: '1.5px solid #0F5132', background: '#FFFFFF' }}>
                 Đăng nhập
               </Link>
             </div>
@@ -276,7 +271,7 @@ export default function LandingPage() {
 
           {/* Scroll hint */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2" style={{ animation: 'float 3s ease-in-out infinite' }}>
-            <svg className="w-6 h-6" fill="none" stroke="#334155" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
           </div>
@@ -284,22 +279,21 @@ export default function LandingPage() {
       </section>
 
       {/* ── Stats Bar ── */}
-      <section className="relative py-16 px-6" style={{ zIndex: 2 }}>
+      <section className="relative py-16 px-6" style={{ zIndex: 2, background: '#FFFFFF' }}>
         <div className="max-w-5xl mx-auto rounded-3xl p-8"
           style={{
-            background: 'linear-gradient(135deg, rgba(15,34,54,0.9), rgba(22,40,71,0.9))',
-            border: '1px solid rgba(8,118,83,0.15)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            background: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 20px 60px rgba(15,81,50,0.06)',
           }}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((s, i) => (
               <FadeIn key={s.label} delay={i * 0.1}>
                 <div className="text-center">
-                  <div className="text-3xl md:text-4xl font-black" style={{ color: '#10B981' }}>
+                  <div className="text-3xl md:text-4xl font-black" style={{ color: '#0F5132' }}>
                     <Counter target={s.value} suffix={s.suffix} />
                   </div>
-                  <div className="text-xs mt-2 font-medium" style={{ color: '#94a3b8' }}>{s.label}</div>
+                  <div className="text-xs mt-2 font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>{s.label}</div>
                 </div>
               </FadeIn>
             ))}
@@ -308,34 +302,32 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ── */}
-      <section className="relative py-24 px-6" style={{ zIndex: 2 }}>
+      <section className="relative py-24 px-6" style={{ zIndex: 2, background: '#F2F4F5' }}>
         <div className="max-w-6xl mx-auto">
           <FadeIn>
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Giải pháp toàn diện</h2>
-              <p className="text-base max-w-xl mx-auto" style={{ color: '#94a3b8' }}>
-                Quy trình chứng nhận Halal trọn vẹn — từ soạn thảo hồ sơ đến nộp hồ sơ cho tổ chức chứng nhận.
-              </p>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black mb-3" style={{ color: '#0F5132' }}>Giải pháp toàn diện</h2>
+              <p className="text-base" style={{ color: '#6B7280' }}>Từ hồ sơ đến chứng nhận, trên một nền tảng.</p>
             </div>
           </FadeIn>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((f, i) => (
               <FadeIn key={f.title} delay={i * 0.08}>
                 <div className="rounded-2xl p-6 h-full transition-all duration-300 hover:scale-[1.02] group"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(15,30,53,0.8), rgba(10,22,40,0.8))',
-                    border: '1px solid rgba(8,118,83,0.15)',
-                    backdropFilter: 'blur(10px)',
+                    background: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 4px 20px rgba(15,81,50,0.04)',
                   }}>
                   <div className="w-12 h-12 rounded-xl grid place-items-center mb-4 transition-all group-hover:scale-110"
-                    style={{ background: 'rgba(8,118,83,0.1)', border: '1px solid rgba(8,118,83,0.2)' }}>
-                    <svg className="w-6 h-6" fill="none" stroke="#10B981" strokeWidth="1.8" viewBox="0 0 24 24">
+                    style={{ background: '#E8F5EF', border: '1px solid #B7CBB8' }}>
+                    <svg className="w-6 h-6" fill="none" stroke="#0F5132" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />
                     </svg>
                   </div>
-                  <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#94a3b8' }}>{f.desc}</p>
+                  <h3 className="text-base font-bold mb-2" style={{ color: '#0F5132' }}>{f.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: '#6B7280' }}>{f.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -344,33 +336,32 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="relative py-24 px-6" style={{ zIndex: 2 }}>
+      <section className="relative py-24 px-6" style={{ zIndex: 2, background: '#F7F1E6' }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn>
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Ba bước đến chứng nhận</h2>
-              <p className="text-base" style={{ color: '#94a3b8' }}>Đơn giản, minh bạch và nhanh chóng.</p>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black" style={{ color: '#0F5132' }}>Ba bước đến chứng nhận</h2>
             </div>
           </FadeIn>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Tạo hồ sơ', desc: 'Tạo tài liệu Halal đạt chuẩn từ mẫu chuyên nghiệp, thông tin doanh nghiệp tự động điền sẵn.' },
-              { step: '02', title: 'Đánh giá bằng AI', desc: 'Nhận điểm tuân thủ tức thì cùng phản hồi chi tiết từ AI được huấn luyện theo tiêu chuẩn Halal.' },
-              { step: '03', title: 'Nộp & Chứng nhận', desc: 'Gửi bộ hồ sơ hoàn chỉnh trực tiếp đến tổ chức chứng nhận Halal được công nhận.' },
+              { step: '01', title: 'Tạo hồ sơ', desc: 'Soạn từ mẫu chuẩn JAKIM/HDC.' },
+              { step: '02', title: 'AI đánh giá', desc: 'Điểm tuân thủ tức thì.' },
+              { step: '03', title: 'Nộp & cấp chứng nhận', desc: 'Gửi tới tổ chức được công nhận.' },
             ].map((s, i) => (
               <FadeIn key={s.step} delay={i * 0.15}>
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-5"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(8,118,83,0.15), rgba(8,118,83,0.05))',
-                      border: '2px solid rgba(8,118,83,0.2)',
-                      boxShadow: '0 0 30px rgba(8,118,83,0.1)',
+                      background: '#FFFFFF',
+                      border: '2px solid #D4AF37',
+                      boxShadow: '0 8px 24px rgba(212,175,55,0.20)',
                     }}>
-                    <span className="text-xl font-black" style={{ color: '#10B981' }}>{s.step}</span>
+                    <span className="text-xl font-black" style={{ color: '#0F5132' }}>{s.step}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#94a3b8' }}>{s.desc}</p>
+                  <h3 className="text-lg font-bold mb-2" style={{ color: '#0F5132' }}>{s.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>{s.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -378,33 +369,30 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA Section ── */}
-      <section className="relative py-24 px-6" style={{ zIndex: 2 }}>
+      {/* ── CTA Section (60% Primary Green) ── */}
+      <section className="relative py-24 px-6" style={{ zIndex: 2, background: '#FFFFFF' }}>
         <FadeIn>
           <div className="max-w-3xl mx-auto text-center rounded-3xl p-12 relative overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #0a1628, #112240)',
-              border: '1px solid rgba(8,118,83,0.2)',
-              boxShadow: '0 0 80px rgba(8,118,83,0.08)',
+              background: 'linear-gradient(135deg, #0F5132 0%, #198754 100%)',
+              boxShadow: '0 20px 60px rgba(15,81,50,0.30)',
             }}>
-            {/* Glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(8,118,83,0.12), transparent)' }} />
+            {/* Gold radial accent */}
+            <div className="absolute top-0 right-0 w-72 h-72 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.20), transparent 70%)' }} />
 
             <div className="relative">
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-                Sẵn sàng chinh phục Halal?
+              <h2 className="text-3xl md:text-4xl font-black text-white mb-6">
+                Sẵn sàng đạt chứng nhận Halal?
               </h2>
-              <p className="text-base mb-8 max-w-lg mx-auto" style={{ color: '#94a3b8' }}>
-                Cùng hàng trăm doanh nghiệp Việt Nam xây dựng hành trình chứng nhận Halal với AMINRA.
-              </p>
               <Link href="/business/register"
-                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:scale-105"
+                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:scale-105"
                 style={{
-                  background: 'linear-gradient(135deg, #065E43, #087653)',
-                  boxShadow: '0 8px 32px rgba(8,118,83,0.4)',
+                  background: '#D4AF37',
+                  color: '#0F5132',
+                  boxShadow: '0 8px 32px rgba(212,175,55,0.35)',
                 }}>
-                Bắt đầu ngay
+                Đăng ký miễn phí
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -415,20 +403,25 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative py-12 px-6" style={{ zIndex: 2, borderTop: '1px solid rgba(8,118,83,0.15)' }}>
+      <footer className="relative py-12 px-6" style={{ zIndex: 2, background: '#0A3622' }}>
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: '#087653' }}>
-              <span className="text-white font-bold text-sm">A</span>
+            <div className="w-10 h-10 rounded-lg grid place-items-center p-1" style={{ background: '#FFFFFF' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/aminra-mark.svg" alt="AMINRA" className="w-full h-full object-contain" />
             </div>
-            <span className="text-sm font-semibold text-white">AMINRA</span>
-            <span className="text-xs" style={{ color: '#334155' }}>Chứng nhận Halal bằng AI</span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold text-white tracking-wider">AMINRA</span>
+              <span className="text-[10px]" style={{ color: '#D4AF37', letterSpacing: '0.1em' }}>HALAL INTEGRITY, DIGITAL TRUST</span>
+            </div>
           </div>
-          <div className="flex items-center gap-6">
-            <Link href="/business/login" className="text-xs transition-colors hover:text-white" style={{ color: '#5B6B7D' }}>Đăng nhập Doanh nghiệp</Link>
-            <Link href="/provider/login" className="text-xs transition-colors hover:text-white" style={{ color: '#5B6B7D' }}>Đăng nhập Tổ chức</Link>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link href="/business/login" className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Đăng nhập Doanh nghiệp</Link>
+            <Link href="/provider/login" className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Đăng nhập Tổ chức</Link>
+            <Link href="/privacy"        className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Chính sách bảo mật</Link>
+            <Link href="/terms"          className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Điều khoản</Link>
           </div>
-          <p className="text-xs" style={{ color: '#1e3a5f' }} suppressHydrationWarning>
+          <p className="text-xs" style={{ color: '#94A3B8' }} suppressHydrationWarning>
             &copy; {new Date().getFullYear()} AMINRA. Mọi quyền được bảo lưu.
           </p>
         </div>
