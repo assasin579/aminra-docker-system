@@ -188,11 +188,6 @@ async def _business_tenant_data(db, tenant_id: str) -> dict:
         "FROM production_batches WHERE tenant_id = $1 ORDER BY created_at DESC",
         tenant_id,
     )
-    self_assess    = await db.fetch(
-        "SELECT id, standard, name, score, total_items, passed_items, status, created_at "
-        "FROM self_assessments WHERE tenant_id = $1 ORDER BY created_at DESC",
-        tenant_id,
-    )
 
     return {
         "tenant_id":         tenant_id,
@@ -203,7 +198,6 @@ async def _business_tenant_data(db, tenant_id: str) -> dict:
         "suppliers":         _rows(suppliers),
         "materials":         _rows(materials),
         "production_batches": _rows(batches),
-        "self_assessments":  _rows(self_assess),
     }
 
 

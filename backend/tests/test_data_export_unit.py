@@ -88,8 +88,6 @@ def _build_business_db():
         ("FROM materials WHERE tenant_id", []),
         # production_batches
         ("FROM production_batches WHERE tenant_id", []),
-        # self_assessments
-        ("FROM self_assessments WHERE tenant_id", []),
     ]
     return db
 

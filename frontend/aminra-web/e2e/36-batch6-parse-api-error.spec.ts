@@ -13,7 +13,6 @@ const MIGRATED_FILES = [
   "app/auditors/page.tsx",
   "app/audits/page.tsx",
   "app/audits/templates/page.tsx",
-  "app/self-assessment/page.tsx",
   "app/submissions/page.tsx",
   "components/AdminAuthContext.tsx",
   "components/AdminPage.tsx",
