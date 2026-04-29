@@ -63,7 +63,9 @@ test.describe("PWA + web push", () => {
       headers: { Authorization: `Bearer ${access_token}` },
       data: {
         endpoint: fakeEndpoint,
+        // gitleaks:allow — fake test fixture, not a real Web Push subscription
         p256dh: "BHsBSv3gCO0NYtpL2YxRu0YxWkHwNJDpCqu5O-_rSWbSVQ-fK5mKrEpINJgdLGXg2sLmvDLWvj37rl4kKL7Vr04",
+        // gitleaks:allow — fake test fixture
         auth: "k8JV6sTyNRVm0XdTCJv0YQ",
         user_agent: "playwright-test",
       },

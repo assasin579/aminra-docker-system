@@ -90,10 +90,8 @@ services:
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_HOURS=8
       - JWT_REFRESH_DAYS=7
-      # Web Push (PWA) — generated 2026-04-26; rotate via Vault for production
-      - VAPID_PUBLIC_KEY=BEXej9buEL1puCJ8OUf7XSn2PE8r0t-wAmH8MZdme8Rxk0RuZG9ZPUdRURm8yxRhRE40VDBV_aOEhryz-FzZKjQ
-      - VAPID_PRIVATE_KEY=ISueXo3ZfreT0TRVqani5T5IzPg8AyMPMpXHSQ7pJA0
-      - VAPID_CONTACT_EMAIL=mailto:support@aminra.vn
+      # Web Push (PWA) — VAPID keys sourced from Vault (secret/aminra/web-push)
+      # Rotation: bash vault/scripts/rotate-secrets.sh web-push
       - CORS_ORIGINS=https://dev-web.silvergem.org,https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
       - FRONTEND_URL=https://dev-web.silvergem.org
       - SENTRY_DSN=${SENTRY_DSN:-}

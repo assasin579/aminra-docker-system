@@ -16,3 +16,7 @@ path "secret/data/aminra/auth" {
 path "secret/data/aminra/qdrant" {
   capabilities = ["read"]
 }
+
+path "secret/data/aminra/web-push" {
+  capabilities = ["read"]
+}

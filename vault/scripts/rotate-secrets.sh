@@ -78,18 +78,55 @@ rotate_auth() {
     echo "    Restart backend: docker compose restart aminra-backend"
 }
 
+rotate_web_push() {
+    echo "==> Rotating VAPID Web Push keypair ..."
+
+    # Generate new keypair via py_vapid in throwaway python container.
+    KEYS=$(docker run --rm python:3.11-slim sh -c "
+        pip install --quiet py-vapid 2>/dev/null
+        python -c '
+from py_vapid import Vapid
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+import base64
+v = Vapid()
+v.generate_keys()
+priv = v.private_key.private_numbers().private_value.to_bytes(32, \"big\")
+pub  = v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+print(base64.urlsafe_b64encode(priv).rstrip(b\"=\").decode())
+print(base64.urlsafe_b64encode(pub).rstrip(b\"=\").decode())
+'
+    ")
+    NEW_PRIV=$(echo "$KEYS" | sed -n '1p')
+    NEW_PUB=$(echo "$KEYS" | sed -n '2p')
+    CONTACT_EMAIL=$(vault kv get -format=json secret/aminra/web-push 2>/dev/null \
+        | grep -oP '"contact_email":\s*"\K[^"]+' || echo "mailto:support@aminra.vn")
+
+    vault kv put secret/aminra/web-push \
+        public_key="$NEW_PUB" \
+        private_key="$NEW_PRIV" \
+        contact_email="$CONTACT_EMAIL"
+
+    echo "==> VAPID keypair rotated. New public key:"
+    echo "    $NEW_PUB"
+    echo "    WARNING: All existing browser push subscriptions are INVALID."
+    echo "    Frontend service worker will re-subscribe on next page load."
+    echo "    Restart agent + backend: docker restart vault-agent && docker compose restart aminra-backend"
+}
+
 case "$GROUP" in
     api-keys)  rotate_api_keys ;;
     database)  rotate_database ;;
     auth)      rotate_auth ;;
+    web-push)  rotate_web_push ;;
     all)
         rotate_api_keys
         rotate_database
         rotate_auth
+        rotate_web_push
         ;;
     *)
         echo "Unknown group: $GROUP"
-        echo "Usage: $0 {api-keys|database|auth|all}"
+        echo "Usage: $0 {api-keys|database|auth|web-push|all}"
         exit 1
         ;;
 esac

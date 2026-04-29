@@ -1,0 +1,14 @@
+# Gitleaks ignore fingerprints — historical findings.
+# Keys committed to history that have been ROTATED (no longer valid) are
+# acceptable to leave in git history; force-push rewrite would break clones.
+# Fake test fixtures are noted with `gitleaks:allow` comments inline.
+
+# 2026-04-29: VAPID_PRIVATE_KEY in docker-compose.yml line 95 — ROTATED, key revoked.
+# Old key (now invalid): ISueXo3ZfreT0TRVqani5T5IzPg8AyMPMpXHSQ7pJA0
+# Rotation runbook: docs/runbooks/vapid-rotation.md
+1623a286cd1c62f07c78cbaffe389c787139f09f:docker-compose.yml:generic-api-key:95
+
+# 2026-04-29: Fake Web Push subscription fixture in e2e test (NOT a real cred).
+# Inline `gitleaks:allow` comment added in working tree; this entry covers
+# the same line in historical commits.
+1623a286cd1c62f07c78cbaffe389c787139f09f:frontend/aminra-web/e2e/25-pwa-push.spec.ts:generic-api-key:67

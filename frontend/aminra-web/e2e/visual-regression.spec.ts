@@ -13,9 +13,12 @@
 import { test, expect } from "@playwright/test";
 
 // Visual regression only on chromium-desktop — single source of truth
-test.skip(({ browserName }, testInfo) => {
-  return testInfo.project.name !== "desktop-chromium";
-}, "visual baseline only on desktop-chromium");
+test.beforeEach(({}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "visual baseline only on desktop-chromium",
+  );
+});
 
 const PUBLIC_VISUAL_PAGES = [
   { path: "/",                name: "landing" },

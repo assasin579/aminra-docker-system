@@ -22,3 +22,9 @@ export ADMIN_SECRET="{{ .Data.data.admin_secret }}"
 {{- with secret "secret/data/aminra/qdrant" }}
 export QDRANT_API_KEY="{{ .Data.data.api_key }}"
 {{- end }}
+
+{{- with secret "secret/data/aminra/web-push" }}
+export VAPID_PUBLIC_KEY="{{ .Data.data.public_key }}"
+export VAPID_PRIVATE_KEY="{{ .Data.data.private_key }}"
+export VAPID_CONTACT_EMAIL="{{ .Data.data.contact_email }}"
+{{- end }}
