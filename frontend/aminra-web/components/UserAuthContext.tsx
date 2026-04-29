@@ -29,7 +29,12 @@ export interface UserProfile {
     can_delete: boolean;
     can_approve: boolean;
     can_upload: boolean;
+    /** Tier-1 #24 — Halal document approval permission. */
+    can_approve_documents?: boolean;
   };
+  /** IHC role (set on business members designated to Internal Halal Committee).
+   *  Auto-grants can_approve_documents per JAKIM MS 1500 §5.4. */
+  ihc_role?: string | null;
 }
 
 interface UserAuthState {

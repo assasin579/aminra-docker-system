@@ -6,6 +6,13 @@ import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
+import { useFeature } from "@/lib/featureFlags";
+import ApprovalStatusBadge from "@/components/documents/ApprovalStatusBadge";
+import ApprovalActions from "@/components/documents/ApprovalActions";
+import type {
+  ApprovalBlock as ApprovalData,
+  ApprovalStatus,
+} from "@/lib/documentVersioning";
 
 // ── Doc type options (from upload page) ──────────────────────────────────────
 
@@ -52,6 +59,9 @@ interface DocumentItem {
   uploaded_at: string;
   revision_count?: number | null;
   status?: string | null;
+  /** Tier-1 #24: included by backend when document_versioning_v1 flag ON. */
+  approval_status?: ApprovalStatus | null;
+  version_number?: number | null;
 }
 
 interface RevisionItem {
@@ -180,6 +190,21 @@ function MiniScore({ score }: { score: number | null }) {
 export default function DocumentsPage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading } = useUserAuth();
+  const versioningOn = useFeature("document_versioning_v1");
+
+  // Tier-1 #24 — derived perms for ApprovalActions buttons. Owner has
+  // everything; IHC member auto-receives can_approve_documents per
+  // JAKIM MS 1500 §5.4 (matches backend auth.permissions logic).
+  const userPerms = {
+    canEdit: !!(user?.is_owner || user?.permissions?.can_edit),
+    canApproveDocuments: !!(
+      user?.is_owner ||
+      !!user?.ihc_role ||
+      user?.permissions?.can_approve_documents
+    ),
+    isOwner: !!user?.is_owner,
+    isIhcMember: !!user?.ihc_role,
+  };
 
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -1062,6 +1087,56 @@ export default function DocumentsPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Tier-1 #24: approval row (flag-gated) */}
+                {versioningOn && doc.approval_status && (
+                  <div
+                    className="mt-3 pt-3 grid items-center gap-3"
+                    style={{
+                      gridTemplateColumns: "auto 1fr auto",
+                      borderTop: "1px solid #F1F5F9",
+                    }}
+                  >
+                    <ApprovalStatusBadge
+                      status={doc.approval_status}
+                      versionNumber={doc.version_number ?? undefined}
+                      compact
+                    />
+                    <span className="text-xs" style={{ color: "#94A3B8" }}>
+                      {doc.approval_status === "draft" &&
+                        "Bản nháp · trình duyệt khi sẵn sàng"}
+                      {doc.approval_status === "pending_approval" &&
+                        "Đang chờ phê duyệt"}
+                      {doc.approval_status === "approved" &&
+                        "Đã phê duyệt — sẵn sàng nộp"}
+                      {doc.approval_status === "obsolete" &&
+                        "Đã thay thế bằng phiên bản mới"}
+                    </span>
+                    {token && doc.approval_status !== "obsolete" && (
+                      <ApprovalActions
+                        docId={doc.id}
+                        approval={
+                          {
+                            approval_status: doc.approval_status,
+                            version_number: doc.version_number ?? 1,
+                            version_parent_id: null,
+                            approver_id: null,
+                            approved_at: null,
+                            effective_date: null,
+                            next_review_date: null,
+                            retention_period_days: 1825,
+                            retention_expires_at: null,
+                            superseded_by_id: null,
+                            is_obsolete: false,
+                          } as ApprovalData
+                        }
+                        perms={userPerms}
+                        token={token}
+                        onChanged={() => fetchDocs(page)}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

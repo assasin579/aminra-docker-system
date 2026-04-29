@@ -79,6 +79,10 @@ class DocumentItem(BaseModel):
     uploaded_at: datetime
     revision_count: Optional[int] = None
     status: Optional[str] = None
+    # Tier-1 #24: optional, populated only when document_versioning_v1 flag is ON.
+    # Existing API consumers receive None — same shape as before for compat.
+    approval_status: Optional[str] = None
+    version_number: Optional[int] = None
 
 
 class DocumentDetail(DocumentItem):
@@ -87,6 +91,15 @@ class DocumentDetail(DocumentItem):
     issues: list = []
     strengths: list = []
     recommendations: list = []
+    # Tier-1 #24: full approval block when flag ON; None otherwise.
+    approver_id: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    effective_date: Optional[datetime] = None
+    next_review_date: Optional[datetime] = None
+    retention_period_days: Optional[int] = None
+    retention_expires_at: Optional[datetime] = None
+    superseded_by_id: Optional[str] = None
+    version_parent_id: Optional[str] = None
 
 
 class DocumentListResponse(BaseModel):
@@ -169,7 +182,8 @@ async def list_documents(
             SELECT DISTINCT ON (COALESCE(doc_type, id::text))
                    d.id, d.original_filename, d.doc_type, d.compliance_score,
                    d.file_size, d.mime_type, d.uploaded_at, d.evaluation_result,
-                   d.user_id, d.tenant_id, d.status
+                   d.user_id, d.tenant_id, d.status,
+                   d.approval_status, d.version_number
             FROM documents d
             WHERE d.tenant_id = $1
             ORDER BY COALESCE(doc_type, id::text), d.uploaded_at DESC
@@ -196,11 +210,15 @@ async def list_documents(
     total_row = await db.fetchrow(f"{cte} SELECT COUNT(*) FROM latest l WHERE true{extra_where}", *params)
     total = total_row["count"]
 
+    # Tier-1 #24: include approval columns in CTE so list endpoint can return
+    # version status without N+1 fetch from frontend. Only surfaced in
+    # response when feature flag is ON (zero regression for OFF case).
     rows = await db.fetch(
         f"""
         {cte}
         SELECT l.id, l.original_filename, l.doc_type, l.compliance_score,
                l.file_size, l.mime_type, l.uploaded_at, l.evaluation_result, l.status,
+               l.approval_status, l.version_number,
                u.company_name AS uploaded_by_name,
                (SELECT COUNT(*) FROM documents d2
                 WHERE d2.tenant_id = $1
@@ -217,6 +235,7 @@ async def list_documents(
         offset,
     )
 
+    flag_on = await is_feature_enabled(db, tenant_id, "document_versioning_v1")
     items = [
         DocumentItem(
             id=str(r["id"]),
@@ -231,6 +250,9 @@ async def list_documents(
             uploaded_at=r["uploaded_at"],
             revision_count=r["revision_count"],
             status=r["status"],
+            # Flag-gated additive fields (None when OFF — preserves baseline shape)
+            approval_status=r["approval_status"] if flag_on else None,
+            version_number=r["version_number"] if flag_on else None,
         )
         for r in rows
     ]
@@ -333,10 +355,15 @@ async def get_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
     tenant_id = user.get("tenant_id")
+    # Tier-1 #24: include approval columns (always SELECT, conditionally surface)
     row = await db.fetchrow(
         """
         SELECT d.id, d.original_filename, d.doc_type, d.compliance_score,
                d.file_size, d.mime_type, d.uploaded_at, d.evaluation_result,
+               d.approval_status, d.version_number, d.version_parent_id,
+               d.approver_id, d.approved_at, d.effective_date,
+               d.next_review_date, d.retention_period_days,
+               d.retention_expires_at, d.superseded_by_id,
                u.company_name AS uploaded_by_name
         FROM documents d
         LEFT JOIN users u ON u.id = d.user_id
@@ -349,6 +376,7 @@ async def get_document(
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
+    flag_on = await is_feature_enabled(db, tenant_id, "document_versioning_v1")
     er = _parse_result(row["evaluation_result"]) or {}
     return DocumentDetail(
         id=str(row["id"]),
@@ -366,6 +394,17 @@ async def get_document(
         issues=er.get("issues", []),
         strengths=er.get("strengths", []),
         recommendations=er.get("recommendations", []),
+        # Approval block — only when flag is ON; baseline shape preserved otherwise
+        approval_status=row["approval_status"] if flag_on else None,
+        version_number=row["version_number"] if flag_on else None,
+        version_parent_id=str(row["version_parent_id"]) if flag_on and row["version_parent_id"] else None,
+        approver_id=str(row["approver_id"]) if flag_on and row["approver_id"] else None,
+        approved_at=row["approved_at"] if flag_on else None,
+        effective_date=row["effective_date"] if flag_on else None,
+        next_review_date=row["next_review_date"] if flag_on else None,
+        retention_period_days=row["retention_period_days"] if flag_on else None,
+        retention_expires_at=row["retention_expires_at"] if flag_on else None,
+        superseded_by_id=str(row["superseded_by_id"]) if flag_on and row["superseded_by_id"] else None,
     )
 
 
