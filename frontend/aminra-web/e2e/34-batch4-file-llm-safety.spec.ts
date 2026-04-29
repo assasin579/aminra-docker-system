@@ -27,17 +27,27 @@ test.describe("Phase 1 Batch 4 — file + LLM safety", () => {
     const upload = await readFile("../../backend/auth/upload_utils.py", "utf8");
 
     // C12: /ingest requires auth
-    expect(app).toMatch(/\/ingest[\s\S]{0,400}user: dict = Depends\(get_current_user\)/);
+    expect(app).toMatch(
+      /\/ingest[\s\S]{0,400}user: dict = Depends\(get_current_user\)/,
+    );
     // C12: /evaluate requires auth
-    expect(app).toMatch(/\/evaluate[\s\S]{0,500}user: dict = Depends\(get_current_user\)/);
+    expect(app).toMatch(
+      /\/evaluate[\s\S]{0,500}user: dict = Depends\(get_current_user\)/,
+    );
     // C13: /rewrite requires auth + rate limit
-    expect(app).toMatch(/\/rewrite[\s\S]{0,400}_rate_limit: None = Depends\(rate_limit_upload\)[\s\S]{0,200}user: dict = Depends\(get_current_user\)/);
+    expect(app).toMatch(
+      /\/rewrite[\s\S]{0,400}_rate_limit: None = Depends\(rate_limit_upload\)[\s\S]{0,200}user: dict = Depends\(get_current_user\)/,
+    );
     // C13: /generate-document requires auth + rate limit
-    expect(app).toMatch(/\/generate-document[\s\S]{0,400}_rate_limit: None = Depends\(rate_limit_upload\)[\s\S]{0,200}user: dict = Depends\(get_current_user\)/);
+    expect(app).toMatch(
+      /\/generate-document[\s\S]{0,400}_rate_limit: None = Depends\(rate_limit_upload\)[\s\S]{0,200}user: dict = Depends\(get_current_user\)/,
+    );
     // C7: filename sanitized + UUID prefix (f-string `{uuid.uuid4().hex[:12]}_{safe_name}`)
     expect(app).toMatch(/uuid\.uuid4\(\)\.hex\[:12\]\}_\{safe_name\}/);
     // C8: previous_context sanitized
-    expect(app).toMatch(/sanitize FE-supplied previous_context|prev = previous_context\[:2000\]/);
+    expect(app).toMatch(
+      /sanitize FE-supplied previous_context|prev = previous_context\[:2000\]/,
+    );
     // W1-M1: helper does not fall back to root_dir
     expect(app).toMatch(/Strict lang-specific dir only/);
     // W2-M5: zip-bomb defense
@@ -49,7 +59,11 @@ test.describe("Phase 1 Batch 4 — file + LLM safety", () => {
   test("/ingest rejects unauthenticated", async ({ request }) => {
     const r = await request.post(`${BACKEND}/ingest`, {
       multipart: {
-        file: { name: "x.txt", mimeType: "text/plain", buffer: Buffer.from("hello") },
+        file: {
+          name: "x.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("hello"),
+        },
       },
     });
     // 401 (auth check) OR 429 (rate-limit fired first under parallel load) —
@@ -60,7 +74,11 @@ test.describe("Phase 1 Batch 4 — file + LLM safety", () => {
   test("/evaluate rejects unauthenticated", async ({ request }) => {
     const r = await request.post(`${BACKEND}/evaluate`, {
       multipart: {
-        file: { name: "x.txt", mimeType: "text/plain", buffer: Buffer.from("hello") },
+        file: {
+          name: "x.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("hello"),
+        },
       },
     });
     // 401 (auth check) OR 429 (rate-limit fired first under parallel load) —

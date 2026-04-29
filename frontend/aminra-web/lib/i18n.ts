@@ -1,6 +1,6 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
 
 const resources = {
   en: {
@@ -9,7 +9,7 @@ const resources = {
         home: "Chat with Aminra",
         upload: "Document Review",
         language: "Language",
-        switch: "Switch language"
+        switch: "Switch language",
       },
       home: {
         title: "Aminra Assistant",
@@ -21,10 +21,12 @@ const resources = {
         chat_subtitle: "Powered by LLM & Qdrant vector database",
         online: "Online",
         enter_hint: "Press Enter to send, Shift+Enter for new line",
-        initial_message: "Hello! I am Aminra. Ask me anything about Halal certification.",
+        initial_message:
+          "Hello! I am Aminra. Ask me anything about Halal certification.",
         why_title: "Why Choose Aminra?",
         why1_title: "Document-Based",
-        why1_desc: "Answers sourced from official HDC, JAKIM, and MUI documents",
+        why1_desc:
+          "Answers sourced from official HDC, JAKIM, and MUI documents",
         why2_title: "Smart Retrieval",
         why2_desc: "Finds relevant information across thousands of pages",
         why3_title: "Fast Responses",
@@ -43,7 +45,7 @@ const resources = {
         preset2: "Halal Market News",
         preset3: "Business Opportunities",
         preset4: "Halal Certification Bodies in Vietnam",
-        listening: "🎙️ Listening..."
+        listening: "🎙️ Listening...",
       },
       upload: {
         title: "Upload Documents",
@@ -60,19 +62,20 @@ const resources = {
         step1_title: "Upload document",
         step1_desc: "Halal certification, ingredient lists, supplier documents",
         step2_title: "AI analysis",
-        step2_desc: "LLM scans content and compares with Halal standards database",
+        step2_desc:
+          "LLM scans content and compares with Halal standards database",
         step3_title: "Get suggestions",
         step3_desc: "Receive compliance feedback and improvement tips",
         uploaded_files: "Uploaded Files",
         track_progress: "Track progress and view results",
         no_files: "No files uploaded yet",
-        no_files_hint: "Upload documents to see results"
+        no_files_hint: "Upload documents to see results",
       },
       chat: {
         user: "You",
-        assistant: "Aminra"
-      }
-    }
+        assistant: "Aminra",
+      },
+    },
   },
   vi: {
     common: {
@@ -80,7 +83,7 @@ const resources = {
         home: "Chat với Aminra",
         upload: "Đánh giá tài liệu",
         language: "Ngôn ngữ",
-        switch: "Chuyển ngôn ngữ"
+        switch: "Chuyển ngôn ngữ",
       },
       home: {
         title: "Trợ lý AI Aminra",
@@ -92,7 +95,8 @@ const resources = {
         chat_subtitle: "Được hỗ trợ bởi LLM & cơ sở dữ liệu Qdrant",
         online: "Trực tuyến",
         enter_hint: "Nhấn Enter để gửi, Shift+Enter để xuống dòng",
-        initial_message: "Xin chào! Tôi là Aminra. Hãy hỏi tôi bất cứ điều gì về chứng nhận Halal.",
+        initial_message:
+          "Xin chào! Tôi là Aminra. Hãy hỏi tôi bất cứ điều gì về chứng nhận Halal.",
         why_title: "Tại sao chọn Aminra?",
         why1_title: "Dựa trên tài liệu",
         why1_desc: "Câu trả lời từ tài liệu chính thức HDC, JAKIM và MUI",
@@ -114,7 +118,7 @@ const resources = {
         preset2: "Tin tức về thị trường Halal",
         preset3: "Cơ hội kinh doanh",
         preset4: "Các tổ chức chứng nhận Halal ở Việt Nam",
-        listening: "🎙️ Đang lắng nghe..."
+        listening: "🎙️ Đang lắng nghe...",
       },
       upload: {
         title: "Tải lên Tài liệu",
@@ -129,21 +133,23 @@ const resources = {
         error: "Tải lên thất bại. Vui lòng thử lại.",
         how_it_works: "Cách hoạt động",
         step1_title: "Tải lên tài liệu",
-        step1_desc: "Chứng nhận Halal, danh sách thành phần, tài liệu nhà cung cấp",
+        step1_desc:
+          "Chứng nhận Halal, danh sách thành phần, tài liệu nhà cung cấp",
         step2_title: "Phân tích AI",
-        step2_desc: "LLM quét nội dung và so sánh với cơ sở dữ liệu tiêu chuẩn Halal",
+        step2_desc:
+          "LLM quét nội dung và so sánh với cơ sở dữ liệu tiêu chuẩn Halal",
         step3_title: "Nhận gợi ý",
         step3_desc: "Nhận phản hồi tuân thủ và các mẹo cải thiện",
         uploaded_files: "Tệp đã tải lên",
         track_progress: "Theo dõi tiến độ và xem kết quả",
         no_files: "Chưa có tệp nào được tải lên",
-        no_files_hint: "Tải lên tài liệu để xem kết quả"
+        no_files_hint: "Tải lên tài liệu để xem kết quả",
       },
       chat: {
         user: "Bạn",
-        assistant: "Aminra"
-      }
-    }
+        assistant: "Aminra",
+      },
+    },
   },
   ms: {
     common: {
@@ -151,7 +157,7 @@ const resources = {
         home: "Chat dengan Aminra",
         upload: "Semakan Dokumen",
         language: "Bahasa",
-        switch: "Tukar bahasa"
+        switch: "Tukar bahasa",
       },
       home: {
         title: "Pembantu AI Aminra",
@@ -163,10 +169,12 @@ const resources = {
         chat_subtitle: "Dikuasakan oleh LLM & pangkalan data Qdrant",
         online: "Dalam Talian",
         enter_hint: "Tekan Enter untuk hantar, Shift+Enter untuk baris baru",
-        initial_message: "Helo! Saya Aminra. Tanya saya apa sahaja tentang pensijilan Halal.",
+        initial_message:
+          "Helo! Saya Aminra. Tanya saya apa sahaja tentang pensijilan Halal.",
         why_title: "Mengapa Pilih Aminra?",
         why1_title: "Berasaskan Dokumen",
-        why1_desc: "Jawapan bersumber daripada dokumen rasmi HDC, JAKIM dan MUI",
+        why1_desc:
+          "Jawapan bersumber daripada dokumen rasmi HDC, JAKIM dan MUI",
         why2_title: "Carian Pintar",
         why2_desc: "Mencari maklumat berkaitan dalam ribuan halaman",
         why3_title: "Respons Pantas",
@@ -185,7 +193,7 @@ const resources = {
         preset2: "Berita Pasaran Halal",
         preset3: "Peluang Perniagaan",
         preset4: "Badan Pensijilan Halal di Vietnam",
-        listening: "🎙️ Sedang mendengar..."
+        listening: "🎙️ Sedang mendengar...",
       },
       upload: {
         title: "Muat Naik Dokumen",
@@ -196,25 +204,27 @@ const resources = {
         supported_formats: "Format yang disokong",
         browse: "Semak fail",
         uploading: "Sedang memuat naik...",
-        success: "Muat naik berjaya! Keputusan analisis akan dipaparkan di sini.",
+        success:
+          "Muat naik berjaya! Keputusan analisis akan dipaparkan di sini.",
         error: "Muat naik gagal. Sila cuba lagi.",
         how_it_works: "Cara ia berfungsi",
         step1_title: "Muat naik dokumen",
         step1_desc: "Pensijilan Halal, senarai bahan, dokumen pembekal",
         step2_title: "Analisis AI",
-        step2_desc: "LLM mengimbas kandungan dan membandingkan dengan pangkalan data piawaian Halal",
+        step2_desc:
+          "LLM mengimbas kandungan dan membandingkan dengan pangkalan data piawaian Halal",
         step3_title: "Dapatkan cadangan",
         step3_desc: "Terima maklum balas pematuhan dan tips penambahbaikan",
         uploaded_files: "Fail Dimuat Naik",
         track_progress: "Jejak kemajuan dan lihat keputusan",
         no_files: "Tiada fail dimuat naik lagi",
-        no_files_hint: "Muat naik dokumen untuk lihat keputusan"
+        no_files_hint: "Muat naik dokumen untuk lihat keputusan",
       },
       chat: {
         user: "Anda",
-        assistant: "Aminra"
-      }
-    }
+        assistant: "Aminra",
+      },
+    },
   },
   ar: {
     common: {
@@ -222,7 +232,7 @@ const resources = {
         home: "محادثة مع أميرة",
         upload: "مراجعة المستندات",
         language: "اللغة",
-        switch: "تبديل اللغة"
+        switch: "تبديل اللغة",
       },
       home: {
         title: "مساعد أميرة",
@@ -256,7 +266,7 @@ const resources = {
         preset2: "أخبار سوق الحلال",
         preset3: "فرص الأعمال",
         preset4: "هيئات إصدار شهادات الحلال في فيتنام",
-        listening: "🎙️ جاري الاستماع..."
+        listening: "🎙️ جاري الاستماع...",
       },
       upload: {
         title: "رفع المستندات",
@@ -279,43 +289,42 @@ const resources = {
         uploaded_files: "الملفات المرفوعة",
         track_progress: "تتبع التقدم وعرض النتائج",
         no_files: "لم يتم رفع أي ملفات بعد",
-        no_files_hint: "ارفع المستندات لعرض النتائج"
+        no_files_hint: "ارفع المستندات لعرض النتائج",
       },
       chat: {
         user: "أنت",
-        assistant: "أميرة"
-      }
-    }
-  }
+        assistant: "أميرة",
+      },
+    },
+  },
 };
 
 // Lấy ngôn ngữ đã lưu từ localStorage (chỉ trên client), fallback về 'vi'
-const savedLng = typeof window !== 'undefined'
-  ? (localStorage.getItem('aminra_lang') || 'vi')
-  : 'vi';
+const savedLng =
+  typeof window !== "undefined"
+    ? localStorage.getItem("aminra_lang") || "vi"
+    : "vi";
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: savedLng,
-    fallbackLng: 'vi',
-    supportedLngs: ['en', 'vi', 'ms', 'ar'],
-    ns: ['common'],
-    defaultNS: 'common',
-    interpolation: { escapeValue: false },
-    react: { useSuspense: false },
-  });
+i18n.use(initReactI18next).init({
+  resources,
+  lng: savedLng,
+  fallbackLng: "vi",
+  supportedLngs: ["en", "vi", "ms", "ar"],
+  ns: ["common"],
+  defaultNS: "common",
+  interpolation: { escapeValue: false },
+  react: { useSuspense: false },
+});
 
 // Lưu ngôn ngữ vào localStorage mỗi khi thay đổi
-i18n.on('languageChanged', (lng) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('aminra_lang', lng);
+i18n.on("languageChanged", (lng) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("aminra_lang", lng);
   }
 });
 
-if (typeof window !== 'undefined') {
-  console.log('i18n initialized', i18n.language);
+if (typeof window !== "undefined") {
+  console.log("i18n initialized", i18n.language);
 }
 
 export default i18n;

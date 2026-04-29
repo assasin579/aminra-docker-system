@@ -1,12 +1,14 @@
 import { test, expect } from "./fixtures";
 
 test.describe("08. UI login form — business", () => {
-  test("Login form renders with email + password + submit button", async ({ page }) => {
+  test("Login form renders with email + password + submit button", async ({
+    page,
+  }) => {
     await page.goto("/business/login");
 
     const emailInput = page.locator('input[type="email"]').first();
-    const pwInput    = page.locator('input[type="password"]').first();
-    const submit     = page.locator('button[type="submit"]').first();
+    const pwInput = page.locator('input[type="password"]').first();
+    const submit = page.locator('button[type="submit"]').first();
 
     await expect(emailInput).toBeVisible();
     await expect(pwInput).toBeVisible();
@@ -23,7 +25,7 @@ test.describe("08. UI login form — business", () => {
     await page.goto("/business/login");
 
     const email = page.locator('input[type="email"]').first();
-    const pw    = page.locator('input[type="password"]').first();
+    const pw = page.locator('input[type="password"]').first();
 
     await email.fill("test@example.vn");
     await pw.fill("SomePassword123!");

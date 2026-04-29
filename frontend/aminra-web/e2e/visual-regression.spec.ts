@@ -21,12 +21,12 @@ test.beforeEach(({}, testInfo) => {
 });
 
 const PUBLIC_VISUAL_PAGES = [
-  { path: "/",                name: "landing" },
-  { path: "/business/login",  name: "business-login" },
-  { path: "/provider/login",  name: "provider-login" },
+  { path: "/", name: "landing" },
+  { path: "/business/login", name: "business-login" },
+  { path: "/provider/login", name: "provider-login" },
   { path: "/forgot-password", name: "forgot-password" },
-  { path: "/privacy",         name: "privacy" },
-  { path: "/terms",           name: "terms" },
+  { path: "/privacy", name: "privacy" },
+  { path: "/terms", name: "terms" },
 ];
 
 test.describe("Layer 2 — Visual regression (public pages)", () => {

@@ -12,7 +12,7 @@ SECRET = os.getenv("JWT_SECRET")
 if not SECRET:
     raise RuntimeError("JWT_SECRET environment variable is required")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-EXPIRE_H  = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
+EXPIRE_H = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
 REFRESH_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", "7"))
 
 _bearer = HTTPBearer(auto_error=False)
@@ -66,6 +66,7 @@ def decode_token(token: str) -> dict:
 
 
 from fastapi import Request
+
 
 def get_current_user(
     request: Request,
@@ -121,6 +122,7 @@ async def require_admin(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     from auth.db import get_pool
+
     pool = get_pool()
     async with pool.acquire() as db:
         row = await db.fetchrow(

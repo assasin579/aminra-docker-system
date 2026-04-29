@@ -17,9 +17,15 @@ test.describe("register validation", () => {
     );
   });
 
-  test("BE 422 with arrayed detail returns parseable msg", async ({ request }) => {
+  test("BE 422 with arrayed detail returns parseable msg", async ({
+    request,
+  }) => {
     const r = await request.post("/api/auth/business/register", {
-      data: { email: `x_${Date.now()}@e.com`, password: "short", company_name: "T" },
+      data: {
+        email: `x_${Date.now()}@e.com`,
+        password: "short",
+        company_name: "T",
+      },
     });
     expect(r.status()).toBe(422);
     const body = await r.json();
@@ -35,7 +41,10 @@ test.describe("register validation", () => {
     const helper = await readFile(join(ROOT, "lib/apiError.ts"), "utf8");
     expect(helper).toContain("parseApiError");
     expect(helper).toContain("validatePassword");
-    expect(helper, "FE password rule must match BE: ≥10 chars + upper + lower + digit").toMatch(/length < 10/);
+    expect(
+      helper,
+      "FE password rule must match BE: ≥10 chars + upper + lower + digit",
+    ).toMatch(/length < 10/);
     expect(helper).toMatch(/A-Z/);
     expect(helper).toMatch(/a-z/);
     expect(helper).toMatch(/0-9/);
@@ -46,15 +55,20 @@ test.describe("register validation", () => {
       "components/UserAuthContext.tsx",
     ]) {
       const src = await readFile(join(ROOT, path), "utf8");
-      expect(src, `${path} must use parseApiError instead of err.detail`).toContain("parseApiError");
+      expect(
+        src,
+        `${path} must use parseApiError instead of err.detail`,
+      ).toContain("parseApiError");
     }
   });
 
-  test("valid password completes register successfully", async ({ request }) => {
+  test("valid password completes register successfully", async ({
+    request,
+  }) => {
     const r = await request.post("/api/auth/business/register", {
       data: {
-        email:        `valid_${Date.now()}@e.com`,
-        password:     "StrongP@ss2026",
+        email: `valid_${Date.now()}@e.com`,
+        password: "StrongP@ss2026",
         company_name: "Valid Test Co",
       },
     });

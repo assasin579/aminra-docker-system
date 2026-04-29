@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 export default function NavigationProgress() {
   const pathname = usePathname();
@@ -21,14 +21,28 @@ export default function NavigationProgress() {
   // Show as soon as the user clicks an internal link, even before the route swap.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const anchor = (e.target as HTMLElement | null)?.closest?.('a');
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey
+      )
+        return;
+      const anchor = (e.target as HTMLElement | null)?.closest?.("a");
       if (!anchor) return;
-      const href = anchor.getAttribute('href');
+      const href = anchor.getAttribute("href");
       if (!href) return;
-      if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('#')) return;
-      if (anchor.getAttribute('target') === '_blank') return;
-      if (anchor.hasAttribute('download')) return;
+      if (
+        href.startsWith("http") ||
+        href.startsWith("mailto:") ||
+        href.startsWith("tel:") ||
+        href.startsWith("#")
+      )
+        return;
+      if (anchor.getAttribute("target") === "_blank") return;
+      if (anchor.hasAttribute("download")) return;
       try {
         const url = new URL(href, window.location.href);
         if (url.pathname === window.location.pathname) return;
@@ -38,13 +52,16 @@ export default function NavigationProgress() {
       if (hideTimer.current) clearTimeout(hideTimer.current);
       setActive(true);
     };
-    document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
   }, []);
 
-  useEffect(() => () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    },
+    [],
+  );
 
   if (!active) return null;
   return <div className="nav-progress" aria-hidden="true" />;

@@ -3,6 +3,7 @@ Map doc_type → template builder.
 Each builder has signature: build(doc, content, title, filename, **kwargs)
 Loads admin docx_config from template JSON and passes it as `cfg` kwarg.
 """
+
 import json
 import logging
 from pathlib import Path
@@ -21,21 +22,19 @@ from . import (
 log = logging.getLogger("aminra.templates")
 
 _TEMPLATES = {
-    "halal_policy":             halal_policy,
-    "has_manual":               has_manual,
-    "halal_manual":             has_manual,
-
-    "sop_raw_material_receiving":   sop,
-    "sop_storage_segregation":      sop,
-    "sop_production_operation":     sop,
-    "sop_cleaning_sanitation":      sop,
+    "halal_policy": halal_policy,
+    "has_manual": has_manual,
+    "halal_manual": has_manual,
+    "sop_raw_material_receiving": sop,
+    "sop_storage_segregation": sop,
+    "sop_production_operation": sop,
+    "sop_cleaning_sanitation": sop,
     "sop_handling_nonconformances": sop,
-    "sop_complaint_recall":         sop,
-
-    "company_profile":          company_profile,
+    "sop_complaint_recall": sop,
+    "company_profile": company_profile,
     "internal_halal_committee": committee,
-    "ingredient_raw_material":  ingredient,
-    "process_flow_chart":       process_flow,
+    "ingredient_raw_material": ingredient,
+    "process_flow_chart": process_flow,
 }
 
 TEMPLATES_DIR = Path("admin_templates")
@@ -54,10 +53,9 @@ def _load_docx_config(doc_type: str) -> dict:
         return {}
 
 
-def build_docx(content: str, *,
-               doc_type: str = "",
-               title: str = "Tài liệu Halal",
-               filename: str = "document") -> DocxDocument:
+def build_docx(
+    content: str, *, doc_type: str = "", title: str = "Tài liệu Halal", filename: str = "document"
+) -> DocxDocument:
     """Create a fully formatted Document using the template for doc_type."""
     doc = DocxDocument()
     module = _TEMPLATES.get(doc_type, generic)

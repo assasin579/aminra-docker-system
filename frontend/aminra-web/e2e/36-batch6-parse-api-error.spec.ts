@@ -30,10 +30,16 @@ test.describe("Phase 1 Batch 6 — UX cleanup", () => {
     test(`parseApiError used in ${path}`, async () => {
       const { readFile } = await import("node:fs/promises");
       const src = await readFile(`../../frontend/aminra-web/${path}`, "utf8");
-      expect(src, `${path} must import parseApiError`).toContain("from '@/lib/apiError'");
-      expect(src, `${path} must call parseApiError`).toContain("parseApiError(");
+      expect(src, `${path} must import parseApiError`).toContain(
+        "from '@/lib/apiError'",
+      );
+      expect(src, `${path} must call parseApiError`).toContain(
+        "parseApiError(",
+      );
       // No naive `err.detail ||` left after migration
-      expect(src, `${path} must NOT use raw err.detail || pattern`).not.toMatch(/err\.detail\s*\|\|/);
+      expect(src, `${path} must NOT use raw err.detail || pattern`).not.toMatch(
+        /err\.detail\s*\|\|/,
+      );
     });
   }
 });

@@ -9,6 +9,7 @@ Pattern:
     job = await enqueue("ingest_document", path=str(p))
     status = await get_job_status(job.job_id)
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,12 +27,14 @@ log = logging.getLogger("aminra.jobs")
 
 # ── Redis settings ──────────────────────────────────────────────────────────
 
+
 def _redis_settings_from_env() -> RedisSettings:
     url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     return RedisSettings.from_dsn(url)
 
 
 # ── Worker tasks ───────────────────────────────────────────────────────────
+
 
 async def ingest_document(ctx: dict, path: str) -> dict:
     """Run RAG ingest in worker process. Returns {filename, chunks, status}."""
@@ -72,8 +75,8 @@ async def daily_anchor_polygon(ctx: dict) -> dict:
     cert_anchor_proofs / batch_anchor_proofs). Re-running this job after a
     successful anchor is a no-op.
     """
-    import os as _os
     from services.anchor import run_daily_anchor
+
     return await run_daily_anchor()
 
 
@@ -149,12 +152,12 @@ async def daily_cert_expiry_alerts(ctx: dict) -> dict:
                 to=owner["email"],
                 template="cert_expiring",
                 context={
-                    "user_name":         owner["company_name"] or "",
-                    "company_name":      ec.company_name or owner["company_name"] or "",
-                    "cert_number":       ec.cert_number,
-                    "expiry_date":       ec.expiry_date.isoformat(),
+                    "user_name": owner["company_name"] or "",
+                    "company_name": ec.company_name or owner["company_name"] or "",
+                    "cert_number": ec.cert_number,
+                    "expiry_date": ec.expiry_date.isoformat(),
                     "days_until_expiry": ec.days_until_expiry,
-                    "cert_url":          f"{mailer.config.app_base_url}/verify/{ec.cert_number}",
+                    "cert_url": f"{mailer.config.app_base_url}/verify/{ec.cert_number}",
                 },
                 lang="vi",
             )
@@ -169,9 +172,9 @@ async def daily_cert_expiry_alerts(ctx: dict) -> dict:
 
 # ── Worker config (loaded by `arq services.jobs.WorkerSettings`) ────────────
 
-from datetime import datetime, timezone
 try:
     from arq.cron import cron  # type: ignore
+
     _CRON_AVAILABLE = True
 except ImportError:  # arq < 0.26 fallback (tests)
     _CRON_AVAILABLE = False
@@ -179,8 +182,11 @@ except ImportError:  # arq < 0.26 fallback (tests)
 
 class WorkerSettings:
     functions = [
-        ingest_document, send_email,
-        daily_anchor_polygon, daily_cert_expiry_alerts, daily_submission_sla_check,
+        ingest_document,
+        send_email,
+        daily_anchor_polygon,
+        daily_cert_expiry_alerts,
+        daily_submission_sla_check,
     ]
     redis_settings = _redis_settings_from_env()
     job_timeout = 600  # 10 minutes for big PPTX/PDF
@@ -199,6 +205,7 @@ class WorkerSettings:
 
 
 # ── Public producer API (used by FastAPI endpoints) ─────────────────────────
+
 
 class JobNotFound(Exception):
     """Raised when a job_id cannot be found in Redis."""
@@ -241,7 +248,7 @@ async def enqueue(function: str, **kwargs: Any) -> EnqueueResult:
 @dataclass
 class JobView:
     job_id: str
-    status: str        # queued | in_progress | complete | failed | not_found
+    status: str  # queued | in_progress | complete | failed | not_found
     result: Any | None
     error: str | None
 

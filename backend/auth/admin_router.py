@@ -24,11 +24,16 @@ async def pending_providers(admin: dict = Depends(require_admin), db: Connection
         "WHERE role = 'provider' AND status = 'pending' ORDER BY created_at",
     )
     return PendingProvidersResponse(
-        providers=[PendingProviderItem(
-            id=str(r["id"]), email=r["email"],
-            company_name=r["company_name"], company_code=r["company_code"],
-            created_at=r["created_at"],
-        ) for r in rows],
+        providers=[
+            PendingProviderItem(
+                id=str(r["id"]),
+                email=r["email"],
+                company_name=r["company_name"],
+                company_code=r["company_code"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ],
         count=len(rows),
     )
 
@@ -46,7 +51,8 @@ async def approve_provider(
         WHERE id = $1 AND role = 'provider' AND status = 'pending'
         RETURNING id, email, status
         """,
-        provider_id, admin["sub"],
+        provider_id,
+        admin["sub"],
     )
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not found or not pending")
@@ -75,6 +81,7 @@ async def admin_overdue_submissions(
     Used to nudge providers when SLA breached. Sorted oldest-deadline first.
     """
     from services.submission_sla import list_overdue_submissions
+
     items = await list_overdue_submissions(db, limit=limit)
     return {"items": items, "count": len(items)}
 
@@ -93,7 +100,8 @@ async def reject_provider(
         WHERE id = $1 AND role = 'provider' AND status = 'pending'
         RETURNING id, email, status
         """,
-        provider_id, req.reason,
+        provider_id,
+        req.reason,
     )
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not found or not pending")

@@ -1,34 +1,46 @@
 """Template: SOP — Standard Operating Procedure (dùng chung cho 6 loại SOP)."""
+
 from docx import Document as DocxDocument
 from docx.shared import Cm
 from docx.enum.text import WD_BREAK
 from . import _base as B
 
 SOP_NAMES = {
-    "sop_raw_material_receiving":   "Tiếp nhận nguyên liệu thô",
-    "sop_storage_segregation":      "Lưu kho và phân tách",
-    "sop_production_operation":     "Vận hành sản xuất",
-    "sop_cleaning_sanitation":      "Vệ sinh và khử trùng",
+    "sop_raw_material_receiving": "Tiếp nhận nguyên liệu thô",
+    "sop_storage_segregation": "Lưu kho và phân tách",
+    "sop_production_operation": "Vận hành sản xuất",
+    "sop_cleaning_sanitation": "Vệ sinh và khử trùng",
     "sop_handling_nonconformances": "Xử lý sự không phù hợp",
-    "sop_complaint_recall":         "Khiếu nại và thu hồi sản phẩm",
+    "sop_complaint_recall": "Khiếu nại và thu hồi sản phẩm",
 }
 
 
-def build(doc: DocxDocument, content: str, title: str, filename: str,
-          doc_type: str = "sop_production_operation", cfg: dict = {}):
+def build(
+    doc: DocxDocument,
+    content: str,
+    title: str,
+    filename: str,
+    doc_type: str = "sop_production_operation",
+    cfg: dict = {},
+):
     sop_name = SOP_NAMES.get(doc_type, "Quy trình vận hành")
     conf_label = cfg.get("confidential_label", "TÀI LIỆU NỘI BỘ")
 
     B.setup_page(doc, f"SOP — {sop_name}", confidential_label=conf_label)
 
     raw_meta = cfg.get("cover_meta")
-    extra_meta = [(m["key"], m["value"]) for m in raw_meta if m.get("key")] if raw_meta else [
-        ("Loại SOP", sop_name),
-        ("Tiêu chuẩn", "MS 1500:2019, GMP, HACCP"),
-        ("Tần suất rà soát", "6 tháng / lần"),
-    ]
+    extra_meta = (
+        [(m["key"], m["value"]) for m in raw_meta if m.get("key")]
+        if raw_meta
+        else [
+            ("Loại SOP", sop_name),
+            ("Tiêu chuẩn", "MS 1500:2019, GMP, HACCP"),
+            ("Tần suất rà soát", "6 tháng / lần"),
+        ]
+    )
 
-    B.add_cover(doc,
+    B.add_cover(
+        doc,
         doc_type_label=f"SOP — {sop_name}",
         title=title,
         extra_meta=extra_meta,
@@ -51,15 +63,19 @@ def build(doc: DocxDocument, content: str, title: str, filename: str,
         ("Tần suất thực hiện", "[Hàng ngày / Hàng tuần / Theo lô]"),
     ]
     for ri, (label, value) in enumerate(info_rows):
-        c0 = info_tbl.cell(ri, 0); c1 = info_tbl.cell(ri, 1)
-        c0.width = Cm(5); c1.width = Cm(9)
-        c0.text = ""; c1.text = ""
+        c0 = info_tbl.cell(ri, 0)
+        c1 = info_tbl.cell(ri, 1)
+        c0.width = Cm(5)
+        c1.width = Cm(9)
+        c0.text = ""
+        c1.text = ""
         r0 = c0.paragraphs[0].add_run(label)
         B.font(r0, size=B.SZ_SMALL, bold=True)
         r1 = c1.paragraphs[0].add_run(value)
         B.font(r1, size=B.SZ_SMALL)
         B.shade_cell(c0, "F5F5F5")
-        B.cell_padding(c0); B.cell_padding(c1)
+        B.cell_padding(c0)
+        B.cell_padding(c1)
     doc.add_paragraph()
 
     for sec in cfg.get("custom_sections", []):

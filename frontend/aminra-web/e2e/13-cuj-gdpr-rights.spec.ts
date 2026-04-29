@@ -10,7 +10,10 @@
 import { test, expect } from "./fixtures";
 
 test.describe("CUJ-6: GDPR rights", () => {
-  test("Data export returns JSON bundle for authenticated user", async ({ api, biz }) => {
+  test("Data export returns JSON bundle for authenticated user", async ({
+    api,
+    biz,
+  }) => {
     const res = await api.get("/api/users/me/export-data", {
       headers: { Authorization: `Bearer ${biz.token}` },
     });

@@ -19,6 +19,7 @@ Records intentionally NOT deleted:
     policy makes this clear.
   - audit_logs entries: minimum 5-year retention by compliance.
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,7 @@ DELETION_TOKEN_BYTES = 32
 
 # ── Step 1: request ────────────────────────────────────────────────────────
 
+
 async def create_deletion_token(db, user_id: str) -> tuple[str, datetime]:
     """Generate + persist a single-use deletion confirmation token.
 
@@ -45,18 +47,20 @@ async def create_deletion_token(db, user_id: str) -> tuple[str, datetime]:
 
     # Mark prior tokens as confirmed (i.e. consumed/dead) so they can't replay.
     await db.execute(
-        "UPDATE deletion_tokens SET confirmed_at = NOW() "
-        "WHERE user_id = $1 AND confirmed_at IS NULL",
+        "UPDATE deletion_tokens SET confirmed_at = NOW() WHERE user_id = $1 AND confirmed_at IS NULL",
         user_id,
     )
     await db.execute(
         "INSERT INTO deletion_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
-        user_id, token, expires_at,
+        user_id,
+        token,
+        expires_at,
     )
     return token, expires_at
 
 
 # ── Step 2: confirm + anonymize ────────────────────────────────────────────
+
 
 class TokenInvalid(Exception):
     """Raised when the deletion token is missing, used, or expired."""
@@ -83,11 +87,11 @@ async def confirm_and_anonymize(db, token: str) -> dict:
     if row["deleted_at"] is not None:
         raise TokenInvalid("Tài khoản đã bị xoá trước đó")
 
-    user_id          = row["user_id"]
-    original_email   = row["email"]
-    short            = uuid.UUID(str(user_id)).hex[:12]
+    user_id = row["user_id"]
+    original_email = row["email"]
+    short = uuid.UUID(str(user_id)).hex[:12]
     anonymized_email = f"deleted-{short}@aminra.deleted"
-    fake_hash        = "$2b$12$" + secrets.token_urlsafe(53)[:53]
+    fake_hash = "$2b$12$" + secrets.token_urlsafe(53)[:53]
 
     await db.execute(
         """
@@ -104,7 +108,9 @@ async def confirm_and_anonymize(db, token: str) -> dict:
                updated_at          = NOW()
          WHERE id = $3
         """,
-        anonymized_email, fake_hash, user_id,
+        anonymized_email,
+        fake_hash,
+        user_id,
     )
 
     # Mark the token consumed.
@@ -123,10 +129,10 @@ async def confirm_and_anonymize(db, token: str) -> dict:
     log.info("[deletion] account anonymized user_id=%s", user_id)
 
     return {
-        "user_id":            str(user_id),
-        "anonymized_email":   anonymized_email,
+        "user_id": str(user_id),
+        "anonymized_email": anonymized_email,
         "original_email_hash": _short_hash(original_email),
-        "deleted_at":         datetime.now(timezone.utc).isoformat(),
+        "deleted_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -134,4 +140,5 @@ def _short_hash(value: str) -> str:
     """Tiny hex digest for audit metadata — proves *something* was anonymized
     without storing the original PII."""
     import hashlib
+
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]

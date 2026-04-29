@@ -8,6 +8,7 @@ Design principles:
 - **Caller must specify entity_type + action** as strings — no implicit
   inference from payload, so logs are explicit and queryable.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,6 +19,7 @@ log = logging.getLogger("aminra.audit_log")
 
 
 # ── Diff helper ─────────────────────────────────────────────────────────────
+
 
 def compute_diff(before: dict, after: dict, ignore: Iterable[str] = ()) -> dict:
     """Return only the keys whose value changed, as {key: [before, after]}.
@@ -36,6 +38,7 @@ def compute_diff(before: dict, after: dict, ignore: Iterable[str] = ()) -> dict:
 
 
 # ── Logger ──────────────────────────────────────────────────────────────────
+
 
 async def log_audit(
     db,
@@ -97,18 +100,21 @@ async def log_audit(
         # Never propagate — audit failure must not break the parent request.
         log.exception(
             "[audit_log] insert failed action=%s entity=%s/%s err=%s",
-            action, entity_type, entity_id, e,
+            action,
+            entity_type,
+            entity_id,
+            e,
         )
 
 
 # ── Filter query builder (used by admin endpoint) ───────────────────────────
 
 ALLOWED_FILTER_FIELDS = {
-    "user_id":     "user_id",
-    "tenant_id":   "tenant_id",
-    "action":      "action",
+    "user_id": "user_id",
+    "tenant_id": "tenant_id",
+    "action": "action",
     "entity_type": "entity_type",
-    "entity_id":   "entity_id",
+    "entity_id": "entity_id",
 }
 
 VALID_SORT = {"created_at", "action", "entity_type"}
@@ -164,9 +170,5 @@ def build_filter_query(
 
     where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
     offset = (page - 1) * limit
-    sql = (
-        f"SELECT * FROM audit_logs {where_sql} "
-        f"ORDER BY {sort} {order.upper()} "
-        f"LIMIT {limit} OFFSET {offset}"
-    )
+    sql = f"SELECT * FROM audit_logs {where_sql} ORDER BY {sort} {order.upper()} LIMIT {limit} OFFSET {offset}"
     return sql, params

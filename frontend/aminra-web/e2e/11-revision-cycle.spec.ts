@@ -7,7 +7,10 @@
 import { test, expect } from "./fixtures";
 
 test.describe("11. Submission revisions cycle", () => {
-  test("Revisions endpoint reachable for valid submission", async ({ api, biz }) => {
+  test("Revisions endpoint reachable for valid submission", async ({
+    api,
+    biz,
+  }) => {
     // Find a submission owned by biz user
     const list = await api.get("/api/submissions/my-submissions", {
       headers: { Authorization: `Bearer ${biz.token}` },
@@ -32,30 +35,45 @@ test.describe("11. Submission revisions cycle", () => {
     expect([200, 307, 401, 403]).toContain(revRes.status());
   });
 
-  test("Provider rejects request-revision for unauthorized submission with 403/404", async ({ api, prov }) => {
+  test("Provider rejects request-revision for unauthorized submission with 403/404", async ({
+    api,
+    prov,
+  }) => {
     if (!prov?.token) {
       test.skip(true, "No provider token available");
       return;
     }
     // Try to request revision on random UUID — should 404
     const fakeSubId = "00000000-0000-0000-0000-000000000000";
-    const res = await api.post(`/api/submissions/received/${fakeSubId}/request-revision`, {
-      headers: { Authorization: `Bearer ${prov.token}` },
-      data: { feedback: "test", document_feedback: [] },
-    });
+    const res = await api.post(
+      `/api/submissions/received/${fakeSubId}/request-revision`,
+      {
+        headers: { Authorization: `Bearer ${prov.token}` },
+        data: { feedback: "test", document_feedback: [] },
+      },
+    );
     expect([403, 404]).toContain(res.status());
   });
 
-  test("Business cannot request-revision (RBAC enforced)", async ({ api, biz }) => {
+  test("Business cannot request-revision (RBAC enforced)", async ({
+    api,
+    biz,
+  }) => {
     const fakeSubId = "00000000-0000-0000-0000-000000000000";
-    const res = await api.post(`/api/submissions/received/${fakeSubId}/request-revision`, {
-      headers: { Authorization: `Bearer ${biz.token}` },
-      data: { feedback: "trying", document_feedback: [] },
-    });
+    const res = await api.post(
+      `/api/submissions/received/${fakeSubId}/request-revision`,
+      {
+        headers: { Authorization: `Bearer ${biz.token}` },
+        data: { feedback: "trying", document_feedback: [] },
+      },
+    );
     expect(res.status()).toBe(403);
   });
 
-  test("Resubmit endpoint validates submission exists", async ({ api, biz }) => {
+  test("Resubmit endpoint validates submission exists", async ({
+    api,
+    biz,
+  }) => {
     const fakeSubId = "00000000-0000-0000-0000-000000000000";
     const res = await api.post(`/api/submissions/${fakeSubId}/resubmit`, {
       headers: { Authorization: `Bearer ${biz.token}` },

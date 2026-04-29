@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Visual urgency signal for cert expiry. Renders nothing for healthy certs
@@ -12,14 +12,14 @@ interface Props {
 
 export default function ExpiryUrgency({ daysRemaining, status }: Props) {
   // Only meaningful for active certs
-  if (status !== 'active') return null;
+  if (status !== "active") return null;
 
   // Already expired
   if (daysRemaining <= 0) {
     return (
       <span
         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold"
-        style={{ background: '#7f1d1d', color: 'white' }}
+        style={{ background: "#7f1d1d", color: "white" }}
         data-urgency="expired"
         title="Cert đã hết hạn"
       >
@@ -32,7 +32,7 @@ export default function ExpiryUrgency({ daysRemaining, status }: Props) {
     return (
       <span
         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold"
-        style={{ background: '#dc2626', color: 'white' }}
+        style={{ background: "#dc2626", color: "white" }}
         data-urgency="critical"
         title={`Còn ${daysRemaining} ngày — gia hạn ngay`}
       >
@@ -45,7 +45,11 @@ export default function ExpiryUrgency({ daysRemaining, status }: Props) {
     return (
       <span
         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold"
-        style={{ background: 'rgba(234,88,12,0.15)', color: '#9a3412', border: '1px solid rgba(234,88,12,0.3)' }}
+        style={{
+          background: "rgba(234,88,12,0.15)",
+          color: "#9a3412",
+          border: "1px solid rgba(234,88,12,0.3)",
+        }}
         data-urgency="warning"
         title={`Còn ${daysRemaining} ngày — chuẩn bị gia hạn`}
       >
@@ -58,7 +62,7 @@ export default function ExpiryUrgency({ daysRemaining, status }: Props) {
     return (
       <span
         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium"
-        style={{ background: 'rgba(245,158,11,0.12)', color: '#92400e' }}
+        style={{ background: "rgba(245,158,11,0.12)", color: "#92400e" }}
         data-urgency="caution"
         title={`Còn ${daysRemaining} ngày`}
       >

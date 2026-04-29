@@ -22,26 +22,35 @@ export default defineConfig({
     ["html", { outputFolder: "playwright-report", open: "never" }],
   ],
   use: {
-    baseURL:    process.env.PW_BASE_URL ?? "http://localhost:3100",
-    trace:      "on-first-retry",
+    baseURL: process.env.PW_BASE_URL ?? "http://localhost:3100",
+    trace: "on-first-retry",
     screenshot: "only-on-failure",
-    video:      "retain-on-failure",
+    video: "retain-on-failure",
     actionTimeout: 10_000,
   },
   projects: [
     // Desktop — primary visual + a11y baseline
     {
       name: "desktop-chromium",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+      },
     },
     // Cross-browser parity
     {
       name: "desktop-firefox",
-      use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices["Desktop Firefox"],
+        viewport: { width: 1440, height: 900 },
+      },
     },
     {
       name: "desktop-webkit",
-      use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices["Desktop Safari"],
+        viewport: { width: 1440, height: 900 },
+      },
     },
     // Mobile + tablet
     {

@@ -9,6 +9,7 @@ Design:
 
 No external deps — uses only stdlib hashlib. 100% testable in-process.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -17,6 +18,7 @@ from typing import Iterable
 
 
 # ── Hash helpers ────────────────────────────────────────────────────────────
+
 
 def sha256_hex(data: str | bytes) -> str:
     """Hex digest of SHA-256."""
@@ -49,10 +51,11 @@ def _is_valid_hex(s: str) -> bool:
 
 # ── Proof record ────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class ProofStep:
-    sibling: str       # hex hash of sibling at this level
-    position: str      # "left" if sibling on the left, else "right"
+    sibling: str  # hex hash of sibling at this level
+    position: str  # "left" if sibling on the left, else "right"
 
     def to_dict(self) -> dict:
         return {"sibling": self.sibling, "position": self.position}
@@ -63,6 +66,7 @@ class ProofStep:
 
 
 # ── Tree ────────────────────────────────────────────────────────────────────
+
 
 class MerkleTree:
     """Build a Merkle tree from a list of hex-leaf-hashes."""
@@ -84,10 +88,7 @@ class MerkleTree:
             # Duplicate last hash if odd count (Bitcoin-style)
             if len(current) % 2 == 1:
                 current = current + [current[-1]]
-            next_level = [
-                hash_pair(current[i], current[i + 1])
-                for i in range(0, len(current), 2)
-            ]
+            next_level = [hash_pair(current[i], current[i + 1]) for i in range(0, len(current), 2)]
             self.levels.append(next_level)
             current = next_level
 
@@ -170,7 +171,4 @@ class MerkleTree:
         Matches the schema we'll persist into cert_anchor_proofs.proof_path
         (JSONB column).
         """
-        return [
-            [step.to_dict() for step in self.proof_for_index(i)]
-            for i in range(self.leaf_count)
-        ]
+        return [[step.to_dict() for step in self.proof_for_index(i)] for i in range(self.leaf_count)]

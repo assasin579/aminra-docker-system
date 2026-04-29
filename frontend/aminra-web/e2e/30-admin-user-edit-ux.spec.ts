@@ -26,8 +26,13 @@ test.describe("admin user edit UX", () => {
   test("AdminUserManager imports parseApiError + validatePassword", async () => {
     const { readFile } = await import("node:fs/promises");
     const src = await readFile("components/AdminUserManager.tsx", "utf8");
-    expect(src, "must use parseApiError for FastAPI 422 unwrapping").toContain("parseApiError");
-    expect(src, "must use validatePassword for client-side rule check").toContain("validatePassword");
+    expect(src, "must use parseApiError for FastAPI 422 unwrapping").toContain(
+      "parseApiError",
+    );
+    expect(
+      src,
+      "must use validatePassword for client-side rule check",
+    ).toContain("validatePassword");
   });
 
   test("modal supports ESC + backdrop close + focus first input", async () => {
@@ -48,9 +53,13 @@ test.describe("admin user edit UX", () => {
   test("password placeholder + helper text match BE rule (10+ chars upper/lower/digit)", async () => {
     const { readFile } = await import("node:fs/promises");
     const src = await readFile("components/AdminUserManager.tsx", "utf8");
-    expect(src, "old '8 ký tự' must be replaced").not.toMatch(/Tối thiểu 8 ký tự/);
+    expect(src, "old '8 ký tự' must be replaced").not.toMatch(
+      /Tối thiểu 8 ký tự/,
+    );
     expect(src, "must explain 10+ chars rule to admin").toMatch(/10\+ ký tự/);
-    expect(src, "must mention upper/lower/digit").toMatch(/chữ hoa.*chữ thường.*số/i);
+    expect(src, "must mention upper/lower/digit").toMatch(
+      /chữ hoa.*chữ thường.*số/i,
+    );
   });
 
   test("edit mode shows email as read-only field (not just title)", async () => {
@@ -67,7 +76,9 @@ test.describe("admin user edit UX", () => {
     // Role-change warning
     expect(src).toMatch(/Đổi vai trò.*có thể gây không nhất quán/);
     // Pending only when role=provider
-    expect(src).toMatch(/form\.role === ['"]provider['"][^<]*<option value=['"]pending['"]/s);
+    expect(src).toMatch(
+      /form\.role === ['"]provider['"][^<]*<option value=['"]pending['"]/s,
+    );
   });
 
   test("save button uses navy disabled bg (not gray-on-gray)", async () => {
@@ -75,6 +86,8 @@ test.describe("admin user edit UX", () => {
     const src = await readFile("components/AdminUserManager.tsx", "utf8");
     // Saving state: rgba(15,44,74,0.4) navy translucent — not the old #E2E8F0 with #5B6B7D text
     expect(src).toMatch(/rgba\(15,44,74,0\.4\)/);
-    expect(src, "old gray disabled state must be removed").not.toMatch(/saving \? '#E2E8F0' : '#0F2C4A'/);
+    expect(src, "old gray disabled state must be removed").not.toMatch(
+      /saving \? '#E2E8F0' : '#0F2C4A'/,
+    );
   });
 });

@@ -10,17 +10,17 @@ Reusability: the same code targets Polygon mainnet, Polygon Mumbai testnet,
 or any local in-memory EVM (eth-tester) — `web3` is just configured with
 the right provider URL.
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from eth_account import Account
 from web3 import Web3
-from web3.exceptions import ContractCustomError, ContractLogicError
 
 from services.contract_compiler import compile_contract
 
@@ -29,14 +29,15 @@ log = logging.getLogger("aminra.anchor_polygon")
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class PolygonConfig:
     rpc_url: str
-    private_key: str          # hex, 0x-prefixed, 64 chars
-    contract_address: str     # 0x-prefixed
-    chain_id: int             # 137 mainnet, 80001 mumbai
+    private_key: str  # hex, 0x-prefixed, 64 chars
+    contract_address: str  # 0x-prefixed
+    chain_id: int  # 137 mainnet, 80001 mumbai
     confirmation_blocks: int = 1
-    gas_buffer: float = 1.2   # multiply estimated gas by this for safety
+    gas_buffer: float = 1.2  # multiply estimated gas by this for safety
     tx_timeout_seconds: int = 120
 
     @classmethod
@@ -54,19 +55,20 @@ class PolygonConfig:
 
 # ── Result types ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class AnchorResult:
-    anchor_id: int           # on-chain sequential ID
-    tx_hash: str             # 0x-prefixed
+    anchor_id: int  # on-chain sequential ID
+    tx_hash: str  # 0x-prefixed
     block_number: int
     gas_used: int
-    merkle_root: str         # 0x-prefixed hex (echo back for caller)
+    merkle_root: str  # 0x-prefixed hex (echo back for caller)
 
 
 @dataclass
 class OnChainAnchor:
     anchor_id: int
-    merkle_root: str         # 0x-prefixed hex
+    merkle_root: str  # 0x-prefixed hex
     timestamp: int
     cert_count: int
     batch_count: int
@@ -74,6 +76,7 @@ class OnChainAnchor:
 
 
 # ── Service ─────────────────────────────────────────────────────────────────
+
 
 class PolygonAnchor:
     """Producer-side facade for the HalalCertAnchor contract."""
@@ -127,16 +130,28 @@ class PolygonAnchor:
         # Run blocking web3 calls in a thread so we don't block the event loop.
         return await asyncio.to_thread(
             self._submit_and_wait,
-            root_bytes, timestamp, cert_count, batch_count, metadata,
+            root_bytes,
+            timestamp,
+            cert_count,
+            batch_count,
+            metadata,
         )
 
     def _submit_and_wait(
-        self, root_bytes: bytes, timestamp: int,
-        cert_count: int, batch_count: int, metadata: str,
+        self,
+        root_bytes: bytes,
+        timestamp: int,
+        cert_count: int,
+        batch_count: int,
+        metadata: str,
     ) -> AnchorResult:
         nonce = self.w3.eth.get_transaction_count(self.address)
         fn = self.contract.functions.anchorRoot(
-            root_bytes, timestamp, cert_count, batch_count, metadata,
+            root_bytes,
+            timestamp,
+            cert_count,
+            batch_count,
+            metadata,
         )
 
         # Estimate gas, add safety buffer. Any failure here means the call
@@ -148,14 +163,16 @@ class PolygonAnchor:
         except Exception as e:
             raise RuntimeError(f"gas estimation failed (will revert): {e}") from e
 
-        tx = fn.build_transaction({
-            "from":     self.address,
-            "nonce":    nonce,
-            "gas":      gas_limit,
-            "chainId":  self.config.chain_id,
-            "maxFeePerGas":         self.w3.to_wei("100", "gwei"),
-            "maxPriorityFeePerGas": self.w3.to_wei("30",  "gwei"),
-        })
+        tx = fn.build_transaction(
+            {
+                "from": self.address,
+                "nonce": nonce,
+                "gas": gas_limit,
+                "chainId": self.config.chain_id,
+                "maxFeePerGas": self.w3.to_wei("100", "gwei"),
+                "maxPriorityFeePerGas": self.w3.to_wei("30", "gwei"),
+            }
+        )
 
         signed = self.account.sign_transaction(tx)
         raw_bytes = getattr(signed, "raw_transaction", None) or getattr(signed, "rawTransaction")
@@ -164,7 +181,8 @@ class PolygonAnchor:
         log.info("[anchor] submitted tx=%s", tx_hash.hex())
 
         receipt = self.w3.eth.wait_for_transaction_receipt(
-            tx_hash, timeout=self.config.tx_timeout_seconds,
+            tx_hash,
+            timeout=self.config.tx_timeout_seconds,
         )
         if receipt.status != 1:
             raise RuntimeError(f"anchor tx reverted: {tx_hash.hex()}")
@@ -201,14 +219,10 @@ class PolygonAnchor:
         )
 
     async def anchor_count(self) -> int:
-        return await asyncio.to_thread(
-            lambda: self.contract.functions.anchorCount().call()
-        )
+        return await asyncio.to_thread(lambda: self.contract.functions.anchorCount().call())
 
     async def is_paused(self) -> bool:
-        return await asyncio.to_thread(
-            lambda: self.contract.functions.paused().call()
-        )
+        return await asyncio.to_thread(lambda: self.contract.functions.paused().call())
 
     # ── Admin ───────────────────────────────────────────────────────────────
 
@@ -218,13 +232,15 @@ class PolygonAnchor:
     def _set_paused_sync(self, paused: bool) -> str:
         nonce = self.w3.eth.get_transaction_count(self.address)
         fn = self.contract.functions.setPaused(paused)
-        tx = fn.build_transaction({
-            "from":    self.address,
-            "nonce":   nonce,
-            "chainId": self.config.chain_id,
-            "maxFeePerGas":         self.w3.to_wei("100", "gwei"),
-            "maxPriorityFeePerGas": self.w3.to_wei("30",  "gwei"),
-        })
+        tx = fn.build_transaction(
+            {
+                "from": self.address,
+                "nonce": nonce,
+                "chainId": self.config.chain_id,
+                "maxFeePerGas": self.w3.to_wei("100", "gwei"),
+                "maxPriorityFeePerGas": self.w3.to_wei("30", "gwei"),
+            }
+        )
         signed = self.account.sign_transaction(tx)
         raw_bytes = getattr(signed, "raw_transaction", None) or getattr(signed, "rawTransaction")
         tx_hash = self.w3.eth.send_raw_transaction(raw_bytes)

@@ -11,7 +11,6 @@ from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
-from asyncpg import Connection
 
 from auth.db import get_db
 from auth.jwt_utils import get_current_user
@@ -22,8 +21,10 @@ router = APIRouter()
 
 
 def _validate_uuid(v: str) -> str:
-    try: _UUID(v)
-    except ValueError: raise HTTPException(400, "Invalid ID")
+    try:
+        _UUID(v)
+    except ValueError:
+        raise HTTPException(400, "Invalid ID")
     return v
 
 
@@ -43,6 +44,7 @@ def _require_provider(user: dict):
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PHASE A: Visit CRUD + Assign + Status + Populate Checklist
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class VisitCreate(BaseModel):
     business_tenant: str
@@ -69,7 +71,8 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_db)):
         raise HTTPException(403, "Chỉ chủ tổ chức")
     provider_id = user.get("tenant_id") or user["sub"]
 
-    rows = await db.fetch("""
+    rows = await db.fetch(
+        """
         WITH biz AS (
             SELECT DISTINCT business_tenant FROM submissions WHERE provider_id=$1
             UNION
@@ -90,27 +93,31 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_db)):
         LEFT JOIN users u ON (u.id=b.business_tenant OR (u.tenant_id=b.business_tenant AND u.is_owner=true))
         WHERE u.company_name IS NOT NULL
         ORDER BY u.company_name
-    """, provider_id)
+    """,
+        provider_id,
+    )
 
-    return {"businesses": [
-        {
-            "id": str(r["business_tenant"]),
-            "company_name": r["company_name"] or "N/A",
-            "email": r["email"] or "",
-            "phone": r.get("phone") or "",
-            "address": r.get("address") or "",
-            "submission_count": r["submission_count"],
-            "approved_count": r["approved_count"],
-            "active_certs": r["active_certs"],
-            "expiring_soon": r["expiring_soon"],
-            "nearest_expiry": r["nearest_expiry"].isoformat() if r["nearest_expiry"] else None,
-            "audit_count": r["audit_count"],
-            "last_audit": r["last_audit"].isoformat() if r["last_audit"] else None,
-            "latest_score": r["latest_score"],
-            "open_ncr": r["open_ncr"],
-        }
-        for r in rows
-    ]}
+    return {
+        "businesses": [
+            {
+                "id": str(r["business_tenant"]),
+                "company_name": r["company_name"] or "N/A",
+                "email": r["email"] or "",
+                "phone": r.get("phone") or "",
+                "address": r.get("address") or "",
+                "submission_count": r["submission_count"],
+                "approved_count": r["approved_count"],
+                "active_certs": r["active_certs"],
+                "expiring_soon": r["expiring_soon"],
+                "nearest_expiry": r["nearest_expiry"].isoformat() if r["nearest_expiry"] else None,
+                "audit_count": r["audit_count"],
+                "last_audit": r["last_audit"].isoformat() if r["last_audit"] else None,
+                "latest_score": r["latest_score"],
+                "open_ncr": r["open_ncr"],
+            }
+            for r in rows
+        ]
+    }
 
 
 # ── Business dossier (consolidated docs + revisions) ──
@@ -130,25 +137,33 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
     biz = await db.fetchrow(
         "SELECT id, company_name, email, phone, address FROM users "
         "WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1",
-        business_id)
+        business_id,
+    )
     if not biz:
         raise HTTPException(404, "Doanh nghiệp không tồn tại")
 
-    submissions = await db.fetch("""
+    submissions = await db.fetch(
+        """
         SELECT id, status, document_ids, deadline, auditor_id, auditor_notes,
                submitted_at, updated_at
         FROM submissions
         WHERE business_tenant=$1 AND provider_id=$2
         ORDER BY submitted_at DESC NULLS LAST, updated_at DESC
-    """, business_id, provider_id)
+    """,
+        business_id,
+        provider_id,
+    )
 
-    docs = await db.fetch("""
+    docs = await db.fetch(
+        """
         SELECT id, original_filename, doc_type, compliance_score, file_size,
                uploaded_at, evaluation_result, status
         FROM documents
         WHERE tenant_id=$1
         ORDER BY doc_type, uploaded_at DESC
-    """, business_id)
+    """,
+        business_id,
+    )
 
     by_doc_type: dict[str, list] = {}
     for d in docs:
@@ -160,23 +175,29 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
                 er = {}
         elif er is None:
             er = {}
-        by_doc_type.setdefault(d["doc_type"] or "_unsorted", []).append({
-            "id": str(d["id"]),
-            "original_filename": d["original_filename"],
-            "compliance_score": d["compliance_score"],
-            "file_size": d["file_size"],
-            "uploaded_at": d["uploaded_at"].isoformat(),
-            "overall_status": er.get("overall_status"),
-            "cb_approved_by": er.get("cb_approved_by"),
-            "status": d["status"],
-        })
+        by_doc_type.setdefault(d["doc_type"] or "_unsorted", []).append(
+            {
+                "id": str(d["id"]),
+                "original_filename": d["original_filename"],
+                "compliance_score": d["compliance_score"],
+                "file_size": d["file_size"],
+                "uploaded_at": d["uploaded_at"].isoformat(),
+                "overall_status": er.get("overall_status"),
+                "cb_approved_by": er.get("cb_approved_by"),
+                "status": d["status"],
+            }
+        )
 
-    visits = await db.fetch("""
+    visits = await db.fetch(
+        """
         SELECT id, status, visit_type, scheduled_date, compliance_score, auditor_id
         FROM audit_visits
         WHERE business_tenant=$1 AND provider_id=$2
         ORDER BY scheduled_date DESC
-    """, business_id, provider_id)
+    """,
+        business_id,
+        provider_id,
+    )
 
     return {
         "business": {
@@ -196,7 +217,8 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
                 "auditor_notes": s["auditor_notes"] or "",
                 "submitted_at": s["submitted_at"].isoformat() if s["submitted_at"] else None,
                 "updated_at": s["updated_at"].isoformat(),
-            } for s in submissions
+            }
+            for s in submissions
         ],
         "documents_by_type": [
             {
@@ -204,7 +226,8 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
                 "revisions": revs,
                 "current": revs[0] if revs else None,
                 "revision_count": len(revs),
-            } for dt, revs in by_doc_type.items()
+            }
+            for dt, revs in by_doc_type.items()
         ],
         "audit_visits": [
             {
@@ -214,7 +237,8 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
                 "scheduled_date": v["scheduled_date"].isoformat(),
                 "compliance_score": v["compliance_score"],
                 "auditor_id": str(v["auditor_id"]) if v["auditor_id"] else None,
-            } for v in visits
+            }
+            for v in visits
         ],
     }
 
@@ -243,15 +267,16 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
     provider_id = user.get("tenant_id") or user["sub"]
 
     biz_exists = await db.fetchval(
-        "SELECT 1 FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1",
-        business_id)
+        "SELECT 1 FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", business_id
+    )
     if not biz_exists:
         raise HTTPException(404, "Doanh nghiệp không tồn tại")
 
     # W3-M11 — Restrict doc_score to docs that appear in submissions assigned to
     # THIS provider. Otherwise a doc evaluated by another CB (or never submitted
     # at all) would inflate this provider's view of the business.
-    doc_row = await db.fetchrow("""
+    doc_row = await db.fetchrow(
+        """
         WITH provider_doc_ids AS (
           SELECT DISTINCT unnest(document_ids)::uuid AS doc_id
           FROM submissions
@@ -272,11 +297,15 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
           MIN(compliance_score)                 AS doc_min,
           MAX(compliance_score)                 AS doc_max
         FROM latest
-    """, business_id, provider_id)
+    """,
+        business_id,
+        provider_id,
+    )
 
     # W3-M12 — Average only over COMPLETED audit visits. Including in-progress
     # visits with placeholder scores skewed the composite.
-    audit_row = await db.fetchrow("""
+    audit_row = await db.fetchrow(
+        """
         SELECT
           COUNT(*) FILTER (WHERE compliance_score IS NOT NULL
                             AND status IN ('completed', 'report_submitted')) AS scored_visits,
@@ -288,7 +317,10 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
           MAX(compliance_score) FILTER (WHERE status IN ('completed', 'report_submitted')) AS audit_max
         FROM audit_visits
         WHERE business_tenant=$1 AND provider_id=$2
-    """, business_id, provider_id)
+    """,
+        business_id,
+        provider_id,
+    )
 
     doc_score = int(doc_row["doc_score"]) if doc_row["doc_score"] is not None else None
     audit_score = int(audit_row["audit_score"]) if audit_row["audit_score"] is not None else None
@@ -322,7 +354,9 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
             "doc_types_evaluated": doc_row["doc_types"] or 0,
             "min": doc_row["doc_min"],
             "max": doc_row["doc_max"],
-            "weight": 0.4 if doc_score is not None and audit_score is not None else (1.0 if doc_score is not None else 0),
+            "weight": 0.4
+            if doc_score is not None and audit_score is not None
+            else (1.0 if doc_score is not None else 0),
         },
         "audit_component": {
             "score": audit_score,
@@ -330,7 +364,9 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
             "scored_visits": audit_row["scored_visits"] or 0,
             "min": audit_row["audit_min"],
             "max": audit_row["audit_max"],
-            "weight": 0.6 if doc_score is not None and audit_score is not None else (1.0 if audit_score is not None else 0),
+            "weight": 0.6
+            if doc_score is not None and audit_score is not None
+            else (1.0 if audit_score is not None else 0),
         },
     }
 
@@ -340,7 +376,8 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
 async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
     _require_provider(user)
     where, param = _audit_filter(user)
-    counts = await db.fetchrow(f"""
+    counts = await db.fetchrow(
+        f"""
         SELECT
             COUNT(*) FILTER (WHERE status = 'scheduled')        AS scheduled,
             COUNT(*) FILTER (WHERE status = 'in_progress')      AS in_progress,
@@ -348,20 +385,32 @@ async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
             COUNT(*) FILTER (WHERE status = 'report_submitted') AS report_submitted,
             COUNT(*)                                             AS total
         FROM audit_visits WHERE {where}
-    """, param)
-    recent = await db.fetch(f"""
+    """,
+        param,
+    )
+    recent = await db.fetch(
+        f"""
         SELECT v.id, v.business_tenant, v.status, v.scheduled_date, v.visit_type,
                u.company_name AS business_name
         FROM audit_visits v
         LEFT JOIN users u ON u.id = v.business_tenant OR u.tenant_id = v.business_tenant AND u.is_owner = true
-        WHERE {where.replace('provider_id','v.provider_id').replace('auditor_id','v.auditor_id')}
+        WHERE {where.replace("provider_id", "v.provider_id").replace("auditor_id", "v.auditor_id")}
         ORDER BY v.scheduled_date DESC LIMIT 5
-    """, param)
+    """,
+        param,
+    )
     return {
         **{k: counts[k] for k in ["scheduled", "in_progress", "completed", "report_submitted", "total"]},
-        "recent": [{"id": str(r["id"]), "business_name": r["business_name"] or "N/A",
-                     "status": r["status"], "visit_type": r["visit_type"],
-                     "scheduled_date": r["scheduled_date"].isoformat()} for r in recent],
+        "recent": [
+            {
+                "id": str(r["id"]),
+                "business_name": r["business_name"] or "N/A",
+                "status": r["status"],
+                "visit_type": r["visit_type"],
+                "scheduled_date": r["scheduled_date"].isoformat(),
+            }
+            for r in recent
+        ],
     }
 
 
@@ -372,15 +421,24 @@ async def list_templates(user=Depends(get_current_user), db=Depends(get_db)):
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
     tid = user.get("tenant_id") or user["sub"]
-    rows = await db.fetch(
-        "SELECT * FROM audit_checklist_templates WHERE provider_id=$1 ORDER BY created_at DESC", tid)
-    return {"templates": [
-        {"id": str(r["id"]), "name": r["name"], "standard": r["standard"],
-         "items": r["items"] if isinstance(r["items"], list) else _json.loads(r["items"]) if isinstance(r["items"], str) else [],
-         "item_count": len(r["items"]) if isinstance(r["items"], list) else 0,
-         "created_at": r["created_at"].isoformat()}
-        for r in rows
-    ]}
+    rows = await db.fetch("SELECT * FROM audit_checklist_templates WHERE provider_id=$1 ORDER BY created_at DESC", tid)
+    return {
+        "templates": [
+            {
+                "id": str(r["id"]),
+                "name": r["name"],
+                "standard": r["standard"],
+                "items": r["items"]
+                if isinstance(r["items"], list)
+                else _json.loads(r["items"])
+                if isinstance(r["items"], str)
+                else [],
+                "item_count": len(r["items"]) if isinstance(r["items"], list) else 0,
+                "created_at": r["created_at"].isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.post("/templates")
@@ -391,7 +449,11 @@ async def create_template(req: dict, user=Depends(get_current_user), db=Depends(
     tid = user.get("tenant_id") or user["sub"]
     row = await db.fetchrow(
         "INSERT INTO audit_checklist_templates (provider_id, name, standard, items) VALUES ($1,$2,$3,$4::jsonb) RETURNING id",
-        tid, req.get("name", ""), req.get("standard", ""), _json.dumps(req.get("items", [])))
+        tid,
+        req.get("name", ""),
+        req.get("standard", ""),
+        _json.dumps(req.get("items", [])),
+    )
     return {"id": str(row["id"]), "message": "Đã tạo template"}
 
 
@@ -404,16 +466,23 @@ async def update_template(tid: str, req: dict, user=Depends(get_current_user), d
     provider = user.get("tenant_id") or user["sub"]
     updates, params, idx = [], [], 1
     if "name" in req:
-        updates.append(f"name=${idx}"); params.append(req["name"]); idx += 1
+        updates.append(f"name=${idx}")
+        params.append(req["name"])
+        idx += 1
     if "standard" in req:
-        updates.append(f"standard=${idx}"); params.append(req["standard"]); idx += 1
+        updates.append(f"standard=${idx}")
+        params.append(req["standard"])
+        idx += 1
     if "items" in req:
-        updates.append(f"items=${idx}::jsonb"); params.append(_json.dumps(req["items"])); idx += 1
+        updates.append(f"items=${idx}::jsonb")
+        params.append(_json.dumps(req["items"]))
+        idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
     params.extend([tid, provider])
     await db.execute(
-        f"UPDATE audit_checklist_templates SET {', '.join(updates)} WHERE id=${idx} AND provider_id=${idx+1}", *params)
+        f"UPDATE audit_checklist_templates SET {', '.join(updates)} WHERE id=${idx} AND provider_id=${idx + 1}", *params
+    )
     return {"message": "Đã cập nhật template"}
 
 
@@ -433,25 +502,34 @@ async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(g
 async def list_visits(user=Depends(get_current_user), db=Depends(get_db)):
     _require_provider(user)
     where, param = _audit_filter(user)
-    rows = await db.fetch(f"""
+    rows = await db.fetch(
+        f"""
         SELECT v.*, u.company_name AS business_name, a.company_name AS auditor_name
         FROM audit_visits v
         LEFT JOIN users u ON (u.id = v.business_tenant OR (u.tenant_id = v.business_tenant AND u.is_owner = true))
         LEFT JOIN users a ON a.id = v.auditor_id
         WHERE v.{where}
         ORDER BY v.scheduled_date DESC
-    """, param)
-    return {"visits": [
-        {
-            "id": str(r["id"]), "business_tenant": str(r["business_tenant"]),
-            "business_name": r["business_name"] or "N/A",
-            "auditor_name": r["auditor_name"],
-            "visit_type": r["visit_type"], "status": r["status"],
-            "scheduled_date": r["scheduled_date"].isoformat(),
-            "location": r["location"], "compliance_score": r["compliance_score"],
-            "created_at": r["created_at"].isoformat(),
-        } for r in rows
-    ]}
+    """,
+        param,
+    )
+    return {
+        "visits": [
+            {
+                "id": str(r["id"]),
+                "business_tenant": str(r["business_tenant"]),
+                "business_name": r["business_name"] or "N/A",
+                "auditor_name": r["auditor_name"],
+                "visit_type": r["visit_type"],
+                "status": r["status"],
+                "scheduled_date": r["scheduled_date"].isoformat(),
+                "location": r["location"],
+                "compliance_score": r["compliance_score"],
+                "created_at": r["created_at"].isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 # ── Create visit ──
@@ -469,11 +547,19 @@ async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depe
     if template_id:
         _validate_uuid(template_id)
 
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO audit_visits (business_tenant, provider_id, template_id, visit_type, scheduled_date, location, notes)
         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
-    """, req.business_tenant, provider, template_id, req.visit_type,
-        date.fromisoformat(req.scheduled_date), req.location, req.notes)
+    """,
+        req.business_tenant,
+        provider,
+        template_id,
+        req.visit_type,
+        date.fromisoformat(req.scheduled_date),
+        req.location,
+        req.notes,
+    )
 
     log.info(f"[audit] Created visit {row['id']} for {req.business_tenant}")
     return {"id": str(row["id"]), "message": "Đã tạo chuyến kiểm định"}
@@ -485,13 +571,17 @@ async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_db)
     _validate_uuid(vid)
     _require_provider(user)
     where, param = _audit_filter(user)
-    row = await db.fetchrow(f"""
+    row = await db.fetchrow(
+        f"""
         SELECT v.*, u.company_name AS business_name, a.company_name AS auditor_name
         FROM audit_visits v
         LEFT JOIN users u ON (u.id = v.business_tenant OR (u.tenant_id = v.business_tenant AND u.is_owner = true))
         LEFT JOIN users a ON a.id = v.auditor_id
-        WHERE v.id = $1 AND v.{where.replace('$1', '$2')}
-    """, vid, param)
+        WHERE v.id = $1 AND v.{where.replace("$1", "$2")}
+    """,
+        vid,
+        param,
+    )
     if not row:
         raise HTTPException(404)
 
@@ -500,36 +590,61 @@ async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_db)
 
     return {
         "visit": {
-            "id": str(row["id"]), "business_tenant": str(row["business_tenant"]),
+            "id": str(row["id"]),
+            "business_tenant": str(row["business_tenant"]),
             "business_name": row["business_name"] or "N/A",
             "auditor_name": row["auditor_name"],
-            "visit_type": row["visit_type"], "status": row["status"],
+            "visit_type": row["visit_type"],
+            "status": row["status"],
             "scheduled_date": row["scheduled_date"].isoformat(),
-            "location": row["location"], "notes": row["notes"],
+            "location": row["location"],
+            "notes": row["notes"],
             "compliance_score": row["compliance_score"],
             "report_pdf_path": bool(row["report_pdf_path"]),
-            "start_gps": row["start_gps"], "end_gps": row["end_gps"],
+            "start_gps": row["start_gps"],
+            "end_gps": row["end_gps"],
             "has_auditor_sig": bool(row["auditor_signature_path"]),
             "has_business_sig": bool(row["business_signature_path"]),
             "created_at": row["created_at"].isoformat(),
         },
         "items": [
-            {"id": str(i["id"]), "code": i.get("code") or "", "category": i["category"], "criteria": i["criteria"],
-             "severity": i["severity"], "result": i["result"], "note": i["note"],
-             "clause": i.get("clause") or "", "audit_method": i.get("audit_method") or "",
-             "documents": i.get("documents") or "", "evidence": i.get("evidence") or "",
-             "corrective_action": i.get("corrective_action") or "", "corrective_status": i.get("corrective_status"),
-             "photo_paths": i["photo_paths"] if isinstance(i["photo_paths"], list) else (_json.loads(i["photo_paths"]) if isinstance(i["photo_paths"], str) else []),
-             } for i in items
+            {
+                "id": str(i["id"]),
+                "code": i.get("code") or "",
+                "category": i["category"],
+                "criteria": i["criteria"],
+                "severity": i["severity"],
+                "result": i["result"],
+                "note": i["note"],
+                "clause": i.get("clause") or "",
+                "audit_method": i.get("audit_method") or "",
+                "documents": i.get("documents") or "",
+                "evidence": i.get("evidence") or "",
+                "corrective_action": i.get("corrective_action") or "",
+                "corrective_status": i.get("corrective_status"),
+                "photo_paths": i["photo_paths"]
+                if isinstance(i["photo_paths"], list)
+                else (_json.loads(i["photo_paths"]) if isinstance(i["photo_paths"], str) else []),
+            }
+            for i in items
         ],
         "ncrs": [
-            {"id": str(n["id"]), "description": n["description"], "severity": n["severity"],
-             "status": n["status"], "corrective_action": n["corrective_action"],
-             "deadline": n["deadline"].isoformat() if n["deadline"] else None,
-             "photo_paths": n["photo_paths"] if isinstance(n["photo_paths"], list) else (_json.loads(n["photo_paths"]) if isinstance(n["photo_paths"], str) else []),
-             "evidence_paths": n["evidence_paths"] if isinstance(n["evidence_paths"], list) else (_json.loads(n["evidence_paths"]) if isinstance(n["evidence_paths"], str) else []),
-             "created_at": n["created_at"].isoformat(),
-             } for n in ncrs
+            {
+                "id": str(n["id"]),
+                "description": n["description"],
+                "severity": n["severity"],
+                "status": n["status"],
+                "corrective_action": n["corrective_action"],
+                "deadline": n["deadline"].isoformat() if n["deadline"] else None,
+                "photo_paths": n["photo_paths"]
+                if isinstance(n["photo_paths"], list)
+                else (_json.loads(n["photo_paths"]) if isinstance(n["photo_paths"], str) else []),
+                "evidence_paths": n["evidence_paths"]
+                if isinstance(n["evidence_paths"], list)
+                else (_json.loads(n["evidence_paths"]) if isinstance(n["evidence_paths"], str) else []),
+                "created_at": n["created_at"].isoformat(),
+            }
+            for n in ncrs
         ],
     }
 
@@ -544,17 +659,27 @@ async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user
     provider = user.get("tenant_id") or user["sub"]
     updates, params, idx = [], [], 1
     if req.visit_type:
-        updates.append(f"visit_type=${idx}"); params.append(req.visit_type); idx += 1
+        updates.append(f"visit_type=${idx}")
+        params.append(req.visit_type)
+        idx += 1
     if req.scheduled_date:
-        updates.append(f"scheduled_date=${idx}"); params.append(date.fromisoformat(req.scheduled_date)); idx += 1
+        updates.append(f"scheduled_date=${idx}")
+        params.append(date.fromisoformat(req.scheduled_date))
+        idx += 1
     if req.location is not None:
-        updates.append(f"location=${idx}"); params.append(req.location); idx += 1
+        updates.append(f"location=${idx}")
+        params.append(req.location)
+        idx += 1
     if req.notes is not None:
-        updates.append(f"notes=${idx}"); params.append(req.notes); idx += 1
+        updates.append(f"notes=${idx}")
+        params.append(req.notes)
+        idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
     params.extend([vid, provider])
-    await db.execute(f"UPDATE audit_visits SET {', '.join(updates)} WHERE id=${idx} AND provider_id=${idx+1}", *params)
+    await db.execute(
+        f"UPDATE audit_visits SET {', '.join(updates)} WHERE id=${idx} AND provider_id=${idx + 1}", *params
+    )
     return {"message": "Đã cập nhật"}
 
 
@@ -567,7 +692,8 @@ async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_
         raise HTTPException(403)
     provider = user.get("tenant_id") or user["sub"]
     result = await db.execute(
-        "DELETE FROM audit_visits WHERE id=$1 AND provider_id=$2 AND status='scheduled'", vid, provider)
+        "DELETE FROM audit_visits WHERE id=$1 AND provider_id=$2 AND status='scheduled'", vid, provider
+    )
     if result == "DELETE 0":
         raise HTTPException(400, "Chỉ xóa được chuyến ở trạng thái 'Đã lên lịch'")
     return {"message": "Đã xóa"}
@@ -588,7 +714,9 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
 
     auditor = await db.fetchrow(
         "SELECT id, company_name FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false AND role='provider'",
-        auditor_id, provider)
+        auditor_id,
+        provider,
+    )
     if not auditor:
         raise HTTPException(404, "Auditor không tồn tại")
 
@@ -597,11 +725,19 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
     # Notify auditor
     visit = await db.fetchrow("SELECT business_tenant, scheduled_date FROM audit_visits WHERE id=$1", vid)
     if visit:
-        biz = await db.fetchrow("SELECT company_name FROM users WHERE id=$1 OR (tenant_id=$1 AND is_owner=true) LIMIT 1", visit["business_tenant"])
+        biz = await db.fetchrow(
+            "SELECT company_name FROM users WHERE id=$1 OR (tenant_id=$1 AND is_owner=true) LIMIT 1",
+            visit["business_tenant"],
+        )
         biz_name = biz["company_name"] if biz else "N/A"
-        await notify(db, auditor_id, "audit",
-                     f"Bạn được gán kiểm định tại {biz_name}",
-                     f"Ngày: {visit['scheduled_date']}", "/audits")
+        await notify(
+            db,
+            auditor_id,
+            "audit",
+            f"Bạn được gán kiểm định tại {biz_name}",
+            f"Ngày: {visit['scheduled_date']}",
+            "/audits",
+        )
 
     return {"message": f"Đã gán {auditor['company_name']}"}
 
@@ -617,7 +753,8 @@ async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user
 
     where, param = _audit_filter(user)
     result = await db.execute(
-        f"UPDATE audit_visits SET status=$1 WHERE id=$2 AND {where.replace('$1','$3')}", new_status, vid, param)
+        f"UPDATE audit_visits SET status=$1 WHERE id=$2 AND {where.replace('$1', '$3')}", new_status, vid, param
+    )
     if result == "UPDATE 0":
         raise HTTPException(404)
 
@@ -655,11 +792,20 @@ async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depend
 
     # Insert from template
     for item in items:
-        await db.execute("""
+        await db.execute(
+            """
             INSERT INTO audit_visit_items (visit_id, code, category, criteria, severity, clause, audit_method, documents)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        """, vid, item.get("code", ""), item.get("category", ""), item.get("criteria", ""),
-            item.get("severity", "minor"), item.get("clause", ""), item.get("audit_method", ""), item.get("documents", ""))
+        """,
+            vid,
+            item.get("code", ""),
+            item.get("category", ""),
+            item.get("criteria", ""),
+            item.get("severity", "minor"),
+            item.get("clause", ""),
+            item.get("audit_method", ""),
+            item.get("documents", ""),
+        )
 
     return {"message": f"Đã tạo {len(items)} checklist items", "count": len(items)}
 
@@ -668,17 +814,28 @@ async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depend
 #  PHASE B: Field Recording — Items, Photos, NCR
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @router.get("/{vid}/items")
 async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(vid)
     _require_provider(user)
     rows = await db.fetch("SELECT * FROM audit_visit_items WHERE visit_id=$1 ORDER BY category, created_at", vid)
-    return {"items": [
-        {"id": str(r["id"]), "category": r["category"], "criteria": r["criteria"],
-         "severity": r["severity"], "result": r["result"], "note": r["note"],
-         "photo_paths": r["photo_paths"] if isinstance(r["photo_paths"], list) else (_json.loads(r["photo_paths"]) if isinstance(r["photo_paths"], str) else []),
-         } for r in rows
-    ]}
+    return {
+        "items": [
+            {
+                "id": str(r["id"]),
+                "category": r["category"],
+                "criteria": r["criteria"],
+                "severity": r["severity"],
+                "result": r["result"],
+                "note": r["note"],
+                "photo_paths": r["photo_paths"]
+                if isinstance(r["photo_paths"], list)
+                else (_json.loads(r["photo_paths"]) if isinstance(r["photo_paths"], str) else []),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.post("/{vid}/items")
@@ -688,17 +845,27 @@ async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depen
     severity = req.get("severity", "minor")
     if severity not in ("critical", "major", "minor"):
         raise HTTPException(400, "severity không hợp lệ")
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO audit_visit_items (visit_id, code, category, criteria, severity, clause, audit_method, documents)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
-    """, vid, req.get("code", ""), req.get("category", ""), req.get("criteria", ""),
-        severity, req.get("clause", ""), req.get("audit_method", ""), req.get("documents", ""))
+    """,
+        vid,
+        req.get("code", ""),
+        req.get("category", ""),
+        req.get("criteria", ""),
+        severity,
+        req.get("clause", ""),
+        req.get("audit_method", ""),
+        req.get("documents", ""),
+    )
     return {"id": str(row["id"]), "message": "Đã thêm hạng mục"}
 
 
 @router.delete("/{vid}/items/{item_id}")
 async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db=Depends(get_db)):
-    _validate_uuid(vid); _validate_uuid(item_id)
+    _validate_uuid(vid)
+    _validate_uuid(item_id)
     _require_provider(user)
     await db.execute("DELETE FROM audit_visit_items WHERE id=$1 AND visit_id=$2", item_id, vid)
     return {"message": "Đã xóa"}
@@ -706,27 +873,36 @@ async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db
 
 @router.put("/{vid}/items/{item_id}")
 async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
-    _validate_uuid(vid); _validate_uuid(item_id)
+    _validate_uuid(vid)
+    _validate_uuid(item_id)
     _require_provider(user)
     updates, params, idx = [], [], 1
     if "result" in req:
         if req["result"] not in ("conform", "minor_nc", "major_nc", "na", "observation", None):
             raise HTTPException(400, "result không hợp lệ")
-        updates.append(f"result=${idx}"); params.append(req["result"]); idx += 1
+        updates.append(f"result=${idx}")
+        params.append(req["result"])
+        idx += 1
     for field in ["note", "evidence", "corrective_action", "corrective_status"]:
         if field in req:
-            updates.append(f"{field}=${idx}"); params.append(req[field]); idx += 1
+            updates.append(f"{field}=${idx}")
+            params.append(req[field])
+            idx += 1
     if not updates:
         return {"message": "OK"}
     params.extend([item_id, vid])
-    await db.execute(f"UPDATE audit_visit_items SET {', '.join(updates)} WHERE id=${idx} AND visit_id=${idx+1}", *params)
+    await db.execute(
+        f"UPDATE audit_visit_items SET {', '.join(updates)} WHERE id=${idx} AND visit_id=${idx + 1}", *params
+    )
     return {"message": "OK"}
 
 
 @router.post("/{vid}/items/{item_id}/photo")
-async def upload_item_photo(vid: str, item_id: str, file: UploadFile = File(...),
-                            user=Depends(get_current_user), db=Depends(get_db)):
-    _validate_uuid(vid); _validate_uuid(item_id)
+async def upload_item_photo(
+    vid: str, item_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
+):
+    _validate_uuid(vid)
+    _validate_uuid(item_id)
     _require_provider(user)
 
     content = await file.read()
@@ -741,10 +917,15 @@ async def upload_item_photo(vid: str, item_id: str, file: UploadFile = File(...)
     photo_url = str(save_path)
 
     # Append to photo_paths JSONB array
-    await db.execute("""
+    await db.execute(
+        """
         UPDATE audit_visit_items SET photo_paths = photo_paths || $1::jsonb
         WHERE id=$2 AND visit_id=$3
-    """, _json.dumps([photo_url]), item_id, vid)
+    """,
+        _json.dumps([photo_url]),
+        item_id,
+        vid,
+    )
 
     return {"message": "Đã upload ảnh", "path": photo_url}
 
@@ -755,51 +936,75 @@ async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_db))
     _validate_uuid(vid)
     _require_provider(user)
     rows = await db.fetch("SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY created_at", vid)
-    return {"ncrs": [
-        {"id": str(r["id"]), "description": r["description"], "severity": r["severity"],
-         "status": r["status"], "corrective_action": r["corrective_action"],
-         "deadline": r["deadline"].isoformat() if r["deadline"] else None,
-         "photo_paths": r["photo_paths"] if isinstance(r["photo_paths"], list) else (_json.loads(r["photo_paths"]) if isinstance(r["photo_paths"], str) else []),
-         "evidence_paths": r["evidence_paths"] if isinstance(r["evidence_paths"], list) else (_json.loads(r["evidence_paths"]) if isinstance(r["evidence_paths"], str) else []),
-         "created_at": r["created_at"].isoformat()}
-        for r in rows
-    ]}
+    return {
+        "ncrs": [
+            {
+                "id": str(r["id"]),
+                "description": r["description"],
+                "severity": r["severity"],
+                "status": r["status"],
+                "corrective_action": r["corrective_action"],
+                "deadline": r["deadline"].isoformat() if r["deadline"] else None,
+                "photo_paths": r["photo_paths"]
+                if isinstance(r["photo_paths"], list)
+                else (_json.loads(r["photo_paths"]) if isinstance(r["photo_paths"], str) else []),
+                "evidence_paths": r["evidence_paths"]
+                if isinstance(r["evidence_paths"], list)
+                else (_json.loads(r["evidence_paths"]) if isinstance(r["evidence_paths"], str) else []),
+                "created_at": r["created_at"].isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.post("/{vid}/ncr")
 async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(vid)
     _require_provider(user)
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO audit_ncr (visit_id, item_id, description, severity, corrective_action, deadline)
         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
-    """, vid, req.get("item_id"), req.get("description", ""),
-        req.get("severity", "minor"), req.get("corrective_action"),
-        date.fromisoformat(req["deadline"]) if req.get("deadline") else None)
+    """,
+        vid,
+        req.get("item_id"),
+        req.get("description", ""),
+        req.get("severity", "minor"),
+        req.get("corrective_action"),
+        date.fromisoformat(req["deadline"]) if req.get("deadline") else None,
+    )
     return {"id": str(row["id"]), "message": "Đã tạo NCR"}
 
 
 @router.put("/{vid}/ncr/{ncr_id}")
 async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
-    _validate_uuid(vid); _validate_uuid(ncr_id)
+    _validate_uuid(vid)
+    _validate_uuid(ncr_id)
     _require_provider(user)
     updates, params, idx = [], [], 1
     for field in ["description", "severity", "corrective_action", "status"]:
         if field in req:
-            updates.append(f"{field}=${idx}"); params.append(req[field]); idx += 1
+            updates.append(f"{field}=${idx}")
+            params.append(req[field])
+            idx += 1
     if "deadline" in req and req["deadline"]:
-        updates.append(f"deadline=${idx}"); params.append(date.fromisoformat(req["deadline"])); idx += 1
+        updates.append(f"deadline=${idx}")
+        params.append(date.fromisoformat(req["deadline"]))
+        idx += 1
     if not updates:
         return {"message": "OK"}
     params.extend([ncr_id, vid])
-    await db.execute(f"UPDATE audit_ncr SET {', '.join(updates)} WHERE id=${idx} AND visit_id=${idx+1}", *params)
+    await db.execute(f"UPDATE audit_ncr SET {', '.join(updates)} WHERE id=${idx} AND visit_id=${idx + 1}", *params)
     return {"message": "OK"}
 
 
 @router.post("/{vid}/ncr/{ncr_id}/photo")
-async def upload_ncr_photo(vid: str, ncr_id: str, file: UploadFile = File(...),
-                           user=Depends(get_current_user), db=Depends(get_db)):
-    _validate_uuid(vid); _validate_uuid(ncr_id)
+async def upload_ncr_photo(
+    vid: str, ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
+):
+    _validate_uuid(vid)
+    _validate_uuid(ncr_id)
     _require_provider(user)
 
     content = await file.read()
@@ -812,15 +1017,21 @@ async def upload_ncr_photo(vid: str, ncr_id: str, file: UploadFile = File(...),
     save_path = save_dir / fname
     save_path.write_bytes(content)
 
-    await db.execute("""
+    await db.execute(
+        """
         UPDATE audit_ncr SET photo_paths = photo_paths || $1::jsonb WHERE id=$2 AND visit_id=$3
-    """, _json.dumps([str(save_path)]), ncr_id, vid)
+    """,
+        _json.dumps([str(save_path)]),
+        ncr_id,
+        vid,
+    )
     return {"message": "Đã upload ảnh NCR", "path": str(save_path)}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PHASE C: Report PDF Generation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @router.post("/{vid}/generate-report")
 async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
@@ -835,11 +1046,18 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
     ncrs = await db.fetch("SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY severity, created_at", vid)
 
     # Get names
-    biz = await db.fetchrow("SELECT company_name FROM users WHERE id=$1 OR (tenant_id=$1 AND is_owner=true) LIMIT 1", visit["business_tenant"])
+    biz = await db.fetchrow(
+        "SELECT company_name FROM users WHERE id=$1 OR (tenant_id=$1 AND is_owner=true) LIMIT 1",
+        visit["business_tenant"],
+    )
     biz_name = biz["company_name"] if biz else "N/A"
     provider = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", visit["provider_id"])
     provider_name = provider["company_name"] if provider else "N/A"
-    auditor = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", visit["auditor_id"]) if visit["auditor_id"] else None
+    auditor = (
+        await db.fetchrow("SELECT company_name FROM users WHERE id=$1", visit["auditor_id"])
+        if visit["auditor_id"]
+        else None
+    )
     auditor_name = auditor["company_name"] if auditor else "N/A"
 
     # Build PDF
@@ -852,22 +1070,28 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
 
-    pdfmetrics.registerFont(TTFont('VNFont', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
-    pdfmetrics.registerFont(TTFont('VNFontBold', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'))
+    pdfmetrics.registerFont(TTFont("VNFont", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+    pdfmetrics.registerFont(TTFont("VNFontBold", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
 
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=25*mm, bottomMargin=25*mm, leftMargin=20*mm, rightMargin=20*mm)
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, topMargin=25 * mm, bottomMargin=25 * mm, leftMargin=20 * mm, rightMargin=20 * mm
+    )
 
-    title_s = ParagraphStyle('T', fontName='VNFontBold', fontSize=18, leading=24, alignment=TA_CENTER, textColor=colors.HexColor('#065E43'))
-    sub_s = ParagraphStyle('S', fontName='VNFont', fontSize=10, leading=14, alignment=TA_CENTER, textColor=colors.HexColor('#374151'))
-    h2_s = ParagraphStyle('H2', fontName='VNFontBold', fontSize=12, leading=16, textColor=colors.HexColor('#1A2332'))
-    body_s = ParagraphStyle('B', fontName='VNFont', fontSize=10, leading=14, textColor=colors.HexColor('#374151'))
-    bold_s = ParagraphStyle('BB', fontName='VNFontBold', fontSize=10, leading=14, textColor=colors.HexColor('#1A2332'))
+    title_s = ParagraphStyle(
+        "T", fontName="VNFontBold", fontSize=18, leading=24, alignment=TA_CENTER, textColor=colors.HexColor("#065E43")
+    )
+    sub_s = ParagraphStyle(
+        "S", fontName="VNFont", fontSize=10, leading=14, alignment=TA_CENTER, textColor=colors.HexColor("#374151")
+    )
+    h2_s = ParagraphStyle("H2", fontName="VNFontBold", fontSize=12, leading=16, textColor=colors.HexColor("#1A2332"))
+    body_s = ParagraphStyle("B", fontName="VNFont", fontSize=10, leading=14, textColor=colors.HexColor("#374151"))
+    bold_s = ParagraphStyle("BB", fontName="VNFontBold", fontSize=10, leading=14, textColor=colors.HexColor("#1A2332"))
 
     elements = []
     elements.append(Paragraph("BÁO CÁO KIỂM ĐỊNH TẠI CHỖ", title_s))
     elements.append(Paragraph("ONSITE AUDIT REPORT", sub_s))
-    elements.append(Spacer(1, 8*mm))
+    elements.append(Spacer(1, 8 * mm))
 
     # Info table
     type_labels = {"initial": "Lần đầu", "renewal": "Tái đánh giá", "surprise": "Đột xuất"}
@@ -882,14 +1106,21 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
     # GPS info
     start_gps = visit["start_gps"]
     end_gps = visit["end_gps"]
-    if isinstance(start_gps, str): start_gps = _json.loads(start_gps)
-    if isinstance(end_gps, str): end_gps = _json.loads(end_gps)
+    if isinstance(start_gps, str):
+        start_gps = _json.loads(start_gps)
+    if isinstance(end_gps, str):
+        end_gps = _json.loads(end_gps)
     if start_gps:
-        info.append(["GPS bắt đầu", f"{start_gps['lat']:.6f}, {start_gps['lng']:.6f} · {start_gps.get('timestamp', '')[:19]}"])
+        info.append(
+            ["GPS bắt đầu", f"{start_gps['lat']:.6f}, {start_gps['lng']:.6f} · {start_gps.get('timestamp', '')[:19]}"]
+        )
     if end_gps:
-        info.append(["GPS kết thúc", f"{end_gps['lat']:.6f}, {end_gps['lng']:.6f} · {end_gps.get('timestamp', '')[:19]}"])
+        info.append(
+            ["GPS kết thúc", f"{end_gps['lat']:.6f}, {end_gps['lng']:.6f} · {end_gps.get('timestamp', '')[:19]}"]
+        )
     if start_gps and end_gps and start_gps.get("timestamp") and end_gps.get("timestamp"):
         from datetime import datetime as _dt
+
         try:
             t1 = _dt.fromisoformat(start_gps["timestamp"])
             t2 = _dt.fromisoformat(end_gps["timestamp"])
@@ -898,14 +1129,20 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
             info.append(["Thời gian tại chỗ", f"{hours:.1f} giờ"])
         except Exception:
             pass
-    t = Table(info, colWidths=[45*mm, 125*mm])
-    t.setStyle(TableStyle([
-        ('FONTNAME', (0,0), (0,-1), 'VNFontBold'), ('FONTNAME', (1,0), (1,-1), 'VNFont'),
-        ('FONTSIZE', (0,0), (-1,-1), 10), ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#E2E8F0')),
-    ]))
+    t = Table(info, colWidths=[45 * mm, 125 * mm])
+    t.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "VNFontBold"),
+                ("FONTNAME", (1, 0), (1, -1), "VNFont"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#E2E8F0")),
+            ]
+        )
+    )
     elements.append(t)
-    elements.append(Spacer(1, 8*mm))
+    elements.append(Spacer(1, 8 * mm))
 
     # Summary
     total = len(items)
@@ -918,47 +1155,76 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
     score = visit["compliance_score"] or (round(conform_count / answered * 100) if answered > 0 else 0)
 
     elements.append(Paragraph("1. TÓM TẮT KẾT QUẢ", h2_s))
-    elements.append(Spacer(1, 3*mm))
+    elements.append(Spacer(1, 3 * mm))
     summary = [
-        ["Tổng hạng mục", str(total)], ["Đạt (C)", str(conform_count)],
-        ["Minor NC", str(minor_nc)], ["Major NC", str(major_nc)],
-        ["Quan sát", str(obs)], ["N/A", str(na)], ["Điểm tuân thủ", f"{score}%"],
+        ["Tổng hạng mục", str(total)],
+        ["Đạt (C)", str(conform_count)],
+        ["Minor NC", str(minor_nc)],
+        ["Major NC", str(major_nc)],
+        ["Quan sát", str(obs)],
+        ["N/A", str(na)],
+        ["Điểm tuân thủ", f"{score}%"],
     ]
-    st = Table(summary, colWidths=[45*mm, 30*mm])
-    st.setStyle(TableStyle([
-        ('FONTNAME', (0,0), (-1,-1), 'VNFont'), ('FONTSIZE', (0,0), (-1,-1), 10),
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F0F7F4')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
+    st = Table(summary, colWidths=[45 * mm, 30 * mm])
+    st.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "VNFont"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F0F7F4")),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ]
+        )
+    )
     elements.append(st)
-    elements.append(Spacer(1, 8*mm))
+    elements.append(Spacer(1, 8 * mm))
 
     # Checklist detail per item
     from reportlab.platypus import Image as RLImage
 
     elements.append(Paragraph("2. CHI TIẾT KIỂM TRA", h2_s))
-    elements.append(Spacer(1, 3*mm))
-    result_labels = {"conform": "Đạt (C)", "minor_nc": "Minor NC", "major_nc": "Major NC", "na": "N/A", "observation": "Quan sát"}
+    elements.append(Spacer(1, 3 * mm))
+    result_labels = {
+        "conform": "Đạt (C)",
+        "minor_nc": "Minor NC",
+        "major_nc": "Major NC",
+        "na": "N/A",
+        "observation": "Quan sát",
+    }
 
     for idx_i, item in enumerate(items, 1):
         code = item.get("code") or ""
         result_text = result_labels.get(item["result"], "—")
         sev = item["severity"]
-        result_color = "#087653" if item["result"] == "conform" else "#DC2626" if item["result"] == "major_nc" else "#D97706" if item["result"] == "minor_nc" else "#6B7280"
+        result_color = (
+            "#087653"
+            if item["result"] == "conform"
+            else "#DC2626"
+            if item["result"] == "major_nc"
+            else "#D97706"
+            if item["result"] == "minor_nc"
+            else "#6B7280"
+        )
 
-        elements.append(Paragraph(
-            f'<b>{code} — {item["criteria"]}</b> [{sev}] → <font color="{result_color}"><b>{result_text}</b></font>',
-            body_s))
+        elements.append(
+            Paragraph(
+                f'<b>{code} — {item["criteria"]}</b> [{sev}] → <font color="{result_color}"><b>{result_text}</b></font>',
+                body_s,
+            )
+        )
 
         if item.get("clause"):
-            elements.append(Paragraph(f'  Điều khoản: {item["clause"]}', body_s))
+            elements.append(Paragraph(f"  Điều khoản: {item['clause']}", body_s))
         if item.get("evidence"):
-            elements.append(Paragraph(f'  Bằng chứng: {item["evidence"]}', body_s))
+            elements.append(Paragraph(f"  Bằng chứng: {item['evidence']}", body_s))
         if item.get("note"):
-            elements.append(Paragraph(f'  Ghi chú: {item["note"]}', body_s))
+            elements.append(Paragraph(f"  Ghi chú: {item['note']}", body_s))
         if item["result"] in ("minor_nc", "major_nc") and item.get("corrective_action"):
-            elements.append(Paragraph(f'  <font color="#DC2626">Hành động khắc phục: {item["corrective_action"]}</font>', body_s))
+            elements.append(
+                Paragraph(f'  <font color="#DC2626">Hành động khắc phục: {item["corrective_action"]}</font>', body_s)
+            )
 
         # Embed photos
         photo_paths = item.get("photo_paths")
@@ -971,31 +1237,38 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
                 if fp.exists():
                     try:
                         from PIL import Image as PILImage
+
                         PILImage.open(str(fp)).verify()  # validate it's a real image
-                        photo_row.append(RLImage(str(fp), width=35*mm, height=35*mm))
+                        photo_row.append(RLImage(str(fp), width=35 * mm, height=35 * mm))
                     except Exception:
                         pass
             if photo_row:
-                pt = Table([photo_row], colWidths=[38*mm] * len(photo_row))
-                pt.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+                pt = Table([photo_row], colWidths=[38 * mm] * len(photo_row))
+                pt.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
                 elements.append(pt)
 
-        elements.append(Spacer(1, 3*mm))
+        elements.append(Spacer(1, 3 * mm))
 
-    elements.append(Spacer(1, 5*mm))
+    elements.append(Spacer(1, 5 * mm))
 
     # NCR with photos
     if ncrs:
         elements.append(Paragraph("3. SAI PHẠM (NCR)", h2_s))
-        elements.append(Spacer(1, 3*mm))
+        elements.append(Spacer(1, 3 * mm))
         for n_idx, ncr in enumerate(ncrs, 1):
-            sev_color = "#DC2626" if ncr["severity"] == "critical" else "#D97706" if ncr["severity"] == "major" else "#6B7280"
-            elements.append(Paragraph(
-                f'<b><font color="{sev_color}">NCR #{n_idx} [{ncr["severity"].upper()}]</font></b>: {ncr["description"]}', body_s))
+            sev_color = (
+                "#DC2626" if ncr["severity"] == "critical" else "#D97706" if ncr["severity"] == "major" else "#6B7280"
+            )
+            elements.append(
+                Paragraph(
+                    f'<b><font color="{sev_color}">NCR #{n_idx} [{ncr["severity"].upper()}]</font></b>: {ncr["description"]}',
+                    body_s,
+                )
+            )
             if ncr["corrective_action"]:
-                elements.append(Paragraph(f'  Hành động khắc phục: {ncr["corrective_action"]}', body_s))
+                elements.append(Paragraph(f"  Hành động khắc phục: {ncr['corrective_action']}", body_s))
             if ncr["deadline"]:
-                elements.append(Paragraph(f'  Hạn: {ncr["deadline"].strftime("%d/%m/%Y")}', body_s))
+                elements.append(Paragraph(f"  Hạn: {ncr['deadline'].strftime('%d/%m/%Y')}", body_s))
 
             # NCR photos
             ncr_photos = ncr.get("photo_paths")
@@ -1008,34 +1281,46 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
                     if fp.exists():
                         try:
                             from PIL import Image as PILImage
+
                             PILImage.open(str(fp)).verify()
-                            ncr_photo_row.append(RLImage(str(fp), width=35*mm, height=35*mm))
+                            ncr_photo_row.append(RLImage(str(fp), width=35 * mm, height=35 * mm))
                         except Exception:
                             pass
                 if ncr_photo_row:
-                    npt = Table([ncr_photo_row], colWidths=[38*mm] * len(ncr_photo_row))
-                    npt.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+                    npt = Table([ncr_photo_row], colWidths=[38 * mm] * len(ncr_photo_row))
+                    npt.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
                     elements.append(npt)
-            elements.append(Spacer(1, 2*mm))
-        elements.append(Spacer(1, 6*mm))
+            elements.append(Spacer(1, 2 * mm))
+        elements.append(Spacer(1, 6 * mm))
 
     # Signature area
     elements.append(Paragraph("4. XÁC NHẬN", h2_s))
-    elements.append(Spacer(1, 5*mm))
-    sig = Table([
-        ["Auditor", "", "Đại diện doanh nghiệp"],
-        ["", "", ""],
-        ["_" * 25, "", "_" * 25],
-        [auditor_name, "", biz_name],
-    ], colWidths=[70*mm, 30*mm, 70*mm])
-    sig.setStyle(TableStyle([
-        ('FONTNAME', (0,0), (-1,-1), 'VNFont'), ('FONTSIZE', (0,0), (-1,-1), 10),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'), ('TOPPADDING', (0,0), (-1,-1), 4),
-    ]))
+    elements.append(Spacer(1, 5 * mm))
+    sig = Table(
+        [
+            ["Auditor", "", "Đại diện doanh nghiệp"],
+            ["", "", ""],
+            ["_" * 25, "", "_" * 25],
+            [auditor_name, "", biz_name],
+        ],
+        colWidths=[70 * mm, 30 * mm, 70 * mm],
+    )
+    sig.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "VNFont"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     elements.append(sig)
 
-    elements.append(Spacer(1, 10*mm))
-    footer_s = ParagraphStyle('F', fontName='VNFont', fontSize=8, leading=11, alignment=TA_CENTER, textColor=colors.HexColor('#94A3B8'))
+    elements.append(Spacer(1, 10 * mm))
+    footer_s = ParagraphStyle(
+        "F", fontName="VNFont", fontSize=8, leading=11, alignment=TA_CENTER, textColor=colors.HexColor("#94A3B8")
+    )
     elements.append(Paragraph(f"Báo cáo tạo tự động bởi AMINRA · {provider_name}", footer_s))
 
     doc.build(elements)
@@ -1046,24 +1331,30 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
     pdf_file = save_dir / f"{vid}.pdf"
     pdf_file.write_bytes(buf.getvalue())
 
-    await db.execute("UPDATE audit_visits SET report_pdf_path=$1, status='report_submitted', compliance_score=$2 WHERE id=$3",
-                     str(pdf_file), score, vid)
+    await db.execute(
+        "UPDATE audit_visits SET report_pdf_path=$1, status='report_submitted', compliance_score=$2 WHERE id=$3",
+        str(pdf_file),
+        score,
+        vid,
+    )
 
     log.info(f"[audit] Report generated for {vid}, score={score}")
     return {"message": "Đã tạo báo cáo", "score": score, "pdf_url": f"/api/api/audits/{vid}/report-pdf"}
 
 
 @router.get("/{vid}/report-pdf")
-async def download_report(vid: str, request: Request, token: Optional[str] = Query(None),
-                          db=Depends(get_db)):
+async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_db)):
     _validate_uuid(vid)
     from auth.jwt_utils import decode_token
+
     auth = request.headers.get("Authorization", "")
     tk = auth[7:] if auth.startswith("Bearer ") else token
     if not tk:
         raise HTTPException(401)
-    try: decode_token(tk)
-    except: raise HTTPException(401)
+    try:
+        decode_token(tk)
+    except:
+        raise HTTPException(401)
 
     row = await db.fetchrow("SELECT report_pdf_path FROM audit_visits WHERE id=$1", vid)
     if not row or not row["report_pdf_path"]:
@@ -1073,31 +1364,46 @@ async def download_report(vid: str, request: Request, token: Optional[str] = Que
     if not pdf.exists():
         raise HTTPException(404, "File không tồn tại")
 
-    return Response(content=pdf.read_bytes(), media_type="application/pdf",
-                    headers={"Content-Disposition": f'inline; filename="audit_report_{vid[:8]}.pdf"'})
+    return Response(
+        content=pdf.read_bytes(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="audit_report_{vid[:8]}.pdf"'},
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PHASE D: History + Cert Decision
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @router.get("/history/{business_tenant}")
 async def visit_history(business_tenant: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(business_tenant)
     _require_provider(user)
-    rows = await db.fetch("""
+    rows = await db.fetch(
+        """
         SELECT v.*, a.company_name AS auditor_name
         FROM audit_visits v LEFT JOIN users a ON a.id = v.auditor_id
         WHERE v.business_tenant=$1 AND v.provider_id=$2
         ORDER BY v.scheduled_date DESC
-    """, business_tenant, user.get("tenant_id") or user["sub"])
-    return {"history": [
-        {"id": str(r["id"]), "visit_type": r["visit_type"], "status": r["status"],
-         "scheduled_date": r["scheduled_date"].isoformat(),
-         "compliance_score": r["compliance_score"], "auditor_name": r["auditor_name"],
-         "has_report": bool(r["report_pdf_path"]),
-         } for r in rows
-    ]}
+    """,
+        business_tenant,
+        user.get("tenant_id") or user["sub"],
+    )
+    return {
+        "history": [
+            {
+                "id": str(r["id"]),
+                "visit_type": r["visit_type"],
+                "status": r["status"],
+                "scheduled_date": r["scheduled_date"].isoformat(),
+                "compliance_score": r["compliance_score"],
+                "auditor_name": r["auditor_name"],
+                "has_report": bool(r["report_pdf_path"]),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.post("/{vid}/decision")
@@ -1134,6 +1440,7 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
         if not notes.strip():
             raise HTTPException(400, "Phải nhập lý do khi thu hồi chứng nhận")
         from services.cert_lifecycle import revoke_active_certs_for_business
+
         affected = await revoke_active_certs_for_business(
             db,
             business_tenant=str(visit["business_tenant"]),
@@ -1148,7 +1455,9 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
         await db.execute(
             "UPDATE halal_certificates SET status=$1, updated_at=NOW() "
             "WHERE business_tenant=$2 AND issued_by=$3 AND status <> 'revoked'",
-            cert_status, visit["business_tenant"], provider_id,
+            cert_status,
+            visit["business_tenant"],
+            provider_id,
         )
         await log_audit(
             db,
@@ -1163,9 +1472,14 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
         visit["business_tenant"],
     )
     if biz_owner:
-        await notify(db, str(biz_owner["id"]), "certificate",
-                     f"Chứng nhận đã được {decision_labels[decision]}",
-                     notes, "/documents")
+        await notify(
+            db,
+            str(biz_owner["id"]),
+            "certificate",
+            f"Chứng nhận đã được {decision_labels[decision]}",
+            notes,
+            "/documents",
+        )
 
     log.info(f"[audit] Decision {decision} for business {visit['business_tenant']}")
     return {"message": f"Đã {decision_labels[decision]} chứng nhận"}
@@ -1175,9 +1489,15 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
 #  PHASE F: Signature + GPS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @router.post("/{vid}/signature")
-async def upload_signature(vid: str, file: UploadFile = File(...), type: str = Query("auditor"),
-                           user=Depends(get_current_user), db=Depends(get_db)):
+async def upload_signature(
+    vid: str,
+    file: UploadFile = File(...),
+    type: str = Query("auditor"),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
     _validate_uuid(vid)
     _require_provider(user)
     if type not in ("auditor", "business"):
@@ -1215,44 +1535,59 @@ async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depen
 #  PHASE H: Follow-up & Corrective Action
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @router.get("/ncr/pending")
 async def pending_ncr(user=Depends(get_current_user), db=Depends(get_db)):
     """Business sees their open NCRs."""
     if user.get("role") != "business":
         raise HTTPException(403)
-    rows = await db.fetch("""
+    rows = await db.fetch(
+        """
         SELECT n.*, v.scheduled_date, v.location
         FROM audit_ncr n
         JOIN audit_visits v ON v.id = n.visit_id
         WHERE v.business_tenant=$1 AND n.status != 'closed'
         ORDER BY n.deadline ASC NULLS LAST
-    """, user.get("tenant_id"))
-    return {"ncrs": [
-        {"id": str(r["id"]), "visit_id": str(r["visit_id"]),
-         "description": r["description"], "severity": r["severity"],
-         "corrective_action": r["corrective_action"],
-         "deadline": r["deadline"].isoformat() if r["deadline"] else None,
-         "status": r["status"],
-         "scheduled_date": r["scheduled_date"].isoformat(),
-         "location": r["location"],
-         } for r in rows
-    ]}
+    """,
+        user.get("tenant_id"),
+    )
+    return {
+        "ncrs": [
+            {
+                "id": str(r["id"]),
+                "visit_id": str(r["visit_id"]),
+                "description": r["description"],
+                "severity": r["severity"],
+                "corrective_action": r["corrective_action"],
+                "deadline": r["deadline"].isoformat() if r["deadline"] else None,
+                "status": r["status"],
+                "scheduled_date": r["scheduled_date"].isoformat(),
+                "location": r["location"],
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.post("/ncr/{ncr_id}/evidence")
-async def upload_ncr_evidence(ncr_id: str, file: UploadFile = File(...),
-                              user=Depends(get_current_user), db=Depends(get_db)):
+async def upload_ncr_evidence(
+    ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
+):
     """Business uploads corrective action evidence."""
     _validate_uuid(ncr_id)
     if user.get("role") != "business":
         raise HTTPException(403)
 
     # Verify NCR belongs to business
-    ncr = await db.fetchrow("""
+    ncr = await db.fetchrow(
+        """
         SELECT n.id, n.visit_id FROM audit_ncr n
         JOIN audit_visits v ON v.id = n.visit_id
         WHERE n.id=$1 AND v.business_tenant=$2
-    """, ncr_id, user.get("tenant_id"))
+    """,
+        ncr_id,
+        user.get("tenant_id"),
+    )
     if not ncr:
         raise HTTPException(404)
 
@@ -1266,17 +1601,26 @@ async def upload_ncr_evidence(ncr_id: str, file: UploadFile = File(...),
     save_path = save_dir / fname
     save_path.write_bytes(content)
 
-    await db.execute("""
+    await db.execute(
+        """
         UPDATE audit_ncr SET evidence_paths = evidence_paths || $1::jsonb, status='in_review'
         WHERE id=$2
-    """, _json.dumps([str(save_path)]), ncr_id)
+    """,
+        _json.dumps([str(save_path)]),
+        ncr_id,
+    )
 
     # Notify auditor
     visit = await db.fetchrow("SELECT auditor_id, provider_id FROM audit_visits WHERE id=$1", ncr["visit_id"])
     if visit and visit["auditor_id"]:
-        await notify(db, str(visit["auditor_id"]), "audit",
-                     "Doanh nghiệp đã gửi bằng chứng khắc phục",
-                     f"NCR #{ncr_id[:8]}", "/audits")
+        await notify(
+            db,
+            str(visit["auditor_id"]),
+            "audit",
+            "Doanh nghiệp đã gửi bằng chứng khắc phục",
+            f"NCR #{ncr_id[:8]}",
+            "/audits",
+        )
 
     return {"message": "Đã upload bằng chứng"}
 
@@ -1293,18 +1637,22 @@ async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=
 
     if action == "close":
         await db.execute(
-            "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2",
-            user["sub"], ncr_id)
+            "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2", user["sub"], ncr_id
+        )
     else:
         await db.execute("UPDATE audit_ncr SET status='open' WHERE id=$1", ncr_id)
 
     # Notify business
-    ncr = await db.fetchrow("""
+    ncr = await db.fetchrow(
+        """
         SELECT v.business_tenant FROM audit_ncr n JOIN audit_visits v ON v.id = n.visit_id WHERE n.id=$1
-    """, ncr_id)
+    """,
+        ncr_id,
+    )
     if ncr:
         biz_owner = await db.fetchrow(
-            "SELECT id FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", ncr["business_tenant"])
+            "SELECT id FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", ncr["business_tenant"]
+        )
         if biz_owner:
             msg = "NCR đã được đóng — đạt yêu cầu" if action == "close" else "NCR cần bổ sung bằng chứng"
             await notify(db, str(biz_owner["id"]), "audit", msg, "", "/audits")
@@ -1320,15 +1668,24 @@ async def create_follow_up(vid: str, req: dict, user=Depends(get_current_user), 
     if not user.get("is_owner"):
         raise HTTPException(403)
 
-    parent = await db.fetchrow("SELECT business_tenant, provider_id, auditor_id, template_id FROM audit_visits WHERE id=$1", vid)
+    parent = await db.fetchrow(
+        "SELECT business_tenant, provider_id, auditor_id, template_id FROM audit_visits WHERE id=$1", vid
+    )
     if not parent:
         raise HTTPException(404)
 
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO audit_visits (business_tenant, provider_id, auditor_id, template_id, visit_type, scheduled_date, location, notes)
         VALUES ($1, $2, $3, $4, 'renewal', $5, $6, $7) RETURNING id
-    """, parent["business_tenant"], parent["provider_id"], parent["auditor_id"], parent["template_id"],
+    """,
+        parent["business_tenant"],
+        parent["provider_id"],
+        parent["auditor_id"],
+        parent["template_id"],
         date.fromisoformat(req.get("scheduled_date", date.today().isoformat())),
-        req.get("location", ""), f"Follow-up từ kiểm định {vid[:8]}")
+        req.get("location", ""),
+        f"Follow-up từ kiểm định {vid[:8]}",
+    )
 
     return {"id": str(row["id"]), "message": "Đã tạo chuyến kiểm định follow-up"}

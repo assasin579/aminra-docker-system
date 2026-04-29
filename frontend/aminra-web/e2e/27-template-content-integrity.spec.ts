@@ -16,7 +16,11 @@
  */
 import { test, expect } from "@playwright/test";
 
-const BUSINESS_LOGIN = { email: "biz-demo-1@demo.aminra.vn", password: "DemoP@ss2026", role: "business" };
+const BUSINESS_LOGIN = {
+  email: "biz-demo-1@demo.aminra.vn",
+  password: "DemoP@ss2026",
+  role: "business",
+};
 
 test.describe("template content integrity", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -31,10 +35,14 @@ test.describe("template content integrity", () => {
    * Catches the exact 2026-04-26 bug (halal_policy_vi.docx had identical MD5
    * with sop_cleaning_sanitation_vi.docx because admin uploaded wrong content).
    */
-  test("no two doc_types serve the same template content", async ({ request }) => {
+  test("no two doc_types serve the same template content", async ({
+    request,
+  }) => {
     const { createHash } = await import("node:crypto");
 
-    const login = await request.post("/api/auth/login", { data: BUSINESS_LOGIN });
+    const login = await request.post("/api/auth/login", {
+      data: BUSINESS_LOGIN,
+    });
     if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
     const { access_token } = await login.json();
 
@@ -47,9 +55,12 @@ test.describe("template content integrity", () => {
     const hashByDocType: Record<string, string> = {};
     for (const t of templates as Array<{ doc_type: string; has_vi: boolean }>) {
       if (!t.has_vi) continue;
-      const dl = await request.get(`/api/templates/${t.doc_type}/download?lang=vi`, {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
+      const dl = await request.get(
+        `/api/templates/${t.doc_type}/download?lang=vi`,
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
+        },
+      );
       if (!dl.ok()) continue;
       const buf = Buffer.from(await dl.body());
       hashByDocType[t.doc_type] = createHash("md5").update(buf).digest("hex");
@@ -68,21 +79,34 @@ test.describe("template content integrity", () => {
     expect(
       collisions,
       "Two doc_types must not serve the same content. Likely admin uploaded wrong file to the second one.\n" +
-        collisions.map(c => "  - " + c).join("\n"),
+        collisions.map((c) => "  - " + c).join("\n"),
     ).toEqual([]);
   });
 
-  test("template download returns no-store headers (prevent stale browser cache)", async ({ request }) => {
-    const login = await request.post("/api/auth/login", { data: BUSINESS_LOGIN });
+  test("template download returns no-store headers (prevent stale browser cache)", async ({
+    request,
+  }) => {
+    const login = await request.post("/api/auth/login", {
+      data: BUSINESS_LOGIN,
+    });
     if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
     const { access_token } = await login.json();
-    const r = await request.get("/api/templates/halal_policy/download?lang=vi", {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
+    const r = await request.get(
+      "/api/templates/halal_policy/download?lang=vi",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      },
+    );
     expect(r.status()).toBe(200);
     const cacheControl = r.headers()["cache-control"] ?? "";
-    expect(cacheControl, "must include no-store so admin rotations propagate immediately").toContain("no-store");
-    expect(r.headers()["etag"], "must set ETag based on file mtime").toBeTruthy();
+    expect(
+      cacheControl,
+      "must include no-store so admin rotations propagate immediately",
+    ).toContain("no-store");
+    expect(
+      r.headers()["etag"],
+      "must set ETag based on file mtime",
+    ).toBeTruthy();
   });
 
   /**
@@ -94,13 +118,17 @@ test.describe("template content integrity", () => {
     const { readFile } = await import("node:fs/promises");
     const src = await readFile("../../backend/app.py", "utf8");
     const fnMatch = src.match(/def _find_template_file\([^)]*\)[\s\S]{0,800}/);
-    expect(fnMatch, "_find_template_file must exist in backend/app.py").not.toBeNull();
+    expect(
+      fnMatch,
+      "_find_template_file must exist in backend/app.py",
+    ).not.toBeNull();
     const body = fnMatch![0];
     expect(body, "must build canonical {doc_type}_{lang}.docx path").toMatch(
       /\{doc_type\}_\{lang\}\.docx/,
     );
-    expect(body, "must NOT iterate dir + use stem.endswith() (old buggy approach)").not.toMatch(
-      /\.iterdir\(\)[\s\S]*?stem\.endswith/,
-    );
+    expect(
+      body,
+      "must NOT iterate dir + use stem.endswith() (old buggy approach)",
+    ).not.toMatch(/\.iterdir\(\)[\s\S]*?stem\.endswith/);
   });
 });

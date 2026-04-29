@@ -14,7 +14,9 @@ const DEMO_CERT = "HALAL-2026-DEMO";
 
 test.describe("MVP Flow 1: Public verify cert", () => {
   test("API returns valid=true for seeded demo cert", async ({ api }) => {
-    const res = await api.get(`/api/submissions/certificates/public/${DEMO_CERT}`);
+    const res = await api.get(
+      `/api/submissions/certificates/public/${DEMO_CERT}`,
+    );
     if (res.status() === 404) {
       test.skip(true, "demo cert missing — run seed_demo_data.py");
     }
@@ -30,8 +32,14 @@ test.describe("MVP Flow 1: Public verify cert", () => {
     await page.waitForLoadState("networkidle");
 
     // Either 'Chứng nhận hợp lệ' OR 'Không tìm thấy' — depending on seed
-    const valid = await page.getByText(/Chứng nhận hợp lệ/i).isVisible().catch(() => false);
-    const notFound = await page.getByText(/Không tìm thấy/i).isVisible().catch(() => false);
+    const valid = await page
+      .getByText(/Chứng nhận hợp lệ/i)
+      .isVisible()
+      .catch(() => false);
+    const notFound = await page
+      .getByText(/Không tìm thấy/i)
+      .isVisible()
+      .catch(() => false);
 
     if (notFound) {
       test.skip(true, "demo cert missing");
@@ -65,7 +73,9 @@ test.describe("MVP Flow 2: Halal advisor chat", () => {
 test.describe("MVP Flow 5: Public cert PDF download", () => {
   test("Cert PDF endpoint requires token (security)", async ({ api }) => {
     // Without token → 401 — no public access without authentication
-    const res = await api.get(`/api/submissions/certificates/00000000-0000-0000-0000-000000000000/pdf`);
+    const res = await api.get(
+      `/api/submissions/certificates/00000000-0000-0000-0000-000000000000/pdf`,
+    );
     expect([401, 404]).toContain(res.status());
   });
 });
@@ -98,7 +108,9 @@ test.describe("MVP Flow 6: Business registration + login", () => {
 // ── Flow 8: Submissions list ──────────────────────────────────────────────
 
 test.describe("MVP Flow 8: Submissions list (business view)", () => {
-  test("my-submissions returns array for authenticated business", async ({ api }) => {
+  test("my-submissions returns array for authenticated business", async ({
+    api,
+  }) => {
     const login = await api.post("/auth/login", {
       data: { email: "biz-demo-1@demo.aminra.vn", password: "DemoP@ss2026" },
     });

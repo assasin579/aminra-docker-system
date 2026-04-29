@@ -13,6 +13,7 @@ Design:
   users in shared records (audit_logs metadata.ip is kept for the
   requesting user's own events only).
 """
+
 from __future__ import annotations
 
 import json
@@ -54,6 +55,7 @@ SECRET_FIELDS = {"password_hash"}
 
 # ── Main entry point ────────────────────────────────────────────────────────
 
+
 async def export_user_data(db, user: dict) -> dict:
     """Build a complete export bundle for a single user.
 
@@ -62,8 +64,8 @@ async def export_user_data(db, user: dict) -> dict:
     if not user or not user.get("sub"):
         raise ValueError("user is required")
 
-    user_id   = user["sub"]
-    role      = user.get("role")
+    user_id = user["sub"]
+    role = user.get("role")
     tenant_id = user.get("tenant_id")
 
     profile = await _profile(db, user_id)
@@ -82,27 +84,27 @@ async def export_user_data(db, user: dict) -> dict:
 
     return {
         "export_format_version": EXPORT_FORMAT_VERSION,
-        "exported_at":           datetime.now(timezone.utc).isoformat(),
-        "user_id":               user_id,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": user_id,
         "data_subject": {
-            "profile":       profile,
+            "profile": profile,
             "notifications": notifications,
-            "audit_logs":    audit_logs,
+            "audit_logs": audit_logs,
         },
-        "tenant_data":   business_data,
+        "tenant_data": business_data,
         "provider_data": provider_data,
         "legal_basis": {
-            "vietnam":    "Nghị định 13/2023/NĐ-CP — Quyền tiếp cận và xuất dữ liệu cá nhân",
-            "eu_gdpr":    "Article 20 — Right to data portability",
+            "vietnam": "Nghị định 13/2023/NĐ-CP — Quyền tiếp cận và xuất dữ liệu cá nhân",
+            "eu_gdpr": "Article 20 — Right to data portability",
         },
         "retention_note": (
-            "Audit logs may be retained beyond account deletion per legal "
-            "compliance requirements (minimum 5 years)."
+            "Audit logs may be retained beyond account deletion per legal compliance requirements (minimum 5 years)."
         ),
     }
 
 
 # ── Sections ────────────────────────────────────────────────────────────────
+
 
 async def _profile(db, user_id: str) -> dict:
     row = await db.fetchrow(
@@ -150,53 +152,53 @@ async def _audit_logs(db, user_id: str) -> list[dict]:
 async def _business_tenant_data(db, tenant_id: str) -> dict:
     """Everything tied to a tenant_id — relevant for both business owners
     and provider owners (their CB tenant)."""
-    documents      = await db.fetch(
+    documents = await db.fetch(
         "SELECT id, filename, doc_type, status, uploaded_at "
         "FROM documents WHERE tenant_id = $1 ORDER BY uploaded_at DESC",
         tenant_id,
     )
-    submissions    = await db.fetch(
+    submissions = await db.fetch(
         "SELECT id, provider_id, document_ids, status, notes, company_name, "
         "       submitted_at, updated_at, auditor_notes "
         "FROM submissions WHERE business_tenant = $1 ORDER BY submitted_at DESC",
         tenant_id,
     )
-    certificates   = await db.fetch(
+    certificates = await db.fetch(
         "SELECT id, cert_number, issued_by, company_name, issue_date, "
         "       expiry_date, status, notes, created_at "
         "FROM halal_certificates WHERE business_tenant = $1 ORDER BY issue_date DESC",
         tenant_id,
     )
-    audit_visits   = await db.fetch(
+    audit_visits = await db.fetch(
         "SELECT id, visit_type, status, scheduled_date, location, "
         "       compliance_score, created_at "
         "FROM audit_visits WHERE business_tenant = $1 ORDER BY scheduled_date DESC",
         tenant_id,
     )
-    suppliers      = await db.fetch(
+    suppliers = await db.fetch(
         "SELECT id, name, supplier_type, status, contact_person, created_at "
         "FROM suppliers WHERE tenant_id = $1 ORDER BY created_at DESC",
         tenant_id,
     )
-    materials      = await db.fetch(
+    materials = await db.fetch(
         "SELECT id, name, sku, category, supplier_id, halal_risk, created_at "
         "FROM materials WHERE tenant_id = $1 ORDER BY created_at DESC",
         tenant_id,
     )
-    batches        = await db.fetch(
+    batches = await db.fetch(
         "SELECT id, batch_code, product_name, status, started_at, completed_at "
         "FROM production_batches WHERE tenant_id = $1 ORDER BY created_at DESC",
         tenant_id,
     )
 
     return {
-        "tenant_id":         tenant_id,
-        "documents":         _rows(documents),
-        "submissions":       _rows(submissions),
-        "certificates":      _rows(certificates),
-        "audit_visits":      _rows(audit_visits),
-        "suppliers":         _rows(suppliers),
-        "materials":         _rows(materials),
+        "tenant_id": tenant_id,
+        "documents": _rows(documents),
+        "submissions": _rows(submissions),
+        "certificates": _rows(certificates),
+        "audit_visits": _rows(audit_visits),
+        "suppliers": _rows(suppliers),
+        "materials": _rows(materials),
         "production_batches": _rows(batches),
     }
 
@@ -221,6 +223,6 @@ async def _provider_data(db, provider_user_id: str) -> dict:
     )
     return {
         "received_submissions": _rows(received_submissions),
-        "audit_visits_run":     _rows(audits_run),
-        "certificates_issued":  _rows(certs_issued),
+        "audit_visits_run": _rows(audits_run),
+        "certificates_issued": _rows(certs_issued),
     }

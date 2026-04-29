@@ -13,14 +13,14 @@
  * `e2e/21-admin-pages-token-pattern.spec.ts` enforces this.
  */
 
-const USER_TOKEN_KEY  = 'aminra_user_token';
-const ADMIN_TOKEN_KEY = 'aminra_admin_token';
+const USER_TOKEN_KEY = "aminra_user_token";
+const ADMIN_TOKEN_KEY = "aminra_admin_token";
 
 export function readAdminToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return (
-    localStorage.getItem(ADMIN_TOKEN_KEY)  ||
-    localStorage.getItem(USER_TOKEN_KEY)   ||
+    localStorage.getItem(ADMIN_TOKEN_KEY) ||
+    localStorage.getItem(USER_TOKEN_KEY) ||
     sessionStorage.getItem(USER_TOKEN_KEY) ||
     null
   );

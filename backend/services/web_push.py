@@ -4,6 +4,7 @@ Used by `notify()` to send push notifications to all subscribed devices of a
 user. VAPID keys are loaded from env (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY).
 Subscriptions returning HTTP 410 Gone are auto-removed from the DB.
 """
+
 from __future__ import annotations
 
 import json
@@ -13,9 +14,9 @@ from typing import Any
 
 log = logging.getLogger("aminra.web_push")
 
-VAPID_PUBLIC_KEY  = os.getenv("VAPID_PUBLIC_KEY", "")
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
-VAPID_CONTACT     = os.getenv("VAPID_CONTACT_EMAIL", "mailto:support@aminra.vn")
+VAPID_CONTACT = os.getenv("VAPID_CONTACT_EMAIL", "mailto:support@aminra.vn")
 
 
 def is_configured() -> bool:

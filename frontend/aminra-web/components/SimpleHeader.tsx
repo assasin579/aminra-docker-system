@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function SimpleHeader() {
   const pathname = usePathname();
 
   const navItems = [
-    { label: 'Chat', href: '/' },
-    { label: 'Upload', href: '/upload' },
+    { label: "Chat", href: "/" },
+    { label: "Upload", href: "/upload" },
   ];
 
   return (
@@ -16,9 +16,17 @@ export default function SimpleHeader() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.png" alt="" className="h-8 w-8 object-contain" />
+          <img
+            src="/aminra-mark.png"
+            alt=""
+            className="h-8 w-8 object-contain"
+          />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-wordmark-navy.png" alt="AMINRA" className="h-5 object-contain" />
+          <img
+            src="/aminra-wordmark-navy.png"
+            alt="AMINRA"
+            className="h-5 object-contain"
+          />
         </div>
 
         <nav className="flex items-center space-x-6">
@@ -26,10 +34,11 @@ export default function SimpleHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`font-medium transition-colors ${pathname === item.href
-                  ? 'text-[#0A1F44]'
-                  : 'text-gray-700 hover:text-[#0A1F44]'
-                }`}
+              className={`font-medium transition-colors ${
+                pathname === item.href
+                  ? "text-[#0A1F44]"
+                  : "text-gray-700 hover:text-[#0A1F44]"
+              }`}
             >
               {item.label}
             </Link>

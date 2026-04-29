@@ -7,33 +7,40 @@ submission → persist anchor record + Merkle proofs.
 also testable in isolation via `_run_daily_anchor_with(...)`, which accepts
 injected DB pool + anchor service for unit tests.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Optional, Protocol
+from typing import Protocol
 
 import asyncpg
 
 from services.audit_log import log_audit
 from services.certificate_pdf import CertificateData, compute_cert_hash
-from services.merkle import MerkleTree, sha256_hex
+from services.merkle import MerkleTree
 
 log = logging.getLogger("aminra.anchor")
 
 
 # ── Anchor service Protocol — lets tests inject a fake ──────────────────────
 
+
 class AnchorSubmitter(Protocol):
     async def anchor_root(
-        self, merkle_root: str, timestamp: int,
-        cert_count: int, batch_count: int = 0, metadata: str = "",
+        self,
+        merkle_root: str,
+        timestamp: int,
+        cert_count: int,
+        batch_count: int = 0,
+        metadata: str = "",
     ) -> "AnchorResult": ...
 
 
 # ── Hash gathering ──────────────────────────────────────────────────────────
+
 
 async def _pending_cert_leaves(conn: asyncpg.Connection) -> list[tuple[str, str]]:
     """Return list of (cert_id, leaf_hash) for certs not yet anchored.
@@ -90,6 +97,7 @@ async def _pending_batch_leaves(conn: asyncpg.Connection) -> list[tuple[str, str
 
 # ── Persistence ─────────────────────────────────────────────────────────────
 
+
 async def _persist_anchor(
     conn: asyncpg.Connection,
     *,
@@ -113,8 +121,12 @@ async def _persist_anchor(
             VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', NOW(), $7::jsonb)
             RETURNING id
             """,
-            chain, merkle_root, tx_hash, block_number,
-            len(cert_leaves), len(batch_leaves),
+            chain,
+            merkle_root,
+            tx_hash,
+            block_number,
+            len(cert_leaves),
+            len(batch_leaves),
             json.dumps(metadata),
         )
         anchor_id = anchor_row["id"]
@@ -129,7 +141,10 @@ async def _persist_anchor(
                     (cert_id, anchor_id, leaf_hash, leaf_index, proof_path)
                 VALUES ($1, $2, $3, $4, $5::jsonb)
                 """,
-                cert_id, anchor_id, leaf_hash, i,
+                cert_id,
+                anchor_id,
+                leaf_hash,
+                i,
                 json.dumps([s.to_dict() for s in proof]),
             )
         leaf_index_offset = len(cert_leaves)
@@ -142,7 +157,10 @@ async def _persist_anchor(
                     (batch_id, anchor_id, leaf_hash, leaf_index, proof_path)
                 VALUES ($1, $2, $3, $4, $5::jsonb)
                 """,
-                batch_id, anchor_id, leaf_hash, idx,
+                batch_id,
+                anchor_id,
+                leaf_hash,
+                idx,
                 json.dumps([s.to_dict() for s in proof]),
             )
 
@@ -150,6 +168,7 @@ async def _persist_anchor(
 
 
 # ── Public entry points ────────────────────────────────────────────────────
+
 
 async def run_daily_anchor() -> dict:
     """Production entry point — opens DB pool + Polygon service from env."""
@@ -182,13 +201,15 @@ async def _run_daily_anchor_with(
 
     metadata_json = {
         "anchor_run_at": datetime.now(timezone.utc).isoformat(),
-        "cert_ids":  [cid for cid, _ in cert_leaves[:10]],   # first 10 for trace
+        "cert_ids": [cid for cid, _ in cert_leaves[:10]],  # first 10 for trace
         "batch_ids": [bid for bid, _ in batch_leaves[:10]],
     }
 
     log.info(
         "[anchor] submitting root=%s certs=%d batches=%d",
-        tree.root[:16], len(cert_leaves), len(batch_leaves),
+        tree.root[:16],
+        len(cert_leaves),
+        len(batch_leaves),
     )
 
     try:
@@ -208,8 +229,10 @@ async def _run_daily_anchor_with(
                 (chain, merkle_root, cert_count, batch_count, status, error_message)
             VALUES ($1, $2, $3, $4, 'failed', $5)
             """,
-            chain, "0x" + tree.root,
-            len(cert_leaves), len(batch_leaves),
+            chain,
+            "0x" + tree.root,
+            len(cert_leaves),
+            len(batch_leaves),
             str(e),
         )
         return {"status": "failed", "error": str(e)}
@@ -242,7 +265,10 @@ async def _run_daily_anchor_with(
 
     log.info(
         "[anchor] confirmed anchor_id=%s tx=%s block=%s gas=%d",
-        anchor_id, result.tx_hash, result.block_number, result.gas_used,
+        anchor_id,
+        result.tx_hash,
+        result.block_number,
+        result.gas_used,
     )
     return {
         "status": "confirmed",

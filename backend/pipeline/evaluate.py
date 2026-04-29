@@ -4,52 +4,102 @@ Document Evaluation Pipeline — Option C (Hybrid)
 Đánh giá tài liệu tải lên bằng cách so sánh với tiêu chuẩn Halal trong KB.
 """
 
-import os, json, re, logging
+import os
+import json
+import re
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 log = logging.getLogger("mukjizat.evaluate")
 
-OPENROUTER_API_KEY  = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL    = os.getenv("OPENROUTER_MODEL",    "google/gemini-2.0-flash-001")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
 
-DEEPSEEK_API_KEY    = os.getenv("DEEPSEEK_API_KEY")
-LLM_BASE_URL        = os.getenv("LLM_BASE_URL",    "https://api.deepseek.com")
-LLM_MODEL           = os.getenv("LLM_MODEL",       "deepseek-chat")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 
 # ── Document type detection ────────────────────────────────────────────────────
 
 DOC_TYPE_KEYWORDS: Dict[str, List[str]] = {
     "ingredient_list": [
-        "thành phần", "nguyên liệu", "ingredient", "raw material",
-        "phụ gia", "additive", "e-number", "hương liệu", "flavour", "colour",
-        "preservative", "emulsifier", "chất bảo quản", "chất nhũ hóa",
+        "thành phần",
+        "nguyên liệu",
+        "ingredient",
+        "raw material",
+        "phụ gia",
+        "additive",
+        "e-number",
+        "hương liệu",
+        "flavour",
+        "colour",
+        "preservative",
+        "emulsifier",
+        "chất bảo quản",
+        "chất nhũ hóa",
     ],
     "sop": [
-        "quy trình", "procedure", "sop", "bước", "step",
-        "hướng dẫn thao tác", "work instruction", "vệ sinh", "cleaning",
-        "sanitizing", "kiểm soát", "control",
+        "quy trình",
+        "procedure",
+        "sop",
+        "bước",
+        "step",
+        "hướng dẫn thao tác",
+        "work instruction",
+        "vệ sinh",
+        "cleaning",
+        "sanitizing",
+        "kiểm soát",
+        "control",
     ],
     "certification": [
-        "chứng nhận", "certificate", "certification", "halal cert",
-        "certificate no", "issued by", "valid until", "expiry", "ngày hết hạn",
+        "chứng nhận",
+        "certificate",
+        "certification",
+        "halal cert",
+        "certificate no",
+        "issued by",
+        "valid until",
+        "expiry",
+        "ngày hết hạn",
         "cơ quan chứng nhận",
     ],
     "supplier_doc": [
-        "nhà cung cấp", "supplier", "vendor", "company profile",
-        "nhà sản xuất", "manufacturer", "plant address", "approval",
+        "nhà cung cấp",
+        "supplier",
+        "vendor",
+        "company profile",
+        "nhà sản xuất",
+        "manufacturer",
+        "plant address",
+        "approval",
     ],
     "audit_report": [
-        "audit", "đánh giá", "finding", "non-conformance", "corrective action",
-        "car", "ncr", "observation", "recommendation", "scope of audit",
+        "audit",
+        "đánh giá",
+        "finding",
+        "non-conformance",
+        "corrective action",
+        "car",
+        "ncr",
+        "observation",
+        "recommendation",
+        "scope of audit",
     ],
     "product_spec": [
-        "đặc tính sản phẩm", "product specification", "spec",
-        "composition", "nutritional", "dinh dưỡng", "shelf life",
+        "đặc tính sản phẩm",
+        "product specification",
+        "spec",
+        "composition",
+        "nutritional",
+        "dinh dưỡng",
+        "shelf life",
     ],
 }
 
@@ -106,12 +156,12 @@ def extract_text_from_file(path: Path) -> tuple:
             cp.unlink(missing_ok=True)
 
     from pipeline.ingest import extract
+
     source_type, pages = extract(path)
     full_text = "\n\n".join(p["text"] for p in pages if p.get("text"))
 
     try:
-        cp.write_text(json.dumps({"text": full_text, "source_type": source_type},
-                                 ensure_ascii=False), encoding="utf-8")
+        cp.write_text(json.dumps({"text": full_text, "source_type": source_type}, ensure_ascii=False), encoding="utf-8")
         # Evict oldest files if over limit
         cache_files = sorted(_DOC_CACHE_DIR.glob("*.json"), key=lambda f: f.stat().st_mtime)
         for old in cache_files[:-_DOC_CACHE_MAX]:
@@ -124,6 +174,7 @@ def extract_text_from_file(path: Path) -> tuple:
 
 
 # ── KB search ─────────────────────────────────────────────────────────────────
+
 
 def load_template_files_content(template_files_dir: Path) -> str:
     """Extract and concatenate text from all admin-uploaded template files for a doc type."""
@@ -149,23 +200,21 @@ EVAL_LANG_INSTRUCTIONS: dict = {
         "Respond entirely in English. All text fields in the JSON (summary, issues, "
         "strengths, recommendations, gap_analysis, risk_flags, citations) must be in English."
     ),
-    "ms": (
-        "Jawab sepenuhnya dalam Bahasa Melayu. Semua medan teks dalam JSON mesti dalam Bahasa Melayu."
-    ),
-    "ar": (
-        "أجب بالكامل باللغة العربية. يجب أن تكون جميع حقول النص في JSON باللغة العربية."
-    ),
-    "vi": (
-        "Dùng tiếng Việt cho mọi nội dung văn bản trong JSON."
-    ),
+    "ms": ("Jawab sepenuhnya dalam Bahasa Melayu. Semua medan teks dalam JSON mesti dalam Bahasa Melayu."),
+    "ar": ("أجب بالكامل باللغة العربية. يجب أن تكون جميع حقول النص في JSON باللغة العربية."),
+    "vi": ("Dùng tiếng Việt cho mọi nội dung văn bản trong JSON."),
 }
 
 
-def build_eval_prompt(doc_text: str, doc_type: str, filename: str,
-                      template_criteria: Optional[Dict] = None,
-                      template_files_content: str = "",
-                      previous_context: Optional[str] = None,
-                      lang: Optional[str] = None) -> str:
+def build_eval_prompt(
+    doc_text: str,
+    doc_type: str,
+    filename: str,
+    template_criteria: Optional[Dict] = None,
+    template_files_content: str = "",
+    previous_context: Optional[str] = None,
+    lang: Optional[str] = None,
+) -> str:
     doc_excerpt = " ".join(doc_text.split()[:2000])
 
     # Build reference section — ONLY from admin-provided content
@@ -180,7 +229,7 @@ def build_eval_prompt(doc_text: str, doc_type: str, filename: str,
     criteria_list = []
     if template_criteria:
         criteria_list = template_criteria.get("mandatory_criteria", [])
-        guidance      = template_criteria.get("evaluation_guidance", "")
+        guidance = template_criteria.get("evaluation_guidance", "")
         if criteria_list:
             criteria_ctx += "\n=== TIÊU CHÍ CHẤM ĐIỂM BẮT BUỘC ===\n"
             criteria_ctx += "Tổng trọng số = 100 điểm. Chấm từng tiêu chí riêng biệt.\n\n"
@@ -278,8 +327,10 @@ Nếu không có tài liệu mẫu hoặc tiêu chí, ghi rõ trong summary và 
 
 # ── LLM calls ─────────────────────────────────────────────────────────────────
 
+
 def _post_llm(url: str, headers: dict, payload: dict, timeout: int = 110) -> str:
     import requests
+
     resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
@@ -321,6 +372,7 @@ def call_deepseek_json(prompt: str) -> str:
 
 # ── JSON parsing ──────────────────────────────────────────────────────────────
 
+
 def parse_json_safe(raw: str) -> dict:
     raw = raw.strip()
     # Direct parse
@@ -329,7 +381,7 @@ def parse_json_safe(raw: str) -> dict:
     except json.JSONDecodeError:
         pass
     # Extract first {...} block
-    m = re.search(r'\{.*\}', raw, re.DOTALL)
+    m = re.search(r"\{.*\}", raw, re.DOTALL)
     if m:
         try:
             return json.loads(m.group())
@@ -350,14 +402,18 @@ def parse_json_safe(raw: str) -> dict:
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
-def evaluate_document(path: Path, original_filename: str,
-                      forced_doc_type: Optional[str] = None,
-                      forced_doc_label: str = "",
-                      template_criteria: Optional[Dict] = None,
-                      template_files_dir: Optional[Path] = None,
-                      template_files_content: str = "",
-                      previous_context: Optional[str] = None,
-                      lang: Optional[str] = None) -> dict:
+
+def evaluate_document(
+    path: Path,
+    original_filename: str,
+    forced_doc_type: Optional[str] = None,
+    forced_doc_label: str = "",
+    template_criteria: Optional[Dict] = None,
+    template_files_dir: Optional[Path] = None,
+    template_files_content: str = "",
+    previous_context: Optional[str] = None,
+    lang: Optional[str] = None,
+) -> dict:
     """
     Full evaluation pipeline.
     Evaluation is based solely on admin-provided template files and criteria.
@@ -389,13 +445,16 @@ def evaluate_document(path: Path, original_filename: str,
         template_files_content = load_template_files_content(template_files_dir)
     template_files_count = (
         sum(1 for f in template_files_dir.iterdir() if f.is_file())
-        if template_files_dir and template_files_dir.exists() else 0
+        if template_files_dir and template_files_dir.exists()
+        else 0
     )
     log.info(f"[evaluate] Template content: {len(template_files_content)} chars, files: {template_files_count}")
 
     # 4. Build prompt and call LLM
     prompt = build_eval_prompt(
-        doc_text, doc_type, original_filename,
+        doc_text,
+        doc_type,
+        original_filename,
         template_criteria=template_criteria,
         template_files_content=template_files_content,
         previous_context=previous_context,
@@ -416,25 +475,27 @@ def evaluate_document(path: Path, original_filename: str,
 
     # 5. Parse and enrich
     result = parse_json_safe(raw)
-    result.update({
-        "filename":        original_filename,
-        "doc_type":        doc_type,
-        "doc_type_label":  forced_doc_label or DOC_TYPE_LABELS.get(doc_type, doc_type),
-        "word_count":      word_count,
-        "standards_found": template_files_count,
-        "gap_analysis":    result.get("gap_analysis") if isinstance(result.get("gap_analysis"), dict)
-                           else {"critical_gaps": [], "major_gaps": [], "minor_gaps": []},
-        "risk_flags":      result.get("risk_flags") if isinstance(result.get("risk_flags"), list)
-                           else [],
-        "citations":       result.get("citations") if isinstance(result.get("citations"), list)
-                           else [],
-    })
+    result.update(
+        {
+            "filename": original_filename,
+            "doc_type": doc_type,
+            "doc_type_label": forced_doc_label or DOC_TYPE_LABELS.get(doc_type, doc_type),
+            "word_count": word_count,
+            "standards_found": template_files_count,
+            "gap_analysis": result.get("gap_analysis")
+            if isinstance(result.get("gap_analysis"), dict)
+            else {"critical_gaps": [], "major_gaps": [], "minor_gaps": []},
+            "risk_flags": result.get("risk_flags") if isinstance(result.get("risk_flags"), list) else [],
+            "citations": result.get("citations") if isinstance(result.get("citations"), list) else [],
+        }
+    )
 
     result["extracted_text"] = doc_text[:12000]
 
     # 6. Signature detection
     try:
         from pipeline.signature import detect_signatures
+
         sig_result = detect_signatures(path)
         result["signature_detection"] = sig_result
         log.info(f"[evaluate] Signature: {sig_result['summary']}")
@@ -452,10 +513,7 @@ def evaluate_document(path: Path, original_filename: str,
     # Validate: recalculate compliance_score from criteria_scores if available
     cs = result.get("criteria_scores")
     if isinstance(cs, list) and len(cs) > 0:
-        recalc = sum(
-            min(float(c.get("score", 0)), float(c.get("weight", 0)))
-            for c in cs if isinstance(c, dict)
-        )
+        recalc = sum(min(float(c.get("score", 0)), float(c.get("weight", 0))) for c in cs if isinstance(c, dict))
         result["compliance_score"] = max(0, min(100, round(recalc)))
         log.info(f"[evaluate] Recalculated score from {len(cs)} criteria: {result['compliance_score']}")
 

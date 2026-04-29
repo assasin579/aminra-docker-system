@@ -18,7 +18,13 @@ test.describe("PWA + web push", () => {
   });
 
   test("manifest, icons, sw.js all served", async ({ request }) => {
-    const paths = ["/manifest.json", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/sw.js"];
+    const paths = [
+      "/manifest.json",
+      "/icon-192.png",
+      "/icon-512.png",
+      "/apple-touch-icon.png",
+      "/sw.js",
+    ];
     for (const p of paths) {
       const r = await request.get(p);
       expect.soft(r.status(), `${p} should be 200`).toBe(200);
@@ -46,30 +52,40 @@ test.describe("PWA + web push", () => {
 
   test("subscribe endpoint requires auth", async ({ request }) => {
     const r = await request.post("/api/api/notifications/push-subscriptions", {
-      data: { endpoint: "https://fcm.googleapis.com/fake/abc", p256dh: "x", auth: "y" },
+      data: {
+        endpoint: "https://fcm.googleapis.com/fake/abc",
+        p256dh: "x",
+        auth: "y",
+      },
     });
     expect(r.status()).toBe(401);
   });
 
   test("subscribe + unsubscribe with auth round-trips", async ({ request }) => {
     const login = await request.post("/api/auth/login", {
-      data: { email: "biz-demo-1@demo.aminra.vn", password: "DemoP@ss2026", role: "business" },
+      data: {
+        email: "biz-demo-1@demo.aminra.vn",
+        password: "DemoP@ss2026",
+        role: "business",
+      },
     });
     if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
     const { access_token } = await login.json();
 
     const fakeEndpoint = `https://fcm.googleapis.com/fake/${Date.now()}`;
-    const sub = await request.post("/api/api/notifications/push-subscriptions", {
-      headers: { Authorization: `Bearer ${access_token}` },
-      data: {
-        endpoint: fakeEndpoint,
-        // gitleaks:allow — fake test fixture, not a real Web Push subscription
-        p256dh: "BHsBSv3gCO0NYtpL2YxRu0YxWkHwNJDpCqu5O-_rSWbSVQ-fK5mKrEpINJgdLGXg2sLmvDLWvj37rl4kKL7Vr04",
-        // gitleaks:allow — fake test fixture
-        auth: "k8JV6sTyNRVm0XdTCJv0YQ",
-        user_agent: "playwright-test",
+    const sub = await request.post(
+      "/api/api/notifications/push-subscriptions",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+        data: {
+          endpoint: fakeEndpoint,
+          p256dh:
+            "BHsBSv3gCO0NYtpL2YxRu0YxWkHwNJDpCqu5O-_rSWbSVQ-fK5mKrEpINJgdLGXg2sLmvDLWvj37rl4kKL7Vr04", // gitleaks:allow
+          auth: "k8JV6sTyNRVm0XdTCJv0YQ", // gitleaks:allow
+          user_agent: "playwright-test",
+        },
       },
-    });
+    );
     expect(sub.status()).toBe(200);
 
     const unsub = await request.delete(

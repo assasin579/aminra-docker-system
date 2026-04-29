@@ -1,6 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ElementType,
+  type ReactNode,
+} from "react";
 
 interface RevealProps {
   children: ReactNode;
@@ -25,9 +32,9 @@ export default function RevealOnScroll({
   children,
   delay = 0,
   threshold = 0.12,
-  rootMargin = '0px 0px -8% 0px',
-  as: Tag = 'div',
-  className = '',
+  rootMargin = "0px 0px -8% 0px",
+  as: Tag = "div",
+  className = "",
   style,
 }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -37,13 +44,15 @@ export default function RevealOnScroll({
     const el = ref.current;
     if (!el) return;
 
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (reduce) {
       setVisible(true);
       return;
     }
 
-    if (typeof IntersectionObserver === 'undefined') {
+    if (typeof IntersectionObserver === "undefined") {
       setVisible(true);
       return;
     }
@@ -72,7 +81,7 @@ export default function RevealOnScroll({
   return (
     <Tag
       ref={ref as React.Ref<HTMLElement>}
-      className={`reveal ${visible ? 'is-visible' : ''} ${className}`}
+      className={`reveal ${visible ? "is-visible" : ""} ${className}`}
       style={inlineStyle}
     >
       {children}

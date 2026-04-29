@@ -2,6 +2,7 @@
 
 Append-only at the DB level — there is no DELETE/UPDATE endpoint by design.
 """
+
 from __future__ import annotations
 
 import json
@@ -21,45 +22,45 @@ router = APIRouter()
 
 def _serialize(row) -> dict:
     return {
-        "id":          str(row["id"]),
-        "user_id":     str(row["user_id"]) if row["user_id"] else None,
-        "user_email":  row["user_email"],
-        "user_role":   row["user_role"],
-        "tenant_id":   str(row["tenant_id"]) if row["tenant_id"] else None,
-        "action":      row["action"],
+        "id": str(row["id"]),
+        "user_id": str(row["user_id"]) if row["user_id"] else None,
+        "user_email": row["user_email"],
+        "user_role": row["user_role"],
+        "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
+        "action": row["action"],
         "entity_type": row["entity_type"],
-        "entity_id":   str(row["entity_id"]) if row["entity_id"] else None,
-        "changes":     json.loads(row["changes"]) if row["changes"] else None,
-        "metadata":    json.loads(row["metadata"]) if row["metadata"] else {},
-        "created_at":  row["created_at"].isoformat(),
+        "entity_id": str(row["entity_id"]) if row["entity_id"] else None,
+        "changes": json.loads(row["changes"]) if row["changes"] else None,
+        "metadata": json.loads(row["metadata"]) if row["metadata"] else {},
+        "created_at": row["created_at"].isoformat(),
     }
 
 
 @router.get("/admin/audit-logs")
 async def list_audit_logs(
-    user_id:     Optional[str] = Query(None),
-    tenant_id:   Optional[str] = Query(None),
-    action:      Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
+    tenant_id: Optional[str] = Query(None),
+    action: Optional[str] = Query(None),
     entity_type: Optional[str] = Query(None),
-    entity_id:   Optional[str] = Query(None),
-    from_date:   Optional[str] = Query(None, description="ISO timestamp, inclusive"),
-    to_date:     Optional[str] = Query(None, description="ISO timestamp, exclusive"),
-    page:        int = Query(1, ge=1),
-    limit:       int = Query(50, ge=1, le=200),
-    sort:        str = Query("created_at"),
-    order:       str = Query("desc"),
-    admin:       dict = Depends(require_admin),
-    db:          Connection = Depends(get_db),
+    entity_id: Optional[str] = Query(None),
+    from_date: Optional[str] = Query(None, description="ISO timestamp, inclusive"),
+    to_date: Optional[str] = Query(None, description="ISO timestamp, exclusive"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    sort: str = Query("created_at"),
+    order: str = Query("desc"),
+    admin: dict = Depends(require_admin),
+    db: Connection = Depends(get_db),
 ):
     """List audit log entries. Admin-only. Filterable by who/what/when."""
     filters = {
-        "user_id":     user_id,
-        "tenant_id":   tenant_id,
-        "action":      action,
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "action": action,
         "entity_type": entity_type,
-        "entity_id":   entity_id,
-        "from_date":   from_date,
-        "to_date":     to_date,
+        "entity_id": entity_id,
+        "from_date": from_date,
+        "to_date": to_date,
     }
     try:
         sql, params = build_filter_query(filters, page=page, limit=limit, sort=sort, order=order)

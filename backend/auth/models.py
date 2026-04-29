@@ -9,22 +9,23 @@ MAX_MEMBERS = 7
 
 # ── Request models ─────────────────────────────────────────────────────────────
 
+
 class BusinessRegisterRequest(BaseModel):
     email: EmailStr
     password: str
     company_name: str
-    company_code: Optional[str] = None   # Tax ID
+    company_code: Optional[str] = None  # Tax ID
 
     @field_validator("password")
     @classmethod
     def password_strength(cls, v):
         if len(v) < 10:
             raise ValueError("Password must be at least 10 characters")
-        if not re.search(r'[A-Z]', v):
+        if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
-        if not re.search(r'[a-z]', v):
+        if not re.search(r"[a-z]", v):
             raise ValueError("Password must contain at least one lowercase letter")
-        if not re.search(r'[0-9]', v):
+        if not re.search(r"[0-9]", v):
             raise ValueError("Password must contain at least one digit")
         return v
 
@@ -32,19 +33,19 @@ class BusinessRegisterRequest(BaseModel):
 class ProviderRegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    company_name: str          # Organization name (e.g. JAKIM, HDC)
-    company_code: Optional[str] = None   # Accreditation / license number
+    company_name: str  # Organization name (e.g. JAKIM, HDC)
+    company_code: Optional[str] = None  # Accreditation / license number
 
     @field_validator("password")
     @classmethod
     def password_strength(cls, v):
         if len(v) < 10:
             raise ValueError("Password must be at least 10 characters")
-        if not re.search(r'[A-Z]', v):
+        if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
-        if not re.search(r'[a-z]', v):
+        if not re.search(r"[a-z]", v):
             raise ValueError("Password must contain at least one lowercase letter")
-        if not re.search(r'[0-9]', v):
+        if not re.search(r"[0-9]", v):
             raise ValueError("Password must contain at least one digit")
         return v
 
@@ -58,12 +59,13 @@ class LoginRequest(BaseModel):
 class InviteMemberRequest(BaseModel):
     email: EmailStr
     password: str
-    display_name: str          # Stored in company_name for the member row
-    ihc_role: str = ""         # Chairman, Halal Executive, Dept Head, etc.
-    department: str = ""       # Bộ phận / phòng ban
+    display_name: str  # Stored in company_name for the member row
+    ihc_role: str = ""  # Chairman, Halal Executive, Dept Head, etc.
+    department: str = ""  # Bộ phận / phòng ban
 
 
 # ── Response models ────────────────────────────────────────────────────────────
+
 
 class UserProfile(BaseModel):
     id: str
@@ -74,7 +76,7 @@ class UserProfile(BaseModel):
     company_code: Optional[str]
     is_owner: bool
     tenant_id: Optional[str]
-    member_count: Optional[int] = None   # filled for business owners
+    member_count: Optional[int] = None  # filled for business owners
     address: Optional[str] = None
     phone: Optional[str] = None
     representative_name: Optional[str] = None
@@ -146,7 +148,7 @@ class InviteAuditorRequest(BaseModel):
     email: EmailStr
     password: str
     display_name: str
-    specialty: str = ""        # Chuyên môn: food safety, halal compliance, etc.
+    specialty: str = ""  # Chuyên môn: food safety, halal compliance, etc.
 
 
 class AuditorItem(BaseModel):

@@ -3,15 +3,17 @@ import { test as base, APIRequestContext, request } from "@playwright/test";
 const API_BASE = process.env.PW_API_BASE ?? "http://localhost:8100";
 
 export type Persona = {
-  api:      APIRequestContext;
-  apiBase:  string;
-  biz:      { email: string; password: string; token: string };
-  prov:     { email: string; password: string; token: string };
-  admin:    { token: string };
+  api: APIRequestContext;
+  apiBase: string;
+  biz: { email: string; password: string; token: string };
+  prov: { email: string; password: string; token: string };
+  admin: { token: string };
 };
 
 export const test = base.extend<Persona>({
-  apiBase: async ({}, use) => { await use(API_BASE); },
+  apiBase: async ({}, use) => {
+    await use(API_BASE);
+  },
 
   api: async ({ apiBase }, use) => {
     const ctx = await request.newContext({ baseURL: apiBase });

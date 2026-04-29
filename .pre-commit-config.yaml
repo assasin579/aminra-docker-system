@@ -1,0 +1,104 @@
+# Pre-commit hooks for AMINRA — runs on `git commit` before commit lands.
+#
+# Setup (developer):
+#   pip install --user pre-commit
+#   pre-commit install
+#   pre-commit install --hook-type commit-msg
+#
+# Manual full-repo run:
+#   pre-commit run --all-files
+#
+# Bypass (emergency only, requires user explicit ask):
+#   git commit --no-verify
+#
+# Hook tiers:
+#   Tier 1 (fast, always run): formatting, basic syntax, secrets, large files
+#   Tier 2 (medium, run on staged): ruff lint, prettier, type-check fast subset
+#   Tier 3 (slow, manual stage): mypy strict, full tests — run via CI
+
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  # ── Tier 1: fast file checks ────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.snap$|package-lock\.json|\.lock$'
+      - id: end-of-file-fixer
+        exclude: '\.snap$|package-lock\.json|\.lock$|^branding/'
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+        exclude: 'tsconfig.*\.json|\.vscode/'
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # ── Tier 1: secrets scan (every commit) ─────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # ── Tier 2: backend lint + format ───────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.10.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
+        exclude: ^backend/(tests|alembic)/
+      - id: ruff-format
+        files: ^backend/
+        exclude: ^backend/(tests|alembic)/
+
+  # ── Tier 2: frontend prettier + eslint ──────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        files: ^frontend/aminra-web/.*\.(ts|tsx|js|jsx|json|md|css|yml|yaml)$
+        exclude: 'package-lock\.json|\.next/|node_modules/'
+        additional_dependencies:
+          - prettier@3.3.3
+
+  # ── Tier 3: backend type-check (manual stage; opt-in via `pre-commit run --hook-stage manual mypy-fast`)
+  # Soft gate: 10 pre-existing type errors as of 2026-04-29 (see backlog).
+  # Promote to default stage AFTER fixing baseline errors.
+  - repo: local
+    hooks:
+      - id: mypy-fast
+        name: mypy (manual — backend services + auth only)
+        entry: bash -c 'docker run --rm -v "$PWD/backend:/src:ro" python:3.11-slim sh -c "pip install --quiet mypy 2>/dev/null && mypy /src/services /src/auth --ignore-missing-imports --no-strict-optional --follow-imports=silent"'
+        language: system
+        files: ^backend/(services|auth)/.*\.py$
+        pass_filenames: false
+        stages: [manual]
+
+  # ── Tier 1: commit message format (Conventional Commits) ────────────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - chore
+          - docs
+          - style
+          - refactor
+          - perf
+          - test
+          - build
+          - ci
+          - security
+          - revert

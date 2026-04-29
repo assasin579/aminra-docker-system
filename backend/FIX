@@ -29,6 +29,6 @@ SYSTEM_PROMPT chi dung ASCII, tieng Viet chi trong body (JSON).
 **Nguyen nhan:** Image qdrant khong co curl, healthcheck dung curl bi loi.
 **Fix:** Doi sang wget: wget -qO- http://localhost:6333/healthz
 
-## 7. Ollama healthcheck unhealthy (docker-compose.yml)  
+## 7. Ollama healthcheck unhealthy (docker-compose.yml)
 **Nguyen nhan:** start_period qua ngan, Ollama can 60-120s de khoi dong.
 **Fix:** Tang start_period len 120s, retries len 10.

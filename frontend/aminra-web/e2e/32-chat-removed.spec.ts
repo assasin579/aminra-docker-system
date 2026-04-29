@@ -23,19 +23,29 @@ test.describe("chat removed (submission_comments)", () => {
 
   test("backend /comments endpoints return 404", async ({ request }) => {
     const login = await request.post("/api/auth/login", {
-      data: { email: "cb-demo@demo.aminra.vn", password: "DemoP@ss2026", role: "provider" },
+      data: {
+        email: "cb-demo@demo.aminra.vn",
+        password: "DemoP@ss2026",
+        role: "provider",
+      },
     });
     if (!login.ok()) test.skip(true, "cb-demo not seeded");
     const { access_token } = await login.json();
 
     const stub = "00000000-0000-0000-0000-000000000000";
-    const get  = await request.get(`/api/api/submissions/received/${stub}/comments`, {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
-    const post = await request.post(`/api/api/submissions/received/${stub}/comments`, {
-      headers: { Authorization: `Bearer ${access_token}` },
-      data: { message: "test" },
-    });
+    const get = await request.get(
+      `/api/api/submissions/received/${stub}/comments`,
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      },
+    );
+    const post = await request.post(
+      `/api/api/submissions/received/${stub}/comments`,
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+        data: { message: "test" },
+      },
+    );
     expect(get.status(), "GET /comments must be 404").toBe(404);
     expect(post.status(), "POST /comments must be 404").toBe(404);
   });
@@ -45,7 +55,7 @@ test.describe("chat removed (submission_comments)", () => {
     expect(r.ok()).toBeTruthy();
     const schema = await r.json();
     const paths = Object.keys(schema?.paths ?? {});
-    const commentPaths = paths.filter(p => p.endsWith("/comments"));
+    const commentPaths = paths.filter((p) => p.endsWith("/comments"));
     expect(commentPaths, "no /comments endpoints should remain").toEqual([]);
   });
 
@@ -54,10 +64,14 @@ test.describe("chat removed (submission_comments)", () => {
     const src = await readFile("app/submissions/page.tsx", "utf8");
     // No comment-related UI/state should remain
     expect(src, "Comment interface removed").not.toMatch(/interface Comment\b/);
-    expect(src, "loadingComments state removed").not.toContain("loadingComments");
+    expect(src, "loadingComments state removed").not.toContain(
+      "loadingComments",
+    );
     expect(src, "newComment state removed").not.toContain("newComment");
     expect(src, "sendComment handler removed").not.toContain("sendComment");
     expect(src, "Trao đổi heading removed").not.toContain("Trao đổi");
-    expect(src, "comment fetch in toggleExpand removed").not.toMatch(/\/received\/\$\{[^}]+\}\/comments/);
+    expect(src, "comment fetch in toggleExpand removed").not.toMatch(
+      /\/received\/\$\{[^}]+\}\/comments/,
+    );
   });
 });

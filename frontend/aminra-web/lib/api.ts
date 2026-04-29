@@ -1,10 +1,11 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export async function chatApi(question: string) {
   const response = await fetch(`${API_BASE_URL}/chat`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ question }),
   });
@@ -16,9 +17,9 @@ export async function chatApi(question: string) {
 
 export async function uploadApi(file: File) {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   const response = await fetch(`${API_BASE_URL}/ingest`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
   if (!response.ok) {

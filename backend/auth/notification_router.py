@@ -14,21 +14,27 @@ router = APIRouter()
 
 
 def _validate_uuid(v: str) -> str:
-    try: _UUID(v)
-    except ValueError: raise HTTPException(400, "Invalid ID")
+    try:
+        _UUID(v)
+    except ValueError:
+        raise HTTPException(400, "Invalid ID")
     return v
 
 
 # ── Helper: create notification (call from other routers) ────────────────────
+
 
 async def notify(db, user_id: str, type: str, title: str, message: str = "", link: str = ""):
     """Create a notification for a user + best-effort web push delivery."""
     notification_id: str | None = None
     try:
         row = await db.fetchrow(
-            "INSERT INTO notifications (user_id, type, title, message, link) "
-            "VALUES ($1, $2, $3, $4, $5) RETURNING id",
-            user_id, type, title, message, link,
+            "INSERT INTO notifications (user_id, type, title, message, link) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+            user_id,
+            type,
+            title,
+            message,
+            link,
         )
         notification_id = str(row["id"]) if row else None
     except Exception as e:
@@ -37,18 +43,24 @@ async def notify(db, user_id: str, type: str, title: str, message: str = "", lin
 
     try:
         from services.web_push import push_to_user
-        await push_to_user(db, user_id, {
-            "title":           title,
-            "message":         message,
-            "link":            link,
-            "tag":             type,
-            "notification_id": notification_id,
-        })
+
+        await push_to_user(
+            db,
+            user_id,
+            {
+                "title": title,
+                "message": message,
+                "link": link,
+                "tag": type,
+                "notification_id": notification_id,
+            },
+        )
     except Exception as e:
         log.warning(f"[notify] web push delivery error (non-fatal): {e}")
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+
 
 @router.get("/")
 async def list_notifications(
@@ -60,7 +72,9 @@ async def list_notifications(
     offset = (page - 1) * limit
     rows = await db.fetch(
         "SELECT * FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-        user["sub"], limit, offset,
+        user["sub"],
+        limit,
+        offset,
     )
     total = await db.fetchval("SELECT COUNT(*) FROM notifications WHERE user_id=$1", user["sub"])
     return {
@@ -73,7 +87,8 @@ async def list_notifications(
                 "read": r["read"],
                 "link": r["link"],
                 "created_at": r["created_at"].isoformat(),
-            } for r in rows
+            }
+            for r in rows
         ],
         "total": total,
         "page": page,
@@ -85,8 +100,7 @@ async def unread_count(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    count = await db.fetchval(
-        "SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND read=false", user["sub"])
+    count = await db.fetchval("SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND read=false", user["sub"])
     return {"count": count}
 
 
@@ -99,7 +113,8 @@ async def mark_read(
     _validate_uuid(notification_id)
     await db.execute(
         "UPDATE notifications SET read=true WHERE id=$1 AND user_id=$2",
-        notification_id, user["sub"],
+        notification_id,
+        user["sub"],
     )
     return {"message": "OK"}
 
@@ -120,9 +135,9 @@ from pydantic import BaseModel as _BaseModel
 
 
 class PushSubscriptionRequest(_BaseModel):
-    endpoint:   str
-    p256dh:     str
-    auth:       str
+    endpoint: str
+    p256dh: str
+    auth: str
     user_agent: str | None = None
 
 
@@ -150,7 +165,11 @@ async def subscribe_push(
                auth=EXCLUDED.auth,
                user_agent=EXCLUDED.user_agent,
                last_used_at=NOW()""",
-        user["sub"], req.endpoint, req.p256dh, req.auth, req.user_agent,
+        user["sub"],
+        req.endpoint,
+        req.p256dh,
+        req.auth,
+        req.user_agent,
     )
     return {"message": "subscribed"}
 
@@ -163,6 +182,7 @@ async def unsubscribe_push(
 ):
     await db.execute(
         "DELETE FROM push_subscriptions WHERE endpoint=$1 AND user_id=$2",
-        endpoint, user["sub"],
+        endpoint,
+        user["sub"],
     )
     return {"message": "unsubscribed"}

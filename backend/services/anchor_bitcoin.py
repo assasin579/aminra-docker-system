@@ -16,6 +16,7 @@ We store the .ots proof as bytea in blockchain_anchors.metadata['ots_proof']
 (base64-encoded) and re-upgrade periodically until Bitcoin attestations
 appear.
 """
+
 from __future__ import annotations
 
 import base64
@@ -28,10 +29,11 @@ log = logging.getLogger("aminra.anchor_bitcoin")
 
 # ── Submission ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class OtsResult:
-    proof_b64: str         # base64-encoded .ots file
-    is_complete: bool      # True only after Bitcoin attestation arrives
+    proof_b64: str  # base64-encoded .ots file
+    is_complete: bool  # True only after Bitcoin attestation arrives
 
 
 def submit_digest(digest_bytes: bytes) -> OtsResult:
@@ -45,7 +47,9 @@ def submit_digest(digest_bytes: bytes) -> OtsResult:
 
     from opentimestamps.client import RemoteCalendar
     from opentimestamps.core.timestamp import (
-        DetachedTimestampFile, OpSHA256, Timestamp,
+        DetachedTimestampFile,
+        OpSHA256,
+        Timestamp,
     )
 
     # Create fresh DetachedTimestampFile for our digest (no actual file content)
@@ -75,6 +79,7 @@ def submit_digest(digest_bytes: bytes) -> OtsResult:
 
     # Serialize to bytes
     from opentimestamps.core.serialize import StreamSerializationContext
+
     buf = BytesIO()
     detached.serialize(StreamSerializationContext(buf))
     proof_bytes = buf.getvalue()
@@ -87,13 +92,15 @@ def submit_digest(digest_bytes: bytes) -> OtsResult:
 
 # ── Upgrade (poll for Bitcoin attestation) ────────────────────────────────
 
+
 def upgrade_proof(proof_b64: str) -> OtsResult:
     """Re-fetch the proof from calendar servers — once the Bitcoin block is
     mined and indexed by calendars (typically 1-6 hours), this replaces the
     calendar commits with full Bitcoin attestations."""
     from opentimestamps.client import upgrade_timestamp
     from opentimestamps.core.serialize import (
-        StreamDeserializationContext, StreamSerializationContext,
+        StreamDeserializationContext,
+        StreamSerializationContext,
     )
     from opentimestamps.core.timestamp import DetachedTimestampFile
 
@@ -134,6 +141,7 @@ def _has_bitcoin_attestation(timestamp) -> bool:
 
 # ── Verification ──────────────────────────────────────────────────────────
 
+
 def verify_proof(proof_b64: str, digest_bytes: bytes) -> tuple[bool, str | None]:
     """Verify a .ots proof against a digest. Returns (verified, btc_block_height).
 
@@ -142,7 +150,6 @@ def verify_proof(proof_b64: str, digest_bytes: bytes) -> tuple[bool, str | None]
     """
     from opentimestamps.core.serialize import StreamDeserializationContext
     from opentimestamps.core.timestamp import DetachedTimestampFile
-    from opentimestamps.core.notary import BitcoinBlockHeaderAttestation
 
     proof_bytes = base64.b64decode(proof_b64)
     ctx = StreamDeserializationContext(BytesIO(proof_bytes))

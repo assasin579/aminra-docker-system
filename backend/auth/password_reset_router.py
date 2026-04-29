@@ -11,6 +11,7 @@ Security:
 - All sibling tokens are invalidated on successful reset.
 - Every event is captured in audit_logs.
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,6 +41,7 @@ PASSWORD_RESET_TOKEN_BYTES = 32  # 256-bit entropy
 
 # ── Models ─────────────────────────────────────────────────────────────────
 
+
 class RequestResetIn(BaseModel):
     email: EmailStr
     lang: str = "vi"
@@ -58,6 +60,7 @@ GENERIC_OK = {"message": "Nếu email tồn tại, hướng dẫn đặt lại s
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
+
 
 @router.post("/request-password-reset")
 async def request_password_reset(
@@ -97,7 +100,9 @@ async def request_password_reset(
     )
     await db.execute(
         "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
-        user["id"], token, expires_at,
+        user["id"],
+        token,
+        expires_at,
     )
 
     mailer = get_mailer()
@@ -106,8 +111,8 @@ async def request_password_reset(
         to=user["email"],
         template="password_reset",
         context={
-            "user_name":   user["company_name"] or user["email"],
-            "reset_url":   reset_url,
+            "user_name": user["company_name"] or user["email"],
+            "reset_url": reset_url,
             "ttl_minutes": PASSWORD_RESET_TTL_MINUTES,
         },
         lang=body.lang,
@@ -183,7 +188,8 @@ async def reset_password(
     new_hash = hash_password(body.new_password)
     await db.execute(
         "UPDATE users SET password_hash = $1 WHERE id = $2",
-        new_hash, row["user_id"],
+        new_hash,
+        row["user_id"],
     )
     # Invalidate this token AND any siblings still active.
     await db.execute(
@@ -194,9 +200,9 @@ async def reset_password(
     await log_audit(
         db,
         user={
-            "sub":       str(row["user_id"]),
-            "email":     row["email"],
-            "role":      row["role"],
+            "sub": str(row["user_id"]),
+            "email": row["email"],
+            "role": row["role"],
             "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
         },
         action="password_reset.success",

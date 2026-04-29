@@ -20,7 +20,10 @@ test.describe("revision panel visibility logic", () => {
 
   test("source: panel returns null when no action + no history", async () => {
     const { readFile } = await import("node:fs/promises");
-    const src = await readFile("components/submissions/RevisionPanel.tsx", "utf8");
+    const src = await readFile(
+      "components/submissions/RevisionPanel.tsx",
+      "utf8",
+    );
 
     // Helper booleans for clarity in source
     expect(src).toContain("providerCanRequest");
@@ -34,16 +37,25 @@ test.describe("revision panel visibility logic", () => {
     );
 
     // Contextual hint for provider on pending/assigned status (rare but informative)
-    expect(src).toMatch(/status === ['"]pending['"] \|\| status === ['"]assigned['"]/);
+    expect(src).toMatch(
+      /status === ['"]pending['"] \|\| status === ['"]assigned['"]/,
+    );
   });
 
   test("source: form conditions still align with backend ALLOWED_FROM_STATUSES", async () => {
     const { readFile } = await import("node:fs/promises");
-    const src = await readFile("components/submissions/RevisionPanel.tsx", "utf8");
+    const src = await readFile(
+      "components/submissions/RevisionPanel.tsx",
+      "utf8",
+    );
     // Backend allows revision FROM reviewing|returned. FE must not trigger 4xx
     // by submitting from other states — these are the only statuses that show
     // the form.
-    expect(src).toMatch(/role === ['"]provider['"] && \(status === ['"]reviewing['"] \|\| status === ['"]returned['"]\)/);
-    expect(src).toMatch(/role === ['"]business['"] && status === ['"]revision_required['"]/);
+    expect(src).toMatch(
+      /role === ['"]provider['"] && \(status === ['"]reviewing['"] \|\| status === ['"]returned['"]\)/,
+    );
+    expect(src).toMatch(
+      /role === ['"]business['"] && status === ['"]revision_required['"]/,
+    );
   });
 });

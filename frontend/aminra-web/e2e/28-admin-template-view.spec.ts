@@ -21,17 +21,25 @@ test.describe("admin file preview", () => {
     );
   });
 
-  test("view DOCX template returns PDF for inline preview (LibreOffice conversion)", async ({ request }) => {
+  test("view DOCX template returns PDF for inline preview (LibreOffice conversion)", async ({
+    request,
+  }) => {
     const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
     expect(login.ok()).toBeTruthy();
     const { token } = await login.json();
 
-    const r = await request.get("/api/admin/templates/halal_policy/template-file/view?lang=vi", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const r = await request.get(
+      "/api/admin/templates/halal_policy/template-file/view?lang=vi",
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     expect(r.status()).toBe(200);
     const ct = r.headers()["content-type"] ?? "";
-    expect(ct, "DOCX must be converted to PDF for in-browser preview").toContain("application/pdf");
+    expect(
+      ct,
+      "DOCX must be converted to PDF for in-browser preview",
+    ).toContain("application/pdf");
     const cd = r.headers()["content-disposition"] ?? "";
     expect(cd).toMatch(/inline/);
 
@@ -40,17 +48,23 @@ test.describe("admin file preview", () => {
     expect(body.subarray(0, 4).toString()).toBe("%PDF");
   });
 
-  test("view template-file via query-string token (for new-tab UX)", async ({ request }) => {
+  test("view template-file via query-string token (for new-tab UX)", async ({
+    request,
+  }) => {
     const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
     const { token } = await login.json();
 
-    const r = await request.get(`/api/admin/templates/halal_policy/template-file/view?lang=vi&token=${encodeURIComponent(token)}`);
+    const r = await request.get(
+      `/api/admin/templates/halal_policy/template-file/view?lang=vi&token=${encodeURIComponent(token)}`,
+    );
     expect(r.status()).toBe(200);
     const body = await r.body();
     expect(body.subarray(0, 4).toString()).toBe("%PDF");
   });
 
-  test("repeated PDF requests return identical content (cache deterministic)", async ({ request }) => {
+  test("repeated PDF requests return identical content (cache deterministic)", async ({
+    request,
+  }) => {
     const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
     const { token } = await login.json();
     const url = `/api/admin/templates/halal_policy/template-file/view?lang=vi&token=${encodeURIComponent(token)}`;
@@ -66,8 +80,20 @@ test.describe("admin file preview", () => {
   });
 
   test("view rejects missing/garbage auth", async ({ request }) => {
-    expect((await request.get("/api/admin/templates/halal_policy/template-file/view?lang=vi")).status()).toBe(401);
-    expect((await request.get("/api/admin/templates/halal_policy/template-file/view?lang=vi&token=garbage123")).status()).toBe(401);
+    expect(
+      (
+        await request.get(
+          "/api/admin/templates/halal_policy/template-file/view?lang=vi",
+        )
+      ).status(),
+    ).toBe(401);
+    expect(
+      (
+        await request.get(
+          "/api/admin/templates/halal_policy/template-file/view?lang=vi&token=garbage123",
+        )
+      ).status(),
+    ).toBe(401);
   });
 
   test("view rejects path-traversal in filename", async ({ request }) => {
@@ -75,7 +101,9 @@ test.describe("admin file preview", () => {
     const { token } = await login.json();
 
     // Backend should sanitize the filename — `..%2F` in path should not escape
-    const r = await request.get(`/api/admin/templates/halal_policy/files/..%2F..%2Fapp.py/view?lang=vi&token=${encodeURIComponent(token)}`);
+    const r = await request.get(
+      `/api/admin/templates/halal_policy/files/..%2F..%2Fapp.py/view?lang=vi&token=${encodeURIComponent(token)}`,
+    );
     expect([400, 404]).toContain(r.status());
   });
 });

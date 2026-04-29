@@ -19,12 +19,23 @@ test.describe("Phase 1 Batch 5 — state + scoring", () => {
 
   test("static guards — code reflects all batch 5 fixes", async () => {
     const { readFile } = await import("node:fs/promises");
-    const sub = await readFile("../../backend/auth/submission_router.py", "utf8");
+    const sub = await readFile(
+      "../../backend/auth/submission_router.py",
+      "utf8",
+    );
     const aud = await readFile("../../backend/auth/audit_router.py", "utf8");
 
     // W3-M2: matrix exists with all 7 statuses
     expect(sub).toMatch(/_ALLOWED_TRANSITIONS\s*=\s*\{/);
-    for (const status of ["pending", "assigned", "reviewing", "revision_required", "returned", "rejected", "approved"]) {
+    for (const status of [
+      "pending",
+      "assigned",
+      "reviewing",
+      "revision_required",
+      "returned",
+      "rejected",
+      "approved",
+    ]) {
       expect(sub).toMatch(new RegExp(`["']${status}["']`));
     }
     // W3-M2: helper raises 409 on invalid transitions
@@ -35,29 +46,40 @@ test.describe("Phase 1 Batch 5 — state + scoring", () => {
     expect(sub).toMatch(/["']approved["']:\s*set\(\),\s*#\s*terminal/);
 
     // W3-M3: save_evaluation calls _validate_transition before auto-promotion
-    expect(sub).toMatch(/_validate_transition\(sub_info\["status"\],\s*["']reviewing["']\)/);
+    expect(sub).toMatch(
+      /_validate_transition\(sub_info\["status"\],\s*["']reviewing["']\)/,
+    );
 
     // W3-M2: approve-final guards transition before flipping
-    expect(sub).toMatch(/_validate_transition\(sub\["status"\],\s*["']approved["']\)/);
+    expect(sub).toMatch(
+      /_validate_transition\(sub\["status"\],\s*["']approved["']\)/,
+    );
 
     // W3-M11: doc_score CTE filters via provider_doc_ids
     expect(aud).toMatch(/provider_doc_ids/);
     expect(aud).toMatch(/JOIN provider_doc_ids/);
 
     // W3-M12: audit_score uses FILTER on completed/report_submitted
-    expect(aud).toMatch(/AVG\(compliance_score\) FILTER \(\s*WHERE status IN \(['"]completed['"], ['"]report_submitted['"]\)/);
+    expect(aud).toMatch(
+      /AVG\(compliance_score\) FILTER \(\s*WHERE status IN \(['"]completed['"], ['"]report_submitted['"]\)/,
+    );
   });
 
   test("transition matrix is sane: terminal states cannot transition out", async () => {
     // Re-derive the matrix structurally to catch typos in the python dict.
     const { readFile } = await import("node:fs/promises");
-    const sub = await readFile("../../backend/auth/submission_router.py", "utf8");
+    const sub = await readFile(
+      "../../backend/auth/submission_router.py",
+      "utf8",
+    );
 
     // rejected and approved must map to set() (empty, terminal)
     expect(sub).toMatch(/["']rejected["']:\s*set\(\)/);
     expect(sub).toMatch(/["']approved["']:\s*set\(\)/);
 
     // revision_required only allows reviewing
-    expect(sub).toMatch(/["']revision_required["']:\s*\{\s*["']reviewing["']\s*\}/);
+    expect(sub).toMatch(
+      /["']revision_required["']:\s*\{\s*["']reviewing["']\s*\}/,
+    );
   });
 });

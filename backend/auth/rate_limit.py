@@ -1,14 +1,14 @@
 import time
 import os
 from collections import defaultdict
-from fastapi import Request, HTTPException, Depends
-from .jwt_utils import get_current_user
+from fastapi import Request, HTTPException
 
 # Configurable limits
-API_RATE_LIMIT = int(os.getenv("API_RATE_LIMIT", "30"))        # requests per window
-API_RATE_WINDOW = int(os.getenv("API_RATE_WINDOW", "60"))      # window in seconds
-UPLOAD_RATE_LIMIT = int(os.getenv("UPLOAD_RATE_LIMIT", "5"))   # uploads per window
+API_RATE_LIMIT = int(os.getenv("API_RATE_LIMIT", "30"))  # requests per window
+API_RATE_WINDOW = int(os.getenv("API_RATE_WINDOW", "60"))  # window in seconds
+UPLOAD_RATE_LIMIT = int(os.getenv("UPLOAD_RATE_LIMIT", "5"))  # uploads per window
 UPLOAD_RATE_WINDOW = int(os.getenv("UPLOAD_RATE_WINDOW", "60"))
+
 
 class RateLimiter:
     def __init__(self):
@@ -27,7 +27,9 @@ class RateLimiter:
             )
         self._requests[key].append(now)
 
+
 _limiter = RateLimiter()
+
 
 def _get_client_key(request: Request, user: dict | None = None) -> str:
     """Get rate limit key: user ID if authenticated, else IP."""
@@ -37,6 +39,7 @@ def _get_client_key(request: Request, user: dict | None = None) -> str:
     ip = forwarded.split(",")[0].strip() if forwarded else request.client.host
     return f"ip:{ip}"
 
+
 async def rate_limit_api(request: Request):
     """Rate limit dependency for API endpoints."""
     # Try to extract user from token (optional — don't fail if no token)
@@ -45,11 +48,13 @@ async def rate_limit_api(request: Request):
     if auth.startswith("Bearer "):
         try:
             from .jwt_utils import decode_token
+
             user = decode_token(auth[7:])
         except Exception:
             pass
     key = _get_client_key(request, user)
     _limiter.check(f"api:{key}", API_RATE_LIMIT, API_RATE_WINDOW)
+
 
 async def rate_limit_upload(request: Request):
     """Stricter rate limit for upload endpoints."""
@@ -58,6 +63,7 @@ async def rate_limit_upload(request: Request):
     if auth.startswith("Bearer "):
         try:
             from .jwt_utils import decode_token
+
             user = decode_token(auth[7:])
         except Exception:
             pass
@@ -78,6 +84,7 @@ async def rate_limit_data_export(request: Request):
     if auth.startswith("Bearer "):
         try:
             from .jwt_utils import decode_token
+
             user = decode_token(auth[7:])
         except Exception:
             pass

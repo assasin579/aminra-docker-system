@@ -19,10 +19,11 @@ log = logging.getLogger(__name__)
 # ── Cache config ───────────────────────────────────────────────────────────────
 _CACHE_DIR = Path(__file__).parent.parent / ".cache"
 _CACHE_DIR.mkdir(exist_ok=True)
-_CACHE_RAW  = _CACHE_DIR / "halal_news_raw.json"   # L2: raw crawled content
-_CACHE_SUM  = _CACHE_DIR / "halal_news_sum.json"   # L1: LLM summary
-_TTL_RAW  = 2 * 3600   # 2 giờ
-_TTL_SUM  = 6 * 3600   # 6 giờ
+_CACHE_RAW = _CACHE_DIR / "halal_news_raw.json"  # L2: raw crawled content
+_CACHE_SUM = _CACHE_DIR / "halal_news_sum.json"  # L1: LLM summary
+_TTL_RAW = 2 * 3600  # 2 giờ
+_TTL_SUM = 6 * 3600  # 6 giờ
+
 
 def _cache_read(path: Path, ttl: int):
     """Đọc cache nếu còn hạn, trả về None nếu hết hạn hoặc không có."""
@@ -34,48 +35,64 @@ def _cache_read(path: Path, ttl: int):
         pass
     return None
 
+
 def _cache_write(path: Path, value: str):
     """Ghi giá trị vào cache file."""
     try:
-        path.write_text(
-            json.dumps({"ts": time.time(), "value": value}, ensure_ascii=False),
-            encoding="utf-8"
-        )
+        path.write_text(json.dumps({"ts": time.time(), "value": value}, ensure_ascii=False), encoding="utf-8")
     except Exception as e:
         log.warning(f"Cache write error: {e}")
+
 
 def get_cached_summary(lang: str = "vi") -> str | None:
     """L1: Lấy LLM summary đã cache (6 giờ), theo ngôn ngữ."""
     path = _CACHE_DIR / f"halal_news_sum_{lang}.json"
     return _cache_read(path, _TTL_SUM)
 
+
 def get_cached_raw() -> str | None:
     """L2: Lấy raw crawled content đã cache (2 giờ)."""
     return _cache_read(_CACHE_RAW, _TTL_RAW)
 
+
 def save_cached_raw(content: str):
     _cache_write(_CACHE_RAW, content)
+
 
 def save_cached_summary(summary: str, lang: str = "vi"):
     path = _CACHE_DIR / f"halal_news_sum_{lang}.json"
     _cache_write(path, summary)
 
+
 HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ),
     "Accept-Language": "en-US,en;q=0.9",
 }
 
 _GREETING_PATTERNS = [
-    "assalamu alaikum", "assalamualaikum", "as-salamu alaykum",
-    "assalamu'alaikum", "assalam alaikum", "السلام عليكم",
-    "salam alaikum", "salamualaikum", "wa alaikum", "waалайкум",
-    "bismillah", "alhamdulillah", "subhanallah",
-    "dear brothers", "dear sisters", "dear brother", "dear sister",
-    "beloved brothers", "beloved sisters",
+    "assalamu alaikum",
+    "assalamualaikum",
+    "as-salamu alaykum",
+    "assalamu'alaikum",
+    "assalam alaikum",
+    "السلام عليكم",
+    "salam alaikum",
+    "salamualaikum",
+    "wa alaikum",
+    "waалайкум",
+    "bismillah",
+    "alhamdulillah",
+    "subhanallah",
+    "dear brothers",
+    "dear sisters",
+    "dear brother",
+    "dear sister",
+    "beloved brothers",
+    "beloved sisters",
 ]
+
 
 def _strip_greetings(text: str) -> str:
     """Xoá các dòng chứa câu chào hỏi Islamic ra khỏi nội dung crawl."""
@@ -88,21 +105,48 @@ def _strip_greetings(text: str) -> str:
         cleaned.append(line)
     return "\n".join(cleaned).strip()
 
+
 # Từ khoá tin tức/thị trường — cần có ít nhất 1
 _NEWS_KEYWORDS = [
     # Vietnamese
-    "tin tức", "tình hình", "thị trường", "cập nhật", "mới nhất",
-    "kinh tế", "xu hướng", "báo cáo", "diễn đàn", "tin ",
+    "tin tức",
+    "tình hình",
+    "thị trường",
+    "cập nhật",
+    "mới nhất",
+    "kinh tế",
+    "xu hướng",
+    "báo cáo",
+    "diễn đàn",
+    "tin ",
     # English
-    "news", "market", "update", "latest", "trend", "report", "forum", "industry",
+    "news",
+    "market",
+    "update",
+    "latest",
+    "trend",
+    "report",
+    "forum",
+    "industry",
     # Malay
-    "berita", "pasaran", "terkini", "perkembangan", "industri", "laporan",
+    "berita",
+    "pasaran",
+    "terkini",
+    "perkembangan",
+    "industri",
+    "laporan",
     # Arabic
-    "أخبار", "سوق", "تقرير", "صناعة", "اتجاه", "تطور",
+    "أخبار",
+    "سوق",
+    "تقرير",
+    "صناعة",
+    "اتجاه",
+    "تطور",
 ]
 
 # Từ khoá Halal — cần có ít nhất 1
 _HALAL_KEYWORDS = ["halal", "hồi giáo", "muslim", "islam", "حلال"]
+
 
 def is_halal_news_query(text: str) -> bool:
     t = text.lower().strip()
@@ -110,15 +154,32 @@ def is_halal_news_query(text: str) -> bool:
     has_halal = any(kw in t for kw in _HALAL_KEYWORDS)
     return has_news and has_halal
 
+
 # Từ khoá để lọc đoạn văn có liên quan đến báo cáo thị trường Halal
 _MARKET_RELEVANCE_KEYWORDS = [
-    "halal market", "halal industry", "halal economy", "halal sector",
-    "halal food", "halal trade", "halal export", "halal certification",
-    "halal report", "halal growth", "halal billion", "halal trillion",
-    "thị trường halal", "kinh tế halal", "xuất khẩu halal",
-    "ngành halal", "chứng nhận halal", "tăng trưởng halal",
-    "muslim consumer", "islamic economy", "global halal",
-    "southeast asia halal", "asean halal",
+    "halal market",
+    "halal industry",
+    "halal economy",
+    "halal sector",
+    "halal food",
+    "halal trade",
+    "halal export",
+    "halal certification",
+    "halal report",
+    "halal growth",
+    "halal billion",
+    "halal trillion",
+    "thị trường halal",
+    "kinh tế halal",
+    "xuất khẩu halal",
+    "ngành halal",
+    "chứng nhận halal",
+    "tăng trưởng halal",
+    "muslim consumer",
+    "islamic economy",
+    "global halal",
+    "southeast asia halal",
+    "asean halal",
 ]
 
 # Query cụ thể nhắm vào báo cáo thị trường — không lấy nội dung tùy tiện
@@ -150,8 +211,7 @@ def _fetch_halal_report_text(url: str, timeout: int = 8) -> str:
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        for tag in soup(["script", "style", "nav", "footer", "header",
-                         "aside", "form", "iframe", "noscript"]):
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside", "form", "iframe", "noscript"]):
             tag.decompose()
 
         # Lấy toàn bộ các đoạn văn (p tag)
@@ -227,11 +287,13 @@ def crawl_halal_news() -> str:
                     continue
                 if url and url not in seen_urls:
                     seen_urls.add(url)
-                    all_results.append({
-                        "title": title,
-                        "url": url,
-                        "snippet": snippet,
-                    })
+                    all_results.append(
+                        {
+                            "title": title,
+                            "url": url,
+                            "snippet": snippet,
+                        }
+                    )
         except Exception as e:
             log.warning(f"Search error for '{query}': {e}")
 
@@ -258,10 +320,7 @@ def crawl_halal_news() -> str:
             elif "vcci" in url_lower:
                 source_label = "[VCCI]"
 
-            block = (
-                f"{source_label} {item['title']}\n"
-                f"{article_text}"
-            )
+            block = f"{source_label} {item['title']}\n{article_text}"
             context_blocks.append(block)
 
     if not context_blocks:

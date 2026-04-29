@@ -10,6 +10,7 @@ Handles the round-by-round revision flow:
 
 Append-only revision history; full audit trail.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,7 +18,6 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import UUID
 
 import asyncpg
 
@@ -26,8 +26,13 @@ log = logging.getLogger("aminra.submission_revisions")
 
 # ── Errors ──────────────────────────────────────────────────────────────────
 
+
 class SubmissionNotFound(Exception): ...
+
+
 class InvalidStateTransition(Exception): ...
+
+
 class NoRevisionPending(Exception): ...
 
 
@@ -40,10 +45,11 @@ ALLOWED_FROM_STATUSES_FOR_RESUBMIT = {"revision_required"}
 @dataclass
 class DocumentFeedback:
     """One issue flagged on a specific document — surfaces in business UI."""
-    document_id: str          # UUID of the document with issue
-    issue: str                # short description ("Missing JAKIM seal")
-    severity: str = "minor"   # minor | major | critical
-    suggestion: str = ""      # optional fix suggestion
+
+    document_id: str  # UUID of the document with issue
+    issue: str  # short description ("Missing JAKIM seal")
+    severity: str = "minor"  # minor | major | critical
+    suggestion: str = ""  # optional fix suggestion
 
     def to_dict(self) -> dict:
         return {
@@ -67,6 +73,7 @@ class RevisionRequest:
 
 
 # ── Provider: request a revision ────────────────────────────────────────────
+
 
 async def request_revision(
     db: asyncpg.Connection,
@@ -95,8 +102,7 @@ async def request_revision(
         raise SubmissionNotFound(submission_id)
     if sub["status"] not in ALLOWED_FROM_STATUSES_FOR_REVISION:
         raise InvalidStateTransition(
-            f"can't request revision from status={sub['status']!r} "
-            f"(allowed: {ALLOWED_FROM_STATUSES_FOR_REVISION})"
+            f"can't request revision from status={sub['status']!r} (allowed: {ALLOWED_FROM_STATUSES_FOR_REVISION})"
         )
 
     new_round = (sub["revision_round"] or 0) + 1
@@ -112,7 +118,8 @@ async def request_revision(
                    updated_at = NOW()
              WHERE id = $2
             """,
-            new_round, submission_id,
+            new_round,
+            submission_id,
         )
         request_row = await db.fetchrow(
             """
@@ -121,7 +128,12 @@ async def request_revision(
             VALUES ($1, $2, $3, $4, $5, $6::jsonb)
             RETURNING id, requested_at
             """,
-            submission_id, new_round, requester_id, requester_name, feedback, doc_feedback_json,
+            submission_id,
+            new_round,
+            requester_id,
+            requester_name,
+            feedback,
+            doc_feedback_json,
         )
 
     log.info("[revisions] submission=%s round=%d by=%s", submission_id, new_round, requester_id)
@@ -135,6 +147,7 @@ async def request_revision(
 
 
 # ── Business: resubmit ─────────────────────────────────────────────────────
+
 
 async def resubmit(
     db: asyncpg.Connection,
@@ -161,8 +174,7 @@ async def resubmit(
         raise SubmissionNotFound(submission_id)
     if sub["status"] not in ALLOWED_FROM_STATUSES_FOR_RESUBMIT:
         raise InvalidStateTransition(
-            f"can't resubmit from status={sub['status']!r} "
-            f"(allowed: {ALLOWED_FROM_STATUSES_FOR_RESUBMIT})"
+            f"can't resubmit from status={sub['status']!r} (allowed: {ALLOWED_FROM_STATUSES_FOR_RESUBMIT})"
         )
 
     pending = await db.fetchrow(
@@ -176,11 +188,7 @@ async def resubmit(
     if pending is None:
         raise NoRevisionPending(submission_id)
 
-    new_docs_param = (
-        [str(d) for d in new_document_ids]
-        if new_document_ids is not None
-        else None
-    )
+    new_docs_param = [str(d) for d in new_document_ids] if new_document_ids is not None else None
 
     async with db.transaction():
         if new_docs_param is not None:
@@ -194,7 +202,9 @@ async def resubmit(
                        updated_at = NOW()
                  WHERE id = $3
                 """,
-                new_docs_param, business_notes, submission_id,
+                new_docs_param,
+                business_notes,
+                submission_id,
             )
         else:
             await db.execute(
@@ -206,7 +216,8 @@ async def resubmit(
                        updated_at = NOW()
                  WHERE id = $2
                 """,
-                business_notes, submission_id,
+                business_notes,
+                submission_id,
             )
         await db.execute(
             "UPDATE submission_revision_requests SET resolved_at = NOW() WHERE id = $1",
@@ -224,8 +235,10 @@ async def resubmit(
 
 # ── Read API ───────────────────────────────────────────────────────────────
 
+
 async def list_revision_history(
-    db: asyncpg.Connection, submission_id: str,
+    db: asyncpg.Connection,
+    submission_id: str,
 ) -> list[dict]:
     """Return all revision rounds for a submission (newest first), with
     document_feedback parsed."""
@@ -244,14 +257,16 @@ async def list_revision_history(
         df = r["document_feedback"]
         if isinstance(df, str):
             df = json.loads(df) if df else []
-        out.append({
-            "id": str(r["id"]),
-            "round": r["round"],
-            "requester_id": str(r["requester_id"]),
-            "requester_name": r["requester_name"],
-            "feedback": r["feedback"],
-            "document_feedback": df or [],
-            "requested_at": r["requested_at"].isoformat(),
-            "resolved_at": r["resolved_at"].isoformat() if r["resolved_at"] else None,
-        })
+        out.append(
+            {
+                "id": str(r["id"]),
+                "round": r["round"],
+                "requester_id": str(r["requester_id"]),
+                "requester_name": r["requester_name"],
+                "feedback": r["feedback"],
+                "document_feedback": df or [],
+                "requested_at": r["requested_at"].isoformat(),
+                "resolved_at": r["resolved_at"].isoformat() if r["resolved_at"] else None,
+            }
+        )
     return out

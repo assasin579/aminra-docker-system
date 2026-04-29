@@ -66,7 +66,8 @@ test("no page reads aminra_admin_token outside the allowed central files", async
     offenders,
     "Files reading 'aminra_admin_token' must be in the allowed list (lib/adminAuth.ts, AuthContexts, confirm-deletion).\n" +
       "If a new admin page legitimately needs the token, add an export to lib/adminAuth.ts and use it.\n" +
-      "Offenders:\n" + offenders.map(f => "  - " + f).join("\n"),
+      "Offenders:\n" +
+      offenders.map((f) => "  - " + f).join("\n"),
   ).toEqual([]);
 });
 
@@ -86,6 +87,7 @@ test("no page reads aminra_user_token outside the allowed central files", async 
     offenders,
     "Files reading 'aminra_user_token' must use useUserAuth() from components/UserAuthContext or readAdminToken from @/lib/adminAuth.\n" +
       "Direct localStorage reads bypass token freshness checks and are how the 2026-04-25 admin auth bug shipped.\n" +
-      "Offenders:\n" + offenders.map(f => "  - " + f).join("\n"),
+      "Offenders:\n" +
+      offenders.map((f) => "  - " + f).join("\n"),
   ).toEqual([]);
 });

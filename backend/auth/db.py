@@ -1,4 +1,6 @@
-import os, asyncpg, logging
+import os
+import asyncpg
+import logging
 from typing import AsyncGenerator
 
 log = logging.getLogger("aminra.auth.db")
@@ -12,13 +14,11 @@ def _pool_config() -> dict:
     Defaults are conservative; production should set DB_POOL_MAX_SIZE >= 4*CPU.
     """
     return {
-        "min_size":         int(os.getenv("DB_POOL_MIN_SIZE", "2")),
-        "max_size":         int(os.getenv("DB_POOL_MAX_SIZE", "10")),
-        "max_queries":      int(os.getenv("DB_POOL_MAX_QUERIES", "50000")),
-        "max_inactive_connection_lifetime": float(
-            os.getenv("DB_POOL_INACTIVE_LIFETIME", "300")
-        ),
-        "command_timeout":  float(os.getenv("DB_COMMAND_TIMEOUT", "30")),
+        "min_size": int(os.getenv("DB_POOL_MIN_SIZE", "2")),
+        "max_size": int(os.getenv("DB_POOL_MAX_SIZE", "10")),
+        "max_queries": int(os.getenv("DB_POOL_MAX_QUERIES", "50000")),
+        "max_inactive_connection_lifetime": float(os.getenv("DB_POOL_INACTIVE_LIFETIME", "300")),
+        "command_timeout": float(os.getenv("DB_COMMAND_TIMEOUT", "30")),
     }
 
 

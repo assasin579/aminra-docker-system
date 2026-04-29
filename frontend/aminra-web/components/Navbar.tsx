@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useTranslation } from 'react-i18next';
-import Link from 'next/link';
-import { useState } from 'react';
+import { useTranslation } from "react-i18next";
+import Link from "next/link";
+import { useState } from "react";
 
 const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'vi', name: 'Tiếng Việt' },
-  { code: 'ar', name: 'العربية' },
+  { code: "en", name: "English" },
+  { code: "vi", name: "Tiếng Việt" },
+  { code: "ar", name: "العربية" },
 ];
 
 export default function Navbar() {
@@ -24,25 +24,33 @@ export default function Navbar() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.png" alt="" className="h-8 w-8 object-contain" />
+          <img
+            src="/aminra-mark.png"
+            alt=""
+            className="h-8 w-8 object-contain"
+          />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-wordmark-navy.png" alt="AMINRA" className="h-5 object-contain" />
+          <img
+            src="/aminra-wordmark-navy.png"
+            alt="AMINRA"
+            className="h-5 object-contain"
+          />
         </div>
 
         <nav className="hidden md:flex items-center space-x-8">
           <Link
             href="/"
             className="font-medium transition-colors"
-            style={{ color: '#374151' }}
+            style={{ color: "#374151" }}
           >
-            {t('navbar.home')}
+            {t("navbar.home")}
           </Link>
           <Link
             href="/upload"
             className="font-medium transition-colors"
-            style={{ color: '#374151' }}
+            style={{ color: "#374151" }}
           >
-            {t('navbar.upload')}
+            {t("navbar.upload")}
           </Link>
         </nav>
 
@@ -50,9 +58,9 @@ export default function Navbar() {
           <button
             onClick={() => setIsLangOpen(!isLangOpen)}
             className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 transition-colors bg-white"
-            style={{ borderColor: '#E2E8F0' }}
+            style={{ borderColor: "#E2E8F0" }}
           >
-            <span className="text-gray-700">{t('navbar.language')}</span>
+            <span className="text-gray-700">{t("navbar.language")}</span>
             <svg
               className="w-4 h-4"
               fill="none"
@@ -76,7 +84,12 @@ export default function Navbar() {
                   key={lang.code}
                   onClick={() => changeLanguage(lang.code)}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-                  style={{ color: i18n.language === lang.code ? '#0A1F44' : '#374151', background: i18n.language === lang.code ? '#DCE3F0' : 'transparent', fontWeight: i18n.language === lang.code ? 600 : 400 }}
+                  style={{
+                    color: i18n.language === lang.code ? "#0A1F44" : "#374151",
+                    background:
+                      i18n.language === lang.code ? "#DCE3F0" : "transparent",
+                    fontWeight: i18n.language === lang.code ? 600 : 400,
+                  }}
                 >
                   {lang.name}
                 </button>

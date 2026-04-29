@@ -8,6 +8,7 @@ Two thresholds:
 `sla_alerts_sent` JSONB on submissions tracks which thresholds already alerted,
 making the daily scan idempotent.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,13 +37,14 @@ class AtRiskSubmission:
     submitted_at: datetime
     deadline: datetime
     status: str
-    threshold: int                # 80 or 100
-    elapsed_pct: float            # actual % elapsed (>= threshold)
-    days_remaining: int           # negative if overdue
+    threshold: int  # 80 or 100
+    elapsed_pct: float  # actual % elapsed (>= threshold)
+    days_remaining: int  # negative if overdue
     alerts_sent: list[int]
 
 
 # ── Discovery ──────────────────────────────────────────────────────────────
+
 
 async def find_at_risk_submissions(
     db: asyncpg.Connection,
@@ -89,25 +91,29 @@ async def find_at_risk_submissions(
         # Find lowest unsent threshold this submission has crossed
         for t in sorted(SLA_THRESHOLDS):
             if elapsed_pct >= t and t not in sent:
-                out.append(AtRiskSubmission(
-                    submission_id=str(r["id"]),
-                    business_tenant=str(r["business_tenant"]),
-                    provider_id=str(r["provider_id"]),
-                    company_name=r["company_name"],
-                    submitted_at=submitted_at,
-                    deadline=deadline,
-                    status=r["status"],
-                    threshold=t,
-                    elapsed_pct=round(elapsed_pct, 1),
-                    days_remaining=days_remaining,
-                    alerts_sent=sent,
-                ))
+                out.append(
+                    AtRiskSubmission(
+                        submission_id=str(r["id"]),
+                        business_tenant=str(r["business_tenant"]),
+                        provider_id=str(r["provider_id"]),
+                        company_name=r["company_name"],
+                        submitted_at=submitted_at,
+                        deadline=deadline,
+                        status=r["status"],
+                        threshold=t,
+                        elapsed_pct=round(elapsed_pct, 1),
+                        days_remaining=days_remaining,
+                        alerts_sent=sent,
+                    )
+                )
                 break  # only the next pending threshold per submission per scan
     return out
 
 
 async def mark_sla_alert_sent(
-    db: asyncpg.Connection, submission_id: str, threshold: int,
+    db: asyncpg.Connection,
+    submission_id: str,
+    threshold: int,
 ) -> None:
     """Mark threshold as alerted for a submission. Idempotent (JSONB array union)."""
     await db.execute(
@@ -120,11 +126,13 @@ async def mark_sla_alert_sent(
                 END
          WHERE id = $2
         """,
-        threshold, submission_id,
+        threshold,
+        submission_id,
     )
 
 
 # ── Admin escalation queue ─────────────────────────────────────────────────
+
 
 async def list_overdue_submissions(
     db: asyncpg.Connection,
@@ -146,18 +154,19 @@ async def list_overdue_submissions(
         ORDER BY s.deadline ASC
         LIMIT $2
         """,
-        list(ACTIVE_STATUSES), limit,
+        list(ACTIVE_STATUSES),
+        limit,
     )
     return [
         {
             "submission_id": str(r["id"]),
-            "company_name":  r["company_name"],
-            "status":        r["status"],
-            "submitted_at":  r["submitted_at"].isoformat() if r["submitted_at"] else None,
-            "deadline":      r["deadline"].isoformat(),
+            "company_name": r["company_name"],
+            "status": r["status"],
+            "submitted_at": r["submitted_at"].isoformat() if r["submitted_at"] else None,
+            "deadline": r["deadline"].isoformat(),
             "provider_email": r["provider_email"],
-            "provider_name":  r["provider_name"],
-            "days_overdue":   round(r["days_overdue"] or 0, 1),
+            "provider_name": r["provider_name"],
+            "days_overdue": round(r["days_overdue"] or 0, 1),
         }
         for r in rows
     ]

@@ -1,7 +1,6 @@
 """Supplier CRUD + certificate management."""
 
 import logging
-import json as _json
 import magic
 from uuid import UUID as _UUID, uuid4
 from pathlib import Path
@@ -52,7 +51,8 @@ _LIST_SUPPLIERS_BY_STATUS = _LIST_SUPPLIERS_BASE + " AND s.status = $2 ORDER BY 
 @router.get("/suppliers")
 async def list_suppliers(
     status: Optional[str] = Query(None),
-    user=Depends(get_current_user), db=Depends(get_db),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
 ):
     tenant_id = _require_business(user)
     if status:
@@ -60,29 +60,51 @@ async def list_suppliers(
     else:
         rows = await db.fetch(_LIST_SUPPLIERS_ALL, tenant_id)
 
-    return {"suppliers": [
-        SupplierOut(
-            id=str(r["id"]), name=r["name"], address=r["address"], phone=r["phone"],
-            email=r["email"], contact_person=r["contact_person"],
-            supplier_type=r["supplier_type"], tax_code=r.get("tax_code"), status=r["status"], notes=r["notes"],
-            material_count=r["material_count"], cert_count=r["cert_count"],
-            created_at=r["created_at"],
-        ) for r in rows
-    ]}
+    return {
+        "suppliers": [
+            SupplierOut(
+                id=str(r["id"]),
+                name=r["name"],
+                address=r["address"],
+                phone=r["phone"],
+                email=r["email"],
+                contact_person=r["contact_person"],
+                supplier_type=r["supplier_type"],
+                tax_code=r.get("tax_code"),
+                status=r["status"],
+                notes=r["notes"],
+                material_count=r["material_count"],
+                cert_count=r["cert_count"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
+    }
 
 
 @router.post("/suppliers")
 async def create_supplier(
     req: SupplierCreate,
-    user=Depends(get_current_user), db=Depends(get_db),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
 ):
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_edit")
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO suppliers (tenant_id, name, address, phone, email, contact_person, supplier_type, tax_code, notes)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id
-    """, tenant_id, req.name, req.address, req.phone, req.email,
-        req.contact_person, req.supplier_type, req.tax_code, req.notes)
+    """,
+        tenant_id,
+        req.name,
+        req.address,
+        req.phone,
+        req.email,
+        req.contact_person,
+        req.supplier_type,
+        req.tax_code,
+        req.notes,
+    )
     log.info(f"[suppliers] Created {row['id']} for tenant {tenant_id}")
     return {"id": str(row["id"]), "message": "Đã tạo nhà cung cấp"}
 
@@ -98,8 +120,15 @@ async def get_supplier(sid: str, user=Depends(get_current_user), db=Depends(get_
 
 
 _UPDATE_SUPPLIER_FIELDS = (
-    "name", "address", "phone", "email", "contact_person",
-    "supplier_type", "tax_code", "status", "notes",
+    "name",
+    "address",
+    "phone",
+    "email",
+    "contact_person",
+    "supplier_type",
+    "tax_code",
+    "status",
+    "notes",
 )
 _UPDATE_SUPPLIER_QUERY = """
     UPDATE suppliers SET
@@ -125,10 +154,17 @@ async def update_supplier(sid: str, req: SupplierUpdate, user=Depends(get_curren
         return {"message": "Không có thay đổi"}
     result = await db.execute(
         _UPDATE_SUPPLIER_QUERY,
-        sid, tenant_id,
-        req.name, req.address, req.phone, req.email,
-        req.contact_person, req.supplier_type, req.tax_code,
-        req.status, req.notes,
+        sid,
+        tenant_id,
+        req.name,
+        req.address,
+        req.phone,
+        req.email,
+        req.contact_person,
+        req.supplier_type,
+        req.tax_code,
+        req.status,
+        req.notes,
     )
     if result == "UPDATE 0":
         raise HTTPException(404)
@@ -148,21 +184,32 @@ async def delete_supplier(sid: str, user=Depends(get_current_user), db=Depends(g
 
 # ── Supplier Certificates ────────────────────────────────────────────────────
 
+
 @router.get("/suppliers/{sid}/certificates")
 async def list_certificates(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
     rows = await db.fetch(
         "SELECT * FROM supplier_certificates WHERE supplier_id=$1 AND tenant_id=$2 ORDER BY created_at DESC",
-        sid, tenant_id)
-    return {"certificates": [
-        CertificateOut(
-            id=str(r["id"]), cert_type=r["cert_type"], cert_number=r["cert_number"],
-            issuing_body=r["issuing_body"], issued_date=r["issued_date"],
-            expiry_date=r["expiry_date"], original_filename=r["original_filename"],
-            file_size=r["file_size"], created_at=r["created_at"],
-        ) for r in rows
-    ]}
+        sid,
+        tenant_id,
+    )
+    return {
+        "certificates": [
+            CertificateOut(
+                id=str(r["id"]),
+                cert_type=r["cert_type"],
+                cert_number=r["cert_number"],
+                issuing_body=r["issuing_body"],
+                issued_date=r["issued_date"],
+                expiry_date=r["expiry_date"],
+                original_filename=r["original_filename"],
+                file_size=r["file_size"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
+    }
 
 
 @router.post("/suppliers/{sid}/certificates")
@@ -174,7 +221,8 @@ async def upload_certificate(
     issuing_body: str = Form(""),
     issued_date: str = Form(""),
     expiry_date: str = Form(""),
-    user=Depends(get_current_user), db=Depends(get_db),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
 ):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
@@ -190,9 +238,14 @@ async def upload_certificate(
         raise HTTPException(413, "File quá lớn (tối đa 10MB)")
 
     detected = magic.from_buffer(content, mime=True)
-    allowed = {"application/pdf", "image/jpeg", "image/png",
-               "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-               "application/octet-stream", "application/zip"}
+    allowed = {
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/octet-stream",
+        "application/zip",
+    }
     if detected not in allowed:
         raise HTTPException(400, f"Loại file không hợp lệ: {detected}")
 
@@ -208,27 +261,43 @@ async def upload_certificate(
     try:
         if issued_date:
             from datetime import date as _date
+
             _issued = _date.fromisoformat(issued_date)
         if expiry_date:
             from datetime import date as _date
+
             _expiry = _date.fromisoformat(expiry_date)
     except ValueError:
         pass
 
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO supplier_certificates
             (supplier_id, tenant_id, cert_type, cert_number, issuing_body,
              issued_date, expiry_date, file_path, original_filename, file_size)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id
-    """, sid, tenant_id, cert_type, cert_number or None, issuing_body or None,
-        _issued, _expiry, str(save_path), file.filename, len(content))
+    """,
+        sid,
+        tenant_id,
+        cert_type,
+        cert_number or None,
+        issuing_body or None,
+        _issued,
+        _expiry,
+        str(save_path),
+        file.filename,
+        len(content),
+    )
 
     return {"id": str(row["id"]), "filename": file.filename}
 
 
 @router.get("/suppliers/{sid}/certificates/{cid}/view")
 async def view_certificate(
-    sid: str, cid: str, request: Request, token: Optional[str] = Query(None),
+    sid: str,
+    cid: str,
+    request: Request,
+    token: Optional[str] = Query(None),
 ):
     """View certificate as PDF. Supports ?token= for window.open."""
     auth = request.headers.get("Authorization", "")
@@ -240,11 +309,12 @@ async def view_certificate(
         raise HTTPException(401)
 
     from auth.db import get_pool
+
     pool = get_pool()
     async with pool.acquire() as db:
         row = await db.fetchrow(
-            "SELECT file_path, original_filename FROM supplier_certificates WHERE id=$1 AND supplier_id=$2",
-            cid, sid)
+            "SELECT file_path, original_filename FROM supplier_certificates WHERE id=$1 AND supplier_id=$2", cid, sid
+        )
     if not row or not row["file_path"]:
         raise HTTPException(404)
 
@@ -259,8 +329,11 @@ async def view_certificate(
         return FileResponse(path=str(fpath), media_type=detected)
 
     # Convert to PDF
-    import subprocess, shutil, tempfile
+    import subprocess
+    import shutil
+    import tempfile
     from starlette.concurrency import run_in_threadpool
+
     cache_dir = Path("data/preview_cache")
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_pdf = cache_dir / f"cert_{cid}.pdf"
@@ -274,11 +347,27 @@ async def view_certificate(
     def _convert():
         try:
             subprocess.run(
-                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-                 f"-env:UserInstallation=file://{pid_profile}",
-                 "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(fpath.resolve())],
-                capture_output=True, timeout=60, cwd=pid_profile,
-                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+                [
+                    "/usr/bin/libreoffice",
+                    "--headless",
+                    "--norestore",
+                    "--nolockcheck",
+                    f"-env:UserInstallation=file://{pid_profile}",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(cache_dir.resolve()),
+                    str(fpath.resolve()),
+                ],
+                capture_output=True,
+                timeout=60,
+                cwd=pid_profile,
+                env={
+                    "HOME": pid_profile,
+                    "PATH": "/usr/bin:/usr/local/bin:/bin",
+                    "LANG": "C.UTF-8",
+                    "LC_ALL": "C.UTF-8",
+                },
             )
             lo_output = cache_dir / (fpath.stem + ".pdf")
             if lo_output.exists():
@@ -300,7 +389,10 @@ async def delete_certificate(sid: str, cid: str, user=Depends(get_current_user),
     await check_permission_db(user, "can_delete")
     row = await db.fetchrow(
         "SELECT file_path FROM supplier_certificates WHERE id=$1 AND supplier_id=$2 AND tenant_id=$3",
-        cid, sid, tenant_id)
+        cid,
+        sid,
+        tenant_id,
+    )
     if not row:
         raise HTTPException(404)
     if row["file_path"]:
@@ -311,6 +403,7 @@ async def delete_certificate(sid: str, cid: str, user=Depends(get_current_user),
 
 
 # ── Invite & Supplier Portal (public) ─────────────────────────────────────────
+
 
 @router.post("/suppliers/{sid}/invite")
 async def generate_invite(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
@@ -323,12 +416,11 @@ async def generate_invite(sid: str, user=Depends(get_current_user), db=Depends(g
         raise HTTPException(404)
 
     from datetime import timedelta, datetime, timezone
+
     token = str(uuid4()).replace("-", "")
     expires = datetime.now(timezone.utc) + timedelta(days=30)
 
-    await db.execute(
-        "UPDATE suppliers SET invite_token=$1, invite_expires_at=$2 WHERE id=$3",
-        token, expires, sid)
+    await db.execute("UPDATE suppliers SET invite_token=$1, invite_expires_at=$2 WHERE id=$3", token, expires, sid)
 
     log.info(f"[suppliers] Invite generated for {sid}")
     return {
@@ -343,13 +435,17 @@ async def generate_invite(sid: str, user=Depends(get_current_user), db=Depends(g
 async def get_portal_info(token: str, db=Depends(get_db)):
     """Public: NCC xem yêu cầu hồ sơ (no auth needed)."""
     from datetime import datetime, timezone
-    row = await db.fetchrow("""
+
+    row = await db.fetchrow(
+        """
         SELECT s.id, s.name, s.invite_expires_at, s.tenant_id,
                u.company_name AS business_name
         FROM suppliers s
         JOIN users u ON u.id = s.tenant_id AND u.is_owner = true
         WHERE s.invite_token = $1
-    """, token)
+    """,
+        token,
+    )
 
     if not row:
         raise HTTPException(404, "Link không hợp lệ hoặc đã hết hạn")
@@ -359,7 +455,8 @@ async def get_portal_info(token: str, db=Depends(get_db)):
     # Get existing certs uploaded by supplier
     certs = await db.fetch(
         "SELECT id, cert_type, original_filename, file_size, created_at FROM supplier_certificates WHERE supplier_id=$1 ORDER BY created_at DESC",
-        row["id"])
+        row["id"],
+    )
 
     return {
         "supplier_name": row["name"],
@@ -373,20 +470,26 @@ async def get_portal_info(token: str, db=Depends(get_db)):
             {"type": "contract", "label": "Hợp đồng cung cấp", "required": False},
         ],
         "uploaded_certificates": [
-            {"id": str(c["id"]), "cert_type": c["cert_type"],
-             "filename": c["original_filename"], "size": c["file_size"],
-             "uploaded_at": c["created_at"].isoformat()}
+            {
+                "id": str(c["id"]),
+                "cert_type": c["cert_type"],
+                "filename": c["original_filename"],
+                "size": c["file_size"],
+                "uploaded_at": c["created_at"].isoformat(),
+            }
             for c in certs
         ],
     }
 
 
 @router.post("/supplier-portal/{token}/upload")
-async def portal_upload(token: str, file: UploadFile = File(...), cert_type: str = Form("halal_cert"), db=Depends(get_db)):
+async def portal_upload(
+    token: str, file: UploadFile = File(...), cert_type: str = Form("halal_cert"), db=Depends(get_db)
+):
     """Public: NCC upload chứng chỉ (no auth, uses invite token)."""
     from datetime import datetime, timezone
-    row = await db.fetchrow(
-        "SELECT id, tenant_id, invite_expires_at FROM suppliers WHERE invite_token=$1", token)
+
+    row = await db.fetchrow("SELECT id, tenant_id, invite_expires_at FROM suppliers WHERE invite_token=$1", token)
 
     if not row:
         raise HTTPException(404, "Link không hợp lệ")
@@ -398,9 +501,14 @@ async def portal_upload(token: str, file: UploadFile = File(...), cert_type: str
         raise HTTPException(413, "File quá lớn (tối đa 10MB)")
 
     detected = magic.from_buffer(content, mime=True)
-    allowed = {"application/pdf", "image/jpeg", "image/png",
-               "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-               "application/octet-stream", "application/zip"}
+    allowed = {
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/octet-stream",
+        "application/zip",
+    }
     if detected not in allowed:
         raise HTTPException(400, f"Loại file không hợp lệ: {detected}")
 
@@ -413,11 +521,19 @@ async def portal_upload(token: str, file: UploadFile = File(...), cert_type: str
     save_path = save_dir / f"{cert_id}_{safe_name}"
     save_path.write_bytes(content)
 
-    await db.execute("""
+    await db.execute(
+        """
         INSERT INTO supplier_certificates
             (supplier_id, tenant_id, cert_type, file_path, original_filename, file_size, uploaded_by)
         VALUES ($1,$2,$3,$4,$5,$6,'supplier')
-    """, sid, tenant_id, cert_type, str(save_path), file.filename, len(content))
+    """,
+        sid,
+        tenant_id,
+        cert_type,
+        str(save_path),
+        file.filename,
+        len(content),
+    )
 
     log.info(f"[supplier-portal] NCC {sid} uploaded {cert_type}")
     return {"message": "Đã gửi hồ sơ thành công", "filename": file.filename}
@@ -432,8 +548,7 @@ async def verification_status(sid: str, user=Depends(get_current_user), db=Depen
     if not s:
         raise HTTPException(404)
 
-    certs = await db.fetch(
-        "SELECT cert_type, uploaded_by FROM supplier_certificates WHERE supplier_id=$1", sid)
+    certs = await db.fetch("SELECT cert_type, uploaded_by FROM supplier_certificates WHERE supplier_id=$1", sid)
 
     has_halal = any(c["cert_type"] == "halal_cert" for c in certs)
     supplier_uploaded = any(c["uploaded_by"] == "supplier" for c in certs)
@@ -464,13 +579,14 @@ async def verify_supplier(sid: str, user=Depends(get_current_user), db=Depends(g
 
     # Check requirements
     has_halal = await db.fetchval(
-        "SELECT COUNT(*) FROM supplier_certificates WHERE supplier_id=$1 AND cert_type='halal_cert'", sid)
+        "SELECT COUNT(*) FROM supplier_certificates WHERE supplier_id=$1 AND cert_type='halal_cert'", sid
+    )
     if not has_halal:
         raise HTTPException(400, "Không thể xác minh: chưa có chứng nhận Halal")
 
     result = await db.execute(
-        "UPDATE suppliers SET status='verified' WHERE id=$1 AND tenant_id=$2 AND status != 'verified'",
-        sid, tenant_id)
+        "UPDATE suppliers SET status='verified' WHERE id=$1 AND tenant_id=$2 AND status != 'verified'", sid, tenant_id
+    )
     if result == "UPDATE 0":
         raise HTTPException(400, "NCC đã được xác minh hoặc không tồn tại")
 

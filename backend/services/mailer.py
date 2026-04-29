@@ -9,6 +9,7 @@ Templates live at backend/templates/emails/{name}.{lang}.{html,txt}.
 Each template is rendered via Jinja2 with the supplied context dict.
 The first non-empty line of the rendered .txt file is treated as the subject.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ DEFAULT_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates" / "e
 
 
 # ── Config ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class MailerConfig:
@@ -60,6 +62,7 @@ class MailerConfig:
 
 # ── Sender abstraction ──────────────────────────────────────────────────────
 
+
 class Sender(Protocol):
     async def send(self, message: EmailMessage) -> None: ...
 
@@ -89,8 +92,11 @@ class LoggingSender:
             "[mailer:dry-run] to=%s subject=%r body_preview=%r",
             message["To"],
             message["Subject"],
-            (message.get_body(preferencelist=("plain",)).get_content()[:120]
-             if message.get_body(preferencelist=("plain",)) else ""),
+            (
+                message.get_body(preferencelist=("plain",)).get_content()[:120]
+                if message.get_body(preferencelist=("plain",))
+                else ""
+            ),
         )
 
 
@@ -105,6 +111,7 @@ class CapturingSender:
 
 
 # ── Mailer ──────────────────────────────────────────────────────────────────
+
 
 class TemplateError(Exception):
     """Raised when a requested email template is missing or malformed."""
@@ -196,13 +203,11 @@ class Mailer:
             if stripped and not stripped.startswith("Subject:"):
                 continue
             if stripped.startswith("Subject:"):
-                subject = stripped[len("Subject:"):].strip()
+                subject = stripped[len("Subject:") :].strip()
                 body_start = i + 1
                 break
         if not subject:
-            raise TemplateError(
-                "Email .txt template must start with a 'Subject: ...' line"
-            )
+            raise TemplateError("Email .txt template must start with a 'Subject: ...' line")
         # Skip blank line after the subject header if present
         while body_start < len(lines) and not lines[body_start].strip():
             body_start += 1

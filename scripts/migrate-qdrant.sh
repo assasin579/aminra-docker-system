@@ -17,7 +17,7 @@ mkdir -p "$BACKUP_DIR"
 if curl -s http://localhost:6333/collections > /dev/null; then
     echo "📥 Backing up existing Qdrant collections..."
     curl -s http://localhost:6333/collections | jq . > "$BACKUP_DIR/collections.json"
-    
+
     # Export collection if it exists
     if curl -s http://localhost:6333/collections/halal_kb > /dev/null; then
         echo "💾 Exporting halal_kb collection..."

@@ -57,16 +57,14 @@ async def validate_upload(file: UploadFile) -> bytes:
                     if total_uncompressed > MAX_UNCOMPRESSED_SIZE:
                         raise HTTPException(
                             400,
-                            f"Archive uncompressed size exceeds limit "
-                            f"({MAX_UNCOMPRESSED_SIZE // (1024*1024)}MB)",
+                            f"Archive uncompressed size exceeds limit ({MAX_UNCOMPRESSED_SIZE // (1024 * 1024)}MB)",
                         )
                 if len(content) > 0:
                     ratio = total_uncompressed / max(len(content), 1)
                     if ratio > MAX_COMPRESSION_RATIO:
                         raise HTTPException(
                             400,
-                            f"Suspicious compression ratio ({ratio:.0f}x); "
-                            "possible zip-bomb",
+                            f"Suspicious compression ratio ({ratio:.0f}x); possible zip-bomb",
                         )
         except zipfile.BadZipFile:
             raise HTTPException(400, "Corrupted archive")

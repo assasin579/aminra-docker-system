@@ -16,8 +16,9 @@ test.describe("07. Protected UI — redirect when not logged in", () => {
       const response = await page.goto(path);
       // Either redirected to login OR 200 with login gate visible
       const currentUrl = page.url();
-      const redirected = currentUrl.includes("/login") || currentUrl.includes("/auth");
-      const onPage     = response && response.status() < 500;
+      const redirected =
+        currentUrl.includes("/login") || currentUrl.includes("/auth");
+      const onPage = response && response.status() < 500;
       expect(redirected || onPage).toBeTruthy();
     });
   }

@@ -20,16 +20,16 @@ test.beforeEach(async ({}, testInfo) => {
 });
 
 const PUBLIC_PAGES = [
-  { path: "/",                       name: "landing" },
-  { path: "/business/login",         name: "business-login" },
-  { path: "/business/register",      name: "business-register" },
-  { path: "/provider/login",         name: "provider-login" },
-  { path: "/provider/register",      name: "provider-register" },
-  { path: "/forgot-password",        name: "forgot-password" },
-  { path: "/reset-password",         name: "reset-password" },
-  { path: "/privacy",                name: "privacy" },
-  { path: "/terms",                  name: "terms" },
-  { path: "/chat",                   name: "chat" },
+  { path: "/", name: "landing" },
+  { path: "/business/login", name: "business-login" },
+  { path: "/business/register", name: "business-register" },
+  { path: "/provider/login", name: "provider-login" },
+  { path: "/provider/register", name: "provider-register" },
+  { path: "/forgot-password", name: "forgot-password" },
+  { path: "/reset-password", name: "reset-password" },
+  { path: "/privacy", name: "privacy" },
+  { path: "/terms", name: "terms" },
+  { path: "/chat", name: "chat" },
   { path: "/verify/HALAL-2026-DEMO", name: "verify-cert-active" },
   { path: "/verify/HALAL-NOT-EXIST", name: "verify-cert-404" },
 ];
@@ -62,8 +62,9 @@ async function auditPage(page: Page, name: string): Promise<AuditFinding[]> {
   }
 
   // 2. Viewport meta tag
-  const hasViewportMeta = await page.evaluate(() =>
-    !!document.querySelector('meta[name="viewport"]'));
+  const hasViewportMeta = await page.evaluate(
+    () => !!document.querySelector('meta[name="viewport"]'),
+  );
   if (!hasViewportMeta) {
     findings.push({
       page: name,
@@ -78,14 +79,17 @@ async function auditPage(page: Page, name: string): Promise<AuditFinding[]> {
   // is the effective tap target, even if the visual input is small.
   const tinyTargets = await page.evaluate(() => {
     const interactive = document.querySelectorAll(
-      'a, button, input[type="checkbox"], input[type="radio"], select, [role="button"]'
+      'a, button, input[type="checkbox"], input[type="radio"], select, [role="button"]',
     );
     const tiny: { tag: string; size: string; text: string }[] = [];
-    interactive.forEach(el => {
+    interactive.forEach((el) => {
       const rect = (el as HTMLElement).getBoundingClientRect();
       // Apple HIG: 44×44, Google: 48×48, we use 32×32 as critical threshold
-      if (rect.width > 0 && rect.height > 0
-          && (rect.width < 32 || rect.height < 32)) {
+      if (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        (rect.width < 32 || rect.height < 32)
+      ) {
         // For checkbox/radio: if a parent <label> is large enough, the label
         // is the effective tap target — skip this finding.
         const tag = el.tagName.toLowerCase();
@@ -99,7 +103,9 @@ async function auditPage(page: Page, name: string): Promise<AuditFinding[]> {
         tiny.push({
           tag,
           size: `${Math.round(rect.width)}×${Math.round(rect.height)}`,
-          text: (el.textContent || (el as HTMLInputElement).value || "").trim().slice(0, 30),
+          text: (el.textContent || (el as HTMLInputElement).value || "")
+            .trim()
+            .slice(0, 30),
         });
       }
     });
@@ -110,8 +116,12 @@ async function auditPage(page: Page, name: string): Promise<AuditFinding[]> {
     findings.push({
       page: name,
       issue: "tiny-tap-targets",
-      details: `${tinyTargets.length} target(s) under 32px: ` +
-        tinyTargets.slice(0, 3).map(t => `${t.tag}(${t.size}) "${t.text}"`).join("; "),
+      details:
+        `${tinyTargets.length} target(s) under 32px: ` +
+        tinyTargets
+          .slice(0, 3)
+          .map((t) => `${t.tag}(${t.size}) "${t.text}"`)
+          .join("; "),
       severity: "medium",
     });
   }
@@ -129,7 +139,8 @@ async function auditPage(page: Page, name: string): Promise<AuditFinding[]> {
     return count;
   }, viewport.width);
 
-  if (offscreen > 5) {  // some shadow/decoration is normal
+  if (offscreen > 5) {
+    // some shadow/decoration is normal
     findings.push({
       page: name,
       issue: "many-elements-overflow-viewport",
@@ -183,11 +194,11 @@ for (const { path, name } of PUBLIC_PAGES) {
     // Regression gate: critical or high fails immediately.
     // Medium tap-target findings also fail — Stage 3 audit fixed all of them,
     // so any new finding indicates a regression.
-    const critical = findings.filter(f => f.severity === "critical");
+    const critical = findings.filter((f) => f.severity === "critical");
     expect(critical, `Critical mobile issues on ${name}`).toEqual([]);
-    const high = findings.filter(f => f.severity === "high");
+    const high = findings.filter((f) => f.severity === "high");
     expect(high, `High mobile issues on ${name}`).toEqual([]);
-    const tapTargets = findings.filter(f => f.issue === "tiny-tap-targets");
+    const tapTargets = findings.filter((f) => f.issue === "tiny-tap-targets");
     expect(tapTargets, `Tap-target regression on ${name}`).toEqual([]);
   });
 }
@@ -196,14 +207,29 @@ test.afterAll(async () => {
   if (allFindings.length === 0) return;
 
   // Group by severity
-  const bySeverity: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
-  allFindings.forEach(f => bySeverity[f.severity]++);
+  const bySeverity: Record<string, number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
+  allFindings.forEach((f) => bySeverity[f.severity]++);
 
-  console.log("\n═════════════════════════════════════════════════════════════════");
+  console.log(
+    "\n═════════════════════════════════════════════════════════════════",
+  );
   console.log("  MOBILE RESPONSIVE AUDIT SUMMARY");
-  console.log("═════════════════════════════════════════════════════════════════");
-  console.log(`  CRITICAL: ${bySeverity.critical}  HIGH: ${bySeverity.high}  ` +
-              `MEDIUM: ${bySeverity.medium}  LOW: ${bySeverity.low}`);
-  console.log(`  Total findings: ${allFindings.length} across ${PUBLIC_PAGES.length} pages`);
-  console.log("═════════════════════════════════════════════════════════════════\n");
+  console.log(
+    "═════════════════════════════════════════════════════════════════",
+  );
+  console.log(
+    `  CRITICAL: ${bySeverity.critical}  HIGH: ${bySeverity.high}  ` +
+      `MEDIUM: ${bySeverity.medium}  LOW: ${bySeverity.low}`,
+  );
+  console.log(
+    `  Total findings: ${allFindings.length} across ${PUBLIC_PAGES.length} pages`,
+  );
+  console.log(
+    "═════════════════════════════════════════════════════════════════\n",
+  );
 });

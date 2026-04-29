@@ -23,7 +23,8 @@ async function walk(dir: string, out: string[] = []): Promise<string[]> {
     const full = join(dir, entry);
     const s = await stat(full);
     if (s.isDirectory()) await walk(full, out);
-    else if (full.endsWith("page.tsx") || full.endsWith("page.ts")) out.push(full);
+    else if (full.endsWith("page.tsx") || full.endsWith("page.ts"))
+      out.push(full);
   }
   return out;
 }
@@ -48,7 +49,8 @@ test("admin pages use shared readAdminToken helper", async () => {
     if (!src.includes("readAdminToken")) {
       offenders.push({
         file: file.replace(ROOT + "/", ""),
-        reason: "calls /api/auth/admin/* but does not import readAdminToken from '@/lib/adminAuth'",
+        reason:
+          "calls /api/auth/admin/* but does not import readAdminToken from '@/lib/adminAuth'",
       });
       continue;
     }
@@ -58,7 +60,8 @@ test("admin pages use shared readAdminToken helper", async () => {
     if (inlinesUserTokenOnly) {
       offenders.push({
         file: file.replace(ROOT + "/", ""),
-        reason: "inlines localStorage.getItem('aminra_user_token') without using readAdminToken helper",
+        reason:
+          "inlines localStorage.getItem('aminra_user_token') without using readAdminToken helper",
       });
     }
   }
@@ -67,6 +70,6 @@ test("admin pages use shared readAdminToken helper", async () => {
     offenders,
     "Admin pages must use readAdminToken from @/lib/adminAuth — see lib/adminAuth.ts header for context.\n" +
       "Offenders:\n" +
-      offenders.map(o => `  - ${o.file}: ${o.reason}`).join("\n"),
+      offenders.map((o) => `  - ${o.file}: ${o.reason}`).join("\n"),
   ).toEqual([]);
 });

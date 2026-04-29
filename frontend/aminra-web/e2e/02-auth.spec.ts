@@ -6,7 +6,10 @@ test.describe("02. Authentication flows", () => {
     expect(biz.token.length).toBeGreaterThan(20);
   });
 
-  test("/auth/me returns correct email for business token", async ({ api, biz }) => {
+  test("/auth/me returns correct email for business token", async ({
+    api,
+    biz,
+  }) => {
     const r = await api.get("/auth/me", {
       headers: { Authorization: `Bearer ${biz.token}` },
     });

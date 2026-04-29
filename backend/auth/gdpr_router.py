@@ -4,6 +4,7 @@
 - POST /me/request-deletion — right to be forgotten step 1 (Article 17)
 - POST /me/confirm-deletion — right to be forgotten step 2 (token confirm)
 """
+
 from __future__ import annotations
 
 import json
@@ -59,18 +60,18 @@ async def export_my_data(
         metadata={
             "byte_size": len(json.dumps(bundle)),
             "section_counts": {
-                "notifications":  len(bundle["data_subject"]["notifications"]),
-                "audit_logs":     len(bundle["data_subject"]["audit_logs"]),
-                "documents":      len(bundle.get("tenant_data", {}).get("documents", [])),
-                "submissions":    len(bundle.get("tenant_data", {}).get("submissions", [])),
-                "certificates":   len(bundle.get("tenant_data", {}).get("certificates", [])),
+                "notifications": len(bundle["data_subject"]["notifications"]),
+                "audit_logs": len(bundle["data_subject"]["audit_logs"]),
+                "documents": len(bundle.get("tenant_data", {}).get("documents", [])),
+                "submissions": len(bundle.get("tenant_data", {}).get("submissions", [])),
+                "certificates": len(bundle.get("tenant_data", {}).get("certificates", [])),
             },
         },
         request=request,
     )
 
     timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    filename  = f"aminra-export-{user['sub'][:8]}-{timestamp}.json"
+    filename = f"aminra-export-{user['sub'][:8]}-{timestamp}.json"
 
     return Response(
         content=json.dumps(bundle, ensure_ascii=False, indent=2),
@@ -83,6 +84,7 @@ async def export_my_data(
 
 
 # ── Right to be forgotten (Article 17) ─────────────────────────────────────
+
 
 class RequestDeletionIn(BaseModel):
     lang: str = "vi"
@@ -106,21 +108,19 @@ async def request_deletion(
     NOT deleted yet — execution requires a separate POST /me/confirm-deletion.
     """
     user_id = user["sub"]
-    email   = user["email"]
+    email = user["email"]
     company = (await db.fetchval("SELECT company_name FROM users WHERE id = $1", user_id)) or ""
 
     token, _expires = await create_deletion_token(db, user_id)
 
     mailer = get_mailer()
-    confirm_url = (
-        f"{mailer.config.app_base_url.rstrip('/')}/account/confirm-deletion?token={token}"
-    )
+    confirm_url = f"{mailer.config.app_base_url.rstrip('/')}/account/confirm-deletion?token={token}"
     sent = await mailer.send_template(
         to=email,
         template="account_deletion",
         context={
-            "user_name":   company or email,
-            "user_email":  email,
+            "user_name": company or email,
+            "user_email": email,
             "confirm_url": confirm_url,
             "ttl_minutes": DELETION_TTL_MINUTES,
         },
@@ -169,8 +169,8 @@ async def confirm_deletion(
         entity_type="user",
         entity_id=result["user_id"],
         metadata={
-            "anonymized_email":     result["anonymized_email"],
-            "original_email_hash":  result["original_email_hash"],
+            "anonymized_email": result["anonymized_email"],
+            "original_email_hash": result["original_email_hash"],
         },
         request=request,
     )

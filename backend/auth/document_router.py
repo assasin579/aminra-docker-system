@@ -1,6 +1,7 @@
 """
 Document management API — list, detail, delete tenant documents.
 """
+
 import json as _json
 import logging
 from typing import Optional
@@ -41,11 +42,13 @@ def _validate_uuid(value: str) -> str:
         raise HTTPException(400, "Invalid ID format")
     return value
 
+
 log = logging.getLogger("aminra.documents")
 router = APIRouter()
 
 
 # ── Response models ────────────────────────────────────────────────────────────
+
 
 class DocumentItem(BaseModel):
     id: str
@@ -61,12 +64,14 @@ class DocumentItem(BaseModel):
     revision_count: Optional[int] = None
     status: Optional[str] = None
 
+
 class DocumentDetail(DocumentItem):
     evaluation_result: Optional[dict]
     summary: Optional[str]
     issues: list = []
     strengths: list = []
     recommendations: list = []
+
 
 class DocumentListResponse(BaseModel):
     documents: list[DocumentItem]
@@ -76,6 +81,7 @@ class DocumentListResponse(BaseModel):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _parse_result(raw) -> Optional[dict]:
     """asyncpg returns JSONB as str or dict depending on version."""
@@ -88,10 +94,12 @@ def _parse_result(raw) -> Optional[dict]:
             return None
     return raw
 
+
 def _status_from_result(result: Optional[dict]) -> Optional[str]:
     if not result:
         return None
     return result.get("overall_status")
+
 
 def _label_from_result(result: Optional[dict]) -> Optional[str]:
     if not result:
@@ -101,6 +109,7 @@ def _label_from_result(result: Optional[dict]) -> Optional[str]:
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
+
 class RevisionItem(BaseModel):
     id: str
     original_filename: str
@@ -109,6 +118,7 @@ class RevisionItem(BaseModel):
     file_size: Optional[int]
     uploaded_by_name: Optional[str]
     uploaded_at: datetime
+
 
 class RevisionListResponse(BaseModel):
     doc_type: str
@@ -122,7 +132,7 @@ async def list_documents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     doc_type: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),    # compliant | needs_review | non_compliant
+    status: Optional[str] = Query(None),  # compliant | needs_review | non_compliant
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
@@ -167,9 +177,7 @@ async def list_documents(
 
     extra_where = (" AND " + " AND ".join(conditions)) if conditions else ""
 
-    total_row = await db.fetchrow(
-        f"{cte} SELECT COUNT(*) FROM latest l WHERE true{extra_where}", *params
-    )
+    total_row = await db.fetchrow(f"{cte} SELECT COUNT(*) FROM latest l WHERE true{extra_where}", *params)
     total = total_row["count"]
 
     rows = await db.fetch(
@@ -186,9 +194,11 @@ async def list_documents(
         LEFT JOIN users u ON u.id = l.user_id
         WHERE true{extra_where}
         ORDER BY l.uploaded_at DESC
-        LIMIT ${idx} OFFSET ${idx+1}
+        LIMIT ${idx} OFFSET ${idx + 1}
         """,
-        *params, page_size, offset,
+        *params,
+        page_size,
+        offset,
     )
 
     items = [
@@ -209,9 +219,7 @@ async def list_documents(
         for r in rows
     ]
 
-    return DocumentListResponse(
-        documents=items, total=total, page=page, page_size=page_size
-    )
+    return DocumentListResponse(documents=items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/documents/revisions/{doc_type_id}")
@@ -238,7 +246,8 @@ async def list_revisions(
         WHERE d.tenant_id = $1 AND d.doc_type = $2
         ORDER BY d.uploaded_at DESC
         """,
-        tenant_id, doc_type_id,
+        tenant_id,
+        doc_type_id,
     )
 
     doc_type_label = None
@@ -247,15 +256,17 @@ async def list_revisions(
         er = _parse_result(r["evaluation_result"])
         if not doc_type_label:
             doc_type_label = _label_from_result(er)
-        revisions.append(RevisionItem(
-            id=str(r["id"]),
-            original_filename=r["original_filename"],
-            compliance_score=r["compliance_score"],
-            overall_status=_status_from_result(er),
-            file_size=r["file_size"],
-            uploaded_by_name=r["uploaded_by_name"],
-            uploaded_at=r["uploaded_at"],
-        ))
+        revisions.append(
+            RevisionItem(
+                id=str(r["id"]),
+                original_filename=r["original_filename"],
+                compliance_score=r["compliance_score"],
+                overall_status=_status_from_result(er),
+                file_size=r["file_size"],
+                uploaded_by_name=r["uploaded_by_name"],
+                uploaded_at=r["uploaded_at"],
+            )
+        )
 
     return RevisionListResponse(
         doc_type=doc_type_id,
@@ -279,7 +290,8 @@ async def promote_document(
     tenant_id = user.get("tenant_id")
     row = await db.fetchrow(
         "SELECT id, doc_type FROM documents WHERE id = $1 AND tenant_id = $2",
-        doc_id, tenant_id,
+        doc_id,
+        tenant_id,
     )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -314,7 +326,8 @@ async def get_document(
         LEFT JOIN users u ON u.id = d.user_id
         WHERE d.id = $1 AND d.tenant_id = $2
         """,
-        doc_id, tenant_id,
+        doc_id,
+        tenant_id,
     )
 
     if not row:
@@ -354,7 +367,8 @@ async def preview_document(
     if user["role"] == "business":
         row = await db.fetchrow(
             "SELECT file_path, original_filename, mime_type FROM documents WHERE id = $1 AND tenant_id = $2",
-            doc_id, user.get("tenant_id"),
+            doc_id,
+            user.get("tenant_id"),
         )
     elif user["role"] == "provider":
         # C6 fix — provider can ONLY view docs explicitly in their submissions.
@@ -368,7 +382,8 @@ async def preview_document(
                    WHERE (s.provider_id = $2 OR s.auditor_id = $2)
                      AND $1 = ANY(s.document_ids)
                )""",
-            doc_id, user["sub"],
+            doc_id,
+            user["sub"],
         )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -393,7 +408,9 @@ async def preview_document(
         return _FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
     # Convert with LibreOffice — run in threadpool to avoid blocking async loop
-    import subprocess, shutil, tempfile
+    import subprocess
+    import shutil
+    import tempfile
     from starlette.concurrency import run_in_threadpool
 
     def _do_convert():
@@ -403,14 +420,27 @@ async def preview_document(
         pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
         try:
             result = subprocess.run(
-                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-                 f"-env:UserInstallation=file://{pid_profile}",
-                 "--convert-to", "pdf",
-                 "--outdir", abs_cache, abs_file],
-                capture_output=True, timeout=60,
+                [
+                    "/usr/bin/libreoffice",
+                    "--headless",
+                    "--norestore",
+                    "--nolockcheck",
+                    f"-env:UserInstallation=file://{pid_profile}",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    abs_cache,
+                    abs_file,
+                ],
+                capture_output=True,
+                timeout=60,
                 cwd=pid_profile,
-                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
-                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+                env={
+                    "HOME": pid_profile,
+                    "PATH": "/usr/bin:/usr/local/bin:/bin",
+                    "LANG": "C.UTF-8",
+                    "LC_ALL": "C.UTF-8",
+                },
             )
         finally:
             shutil.rmtree(pid_profile, ignore_errors=True)
@@ -454,7 +484,8 @@ async def get_document_file(
     if user["role"] == "business":
         row = await db.fetchrow(
             "SELECT file_path, original_filename, mime_type FROM documents WHERE id = $1 AND tenant_id = $2",
-            doc_id, user.get("tenant_id"),
+            doc_id,
+            user.get("tenant_id"),
         )
     elif user["role"] == "provider":
         # C6 fix — same scoping as /preview: only docs explicitly in the submission.
@@ -465,7 +496,8 @@ async def get_document_file(
                    WHERE (s.provider_id = $2 OR s.auditor_id = $2)
                      AND $1 = ANY(s.document_ids)
                )""",
-            doc_id, user["sub"],
+            doc_id,
+            user["sub"],
         )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -482,6 +514,7 @@ async def get_document_file(
 
 
 # ── Upload (no evaluation) ────────────────────────────────────────────────────
+
 
 @router.post("/documents/upload")
 async def upload_document(
@@ -517,8 +550,14 @@ async def upload_document(
               (filename, original_filename, file_path, file_size, mime_type,
                user_id, tenant_id, doc_type)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, uploaded_at""",
-        save_path.name, file.filename, str(save_path),
-        file_size, mime, user["sub"], tenant_id, doc_type,
+        save_path.name,
+        file.filename,
+        str(save_path),
+        file_size,
+        mime,
+        user["sub"],
+        tenant_id,
+        doc_type,
     )
     log.info(f"[documents] Uploaded {file.filename} for tenant {tenant_id} (no eval)")
     return {"id": str(row["id"]), "filename": file.filename, "doc_type": doc_type}
@@ -526,15 +565,21 @@ async def upload_document(
 
 # ── Evaluate existing document ───────────────────────────────────────���────────
 
-async def _run_evaluate_background(doc_id: str, file_path: _Path, original_filename: str, doc_type: str | None, lang: str = "vi"):
+
+async def _run_evaluate_background(
+    doc_id: str, file_path: _Path, original_filename: str, doc_type: str | None, lang: str = "vi"
+):
     """Run AI evaluation in background — updates DB when done."""
     from auth.db import get_pool
     from pipeline.evaluate import evaluate_document
 
     _DOC_TYPE_LABELS = {
-        "halal_policy": "Halal Policy", "has_manual": "HAS Manual",
-        "halal_manual": "Halal Manual", "internal_halal_committee": "Internal Halal Committee",
-        "company_profile": "Company Profile", "ingredient_raw_material": "Ingredient & Raw Material",
+        "halal_policy": "Halal Policy",
+        "has_manual": "HAS Manual",
+        "halal_manual": "Halal Manual",
+        "internal_halal_committee": "Internal Halal Committee",
+        "company_profile": "Company Profile",
+        "ingredient_raw_material": "Ingredient & Raw Material",
         "process_flow_chart": "Process Flow Chart",
         "sop_raw_material_receiving": "SOP - Raw Material Receiving",
         "sop_storage_segregation": "SOP - Storage & Segregation",
@@ -568,6 +613,7 @@ async def _run_evaluate_background(doc_id: str, file_path: _Path, original_filen
             template_files_dir = dt_files_dir
             try:
                 from pipeline.evaluate import load_template_files_content
+
                 template_files_content = load_template_files_content(dt_files_dir)
             except Exception:
                 pass
@@ -575,9 +621,11 @@ async def _run_evaluate_background(doc_id: str, file_path: _Path, original_filen
     pool = get_pool()
     try:
         from starlette.concurrency import run_in_threadpool
+
         result = await run_in_threadpool(
             evaluate_document,
-            file_path, original_filename,
+            file_path,
+            original_filename,
             forced_doc_type=forced_doc_type,
             forced_doc_label=forced_doc_label,
             template_criteria=template_criteria,
@@ -599,7 +647,8 @@ async def _run_evaluate_background(doc_id: str, file_path: _Path, original_filen
         try:
             async with pool.acquire() as conn:
                 await conn.execute(
-                    "UPDATE documents SET status = 'uploaded' WHERE id = $1", doc_id,
+                    "UPDATE documents SET status = 'uploaded' WHERE id = $1",
+                    doc_id,
                 )
         except Exception:
             pass
@@ -622,7 +671,8 @@ async def evaluate_existing_document(
     tenant_id = user.get("tenant_id")
     row = await db.fetchrow(
         "SELECT file_path, original_filename, doc_type, status FROM documents WHERE id = $1 AND tenant_id = $2",
-        doc_id, tenant_id,
+        doc_id,
+        tenant_id,
     )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -638,14 +688,14 @@ async def evaluate_existing_document(
 
     # Launch background task with language
     import asyncio
-    asyncio.create_task(
-        _run_evaluate_background(doc_id, file_path, row["original_filename"], row["doc_type"], lang)
-    )
+
+    asyncio.create_task(_run_evaluate_background(doc_id, file_path, row["original_filename"], row["doc_type"], lang))
 
     return {"status": "evaluating", "message": "Đang đánh giá tài liệu..."}
 
 
 # ── Delete ────────────────────────────────────────────────────────────────────
+
 
 @router.delete("/documents/{doc_id}")
 async def delete_document(
@@ -661,7 +711,8 @@ async def delete_document(
     tenant_id = user.get("tenant_id")
     row = await db.fetchrow(
         "SELECT id, file_path FROM documents WHERE id = $1 AND tenant_id = $2",
-        doc_id, tenant_id,
+        doc_id,
+        tenant_id,
     )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -669,6 +720,7 @@ async def delete_document(
     # Delete physical file if exists
     if row["file_path"]:
         from pathlib import Path
+
         p = Path(row["file_path"])
         p.unlink(missing_ok=True)
 
@@ -681,19 +733,19 @@ async def delete_document(
 
 # All 13 Halal document types
 _ALL_DOC_TYPES = {
-    "halal_policy":                 "Halal Policy",
-    "has_manual":                   "HAS Manual",
-    "internal_halal_committee":     "Internal Halal Committee",
-    "company_profile":              "Company Profile",
-    "halal_manual":                 "Halal Manual",
-    "ingredient_raw_material":      "Ingredient & Raw Material",
-    "process_flow_chart":           "Process Flow Chart",
-    "sop_raw_material_receiving":   "SOP - Raw Material Receiving",
-    "sop_storage_segregation":      "SOP - Storage & Segregation",
-    "sop_production_operation":     "SOP - Production Operation",
-    "sop_cleaning_sanitation":      "SOP - Cleaning & Sanitation",
+    "halal_policy": "Halal Policy",
+    "has_manual": "HAS Manual",
+    "internal_halal_committee": "Internal Halal Committee",
+    "company_profile": "Company Profile",
+    "halal_manual": "Halal Manual",
+    "ingredient_raw_material": "Ingredient & Raw Material",
+    "process_flow_chart": "Process Flow Chart",
+    "sop_raw_material_receiving": "SOP - Raw Material Receiving",
+    "sop_storage_segregation": "SOP - Storage & Segregation",
+    "sop_production_operation": "SOP - Production Operation",
+    "sop_cleaning_sanitation": "SOP - Cleaning & Sanitation",
     "sop_handling_nonconformances": "SOP - Handling Non-Conformances",
-    "sop_complaint_recall":         "SOP - Complaint & Recall",
+    "sop_complaint_recall": "SOP - Complaint & Recall",
 }
 
 
@@ -739,34 +791,36 @@ async def dashboard_stats(
             scored_count += 1
         if status in ("compliant", "cb_approved"):
             compliant_count += 1
-        doc_type_progress.append({
-            "doc_type": dt,
-            "label": _ALL_DOC_TYPES.get(dt, dt),
-            "score": score,
-            "status": status,
-            "filename": r["original_filename"],
-            "uploaded_at": r["uploaded_at"].isoformat() if r["uploaded_at"] else None,
-        })
+        doc_type_progress.append(
+            {
+                "doc_type": dt,
+                "label": _ALL_DOC_TYPES.get(dt, dt),
+                "score": score,
+                "status": status,
+                "filename": r["original_filename"],
+                "uploaded_at": r["uploaded_at"].isoformat() if r["uploaded_at"] else None,
+            }
+        )
 
     # Add missing doc types
     for dt, label in _ALL_DOC_TYPES.items():
         if dt not in submitted_types:
-            doc_type_progress.append({
-                "doc_type": dt,
-                "label": label,
-                "score": None,
-                "status": None,
-                "filename": None,
-                "uploaded_at": None,
-            })
+            doc_type_progress.append(
+                {
+                    "doc_type": dt,
+                    "label": label,
+                    "score": None,
+                    "status": None,
+                    "filename": None,
+                    "uploaded_at": None,
+                }
+            )
 
     # Sort: submitted first (by label), then missing (by label)
     doc_type_progress.sort(key=lambda x: (x["score"] is None, x["label"]))
 
     # 2. Aggregate stats
-    total_docs_row = await db.fetchrow(
-        "SELECT COUNT(*) FROM documents WHERE tenant_id = $1", tenant_id
-    )
+    total_docs_row = await db.fetchrow("SELECT COUNT(*) FROM documents WHERE tenant_id = $1", tenant_id)
     member_count_row = await db.fetchrow(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id
     )
@@ -792,15 +846,17 @@ async def dashboard_stats(
     recent = []
     for r in recent_rows:
         er = _parse_result(r["evaluation_result"]) or {}
-        recent.append({
-            "filename": r["original_filename"],
-            "doc_type": r["doc_type"],
-            "doc_type_label": _ALL_DOC_TYPES.get(r["doc_type"] or "", r["doc_type"]),
-            "score": r["compliance_score"],
-            "status": er.get("overall_status"),
-            "uploaded_by": r["uploaded_by"],
-            "uploaded_at": r["uploaded_at"].isoformat() if r["uploaded_at"] else None,
-        })
+        recent.append(
+            {
+                "filename": r["original_filename"],
+                "doc_type": r["doc_type"],
+                "doc_type_label": _ALL_DOC_TYPES.get(r["doc_type"] or "", r["doc_type"]),
+                "score": r["compliance_score"],
+                "status": er.get("overall_status"),
+                "uploaded_by": r["uploaded_by"],
+                "uploaded_at": r["uploaded_at"].isoformat() if r["uploaded_at"] else None,
+            }
+        )
 
     return {
         "readiness": readiness,

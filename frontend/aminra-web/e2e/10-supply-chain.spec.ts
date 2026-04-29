@@ -23,7 +23,9 @@ test.describe("10. Supply chain + Certificate verification", () => {
   });
 
   test("Public verify bogus cert number → 404", async ({ api }) => {
-    const r = await api.get("/api/submissions/certificates/public/BOGUS-XYZ-123");
+    const r = await api.get(
+      "/api/submissions/certificates/public/BOGUS-XYZ-123",
+    );
     expect([404, 400]).toContain(r.status());
   });
 

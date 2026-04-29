@@ -7,12 +7,13 @@ Two flows:
    thresholds (90/60/30/0 days) and emails business owners. Uses
    `expiry_alerts_sent` JSONB to avoid duplicate alerts.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Optional
 
 import asyncpg
@@ -22,8 +23,13 @@ log = logging.getLogger("aminra.cert_lifecycle")
 
 # ── Errors ──────────────────────────────────────────────────────────────────
 
+
 class CertNotFound(Exception): ...
+
+
 class InvalidRevocation(Exception): ...
+
+
 class AlreadyRevoked(Exception): ...
 
 
@@ -35,6 +41,7 @@ EXPIRY_ALERT_THRESHOLDS = [90, 60, 30, 0]
 
 
 # ── Revocation ──────────────────────────────────────────────────────────────
+
 
 @dataclass
 class RevokeResult:
@@ -83,7 +90,9 @@ async def revoke_cert(
          WHERE id = $3
         RETURNING revoked_at
         """,
-        reason.strip(), revoked_by_user_id, cert_id,
+        reason.strip(),
+        revoked_by_user_id,
+        cert_id,
     )
 
     log.info("[cert_lifecycle] revoked cert=%s by=%s", row["cert_number"], revoked_by_user_id)
@@ -97,6 +106,7 @@ async def revoke_cert(
 
 
 # ── Expiry alerts ──────────────────────────────────────────────────────────
+
 
 @dataclass
 class ExpiringCert:
@@ -144,23 +154,27 @@ async def find_expiring_certs(
         # Days until 30 → threshold=30. Days until 25 → threshold=30 (still pending). Days until 5 → threshold=0.
         for t in sorted(EXPIRY_ALERT_THRESHOLDS):
             if days_until <= t and t not in sent:
-                out.append(ExpiringCert(
-                    cert_id=str(r["id"]),
-                    cert_number=r["cert_number"],
-                    business_tenant=str(r["business_tenant"]),
-                    expiry_date=r["expiry_date"],
-                    days_until_expiry=days_until,
-                    threshold=t,
-                    alerts_sent=sent,
-                    company_name=r["company_name"],
-                ))
+                out.append(
+                    ExpiringCert(
+                        cert_id=str(r["id"]),
+                        cert_number=r["cert_number"],
+                        business_tenant=str(r["business_tenant"]),
+                        expiry_date=r["expiry_date"],
+                        days_until_expiry=days_until,
+                        threshold=t,
+                        alerts_sent=sent,
+                        company_name=r["company_name"],
+                    )
+                )
                 break  # only most-urgent unsent threshold per cert
 
     return out
 
 
 async def mark_alert_sent(
-    db: asyncpg.Connection, cert_id: str, threshold: int,
+    db: asyncpg.Connection,
+    cert_id: str,
+    threshold: int,
 ) -> None:
     """Append `threshold` to expiry_alerts_sent for a cert (idempotent — JSONB
     array union)."""
@@ -174,11 +188,13 @@ async def mark_alert_sent(
                 END
          WHERE id = $2
         """,
-        threshold, cert_id,
+        threshold,
+        cert_id,
     )
 
 
 # ── Bulk revoke for cert_decision flow ────────────────────────────────────
+
 
 async def revoke_active_certs_for_business(
     db: asyncpg.Connection,
@@ -202,7 +218,8 @@ async def revoke_active_certs_for_business(
     rows = await db.fetch(
         "SELECT id FROM halal_certificates "
         "WHERE business_tenant=$1 AND issued_by=$2 AND status='active' AND revoked_at IS NULL",
-        business_tenant, issued_by,
+        business_tenant,
+        issued_by,
     )
     affected = 0
     for r in rows:
@@ -215,6 +232,7 @@ async def revoke_active_certs_for_business(
 
 
 # ── Stats helper for admin dashboard ──────────────────────────────────────
+
 
 async def lifecycle_stats(db: asyncpg.Connection) -> dict:
     """Return counts grouped by lifecycle state for admin dashboard widget."""

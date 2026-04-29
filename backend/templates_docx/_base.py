@@ -2,6 +2,7 @@
 Shared DOCX building blocks — cover page, header/footer, styles, tables, parsing.
 Every template imports from here; no template duplicates this logic.
 """
+
 from __future__ import annotations
 import re
 from datetime import datetime
@@ -14,22 +15,23 @@ from lxml import etree
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-FONT       = "Times New Roman"
-SZ_BODY    = Pt(13)
-SZ_SMALL   = Pt(11)
-SZ_TINY    = Pt(9)
-SZ_H1      = Pt(16)
-SZ_H2      = Pt(14)
-SZ_H3      = Pt(13)
-SZ_TITLE   = Pt(24)
-CLR_BLACK  = RGBColor(0x1A, 0x1A, 0x1A)
-CLR_GRAY   = RGBColor(0x66, 0x66, 0x66)
-CLR_LIGHT  = RGBColor(0x99, 0x99, 0x99)
-CLR_WHITE  = RGBColor(0xFF, 0xFF, 0xFF)
+FONT = "Times New Roman"
+SZ_BODY = Pt(13)
+SZ_SMALL = Pt(11)
+SZ_TINY = Pt(9)
+SZ_H1 = Pt(16)
+SZ_H2 = Pt(14)
+SZ_H3 = Pt(13)
+SZ_TITLE = Pt(24)
+CLR_BLACK = RGBColor(0x1A, 0x1A, 0x1A)
+CLR_GRAY = RGBColor(0x66, 0x66, 0x66)
+CLR_LIGHT = RGBColor(0x99, 0x99, 0x99)
+CLR_WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 CLR_ACCENT = RGBColor(0x0D, 0x47, 0xA1)
-LINE_SP    = 1.5
+LINE_SP = 1.5
 
 # ── Low-level helpers ─────────────────────────────────────────────────────────
+
 
 def font(run, size=SZ_BODY, bold=False, italic=False, color=CLR_BLACK, name=FONT):
     run.font.name = name
@@ -40,38 +42,62 @@ def font(run, size=SZ_BODY, bold=False, italic=False, color=CLR_BLACK, name=FONT
     rpr = run._element.get_or_add_rPr()
     rpr.rFonts.set(qn("w:eastAsia"), name)
 
+
 def spacing(p, before=Pt(0), after=Pt(6), line=LINE_SP):
     pf = p.paragraph_format
     pf.space_before = before
-    pf.space_after  = after
+    pf.space_after = after
     pf.line_spacing = line
+
 
 def hr(p, color="1A1A1A", sz="8"):
     bdr = p._element.get_or_add_pPr().makeelement(qn("w:pBdr"), {})
-    bdr.append(bdr.makeelement(qn("w:bottom"), {
-        qn("w:val"): "single", qn("w:sz"): sz,
-        qn("w:space"): "1", qn("w:color"): color,
-    }))
+    bdr.append(
+        bdr.makeelement(
+            qn("w:bottom"),
+            {
+                qn("w:val"): "single",
+                qn("w:sz"): sz,
+                qn("w:space"): "1",
+                qn("w:color"): color,
+            },
+        )
+    )
     p._element.get_or_add_pPr().append(bdr)
+
 
 def shade_cell(cell, fill):
     tc = cell._element.get_or_add_tcPr()
-    tc.append(tc.makeelement(qn("w:shd"), {
-        qn("w:fill"): fill, qn("w:val"): "clear",
-    }))
+    tc.append(
+        tc.makeelement(
+            qn("w:shd"),
+            {
+                qn("w:fill"): fill,
+                qn("w:val"): "clear",
+            },
+        )
+    )
+
 
 def cell_padding(cell, top=60, bottom=60):
     tc = cell._element.get_or_add_tcPr()
     mar = tc.makeelement(qn("w:tcMar"), {})
     for side, val in (("top", str(top)), ("bottom", str(bottom))):
-        mar.append(mar.makeelement(qn(f"w:{side}"), {
-            qn("w:w"): val, qn("w:type"): "dxa",
-        }))
+        mar.append(
+            mar.makeelement(
+                qn(f"w:{side}"),
+                {
+                    qn("w:w"): val,
+                    qn("w:type"): "dxa",
+                },
+            )
+        )
     tc.append(mar)
+
 
 def inline(p, text, base_size=SZ_BODY, base_bold=False, base_color=CLR_BLACK):
     """Parse **bold** and *italic* within text."""
-    parts = re.split(r'(\*\*[^*]+\*\*|\*[^*]+\*)', text)
+    parts = re.split(r"(\*\*[^*]+\*\*|\*[^*]+\*)", text)
     for part in parts:
         if part.startswith("**") and part.endswith("**"):
             r = p.add_run(part[2:-2])
@@ -86,13 +112,14 @@ def inline(p, text, base_size=SZ_BODY, base_bold=False, base_color=CLR_BLACK):
 
 # ── Page setup ────────────────────────────────────────────────────────────────
 
+
 def setup_page(doc: DocxDocument, title: str, confidential_label="TÀI LIỆU NỘI BỘ"):
     """Configure margins, header with doc title, footer with page number."""
     for section in doc.sections:
-        section.top_margin    = Cm(2.54)
+        section.top_margin = Cm(2.54)
         section.bottom_margin = Cm(2.0)
-        section.left_margin   = Cm(3.0)
-        section.right_margin  = Cm(2.5)
+        section.left_margin = Cm(3.0)
+        section.right_margin = Cm(2.5)
         section.header_distance = Cm(1.0)
         section.footer_distance = Cm(1.0)
 
@@ -109,10 +136,17 @@ def setup_page(doc: DocxDocument, title: str, confidential_label="TÀI LIỆU N�
         # Header bottom border
         pPr = hp._element.get_or_add_pPr()
         pBdr = pPr.makeelement(qn("w:pBdr"), {})
-        pBdr.append(pBdr.makeelement(qn("w:bottom"), {
-            qn("w:val"): "single", qn("w:sz"): "4",
-            qn("w:space"): "4", qn("w:color"): "CCCCCC",
-        }))
+        pBdr.append(
+            pBdr.makeelement(
+                qn("w:bottom"),
+                {
+                    qn("w:val"): "single",
+                    qn("w:sz"): "4",
+                    qn("w:space"): "4",
+                    qn("w:color"): "CCCCCC",
+                },
+            )
+        )
         pPr.append(pBdr)
 
         # ── Footer ──
@@ -125,25 +159,30 @@ def setup_page(doc: DocxDocument, title: str, confidential_label="TÀI LIỆU N�
         fld = (
             '<w:fldSimple xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
             ' w:instr=" PAGE "><w:r><w:rPr><w:sz w:val="18"/><w:color w:val="999999"/>'
-            '</w:rPr><w:t>1</w:t></w:r></w:fldSimple>'
+            "</w:rPr><w:t>1</w:t></w:r></w:fldSimple>"
         )
         fp._element.append(etree.fromstring(fld))
 
 
 # ── Cover page ────────────────────────────────────────────────────────────────
 
-def add_cover(doc: DocxDocument, *,
-              doc_type_label: str,
-              title: str,
-              version: str = "1.0",
-              extra_meta: list[tuple[str, str]] | None = None,
-              show_approval: bool = True):
+
+def add_cover(
+    doc: DocxDocument,
+    *,
+    doc_type_label: str,
+    title: str,
+    version: str = "1.0",
+    extra_meta: list[tuple[str, str]] | None = None,
+    show_approval: bool = True,
+):
     """Professional cover page — title, metadata table, approval block."""
     today = datetime.now().strftime("%d/%m/%Y")
 
     # Spacer
     for _ in range(4):
-        sp = doc.add_paragraph(); spacing(sp, after=Pt(0))
+        sp = doc.add_paragraph()
+        spacing(sp, after=Pt(0))
 
     # Document type badge
     badge_p = doc.add_paragraph()
@@ -178,9 +217,12 @@ def add_cover(doc: DocxDocument, *,
     tbl = doc.add_table(rows=len(meta_rows), cols=2)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     for ri, (label, value) in enumerate(meta_rows):
-        c0 = tbl.cell(ri, 0); c1 = tbl.cell(ri, 1)
-        c0.width = Cm(5); c1.width = Cm(8)
-        c0.text = ""; c1.text = ""
+        c0 = tbl.cell(ri, 0)
+        c1 = tbl.cell(ri, 1)
+        c0.width = Cm(5)
+        c1.width = Cm(8)
+        c0.text = ""
+        c1.text = ""
         r0 = c0.paragraphs[0].add_run(label)
         font(r0, size=SZ_SMALL, bold=True, color=CLR_GRAY)
         c0.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -196,10 +238,17 @@ def add_cover(doc: DocxDocument, *,
         tbl_xml.insert(0, tblPr)
     borders = tblPr.makeelement(qn("w:tblBorders"), {})
     for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
-        borders.append(borders.makeelement(qn(f"w:{side}"), {
-            qn("w:val"): "none", qn("w:sz"): "0",
-            qn("w:space"): "0", qn("w:color"): "auto",
-        }))
+        borders.append(
+            borders.makeelement(
+                qn(f"w:{side}"),
+                {
+                    qn("w:val"): "none",
+                    qn("w:sz"): "0",
+                    qn("w:space"): "0",
+                    qn("w:color"): "auto",
+                },
+            )
+        )
     existing = tblPr.find(qn("w:tblBorders"))
     if existing is not None:
         tblPr.remove(existing)
@@ -222,7 +271,7 @@ def _add_approval_block(doc: DocxDocument):
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
 
     headers = ["Soạn thảo", "Xem xét", "Phê duyệt"]
-    fields  = ["Họ tên:", "Chức vụ:", "Chữ ký / Ngày:"]
+    fields = ["Họ tên:", "Chức vụ:", "Chữ ký / Ngày:"]
 
     for ci, h in enumerate(headers):
         cell = tbl.cell(0, ci)
@@ -244,6 +293,7 @@ def _add_approval_block(doc: DocxDocument):
 
 
 # ── Revision history table ────────────────────────────────────────────────────
+
 
 def add_revision_table(doc: DocxDocument, title="LỊCH SỬ THAY ĐỔI TÀI LIỆU"):
     add_heading(doc, title, level=1)
@@ -281,6 +331,7 @@ def add_revision_table(doc: DocxDocument, title="LỊCH SỬ THAY ĐỔI TÀI LI
 
 # ── Content helpers ───────────────────────────────────────────────────────────
 
+
 def add_heading(doc, text, level=1):
     p = doc.add_paragraph()
     run = p.add_run(text)
@@ -296,6 +347,7 @@ def add_heading(doc, text, level=1):
         spacing(p, before=Pt(12), after=Pt(4), line=1.2)
     return p
 
+
 def add_body(doc, text):
     p = doc.add_paragraph()
     p.paragraph_format.first_line_indent = Cm(1.27)
@@ -303,6 +355,7 @@ def add_body(doc, text):
     inline(p, text)
     spacing(p, after=Pt(6))
     return p
+
 
 def add_bullet(doc, text, indent=0):
     p = doc.add_paragraph(style="List Bullet")
@@ -313,6 +366,7 @@ def add_bullet(doc, text, indent=0):
     spacing(p, after=Pt(3))
     return p
 
+
 def add_numbered_item(doc, text, indent=0):
     p = doc.add_paragraph(style="List Number")
     if indent > 0:
@@ -321,6 +375,7 @@ def add_numbered_item(doc, text, indent=0):
     inline(p, text)
     spacing(p, after=Pt(3))
     return p
+
 
 def add_table_from_lines(doc, rows_text):
     sep = "|" if "|" in rows_text[0] else "\t"
@@ -339,7 +394,8 @@ def add_table_from_lines(doc, rows_text):
 
     for ri, cells in enumerate(parsed):
         for ci, txt in enumerate(cells):
-            if ci >= cols: break
+            if ci >= cols:
+                break
             cell = tbl.cell(ri, ci)
             cell.text = ""
             r = cell.paragraphs[0].add_run(txt)
@@ -356,6 +412,7 @@ def add_table_from_lines(doc, rows_text):
 
 
 # ── Document ending ───────────────────────────────────────────────────────────
+
 
 def add_ending(doc: DocxDocument):
     today = datetime.now().strftime("%d/%m/%Y")
@@ -381,13 +438,13 @@ def add_ending(doc: DocxDocument):
 
 # ── Universal content parser ──────────────────────────────────────────────────
 
-_RE_NUM     = re.compile(r'^([\d]+(?:\.[\d]+)*)[.\s:]+\s*(.*)')
-_RE_MD_H1   = re.compile(r'^#{1}\s+(.+)')
-_RE_MD_H2   = re.compile(r'^#{2}\s+(.+)')
-_RE_MD_H3   = re.compile(r'^#{3,}\s+(.+)')
-_RE_LETTER  = re.compile(r'^[a-z]\)\s+(.+)')
-_RE_ROMAN   = re.compile(r'^[ivxIVX]+[.)]\s+(.+)')
-_RE_NUMLIST = re.compile(r'^(\d{1,2})[.)]\s+(.+)')
+_RE_NUM = re.compile(r"^([\d]+(?:\.[\d]+)*)[.\s:]+\s*(.*)")
+_RE_MD_H1 = re.compile(r"^#{1}\s+(.+)")
+_RE_MD_H2 = re.compile(r"^#{2}\s+(.+)")
+_RE_MD_H3 = re.compile(r"^#{3,}\s+(.+)")
+_RE_LETTER = re.compile(r"^[a-z]\)\s+(.+)")
+_RE_ROMAN = re.compile(r"^[ivxIVX]+[.)]\s+(.+)")
+_RE_NUMLIST = re.compile(r"^(\d{1,2})[.)]\s+(.+)")
 
 
 def _is_heading_text(rest: str) -> bool:
@@ -395,9 +452,9 @@ def _is_heading_text(rest: str) -> bool:
         return True
     if len(rest) > 100:
         return False
-    if rest.rstrip().endswith(('.', ',', ';')):
+    if rest.rstrip().endswith((".", ",", ";")):
         return False
-    if rest.count('. ') > 1:
+    if rest.count(". ") > 1:
         return False
     words = rest.split()
     if len(words) <= 12:
@@ -434,18 +491,28 @@ def parse_content(doc: DocxDocument, content: str):
         if not s:
             empty_count += 1
             if empty_count <= 2:
-                sp = doc.add_paragraph(); spacing(sp, after=Pt(2))
+                sp = doc.add_paragraph()
+                spacing(sp, after=Pt(2))
             idx += 1
             continue
         empty_count = 0
 
         # Markdown headings
         m = _RE_MD_H1.match(s)
-        if m: add_heading(doc, m.group(1).strip(), 1); idx += 1; continue
+        if m:
+            add_heading(doc, m.group(1).strip(), 1)
+            idx += 1
+            continue
         m = _RE_MD_H2.match(s)
-        if m: add_heading(doc, m.group(1).strip(), 2); idx += 1; continue
+        if m:
+            add_heading(doc, m.group(1).strip(), 2)
+            idx += 1
+            continue
         m = _RE_MD_H3.match(s)
-        if m: add_heading(doc, m.group(1).strip(), 3); idx += 1; continue
+        if m:
+            add_heading(doc, m.group(1).strip(), 3)
+            idx += 1
+            continue
 
         # Numbered section heading
         m = _RE_NUM.match(s)
@@ -459,28 +526,37 @@ def parse_content(doc: DocxDocument, content: str):
                 continue
 
         # ALL-CAPS heading
-        if (s == s.upper() and 3 < len(s) < 80
-                and s[0].isalpha() and not s.endswith(('.', ',', ';'))):
+        if s == s.upper() and 3 < len(s) < 80 and s[0].isalpha() and not s.endswith((".", ",", ";")):
             add_heading(doc, s, 1)
             idx += 1
             continue
 
         # Letter sub-item
         m = _RE_LETTER.match(s)
-        if m: add_bullet(doc, m.group(1), indent=1); idx += 1; continue
+        if m:
+            add_bullet(doc, m.group(1), indent=1)
+            idx += 1
+            continue
 
         # Roman numeral
         m = _RE_ROMAN.match(s)
-        if m: add_bullet(doc, m.group(1), indent=1); idx += 1; continue
+        if m:
+            add_bullet(doc, m.group(1), indent=1)
+            idx += 1
+            continue
 
         # Bullet
         if s[:2] in ("- ", "* ") or s.startswith("• "):
-            add_bullet(doc, s[2:].strip()); idx += 1; continue
+            add_bullet(doc, s[2:].strip())
+            idx += 1
+            continue
 
         # Numbered list item
         m = _RE_NUMLIST.match(s)
-        if m and not re.match(r'^\d+\.\d+', s):
-            add_numbered_item(doc, m.group(2)); idx += 1; continue
+        if m and not re.match(r"^\d+\.\d+", s):
+            add_numbered_item(doc, m.group(2))
+            idx += 1
+            continue
 
         # Body paragraph
         add_body(doc, s)

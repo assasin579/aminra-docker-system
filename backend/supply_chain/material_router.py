@@ -33,7 +33,8 @@ async def list_materials(
     category: Optional[str] = Query(None),
     supplier_id: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
-    user=Depends(get_current_user), db=Depends(get_db),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
 ):
     tenant_id = _require_business(user)
     cond = "WHERE m.tenant_id = $1"
@@ -54,22 +55,34 @@ async def list_materials(
         params.append(f"%{search}%")
         idx += 1
 
-    rows = await db.fetch(f"""
+    rows = await db.fetch(
+        f"""
         SELECT m.*, s.name AS supplier_name
         FROM materials m
         LEFT JOIN suppliers s ON s.id = m.supplier_id
         {cond}
         ORDER BY m.created_at DESC
-    """, *params)
+    """,
+        *params,
+    )
 
-    return {"materials": [
-        MaterialOut(
-            id=str(r["id"]), name=r["name"], sku=r["sku"], category=r["category"],
-            halal_risk=r["halal_risk"], description=r["description"], unit=r["unit"],
-            supplier_id=str(r["supplier_id"]), supplier_name=r["supplier_name"],
-            created_at=r["created_at"],
-        ) for r in rows
-    ]}
+    return {
+        "materials": [
+            MaterialOut(
+                id=str(r["id"]),
+                name=r["name"],
+                sku=r["sku"],
+                category=r["category"],
+                halal_risk=r["halal_risk"],
+                description=r["description"],
+                unit=r["unit"],
+                supplier_id=str(r["supplier_id"]),
+                supplier_name=r["supplier_name"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
+    }
 
 
 @router.post("/materials")
@@ -83,11 +96,20 @@ async def create_material(req: MaterialCreate, user=Depends(get_current_user), d
     if not s:
         raise HTTPException(400, "Nhà cung cấp không tồn tại")
 
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         INSERT INTO materials (tenant_id, supplier_id, name, sku, category, halal_risk, description, unit)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id
-    """, tenant_id, req.supplier_id, req.name, req.sku, req.category,
-        req.halal_risk or "unknown", req.description, req.unit)
+    """,
+        tenant_id,
+        req.supplier_id,
+        req.name,
+        req.sku,
+        req.category,
+        req.halal_risk or "unknown",
+        req.description,
+        req.unit,
+    )
 
     log.info(f"[materials] Created {row['id']}")
     return {"id": str(row["id"]), "message": "Đã tạo nguyên liệu"}
@@ -110,8 +132,7 @@ async def update_material(mid: str, req: MaterialUpdate, user=Depends(get_curren
             idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
-    result = await db.execute(
-        f"UPDATE materials SET {', '.join(updates)} WHERE id=$1 AND tenant_id=$2", *params)
+    result = await db.execute(f"UPDATE materials SET {', '.join(updates)} WHERE id=$1 AND tenant_id=$2", *params)
     if result == "UPDATE 0":
         raise HTTPException(404)
     return {"message": "Đã cập nhật"}

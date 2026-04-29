@@ -1,4 +1,5 @@
 """Template: HAS Manual — Halal Assurance System Manual."""
+
 from docx import Document as DocxDocument
 from docx.enum.text import WD_BREAK
 from lxml import etree
@@ -18,7 +19,8 @@ def build(doc: DocxDocument, content: str, title: str, filename: str, cfg: dict 
     raw_meta = cfg.get("cover_meta")
     extra_meta = [(m["key"], m["value"]) for m in raw_meta if m.get("key")] if raw_meta else _DEFAULT_META
 
-    B.add_cover(doc,
+    B.add_cover(
+        doc,
         doc_type_label="HAS Manual",
         title=title,
         extra_meta=extra_meta,
@@ -33,7 +35,7 @@ def build(doc: DocxDocument, content: str, title: str, filename: str, cfg: dict 
         fld = (
             '<w:fldSimple xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
             ' w:instr=" TOC \\o &quot;1-3&quot; \\h \\z \\u ">'
-            '<w:r><w:t></w:t></w:r></w:fldSimple>'
+            "<w:r><w:t></w:t></w:r></w:fldSimple>"
         )
         toc_p._element.append(etree.fromstring(fld))
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)

@@ -8,7 +8,9 @@ import { test, expect } from "./fixtures";
 const DEMO_PW = "DemoP@ss2026";
 
 async function loginAs(api: any, email: string) {
-  const res = await api.post("/auth/login", { data: { email, password: DEMO_PW } });
+  const res = await api.post("/auth/login", {
+    data: { email, password: DEMO_PW },
+  });
   if (res.status() !== 200) return null;
   const body = await res.json();
   return body.access_token as string;
@@ -45,14 +47,19 @@ test.describe("MVP Flow 12: Provider login + dashboard", () => {
 // ── Flow 13: Provider review → request revision ───────────────────────────
 
 test.describe("MVP Flow 13: Provider request revision", () => {
-  test("Request revision endpoint validates auth + fails for non-existent submission", async ({ api }) => {
+  test("Request revision endpoint validates auth + fails for non-existent submission", async ({
+    api,
+  }) => {
     const token = await loginAs(api, "cb-demo@demo.aminra.vn");
     if (!token) test.skip(true, "demo seed missing");
 
     const res = await api.post(
       "/api/submissions/received/00000000-0000-0000-0000-000000000000/request-revision",
       {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         data: { feedback: "test" },
       },
     );
@@ -66,7 +73,10 @@ test.describe("MVP Flow 13: Provider request revision", () => {
     const res = await api.post(
       "/api/submissions/received/00000000-0000-0000-0000-000000000000/request-revision",
       {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         data: { feedback: "x" },
       },
     );
@@ -96,7 +106,10 @@ test.describe("MVP Flow 15: Issue cert", () => {
     const res = await api.post(
       "/api/submissions/issue-certificate/00000000-0000-0000-0000-000000000000",
       {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         data: { expiry_months: 12, notes: "" },
       },
     );
@@ -112,7 +125,9 @@ test.describe("MVP Flow 16: Cert revoke", () => {
     if (!token) test.skip(true, "demo seed missing");
 
     // Get the demo cert
-    const verify = await api.get("/api/submissions/certificates/public/HALAL-2025-EXPIRING");
+    const verify = await api.get(
+      "/api/submissions/certificates/public/HALAL-2025-EXPIRING",
+    );
     if (verify.status() !== 200) test.skip(true, "expiring cert missing");
 
     const certBody = await verify.json();
@@ -157,7 +172,7 @@ test.describe("MVP Flow 18-20: Admin dashboard + queue + provider approve", () =
       "/admin/audit-logs",
       "/admin/overdue-submissions",
     ]) {
-      const status = await page.goto(path).then(r => r?.status() ?? 500);
+      const status = await page.goto(path).then((r) => r?.status() ?? 500);
       // 200 = renders (may show login prompt within page)
       expect([200, 307]).toContain(status);
     }

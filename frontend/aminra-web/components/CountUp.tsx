@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 interface CountUpProps {
   value: number;
-  duration?: number;        // ms
+  duration?: number; // ms
   decimals?: number;
   prefix?: string;
   suffix?: string;
@@ -23,8 +23,8 @@ export default function CountUp({
   value,
   duration = 900,
   decimals = 0,
-  prefix = '',
-  suffix = '',
+  prefix = "",
+  suffix = "",
   className,
   format,
 }: CountUpProps) {
@@ -33,9 +33,11 @@ export default function CountUp({
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (reduce || !Number.isFinite(value)) {
       fromRef.current = value;
       setDisplay(value);
@@ -69,5 +71,11 @@ export default function CountUp({
     ? format(Number(display.toFixed(decimals)))
     : display.toFixed(decimals);
 
-  return <span className={`count-up ${className ?? ''}`}>{prefix}{out}{suffix}</span>;
+  return (
+    <span className={`count-up ${className ?? ""}`}>
+      {prefix}
+      {out}
+      {suffix}
+    </span>
+  );
 }

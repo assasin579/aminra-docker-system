@@ -52,6 +52,7 @@ async def check_permission_db(user: dict, permission: str):
         return
 
     from auth.db import get_pool
+
     pool = get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow("SELECT permissions FROM users WHERE id = $1", user.get("sub"))

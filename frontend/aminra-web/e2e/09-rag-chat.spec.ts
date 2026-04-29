@@ -27,7 +27,11 @@ test.describe("09. RAG / AI chat", () => {
     } catch (e) {
       // Chat LLM upstream may be unreachable/slow — endpoint still valid.
       // Mark as informational rather than hard fail.
-      test.info().annotations.push({ type: "warning", description: "Chat LLM timeout > 90s — check OpenRouter API key / DeepSeek quota" });
+      test.info().annotations.push({
+        type: "warning",
+        description:
+          "Chat LLM timeout > 90s — check OpenRouter API key / DeepSeek quota",
+      });
       test.skip(true, "Chat LLM upstream slow/unavailable");
     }
   });

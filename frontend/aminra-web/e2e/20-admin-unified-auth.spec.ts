@@ -20,7 +20,10 @@ test.describe("admin unified auth", () => {
     );
   });
 
-  test("legacy /admin token unlocks analytics + audit-logs + overdue", async ({ page, request }) => {
+  test("legacy /admin token unlocks analytics + audit-logs + overdue", async ({
+    page,
+    request,
+  }) => {
     const loginRes = await request.post("/api/admin/login", {
       data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
     });
@@ -34,23 +37,37 @@ test.describe("admin unified auth", () => {
     }, token);
 
     await page.goto("/admin/analytics");
-    await expect(page.getByRole("heading", { name: "Analytics dashboard" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Analytics dashboard" }),
+    ).toBeVisible();
     await expect(page.getByText(/Cập nhật:/)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
 
     await page.goto("/admin/audit-logs");
-    await expect(page.getByText(/Audit logs|Nhật ký|audit/i).first()).toBeVisible();
+    await expect(
+      page.getByText(/Audit logs|Nhật ký|audit/i).first(),
+    ).toBeVisible();
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
 
     await page.goto("/admin/overdue-submissions");
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
   });
 
-  test("non-admin JWT is rejected by admin endpoints (regression)", async ({ request }) => {
+  test("non-admin JWT is rejected by admin endpoints (regression)", async ({
+    request,
+  }) => {
     const r = await request.post("/api/auth/login", {
-      data: { email: "cb-demo@demo.aminra.vn", password: "DemoP@ss2026", role: "provider" },
+      data: {
+        email: "cb-demo@demo.aminra.vn",
+        password: "DemoP@ss2026",
+        role: "provider",
+      },
     });
-    if (!r.ok()) test.skip(true, "demo provider not seeded; skipping non-admin regression");
+    if (!r.ok())
+      test.skip(
+        true,
+        "demo provider not seeded; skipping non-admin regression",
+      );
     const { access_token } = await r.json();
 
     const an = await request.get("/api/auth/admin/analytics", {

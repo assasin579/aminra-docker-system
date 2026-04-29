@@ -18,21 +18,39 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 
 test("UserAuthContext.logout removes aminra_admin_token", async () => {
-  const src = await readFile(join(ROOT, "components/UserAuthContext.tsx"), "utf8");
-  const logoutMatch = src.match(/const logout = useCallback\(\(\) => \{([\s\S]*?)\}, \[\]\);/);
-  expect(logoutMatch, "UserAuthContext.logout function not found").not.toBeNull();
-  const body = logoutMatch![1];
-  expect(body, "UserAuthContext.logout must remove 'aminra_admin_token'").toMatch(
-    /removeItem\(['"]aminra_admin_token['"]\)/,
+  const src = await readFile(
+    join(ROOT, "components/UserAuthContext.tsx"),
+    "utf8",
   );
+  const logoutMatch = src.match(
+    /const logout = useCallback\(\(\) => \{([\s\S]*?)\}, \[\]\);/,
+  );
+  expect(
+    logoutMatch,
+    "UserAuthContext.logout function not found",
+  ).not.toBeNull();
+  const body = logoutMatch![1];
+  expect(
+    body,
+    "UserAuthContext.logout must remove 'aminra_admin_token'",
+  ).toMatch(/removeItem\(['"]aminra_admin_token['"]\)/);
 });
 
 test("AdminAuthContext.logout removes aminra_user_token", async () => {
-  const src = await readFile(join(ROOT, "components/AdminAuthContext.tsx"), "utf8");
-  const logoutMatch = src.match(/const logout = useCallback\(\(\) => \{([\s\S]*?)\}, \[token\]\);/);
-  expect(logoutMatch, "AdminAuthContext.logout function not found").not.toBeNull();
-  const body = logoutMatch![1];
-  expect(body, "AdminAuthContext.logout must remove 'aminra_user_token'").toMatch(
-    /removeItem\(['"]aminra_user_token['"]\)/,
+  const src = await readFile(
+    join(ROOT, "components/AdminAuthContext.tsx"),
+    "utf8",
   );
+  const logoutMatch = src.match(
+    /const logout = useCallback\(\(\) => \{([\s\S]*?)\}, \[token\]\);/,
+  );
+  expect(
+    logoutMatch,
+    "AdminAuthContext.logout function not found",
+  ).not.toBeNull();
+  const body = logoutMatch![1];
+  expect(
+    body,
+    "AdminAuthContext.logout must remove 'aminra_user_token'",
+  ).toMatch(/removeItem\(['"]aminra_user_token['"]\)/);
 });

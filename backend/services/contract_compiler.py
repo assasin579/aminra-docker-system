@@ -3,13 +3,13 @@
 Caches the compiled artifact on disk so we don't recompile every test run.
 Returns ABI + bytecode in a form web3.py can consume directly.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import solcx
 
@@ -73,10 +73,7 @@ def compile_contract(force: bool = False) -> CompiledContract:
     suffix = f":{CONTRACT_NAME}"
     matching_keys = [k for k in output if k.endswith(suffix)]
     if not matching_keys:
-        raise RuntimeError(
-            f"contract {CONTRACT_NAME} not found in compile output. "
-            f"available: {list(output.keys())}"
-        )
+        raise RuntimeError(f"contract {CONTRACT_NAME} not found in compile output. available: {list(output.keys())}")
     artifact = output[matching_keys[0]]
     metadata = artifact.get("metadata") or "{}"
     if isinstance(metadata, str):

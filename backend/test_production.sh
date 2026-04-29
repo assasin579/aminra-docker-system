@@ -52,7 +52,7 @@ if [ "$HTTP_STATUS" = "200" ]; then
     ANSWER_LENGTH=$(echo "$RAG_CONTENT" | jq -r '.answer' | wc -c)
     CHUNKS_USED=$(echo "$RAG_CONTENT" | jq -r '.chunks_used')
     echo "   ✅ RAG working (time: ${DURATION}s, chunks: $CHUNKS_USED, answer length: $ANSWER_LENGTH)"
-    
+
     # Check if answer is meaningful
     if [ "$ANSWER_LENGTH" -lt 100 ]; then
         echo "   ⚠️  Warning: Answer is very short"

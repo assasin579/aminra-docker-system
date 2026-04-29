@@ -1,4 +1,5 @@
 """Template: Halal Policy — chính sách Halal tổng thể của doanh nghiệp."""
+
 from docx import Document as DocxDocument
 from docx.enum.text import WD_BREAK
 from lxml import etree
@@ -26,7 +27,8 @@ def build(doc: DocxDocument, content: str, title: str, filename: str, cfg: dict 
     show_rev = cfg.get("show_revision_table", True)
     show_appr = cfg.get("show_approval_block", True)
 
-    B.add_cover(doc,
+    B.add_cover(
+        doc,
         doc_type_label="Halal Policy",
         title=title,
         extra_meta=extra_meta,
@@ -42,7 +44,7 @@ def build(doc: DocxDocument, content: str, title: str, filename: str, cfg: dict 
         fld = (
             '<w:fldSimple xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
             ' w:instr=" TOC \\o &quot;1-3&quot; \\h \\z \\u ">'
-            '<w:r><w:t></w:t></w:r></w:fldSimple>'
+            "<w:r><w:t></w:t></w:r></w:fldSimple>"
         )
         toc_p._element.append(etree.fromstring(fld))
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)

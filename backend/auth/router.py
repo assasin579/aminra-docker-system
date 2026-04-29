@@ -9,14 +9,32 @@ from asyncpg import Connection, UniqueViolationError
 
 from .db import get_db
 from .password import hash_password, verify_password
-from .jwt_utils import create_access_token, create_refresh_token, decode_refresh_token, get_current_user, require_business_owner
+from .jwt_utils import (
+    create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
+    get_current_user,
+    require_business_owner,
+)
 from .rate_limit import rate_limit_api
 from .models import (
-    BusinessRegisterRequest, ProviderRegisterRequest, LoginRequest,
-    InviteMemberRequest, UpdateMemberRequest, LoginResponse, RegisterBusinessResponse,
-    RegisterProviderResponse, UserProfile, MembersResponse, MemberItem,
-    InviteAuditorRequest, AuditorItem, AuditorsResponse,
-    RefreshRequest, CompanyProfileUpdate, ChangePasswordRequest,
+    BusinessRegisterRequest,
+    ProviderRegisterRequest,
+    LoginRequest,
+    InviteMemberRequest,
+    UpdateMemberRequest,
+    LoginResponse,
+    RegisterBusinessResponse,
+    RegisterProviderResponse,
+    UserProfile,
+    MembersResponse,
+    MemberItem,
+    InviteAuditorRequest,
+    AuditorItem,
+    AuditorsResponse,
+    RefreshRequest,
+    CompanyProfileUpdate,
+    ChangePasswordRequest,
     MAX_MEMBERS,
 )
 
@@ -28,34 +46,39 @@ def _validate_uuid(value: str) -> str:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid ID format")
     return value
 
+
 log = logging.getLogger("aminra.auth")
 router = APIRouter()
 
 
 def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
     from auth.permissions import get_user_permissions
+
     perms = get_user_permissions(dict(row))
     return UserProfile(
-        id           = str(row["id"]),
-        email        = row["email"],
-        role         = row["role"],
-        status       = row["status"],
-        company_name = row["company_name"],
-        company_code = row.get("company_code"),
-        is_owner     = row["is_owner"],
-        tenant_id    = str(row["tenant_id"]) if row["tenant_id"] else None,
-        member_count = member_count,
-        address      = row.get("address"),
-        phone        = row.get("phone"),
-        representative_name = row.get("representative_name"),
-        permissions  = perms,
+        id=str(row["id"]),
+        email=row["email"],
+        role=row["role"],
+        status=row["status"],
+        company_name=row["company_name"],
+        company_code=row.get("company_code"),
+        is_owner=row["is_owner"],
+        tenant_id=str(row["tenant_id"]) if row["tenant_id"] else None,
+        member_count=member_count,
+        address=row.get("address"),
+        phone=row.get("phone"),
+        representative_name=row.get("representative_name"),
+        permissions=perms,
     )
 
 
 # ── Register business ──────────────────────────────────────────────────────────
 
+
 @router.post("/business/register", response_model=RegisterBusinessResponse, status_code=201)
-async def register_business(req: BusinessRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
+async def register_business(
+    req: BusinessRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+):
     pw_hash = hash_password(req.password)
     try:
         row = await db.fetchrow(
@@ -65,7 +88,10 @@ async def register_business(req: BusinessRegisterRequest, db: Connection = Depen
             VALUES ($1, $2, 'business', $3, $4, 'active', true, NULL)
             RETURNING *
             """,
-            req.email, pw_hash, req.company_name, req.company_code,
+            req.email,
+            pw_hash,
+            req.company_name,
+            req.company_code,
         )
     except UniqueViolationError:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
@@ -76,9 +102,12 @@ async def register_business(req: BusinessRegisterRequest, db: Connection = Depen
 
     profile = _row_to_profile(row, member_count=0)
     token_data = {
-        "sub": str(row["id"]), "email": row["email"],
-        "role": "business", "status": "active",
-        "is_owner": True, "tenant_id": str(row["id"]),
+        "sub": str(row["id"]),
+        "email": row["email"],
+        "role": "business",
+        "status": "active",
+        "is_owner": True,
+        "tenant_id": str(row["id"]),
     }
     token = create_access_token(token_data)
     refresh = create_refresh_token(token_data)
@@ -88,8 +117,11 @@ async def register_business(req: BusinessRegisterRequest, db: Connection = Depen
 
 # ── Register provider ──────────────────────────────────────────────────────────
 
+
 @router.post("/provider/register", response_model=RegisterProviderResponse, status_code=201)
-async def register_provider(req: ProviderRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
+async def register_provider(
+    req: ProviderRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+):
     pw_hash = hash_password(req.password)
     try:
         row = await db.fetchrow(
@@ -99,25 +131,32 @@ async def register_provider(req: ProviderRegisterRequest, db: Connection = Depen
             VALUES ($1, $2, 'provider', $3, $4, 'pending', true)
             RETURNING id, email, status
             """,
-            req.email, pw_hash, req.company_name, req.company_code,
+            req.email,
+            pw_hash,
+            req.company_name,
+            req.company_code,
         )
     except UniqueViolationError:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
 
     log.info(f"[auth] Provider registered (pending): {req.email}")
     return RegisterProviderResponse(
-        user_id = str(row["id"]),
-        email   = row["email"],
-        status  = row["status"],
-        message = "Tài khoản của bạn đang chờ xét duyệt. Admin sẽ xem xét và thông báo kết quả.",
+        user_id=str(row["id"]),
+        email=row["email"],
+        status=row["status"],
+        message="Tài khoản của bạn đang chờ xét duyệt. Admin sẽ xem xét và thông báo kết quả.",
     )
 
 
 # ── Login ──────────────────────────────────────────────────────────────────────
 
+
 @router.post("/login", response_model=LoginResponse)
-async def login(req: LoginRequest, request: Request, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
+async def login(
+    req: LoginRequest, request: Request, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+):
     from services.audit_log import log_audit
+
     if req.role and req.role in ("business", "provider"):
         row = await db.fetchrow("SELECT * FROM users WHERE email = $1 AND role = $2", req.email, req.role)
     else:
@@ -155,11 +194,11 @@ async def login(req: LoginRequest, request: Request, db: Connection = Depends(ge
 
     profile = _row_to_profile(row, member_count=member_count)
     token_data = {
-        "sub":       str(row["id"]),
-        "email":     row["email"],
-        "role":      row["role"],
-        "status":    row["status"],
-        "is_owner":  row["is_owner"],
+        "sub": str(row["id"]),
+        "email": row["email"],
+        "role": row["role"],
+        "status": row["status"],
+        "is_owner": row["is_owner"],
         "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
     }
     token = create_access_token(token_data)
@@ -177,6 +216,7 @@ async def login(req: LoginRequest, request: Request, db: Connection = Depends(ge
 
 
 # ── Refresh token ─────────────────────────────────────────────────────────────
+
 
 @router.post("/refresh", response_model=LoginResponse)
 async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
@@ -197,11 +237,11 @@ async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _
 
     profile = _row_to_profile(row, member_count=member_count)
     token_data = {
-        "sub":       str(row["id"]),
-        "email":     row["email"],
-        "role":      row["role"],
-        "status":    row["status"],
-        "is_owner":  row["is_owner"],
+        "sub": str(row["id"]),
+        "email": row["email"],
+        "role": row["role"],
+        "status": row["status"],
+        "is_owner": row["is_owner"],
         "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
     }
     new_access = create_access_token(token_data)
@@ -210,6 +250,7 @@ async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _
 
 
 # ── Get current user ───────────────────────────────────────────────────────────
+
 
 @router.get("/me", response_model=UserProfile)
 async def get_me(user: dict = Depends(get_current_user), db: Connection = Depends(get_db)):
@@ -228,6 +269,7 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
 
 # ── Invite member (business owner, max 7) ──────────────────────────────────────
 
+
 @router.post("/business/invite", status_code=201)
 async def invite_member(
     req: InviteMemberRequest,
@@ -240,8 +282,7 @@ async def invite_member(
         tenant_id,
     )
     if current_count >= MAX_MEMBERS:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            f"Tenant đã đạt giới hạn {MAX_MEMBERS} thành viên")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Tenant đã đạt giới hạn {MAX_MEMBERS} thành viên")
 
     pw_hash = hash_password(req.password)
     try:
@@ -252,24 +293,30 @@ async def invite_member(
             VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6, $7)
             RETURNING id, email, company_name, status, created_at
             """,
-            req.email, pw_hash, req.display_name,
-            tenant_id, owner["sub"], req.ihc_role or None, req.department or None,
+            req.email,
+            pw_hash,
+            req.display_name,
+            tenant_id,
+            owner["sub"],
+            req.ihc_role or None,
+            req.department or None,
         )
     except UniqueViolationError:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký")
 
     log.info(f"[auth] Member invited: {req.email} → tenant {tenant_id}")
     return {
-        "member_id":    str(row["id"]),
-        "email":        row["email"],
+        "member_id": str(row["id"]),
+        "email": row["email"],
         "display_name": row["company_name"],
-        "tenant_id":    tenant_id,
+        "tenant_id": tenant_id,
     }
 
 
 # ── Invite link (no password required) ────────────────────────────────────────
 
 from pydantic import BaseModel as _BM
+
 
 class InviteLinkRequest(_BM):
     email: str
@@ -286,8 +333,7 @@ async def create_invite_link(
 ):
     """Create invite link — member sets their own password when accepting."""
     tenant_id = owner["tenant_id"]
-    current_count = await db.fetchval(
-        "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id)
+    current_count = await db.fetchval("SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id)
     if current_count >= MAX_MEMBERS:
         raise HTTPException(422, f"Đã đạt giới hạn {MAX_MEMBERS} thành viên")
 
@@ -297,14 +343,23 @@ async def create_invite_link(
         raise HTTPException(409, "Email đã được đăng ký")
 
     from uuid import uuid4 as _uuid4
-    from datetime import timedelta, timezone
+    from datetime import timezone
+
     token = str(_uuid4()).replace("-", "")
     expires = datetime.now(timezone.utc) + timedelta(days=7)
 
-    await db.execute("""
+    await db.execute(
+        """
         INSERT INTO member_invites (tenant_id, email, invite_token, role, department, expires_at)
         VALUES ($1, $2, $3, $4, $5, $6)
-    """, tenant_id, req.email, token, req.ihc_role or None, req.department or None, expires)
+    """,
+        tenant_id,
+        req.email,
+        token,
+        req.ihc_role or None,
+        req.department or None,
+        expires,
+    )
 
     log.info(f"[auth] Invite link created for {req.email} → tenant {tenant_id}")
     return {
@@ -319,12 +374,15 @@ async def create_invite_link(
 @router.get("/invite/{token}")
 async def get_invite_info(token: str, db: Connection = Depends(get_db)):
     """Public: view invite info (no auth needed)."""
-    row = await db.fetchrow("""
+    row = await db.fetchrow(
+        """
         SELECT i.*, u.company_name AS business_name
         FROM member_invites i
         JOIN users u ON u.id = i.tenant_id AND u.is_owner = true
         WHERE i.invite_token = $1
-    """, token)
+    """,
+        token,
+    )
     if not row:
         raise HTTPException(404, "Link không hợp lệ")
     if row["accepted_at"]:
@@ -360,13 +418,20 @@ async def accept_invite(token: str, request: Request, db: Connection = Depends(g
 
     pw_hash = hash_password(password)
     try:
-        user_row = await db.fetchrow("""
+        user_row = await db.fetchrow(
+            """
             INSERT INTO users (email, password_hash, role, company_name,
                                status, is_owner, tenant_id, ihc_role, department)
             VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6)
             RETURNING id
-        """, row["email"], pw_hash, display_name or row["email"],
-            row["tenant_id"], row["role"], row["department"])
+        """,
+            row["email"],
+            pw_hash,
+            display_name or row["email"],
+            row["tenant_id"],
+            row["role"],
+            row["department"],
+        )
     except UniqueViolationError:
         raise HTTPException(409, "Email đã được đăng ký")
 
@@ -378,6 +443,7 @@ async def accept_invite(token: str, request: Request, db: Connection = Depends(g
 
 # ── Member permissions ─────────────────────────────────────────────────────────
 
+
 @router.get("/business/members/{member_id}/permissions")
 async def get_member_permissions(
     member_id: str,
@@ -386,13 +452,14 @@ async def get_member_permissions(
 ):
     _validate_uuid(member_id)
     row = await db.fetchrow(
-        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false",
-        member_id, owner["tenant_id"])
+        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, owner["tenant_id"]
+    )
     if not row:
         raise HTTPException(404, "Thành viên không tồn tại")
 
     from auth.permissions import DEFAULT_PERMISSIONS, PERMISSION_LABELS
     import json
+
     perms = row["permissions"]
     if isinstance(perms, str):
         perms = json.loads(perms)
@@ -413,28 +480,28 @@ async def update_member_permissions(
     """Owner sets permissions for a member."""
     _validate_uuid(member_id)
     row = await db.fetchrow(
-        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false",
-        member_id, owner["tenant_id"])
+        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, owner["tenant_id"]
+    )
     if not row:
         raise HTTPException(404, "Thành viên không tồn tại")
 
     body = await request.json()
     import json
     from auth.permissions import DEFAULT_PERMISSIONS
+
     new_perms = {}
     for key in DEFAULT_PERMISSIONS:
         if key in body:
             new_perms[key] = bool(body[key])
 
-    await db.execute(
-        "UPDATE users SET permissions = $1::jsonb WHERE id = $2",
-        json.dumps(new_perms), member_id)
+    await db.execute("UPDATE users SET permissions = $1::jsonb WHERE id = $2", json.dumps(new_perms), member_id)
 
     log.info(f"[auth] Permissions updated for {member_id}: {new_perms}")
     return {"message": "Đã cập nhật quyền", "permissions": new_perms}
 
 
 # ── List members ───────────────────────────────────────────────────────────────
+
 
 @router.get("/business/members", response_model=MembersResponse)
 async def list_members(
@@ -450,17 +517,24 @@ async def list_members(
         owner["tenant_id"],
     )
     return MembersResponse(
-        members=[MemberItem(
-            id=str(r["id"]), email=r["email"],
-            display_name=r["company_name"], status=r["status"],
-            ihc_role=r.get("ihc_role"), department=r.get("department"),
-            created_at=r["created_at"],
-        ) for r in rows],
+        members=[
+            MemberItem(
+                id=str(r["id"]),
+                email=r["email"],
+                display_name=r["company_name"],
+                status=r["status"],
+                ihc_role=r.get("ihc_role"),
+                department=r.get("department"),
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ],
         count=len(rows),
     )
 
 
 # ── Update member role/department ──────────────────────────────────────────────
+
 
 @router.put("/business/members/{member_id}")
 async def update_member(
@@ -474,16 +548,22 @@ async def update_member(
     params = []
     idx = 1
     if req.ihc_role is not None:
-        updates.append(f"ihc_role = ${idx}"); params.append(req.ihc_role or None); idx += 1
+        updates.append(f"ihc_role = ${idx}")
+        params.append(req.ihc_role or None)
+        idx += 1
     if req.department is not None:
-        updates.append(f"department = ${idx}"); params.append(req.department or None); idx += 1
+        updates.append(f"department = ${idx}")
+        params.append(req.department or None)
+        idx += 1
     if req.display_name is not None:
-        updates.append(f"company_name = ${idx}"); params.append(req.display_name); idx += 1
+        updates.append(f"company_name = ${idx}")
+        params.append(req.display_name)
+        idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
     params.extend([member_id, owner["tenant_id"]])
     result = await db.execute(
-        f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx} AND tenant_id = ${idx+1} AND is_owner = false",
+        f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx} AND tenant_id = ${idx + 1} AND is_owner = false",
         *params,
     )
     if result == "UPDATE 0":
@@ -492,6 +572,7 @@ async def update_member(
 
 
 # ── Export IHC document ───────────────────────────────────────────────────────
+
 
 @router.post("/business/export-ihc")
 async def export_ihc(
@@ -519,7 +600,7 @@ async def export_ihc(
 
     # Build IHC content
     lines = []
-    lines.append(f"1. THÔNG TIN TỔ CHỨC")
+    lines.append("1. THÔNG TIN TỔ CHỨC")
     lines.append(f"Tên tổ chức: {company_name}")
     lines.append(f"Ngày ban hành: {datetime.now().strftime('%d/%m/%Y')}")
     lines.append(f"Tổng số thành viên IHC: {len(rows)}")
@@ -549,7 +630,7 @@ async def export_ihc(
         role_map[role].append(r["company_name"] or r["email"])
 
     for role, names in role_map.items():
-        lines.append(f"3.{list(role_map.keys()).index(role)+1} {role}")
+        lines.append(f"3.{list(role_map.keys()).index(role) + 1} {role}")
         lines.append(f"Thành viên: {', '.join(names)}")
         if "chairman" in role.lower() or "chủ tịch" in role.lower():
             lines.append("- Chịu trách nhiệm tổng thể về hệ thống đảm bảo Halal")
@@ -586,14 +667,16 @@ async def export_ihc(
     buf.seek(0)
 
     from fastapi.responses import Response
+
     return Response(
         content=buf.read(),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="IHC_{company_name.replace(" ","_")}.docx"'},
+        headers={"Content-Disposition": f'attachment; filename="IHC_{company_name.replace(" ", "_")}.docx"'},
     )
 
 
 # ── Remove member ──────────────────────────────────────────────────────────────
+
 
 @router.delete("/business/members/{member_id}", status_code=204)
 async def remove_member(
@@ -604,7 +687,8 @@ async def remove_member(
     _validate_uuid(member_id)
     result = await db.execute(
         "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
-        member_id, owner["tenant_id"],
+        member_id,
+        owner["tenant_id"],
     )
     if result == "DELETE 0":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
@@ -615,6 +699,7 @@ async def remove_member(
 from .jwt_utils import require_provider_owner
 
 MAX_AUDITORS = 20
+
 
 @router.post("/provider/auditors", status_code=201)
 async def invite_auditor(
@@ -629,7 +714,8 @@ async def invite_auditor(
         await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", owner["sub"])
 
     current = await db.fetchval(
-        "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id,
+        "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
+        tenant_id,
     )
     if current >= MAX_AUDITORS:
         raise HTTPException(422, f"Đã đạt giới hạn {MAX_AUDITORS} auditor")
@@ -641,8 +727,12 @@ async def invite_auditor(
                                   status, is_owner, tenant_id, invited_by, department)
                VALUES ($1, $2, 'provider', $3, 'active', false, $4, $5, $6)
                RETURNING id, email, company_name, status, created_at""",
-            req.email, pw_hash, req.display_name,
-            tenant_id, owner["sub"], req.specialty or None,
+            req.email,
+            pw_hash,
+            req.display_name,
+            tenant_id,
+            owner["sub"],
+            req.specialty or None,
         )
     except UniqueViolationError:
         raise HTTPException(409, "Email đã được đăng ký")
@@ -664,11 +754,17 @@ async def list_auditors(
         tenant_id,
     )
     return AuditorsResponse(
-        auditors=[AuditorItem(
-            id=str(r["id"]), email=r["email"],
-            display_name=r["company_name"], specialty=r.get("department"),
-            status=r["status"], created_at=r["created_at"],
-        ) for r in rows],
+        auditors=[
+            AuditorItem(
+                id=str(r["id"]),
+                email=r["email"],
+                display_name=r["company_name"],
+                specialty=r.get("department"),
+                status=r["status"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ],
         count=len(rows),
     )
 
@@ -685,26 +781,35 @@ async def update_auditor(
     updates, params, idx = [], [], 1
 
     if "display_name" in req and req["display_name"]:
-        updates.append(f"company_name = ${idx}"); params.append(req["display_name"]); idx += 1
+        updates.append(f"company_name = ${idx}")
+        params.append(req["display_name"])
+        idx += 1
     if "specialty" in req:
-        updates.append(f"department = ${idx}"); params.append(req["specialty"] or None); idx += 1
+        updates.append(f"department = ${idx}")
+        params.append(req["specialty"] or None)
+        idx += 1
     if "email" in req and req["email"]:
         # Validate email not taken by another provider user
         existing = await db.fetchrow(
-            "SELECT id FROM users WHERE email=$1 AND role='provider' AND id != $2", req["email"], auditor_id)
+            "SELECT id FROM users WHERE email=$1 AND role='provider' AND id != $2", req["email"], auditor_id
+        )
         if existing:
             raise HTTPException(409, "Email đã được sử dụng bởi tài khoản khác")
-        updates.append(f"email = ${idx}"); params.append(req["email"]); idx += 1
+        updates.append(f"email = ${idx}")
+        params.append(req["email"])
+        idx += 1
     if "password" in req and req["password"]:
         if len(req["password"]) < 8:
             raise HTTPException(400, "Mật khẩu tối thiểu 8 ký tự")
-        updates.append(f"password_hash = ${idx}"); params.append(hash_password(req["password"])); idx += 1
+        updates.append(f"password_hash = ${idx}")
+        params.append(hash_password(req["password"]))
+        idx += 1
 
     if not updates:
         return {"message": "Không có thay đổi"}
     params.extend([auditor_id, tenant_id])
     result = await db.execute(
-        f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx} AND tenant_id = ${idx+1} AND is_owner = false AND role = 'provider'",
+        f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx} AND tenant_id = ${idx + 1} AND is_owner = false AND role = 'provider'",
         *params,
     )
     if result == "UPDATE 0":
@@ -721,13 +826,15 @@ async def remove_auditor(
     _validate_uuid(auditor_id)
     result = await db.execute(
         "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
-        auditor_id, owner["tenant_id"] or owner["sub"],
+        auditor_id,
+        owner["tenant_id"] or owner["sub"],
     )
     if result == "DELETE 0":
         raise HTTPException(404, "Auditor not found")
 
 
 # ── Auditor Certificates ──────────────────────────────────────────────────────
+
 
 @router.get("/provider/auditors/{auditor_id}/certificates")
 async def list_auditor_certificates(
@@ -740,12 +847,14 @@ async def list_auditor_certificates(
     # Verify auditor belongs to this provider
     row = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
-        auditor_id, owner["tenant_id"] or owner["sub"],
+        auditor_id,
+        owner["tenant_id"] or owner["sub"],
     )
     if not row:
         raise HTTPException(404, "Auditor không tồn tại")
 
     from pathlib import Path as _P
+
     cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
     if not cert_dir.exists():
         return {"certificates": []}
@@ -755,12 +864,14 @@ async def list_auditor_certificates(
         if f.is_file():
             file_id = f.name.split("_", 1)[0]
             display_name = f.name.split("_", 1)[-1] if "_" in f.name else f.name
-            certs.append({
-                "id": file_id,
-                "filename": display_name,
-                "size": f.stat().st_size,
-                "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat(),
-            })
+            certs.append(
+                {
+                    "id": file_id,
+                    "filename": display_name,
+                    "size": f.stat().st_size,
+                    "uploaded_at": datetime.utcfromtimestamp(f.stat().st_mtime).isoformat(),
+                }
+            )
     return {"certificates": certs}
 
 
@@ -775,7 +886,8 @@ async def upload_auditor_certificate(
     _validate_uuid(auditor_id)
     row = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
-        auditor_id, owner["tenant_id"] or owner["sub"],
+        auditor_id,
+        owner["tenant_id"] or owner["sub"],
     )
     if not row:
         raise HTTPException(404, "Auditor không tồn tại")
@@ -785,14 +897,20 @@ async def upload_auditor_certificate(
         raise HTTPException(413, "File quá lớn (tối đa 10MB)")
 
     import magic
+
     detected = magic.from_buffer(content, mime=True)
-    allowed = {"application/pdf", "image/jpeg", "image/png",
-               "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+    allowed = {
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
     if detected not in allowed:
         raise HTTPException(400, f"Loại file không hợp lệ: {detected}")
 
     from pathlib import Path as _P
     import uuid as _uuid
+
     cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
     cert_dir.mkdir(parents=True, exist_ok=True)
 
@@ -814,6 +932,7 @@ async def view_auditor_certificate(
 ):
     """View certificate as PDF (convert if needed). Supports ?token= for window.open."""
     from auth.jwt_utils import decode_token as _decode
+
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         user = _decode(auth[7:])
@@ -827,6 +946,7 @@ async def view_auditor_certificate(
 
     tenant_id = user.get("tenant_id") or user.get("sub")
     from pathlib import Path as _P
+
     cert_dir = _P("docs") / tenant_id / "certificates" / auditor_id
 
     target = None
@@ -849,7 +969,8 @@ async def view_auditor_certificate(
         return FileResponse(path=str(target), media_type=mime)
 
     # DOCX — convert to PDF
-    import subprocess, os
+    import subprocess
+
     cache_dir = _P("data/preview_cache")
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_pdf = cache_dir / f"cert_{cert_id}.pdf"
@@ -857,20 +978,35 @@ async def view_auditor_certificate(
     if cache_pdf.exists() and cache_pdf.stat().st_size > 0:
         return FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
-    import tempfile, shutil
+    import tempfile
+    import shutil
     from starlette.concurrency import run_in_threadpool
 
     def _convert():
         pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
         try:
             subprocess.run(
-                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-                 f"-env:UserInstallation=file://{pid_profile}",
-                 "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(target.resolve())],
-                capture_output=True, timeout=60,
+                [
+                    "/usr/bin/libreoffice",
+                    "--headless",
+                    "--norestore",
+                    "--nolockcheck",
+                    f"-env:UserInstallation=file://{pid_profile}",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(cache_dir.resolve()),
+                    str(target.resolve()),
+                ],
+                capture_output=True,
+                timeout=60,
                 cwd=pid_profile,
-                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
-                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+                env={
+                    "HOME": pid_profile,
+                    "PATH": "/usr/bin:/usr/local/bin:/bin",
+                    "LANG": "C.UTF-8",
+                    "LC_ALL": "C.UTF-8",
+                },
             )
             lo_output = cache_dir / (target.stem + ".pdf")
             if lo_output.exists():
@@ -892,6 +1028,7 @@ async def delete_auditor_certificate(
 ):
     """Delete a certificate file."""
     from pathlib import Path as _P
+
     cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
     if cert_dir.exists():
         for f in cert_dir.iterdir():
@@ -904,7 +1041,8 @@ async def delete_auditor_certificate(
 # ── Meeting Minutes ───────────────────────────────────────────────────────────
 
 from pathlib import Path as _Path
-import uuid as _uuid, shutil as _shutil
+import uuid as _uuid
+import shutil as _shutil
 from datetime import datetime as _dt
 
 DOCS_DIR = _Path("docs")
@@ -927,14 +1065,16 @@ async def list_minutes(
             # Filename format: {uuid}_{original_name}
             parts = f.name.split("_", 1)
             original = parts[1] if len(parts) > 1 else f.name
-            files.append({
-                "id": parts[0] if len(parts) > 1 else f.stem,
-                "filename": f.name,
-                "original_filename": original,
-                "file_size": stat.st_size,
-                "mime_type": _guess_mime(original),
-                "uploaded_at": _dt.utcfromtimestamp(stat.st_mtime).isoformat(),
-            })
+            files.append(
+                {
+                    "id": parts[0] if len(parts) > 1 else f.stem,
+                    "filename": f.name,
+                    "original_filename": original,
+                    "file_size": stat.st_size,
+                    "mime_type": _guess_mime(original),
+                    "uploaded_at": _dt.utcfromtimestamp(stat.st_mtime).isoformat(),
+                }
+            )
     return {"minutes": files}
 
 
@@ -975,6 +1115,7 @@ async def view_minutes(
 ):
     """Serve a minutes file for viewing."""
     from auth.jwt_utils import decode_token as _decode
+
     # Support both Authorization header and ?token= query param (for window.open)
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
@@ -1004,7 +1145,8 @@ async def view_minutes(
         return FileResponse(path=str(target), media_type="application/pdf")
 
     # Convert to PDF for inline viewing (same approach as document preview)
-    import subprocess, os
+    import subprocess
+
     cache_dir = _Path("data/preview_cache")
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_pdf = cache_dir / f"minutes_{file_id}.pdf"
@@ -1015,20 +1157,35 @@ async def view_minutes(
     abs_cache = str(cache_dir.resolve())
     abs_file = str(target.resolve())
 
-    import tempfile, shutil
+    import tempfile
+    import shutil
     from starlette.concurrency import run_in_threadpool
 
     def _convert():
         pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
         try:
             subprocess.run(
-                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-                 f"-env:UserInstallation=file://{pid_profile}",
-                 "--convert-to", "pdf", "--outdir", abs_cache, abs_file],
-                capture_output=True, timeout=60,
+                [
+                    "/usr/bin/libreoffice",
+                    "--headless",
+                    "--norestore",
+                    "--nolockcheck",
+                    f"-env:UserInstallation=file://{pid_profile}",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    abs_cache,
+                    abs_file,
+                ],
+                capture_output=True,
+                timeout=60,
                 cwd=pid_profile,
-                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
-                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+                env={
+                    "HOME": pid_profile,
+                    "PATH": "/usr/bin:/usr/local/bin:/bin",
+                    "LANG": "C.UTF-8",
+                    "LC_ALL": "C.UTF-8",
+                },
             )
             lo_output = _Path(abs_cache) / (_Path(abs_file).stem + ".pdf")
             if lo_output.exists():
@@ -1065,6 +1222,7 @@ async def delete_minutes(
 
 
 # ── Company profile ───────────────────────────────────────────────────────────
+
 
 @router.get("/company-profile")
 async def get_company_profile(
@@ -1113,14 +1271,20 @@ async def update_company_profile(
                email = COALESCE(NULLIF($5, ''), email),
                manager_name = COALESCE(NULLIF($6, ''), manager_name)
            WHERE id = $7""",
-        req.company_name, req.representative_name, req.address,
-        req.phone, req.email, req.manager_name, owner["sub"],
+        req.company_name,
+        req.representative_name,
+        req.address,
+        req.phone,
+        req.email,
+        req.manager_name,
+        owner["sub"],
     )
     log.info(f"[auth] Company profile updated by {owner['sub']}")
     return {"message": "Đã cập nhật thông tin công ty"}
 
 
 # ── Change password ──────────────────────────────────────────────────────────
+
 
 @router.put("/change-password")
 async def change_password(
@@ -1130,6 +1294,7 @@ async def change_password(
 ):
     """Change password for current user."""
     from auth.password import WeakPasswordError, validate_password_strength
+
     row = await db.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["sub"])
     if not row:
         raise HTTPException(404, "User không tồn tại")
@@ -1153,6 +1318,7 @@ async def change_password(
 LOGO_DIR = _Path("docs/logos")
 LOGO_DIR.mkdir(parents=True, exist_ok=True)
 
+
 @router.post("/company-logo")
 async def upload_company_logo(
     file: UploadFile = File(...),
@@ -1164,6 +1330,7 @@ async def upload_company_logo(
         raise HTTPException(413, "Logo quá lớn (tối đa 2MB)")
 
     import magic
+
     detected = magic.from_buffer(content, mime=True)
     if detected not in ("image/png", "image/jpeg", "image/webp"):
         raise HTTPException(400, f"Chỉ chấp nhận PNG, JPG, hoặc WebP (phát hiện: {detected})")
@@ -1195,6 +1362,7 @@ async def get_company_logo(tenant_id: str):
 
 # ── Notification preferences ─────────────────────────────────────────────────
 
+
 @router.get("/notification-preferences")
 async def get_notification_preferences(
     user: dict = Depends(get_current_user),
@@ -1208,7 +1376,9 @@ async def get_notification_preferences(
         raise HTTPException(404)
     return {
         "notify_eval_done": row["notify_eval_done"] if row["notify_eval_done"] is not None else True,
-        "notify_submission_reply": row["notify_submission_reply"] if row["notify_submission_reply"] is not None else True,
+        "notify_submission_reply": row["notify_submission_reply"]
+        if row["notify_submission_reply"] is not None
+        else True,
     }
 
 

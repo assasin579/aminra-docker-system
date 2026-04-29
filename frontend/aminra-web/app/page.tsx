@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUserAuth } from '@/components/UserAuthContext';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUserAuth } from "@/components/UserAuthContext";
 
 export default function RootPage() {
   const { isAuthenticated, loading } = useUserAuth();
@@ -11,9 +11,9 @@ export default function RootPage() {
   useEffect(() => {
     if (loading) return;
     if (isAuthenticated) {
-      router.replace('/chat');
+      router.replace("/chat");
     } else {
-      router.replace('/landing');
+      router.replace("/landing");
     }
   }, [loading, isAuthenticated, router]);
 

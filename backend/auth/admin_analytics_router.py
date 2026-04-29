@@ -7,9 +7,10 @@ Returns aggregated stats useful for the MVP admin dashboard:
 - Recent audit-log activity (top actions in last 7 days)
 - User activity heatmap by day-of-week × hour
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from asyncpg import Connection
 from fastapi import APIRouter, Depends
@@ -25,22 +26,23 @@ async def admin_analytics(
     admin: dict = Depends(require_admin),
     db: Connection = Depends(get_db),
 ):
-    cert_buckets   = await _cert_expiry_buckets(db)
-    funnel         = await _submission_funnel(db)
-    monthly_trend  = await _monthly_cert_trend(db)
-    top_actions    = await _top_actions_recent(db)
-    heatmap        = await _activity_heatmap(db)
+    cert_buckets = await _cert_expiry_buckets(db)
+    funnel = await _submission_funnel(db)
+    monthly_trend = await _monthly_cert_trend(db)
+    top_actions = await _top_actions_recent(db)
+    heatmap = await _activity_heatmap(db)
     return {
-        "cert_buckets":  cert_buckets,
-        "funnel":        funnel,
+        "cert_buckets": cert_buckets,
+        "funnel": funnel,
         "monthly_trend": monthly_trend,
-        "top_actions":   top_actions,
-        "heatmap":       heatmap,
-        "generated_at":  datetime.now(timezone.utc).isoformat(),
+        "top_actions": top_actions,
+        "heatmap": heatmap,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
 # ── 1. Certificate expiry buckets ──────────────────────────────────────────
+
 
 async def _cert_expiry_buckets(db: Connection) -> dict:
     row = await db.fetchrow(
@@ -65,10 +67,9 @@ async def _cert_expiry_buckets(db: Connection) -> dict:
 
 # ── 2. Submission funnel ───────────────────────────────────────────────────
 
+
 async def _submission_funnel(db: Connection) -> dict:
-    rows = await db.fetch(
-        "SELECT status, COUNT(*) AS n FROM submissions GROUP BY status"
-    )
+    rows = await db.fetch("SELECT status, COUNT(*) AS n FROM submissions GROUP BY status")
     funnel = {r["status"]: r["n"] for r in rows}
     # Always return all known statuses (default 0) so the FE chart axes are stable.
     for s in ("pending", "assigned", "reviewing", "returned", "approved", "rejected"):
@@ -77,6 +78,7 @@ async def _submission_funnel(db: Connection) -> dict:
 
 
 # ── 3. Monthly cert trend ──────────────────────────────────────────────────
+
 
 async def _monthly_cert_trend(db: Connection) -> list[dict]:
     rows = await db.fetch(
@@ -94,6 +96,7 @@ async def _monthly_cert_trend(db: Connection) -> list[dict]:
 
 # ── 4. Top actions in last 7 days ──────────────────────────────────────────
 
+
 async def _top_actions_recent(db: Connection) -> list[dict]:
     rows = await db.fetch(
         """
@@ -109,6 +112,7 @@ async def _top_actions_recent(db: Connection) -> list[dict]:
 
 
 # ── 5. Activity heatmap (day-of-week × hour) ───────────────────────────────
+
 
 async def _activity_heatmap(db: Connection) -> list[dict]:
     rows = await db.fetch(

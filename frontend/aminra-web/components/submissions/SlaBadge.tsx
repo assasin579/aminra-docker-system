@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * SLA badge for submission cards.
@@ -14,7 +14,7 @@ interface Props {
   status: string;
 }
 
-const TERMINAL_STATUSES = new Set(['approved', 'rejected', 'returned']);
+const TERMINAL_STATUSES = new Set(["approved", "rejected", "returned"]);
 
 export default function SlaBadge({ submittedAt, deadline, status }: Props) {
   // No deadline → no SLA tracking
@@ -23,16 +23,19 @@ export default function SlaBadge({ submittedAt, deadline, status }: Props) {
   if (TERMINAL_STATUSES.has(status)) return null;
 
   const submittedMs = new Date(submittedAt).getTime();
-  const deadlineMs  = new Date(deadline).getTime();
-  const nowMs       = Date.now();
+  const deadlineMs = new Date(deadline).getTime();
+  const nowMs = Date.now();
 
   // Malformed window
-  if (isNaN(submittedMs) || isNaN(deadlineMs) || deadlineMs <= submittedMs) return null;
+  if (isNaN(submittedMs) || isNaN(deadlineMs) || deadlineMs <= submittedMs)
+    return null;
 
-  const totalSeconds  = (deadlineMs - submittedMs) / 1000;
+  const totalSeconds = (deadlineMs - submittedMs) / 1000;
   const elapsedSeconds = (nowMs - submittedMs) / 1000;
   const elapsedPct = (elapsedSeconds / totalSeconds) * 100;
-  const daysRemaining = Math.floor((deadlineMs - nowMs) / (1000 * 60 * 60 * 24));
+  const daysRemaining = Math.floor(
+    (deadlineMs - nowMs) / (1000 * 60 * 60 * 24),
+  );
 
   // Tier 1: overdue (>= 100%)
   if (elapsedPct >= 100) {
@@ -40,7 +43,7 @@ export default function SlaBadge({ submittedAt, deadline, status }: Props) {
       <span
         title={`Quá hạn ${Math.abs(daysRemaining)} ngày`}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-        style={{ background: '#dc2626', color: 'white' }}
+        style={{ background: "#dc2626", color: "white" }}
         data-sla="overdue"
       >
         🚨 QUÁ HẠN {Math.abs(daysRemaining)}d
@@ -54,7 +57,11 @@ export default function SlaBadge({ submittedAt, deadline, status }: Props) {
       <span
         title={`Còn ${daysRemaining} ngày tới deadline`}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-        style={{ background: 'rgba(245,158,11,0.15)', color: '#b45309', border: '1px solid rgba(245,158,11,0.3)' }}
+        style={{
+          background: "rgba(245,158,11,0.15)",
+          color: "#b45309",
+          border: "1px solid rgba(245,158,11,0.3)",
+        }}
         data-sla="warning"
       >
         ⚠ Sắp hết hạn ({daysRemaining}d)

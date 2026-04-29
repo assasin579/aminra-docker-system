@@ -7,6 +7,7 @@ from datetime import date, datetime
 
 # ── Suppliers ────────────────────────────────────────────────────────────────
 
+
 class SupplierCreate(BaseModel):
     name: str
     address: Optional[str] = None
@@ -16,6 +17,7 @@ class SupplierCreate(BaseModel):
     supplier_type: Optional[str] = None
     tax_code: Optional[str] = None
     notes: Optional[str] = None
+
 
 class SupplierUpdate(BaseModel):
     name: Optional[str] = None
@@ -27,6 +29,7 @@ class SupplierUpdate(BaseModel):
     tax_code: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+
 
 class SupplierOut(BaseModel):
     id: str
@@ -43,6 +46,7 @@ class SupplierOut(BaseModel):
     cert_count: int = 0
     created_at: datetime
 
+
 class CertificateOut(BaseModel):
     id: str
     cert_type: Optional[str]
@@ -57,6 +61,7 @@ class CertificateOut(BaseModel):
 
 # ── Materials ────────────────────────────────────────────────────────────────
 
+
 class MaterialCreate(BaseModel):
     name: str
     supplier_id: str
@@ -66,6 +71,7 @@ class MaterialCreate(BaseModel):
     description: Optional[str] = None
     unit: Optional[str] = None
 
+
 class MaterialUpdate(BaseModel):
     name: Optional[str] = None
     supplier_id: Optional[str] = None
@@ -74,6 +80,7 @@ class MaterialUpdate(BaseModel):
     halal_risk: Optional[str] = None
     description: Optional[str] = None
     unit: Optional[str] = None
+
 
 class MaterialOut(BaseModel):
     id: str
@@ -90,16 +97,19 @@ class MaterialOut(BaseModel):
 
 # ── Process Templates ────────────────────────────────────────────────────────
 
+
 class ProcessCreate(BaseModel):
     name: str
     description: Optional[str] = None
     flowchart: Optional[dict] = None
+
 
 class ProcessUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     flowchart: Optional[dict] = None
     is_active: Optional[bool] = None
+
 
 class ProcessOut(BaseModel):
     id: str
@@ -114,6 +124,7 @@ class ProcessOut(BaseModel):
 
 # ── Production Batches ───────────────────────────────────────────────────────
 
+
 class BatchCreate(BaseModel):
     batch_code: Optional[str] = None
     product_name: str
@@ -121,16 +132,19 @@ class BatchCreate(BaseModel):
     notes: Optional[str] = None
     materials: Optional[List[dict]] = None  # [{"material_id": "...", "quantity": 10, "unit": "kg"}]
 
+
 class BatchUpdate(BaseModel):
     product_name: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+
 
 class BatchStepUpdate(BaseModel):
     status: Optional[str] = None
     performed_by: Optional[str] = None
     notes: Optional[str] = None
     checklist: Optional[list] = None
+
 
 class BatchOut(BaseModel):
     id: str
