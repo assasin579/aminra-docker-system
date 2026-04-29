@@ -1260,6 +1260,8 @@ async def get_versions(
 
     # Recursive CTE to walk both directions: ancestors (parent chain) + descendants
     # Depth limit MAX_CHAIN_DEPTH defends against malformed chains (R2 mitigation).
+    # PostgreSQL recursive CTE supports exactly ONE recursive term — combine both
+    # directions in a subquery UNION wrapped as a single recursive expression.
     rows = await db.fetch(
         """
         WITH RECURSIVE chain AS (
@@ -1268,20 +1270,14 @@ async def get_versions(
                    approval_status, approved_at, effective_date, tenant_id, 0 AS depth
               FROM documents WHERE id = $1 AND tenant_id = $2
             UNION ALL
-            -- Walk parents (older versions)
+            -- Recursive: ancestors (parents) + descendants (via supersede chain)
             SELECT d.id, d.version_parent_id, d.superseded_by_id, d.version_number,
                    d.approval_status, d.approved_at, d.effective_date, d.tenant_id,
                    c.depth + 1
-              FROM documents d
-              JOIN chain c ON d.id = c.version_parent_id
-             WHERE d.tenant_id = $2 AND c.depth < $3
-            UNION ALL
-            -- Walk descendants (newer via supersede chain)
-            SELECT d.id, d.version_parent_id, d.superseded_by_id, d.version_number,
-                   d.approval_status, d.approved_at, d.effective_date, d.tenant_id,
-                   c.depth + 1
-              FROM documents d
-              JOIN chain c ON d.version_parent_id = c.id
+              FROM chain c
+              JOIN documents d
+                ON (d.id = c.version_parent_id      -- walk to parent
+                 OR d.version_parent_id = c.id)     -- walk to children
              WHERE d.tenant_id = $2 AND c.depth < $3
         )
         SELECT DISTINCT id, version_number, approval_status,
