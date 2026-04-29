@@ -41,7 +41,10 @@ from auth.jwt_utils import get_current_user
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
 
-logging.basicConfig(level=logging.INFO)
+from services.observability import setup_observability  # noqa: E402
+
+# Note: structlog is configured inside setup_observability, called below
+# after FastAPI app is constructed. Until then, use stdlib root logger.
 log = logging.getLogger("aminra.api")
 
 # ── Sentry (optional) ─────────────────────────────────────────────────────────
@@ -78,10 +81,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["authorization", "content-type"],
+    allow_headers=["authorization", "content-type", "x-request-id"],
     allow_credentials=True,
+    expose_headers=["x-request-id"],
     max_age=3600,
 )
+
+# Observability: structlog + request-id + Prometheus /metrics
+setup_observability(app)
 
 from fastapi.responses import JSONResponse
 

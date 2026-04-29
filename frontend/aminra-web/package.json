@@ -17,6 +17,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.50.0",
     "@xyflow/react": "^12.10.2",
     "axios": "^1.14.0",
     "docxtemplater": "^3.50.0",

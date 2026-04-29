@@ -53,8 +53,11 @@ py-solc-x>=2.0.0             # Solidity compiler binding
 eth-account>=0.13.0          # wallet + signing
 opentimestamps-client>=0.7.0 # Bitcoin mega-anchor via calendar servers (free)
 
-# Error tracking
+# Error tracking + observability
 sentry-sdk[fastapi]>=2.0.0
+prometheus-client>=0.20.0    # /metrics exposition
+starlette-prometheus>=0.10.0 # ASGI middleware: HTTP histogram + counter per route
+structlog>=24.1.0            # structured JSON logging with bound context
 qrcode[pil]
 reportlab
 
