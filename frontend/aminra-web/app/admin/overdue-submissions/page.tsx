@@ -57,7 +57,7 @@ export default function OverdueSubmissionsPage() {
     <div className="max-w-7xl mx-auto px-4 py-8" data-page>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>
+          <h1 className="text-2xl font-bold" style={{ color: '#0A1F44' }}>
             Hồ sơ quá hạn (escalation)
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -66,7 +66,7 @@ export default function OverdueSubmissionsPage() {
               : 'Không có hồ sơ nào quá hạn'}
           </p>
         </div>
-        <Link href="/admin" className="text-sm font-medium" style={{ color: '#0F5132' }}>
+        <Link href="/admin" className="text-sm font-medium" style={{ color: '#0A1F44' }}>
           ← Quay lại Admin
         </Link>
       </div>
@@ -87,13 +87,13 @@ export default function OverdueSubmissionsPage() {
       {loading && <p className="text-sm" style={{ color: '#94A3B8' }}>Đang tải...</p>}
 
       {!loading && items.length === 0 && token && !error && (
-        <div className="bg-[#E8F5EF] border border-[#E8F5EF] rounded-2xl p-8 text-center"
-          style={{ color: '#0A3622' }}>
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#E8F5EF] grid place-items-center">
+        <div className="bg-[#DCE3F0] border border-[#DCE3F0] rounded-2xl p-8 text-center"
+          style={{ color: '#0A1F44' }}>
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#DCE3F0] grid place-items-center">
             <span className="text-xl">✓</span>
           </div>
           <p className="font-semibold">Không có hồ sơ nào quá hạn</p>
-          <p className="text-xs mt-1" style={{ color: '#198754' }}>
+          <p className="text-xs mt-1" style={{ color: '#102A5C' }}>
             Tất cả tổ chức cấp đang xử lý hồ sơ đúng SLA.
           </p>
         </div>
@@ -115,7 +115,7 @@ export default function OverdueSubmissionsPage() {
               {items.map(it => (
                 <tr key={it.submission_id} className="border-t" style={{ borderColor: '#F1F5F9' }}>
                   <td className="px-4 py-3">
-                    <div className="font-medium" style={{ color: '#0F5132' }}>
+                    <div className="font-medium" style={{ color: '#0A1F44' }}>
                       {it.company_name || <span className="italic" style={{ color: '#94A3B8' }}>Chưa rõ</span>}
                     </div>
                     <div className="font-mono text-[10px] mt-0.5" style={{ color: '#94A3B8' }}>
@@ -123,11 +123,11 @@ export default function OverdueSubmissionsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-xs" style={{ color: '#0F5132' }}>
+                    <div className="font-medium text-xs" style={{ color: '#0A1F44' }}>
                       {it.provider_name || <span className="italic" style={{ color: '#94A3B8' }}>Chưa rõ</span>}
                     </div>
                     {it.provider_email && (
-                      <a href={`mailto:${it.provider_email}`} className="text-[11px] underline" style={{ color: '#0F5132' }}>
+                      <a href={`mailto:${it.provider_email}`} className="text-[11px] underline" style={{ color: '#0A1F44' }}>
                         {it.provider_email}
                       </a>
                     )}

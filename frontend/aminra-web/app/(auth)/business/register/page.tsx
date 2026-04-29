@@ -55,7 +55,7 @@ export default function BusinessRegisterPage() {
   };
 
   const inputStyle = {
-    background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132',
+    background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44',
   };
   const inputClass = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all";
 
@@ -64,11 +64,11 @@ export default function BusinessRegisterPage() {
       {/* Header */}
       <div className="text-center mb-8 animate-section">
         <div className="inline-grid place-items-center w-16 h-16 rounded-2xl mb-4"
-          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,81,50,0.12)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(10,31,68,0.12)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.svg" alt="AMINRA" className="w-11 h-11" />
+          <img src="/aminra-mark.png" alt="AMINRA" className="w-11 h-11 object-contain" />
         </div>
-        <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Đăng ký doanh nghiệp</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#0A1F44' }}>Đăng ký doanh nghiệp</h1>
         <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
           Bắt đầu hành trình chứng nhận Halal cho doanh nghiệp của bạn
         </p>
@@ -82,7 +82,7 @@ export default function BusinessRegisterPage() {
             <input required value={form.company_name} onChange={set('company_name')}
               placeholder="Công ty TNHH ABC"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
@@ -93,7 +93,7 @@ export default function BusinessRegisterPage() {
             <input value={form.company_code} onChange={set('company_code')}
               placeholder="0123456789 (tuỳ chọn)"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
@@ -102,7 +102,7 @@ export default function BusinessRegisterPage() {
             <input type="email" required value={form.email} onChange={set('email')}
               placeholder="email@congtycua.com"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
@@ -113,7 +113,7 @@ export default function BusinessRegisterPage() {
                 placeholder="••••••••••"
                 minLength={10}
                 className={inputClass} style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = '#0F5132')}
+                onFocus={e => (e.target.style.borderColor = '#0A1F44')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
               <p className="text-xs mt-1.5" style={{ color: '#94A3B8' }}>
                 Tối thiểu 10 ký tự, có chữ hoa, chữ thường và số.
@@ -124,7 +124,7 @@ export default function BusinessRegisterPage() {
               <input type="password" required value={form.confirm_password} onChange={set('confirm_password')}
                 placeholder="Nhập lại mật khẩu"
                 className={inputClass} style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = '#0F5132')}
+                onFocus={e => (e.target.style.borderColor = '#0A1F44')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
             </div>
           </div>
@@ -138,9 +138,9 @@ export default function BusinessRegisterPage() {
 
           <button
             type="submit" disabled={loading}
-            className="w-full py-3 rounded-xl font-semibold text-sm transition-all mt-2"
+            className="btn-lift w-full py-3 rounded-xl font-semibold text-sm mt-2"
             style={{
-              background: loading ? '#E2E8F0' : '#0F5132',
+              background: loading ? '#E2E8F0' : '#0A1F44',
               color: loading ? '#6B7280' : 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
             }}
@@ -152,7 +152,7 @@ export default function BusinessRegisterPage() {
         <div className="mt-6 pt-5 text-center" style={{ borderTop: '1px solid #E2E8F0' }}>
           <p className="text-sm" style={{ color: '#6B7280' }}>
             Đã có tài khoản?{' '}
-            <Link href="/business/login" className="inline-flex items-center min-h-[32px] font-medium transition-colors" style={{ color: '#0F5132' }}>
+            <Link href="/business/login" className="inline-flex items-center min-h-[32px] font-medium transition-colors" style={{ color: '#0A1F44' }}>
               Đăng nhập
             </Link>
           </p>

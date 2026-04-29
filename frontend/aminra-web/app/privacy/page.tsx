@@ -11,8 +11,8 @@ export default function PrivacyPage() {
   return (
     <article className="max-w-3xl mx-auto px-6 py-12 prose prose-slate" data-page>
       <header className="mb-8">
-        <Link href="/" className="inline-block text-sm py-2 -my-2" style={{ color: '#0F5132' }}>← Về trang chủ</Link>
-        <h1 className="text-3xl font-bold mt-4" style={{ color: '#0F5132' }}>
+        <Link href="/" className="inline-block text-sm py-2 -my-2" style={{ color: '#0A1F44' }}>← Về trang chủ</Link>
+        <h1 className="text-3xl font-bold mt-4" style={{ color: '#0A1F44' }}>
           Chính sách bảo mật
         </h1>
         <p className="text-sm mt-2" style={{ color: '#6B7280' }}>
@@ -95,13 +95,13 @@ export default function PrivacyPage() {
           Quyền truy cập + xuất dữ liệu + xoá tài khoản đã được tự động hoá tại{' '}
           <a href="/settings/data-export"
              className="inline-block py-1.5 -my-1.5 underline"
-             style={{ color: '#0F5132' }}>
+             style={{ color: '#0A1F44' }}>
             Cài đặt → Quyền dữ liệu cá nhân
           </a>.
           Cho các yêu cầu khác, gửi email tới{' '}
           <a href="mailto:privacy@aminra.vn"
              className="inline-block py-1.5 -my-1.5 underline"
-             style={{ color: '#0F5132' }}>
+             style={{ color: '#0A1F44' }}>
             privacy@aminra.vn
           </a>.
           Chúng tôi cam kết phản hồi trong vòng 30 ngày (PDPL: 72 giờ cho yêu cầu khẩn).
@@ -140,7 +140,7 @@ export default function PrivacyPage() {
             Email:{" "}
             <a href="mailto:privacy@aminra.vn"
                className="inline-block py-1.5 -my-1.5 underline"
-               style={{ color: '#0F5132' }}>
+               style={{ color: '#0A1F44' }}>
               privacy@aminra.vn
             </a>
           </li>
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
 
       <footer className="mt-12 pt-6 border-t text-sm" style={{ borderColor: '#E2E8F0', color: '#94A3B8' }}>
         Xem thêm:{' '}
-        <Link href="/terms" className="inline-flex items-center min-h-[32px] underline" style={{ color: '#0F5132' }}>Điều khoản dịch vụ</Link>
+        <Link href="/terms" className="inline-flex items-center min-h-[32px] underline" style={{ color: '#0A1F44' }}>Điều khoản dịch vụ</Link>
       </footer>
     </article>
   );
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-bold mb-3" style={{ color: '#0F5132' }}>{title}</h2>
+      <h2 className="text-xl font-bold mb-3" style={{ color: '#0A1F44' }}>{title}</h2>
       <div className="text-sm leading-relaxed" style={{ color: '#374151' }}>{children}</div>
     </section>
   );

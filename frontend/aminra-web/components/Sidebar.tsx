@@ -56,9 +56,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
     },
     ...(user?.role === 'business' ? [{
-      label: 'Tự đánh giá', href: '/self-assessment',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-    }, {
       label: 'Tài liệu', href: '/documents',
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
     }, {
@@ -105,7 +102,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
   return (
     <aside className="w-64 min-h-screen flex flex-col overflow-hidden"
-      style={{ background: '#0A3622', borderRight: '1px solid #334155' }}>
+      style={{ background: '#0A1F44', borderRight: '1px solid #334155' }}>
 
       {/* ── Top: AMINRA Logo (not logged in) OR Company Avatar (logged in) ── */}
       {!isAuthenticated && (
@@ -114,11 +111,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <div className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
               style={{ background: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/aminra-mark.svg" alt="AMINRA" className="w-7 h-7" />
+              <img src="/aminra-mark.png" alt="" className="w-7 h-7 object-contain" />
             </div>
-            <div>
-              <h1 className="text-base font-bold tracking-wider text-white">AMINRA</h1>
-              <p className="text-xs" style={{ color: '#D4AF37' }}>Halal Integrity, Digital Trust</p>
+            <div className="flex flex-col gap-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/aminra-wordmark-white.png" alt="AMINRA" className="h-4 object-contain self-start" />
             </div>
           </div>
         </div>
@@ -131,7 +128,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all hover:bg-white/5"
               style={{ border: '1px solid transparent' }}>
               <div className="w-9 h-9 rounded-full grid place-items-center flex-shrink-0 overflow-hidden"
-                style={{ background: '#0F5132', boxShadow: '0 0 0 2px #334155' }}>
+                style={{ background: '#0A1F44', boxShadow: '0 0 0 2px #334155' }}>
                 {logoUrl ? (
                   <img src={logoUrl} alt="" className="w-full h-full object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -153,7 +150,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 style={{ background: '#263548', border: '1px solid #334155' }}>
                 <div className="px-4 py-2" style={{ borderBottom: '1px solid #334155' }}>
                   <span className="text-xs font-medium px-2 py-0.5 rounded"
-                    style={{ background: 'rgba(15,81,50,0.15)', color: '#198754' }}>
+                    style={{ background: 'rgba(10,31,68,0.15)', color: '#102A5C' }}>
                     {user.role === 'business' ? (user.is_owner ? 'Chủ tài khoản' : 'Thành viên') : 'Tổ chức'}
                   </span>
                 </div>
@@ -191,30 +188,31 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* ── Admin logged in (no user) ── */}
       {!isAuthenticated && isAdmin && (
         <div className="px-3 py-3" style={{ borderBottom: '1px solid #334155' }}>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)' }}>
-            <span style={{ color: '#198754', fontSize: 10 }}>●</span>
-            <span className="text-xs font-medium" style={{ color: '#198754' }}>Admin</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(10,31,68,0.08)', border: '1px solid rgba(10,31,68,0.2)' }}>
+            <span style={{ color: '#102A5C', fontSize: 10 }}>●</span>
+            <span className="text-xs font-medium" style={{ color: '#102A5C' }}>Admin</span>
           </div>
         </div>
       )}
 
       {/* ── Navigation ── */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item, i) => (
-          <Link key={item.href} href={item.href}
-            className={`animate-nav-item grid items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${pathname === item.href
-              ? 'bg-[#0F5132] text-white shadow-md'
-              : 'text-slate-300 hover:bg-white/5 hover:text-white'
-            }`}
-            style={{ gridTemplateColumns: '1.25rem 1fr', gap: '0.625rem', animationDelay: `${i * 0.04}s` }}
-            onClick={onClose}>
-            {pathname === item.href && (
-              <span className="nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r bg-[#D4AF37]" />
-            )}
-            <div className={`transition-transform duration-200 ${pathname === item.href ? 'text-white scale-110' : 'text-[#D4AF37]'}`}>{item.icon}</div>
-            <span className="font-medium text-sm">{item.label}</span>
-          </Link>
-        ))}
+        {navItems.map((item, i) => {
+          const active = pathname === item.href;
+          return (
+            <Link key={item.href} href={item.href}
+              className={`nav-link animate-nav-item grid items-center px-3 py-2.5 rounded-lg ${active
+                ? 'is-active bg-[#0A1F44] text-white shadow-md'
+                : 'text-slate-300 hover:bg-white/5 hover:text-white'
+              }`}
+              style={{ gridTemplateColumns: '1.25rem 1fr', gap: '0.625rem', animationDelay: `${i * 0.04}s` }}
+              onClick={onClose}>
+              <span className="nav-active-bar" aria-hidden="true" />
+              <div className={`transition-transform duration-200 ${active ? 'text-white scale-110' : 'text-[#C9A24A]'}`}>{item.icon}</div>
+              <span className="font-medium text-sm">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* ── Notifications ── */}
@@ -238,22 +236,22 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           ) : (
             <>
               <Link href="/business/login" onClick={onClose}
-                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0F5132]/20 hover:text-white transition-colors">
-                <svg className="w-5 h-5" style={{ color: '#198754' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0A1F44]/20 hover:text-white transition-colors">
+                <svg className="w-5 h-5" style={{ color: '#102A5C' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
                 Đăng nhập Doanh nghiệp
               </Link>
               <Link href="/provider/login" onClick={onClose}
-                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0F5132]/20 hover:text-white transition-colors">
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0A1F44]/20 hover:text-white transition-colors">
                 <svg className="w-5 h-5" style={{ color: '#94A3B8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 Đăng nhập Tổ chức
               </Link>
               <button onClick={() => setShowLogin(true)}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0F5132]/20 hover:text-white transition-colors">
-                <svg className="w-5 h-5 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0A1F44]/20 hover:text-white transition-colors">
+                <svg className="w-5 h-5 text-[#C9A24A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Đăng nhập Admin

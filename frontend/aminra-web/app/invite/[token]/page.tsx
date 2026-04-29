@@ -59,43 +59,43 @@ export default function InviteAcceptPage({ params }: { params: Promise<{ token: 
   };
 
   if (loading) return (
-    <div className="min-h-screen grid place-items-center" style={{ background: '#F7F1E6' }}>
+    <div className="min-h-screen grid place-items-center" style={{ background: '#F5F1E8' }}>
       <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F7F1E6' }}>
+    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F5F1E8' }}>
       <div className="max-w-md text-center">
         <div className="w-16 h-16 rounded-full grid place-items-center mx-auto mb-4" style={{ background: '#FEF2F2' }}>
           <svg className="w-8 h-8" style={{ color: '#DC2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold mb-2" style={{ color: '#0F5132' }}>Không thể truy cập</h1>
+        <h1 className="text-xl font-bold mb-2" style={{ color: '#0A1F44' }}>Không thể truy cập</h1>
         <p className="text-sm" style={{ color: '#6B7280' }}>{error}</p>
       </div>
     </div>
   );
 
   if (success) return (
-    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F7F1E6' }}>
+    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F5F1E8' }}>
       <div className="max-w-md text-center">
-        <div className="w-16 h-16 rounded-full grid place-items-center mx-auto mb-4" style={{ background: '#E8F5EF' }}>
-          <svg className="w-8 h-8" style={{ color: '#198754' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-16 h-16 rounded-full grid place-items-center mx-auto mb-4" style={{ background: '#DCE3F0' }}>
+          <svg className="w-8 h-8" style={{ color: '#102A5C' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold mb-2" style={{ color: '#0F5132' }}>Tham gia thành công!</h1>
+        <h1 className="text-xl font-bold mb-2" style={{ color: '#0A1F44' }}>Tham gia thành công!</h1>
         <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
           Bạn đã gia nhập <strong>{info?.business_name}</strong>. Đăng nhập để bắt đầu.
         </p>
         <Link href="/business/login"
-          className="inline-block px-6 py-3 rounded-xl font-semibold text-white" style={{ background: '#0F5132' }}>
+          className="inline-block px-6 py-3 rounded-xl font-semibold text-white" style={{ background: '#0A1F44' }}>
           Đăng nhập ngay
         </Link>
       </div>
@@ -104,18 +104,18 @@ export default function InviteAcceptPage({ params }: { params: Promise<{ token: 
 
   if (!info) return null;
 
-  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' };
 
   return (
-    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F7F1E6' }} data-page>
+    <div className="min-h-screen grid place-items-center p-6" style={{ background: '#F5F1E8' }} data-page>
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8 animate-section">
-          <div className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-4" style={{ background: '#0F5132' }}>
+          <div className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-4" style={{ background: '#0A1F44' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-9 h-9" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-9 h-9" />
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Lời mời tham gia</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#0A1F44' }}>Lời mời tham gia</h1>
           <p className="text-sm mt-2" style={{ color: '#6B7280' }}>
             <strong style={{ color: '#374151' }}>{info.business_name}</strong> mời bạn tham gia tổ chức trên AMINRA
           </p>
@@ -126,18 +126,18 @@ export default function InviteAcceptPage({ params }: { params: Promise<{ token: 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span style={{ color: '#6B7280' }}>Email</span>
-              <span className="font-medium" style={{ color: '#0F5132' }}>{info.email}</span>
+              <span className="font-medium" style={{ color: '#0A1F44' }}>{info.email}</span>
             </div>
             {info.role && (
               <div className="flex justify-between">
                 <span style={{ color: '#6B7280' }}>Vai trò</span>
-                <span className="font-medium" style={{ color: '#0F5132' }}>{info.role}</span>
+                <span className="font-medium" style={{ color: '#0A1F44' }}>{info.role}</span>
               </div>
             )}
             {info.department && (
               <div className="flex justify-between">
                 <span style={{ color: '#6B7280' }}>Phòng ban</span>
-                <span className="font-medium" style={{ color: '#0F5132' }}>{info.department}</span>
+                <span className="font-medium" style={{ color: '#0A1F44' }}>{info.department}</span>
               </div>
             )}
           </div>
@@ -173,7 +173,7 @@ export default function InviteAcceptPage({ params }: { params: Promise<{ token: 
 
             <button type="submit" disabled={submitting || !password || !confirmPw}
               className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all"
-              style={{ background: (!password || !confirmPw) ? '#E2E8F0' : '#0F5132', color: (!password || !confirmPw) ? '#9CA3AF' : '#fff' }}>
+              style={{ background: (!password || !confirmPw) ? '#E2E8F0' : '#0A1F44', color: (!password || !confirmPw) ? '#9CA3AF' : '#fff' }}>
               {submitting ? 'Đang xử lý...' : 'Tham gia tổ chức'}
             </button>
           </form>

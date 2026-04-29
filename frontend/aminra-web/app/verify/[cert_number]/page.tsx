@@ -72,16 +72,16 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F1E6' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F1E8' }}>
         <div className="text-center animate-scale-in">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl grid place-items-center" style={{ background: '#0F5132' }}>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl grid place-items-center" style={{ background: '#0A1F44' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-10 h-10" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-10 h-10" />
           </div>
           <div className="flex items-center justify-center gap-2 mt-4">
-            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
           </div>
           <p className="text-sm mt-3" style={{ color: '#6B7280' }}>Đang xác minh chứng nhận...</p>
         </div>
@@ -92,7 +92,7 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
   // Error — not found
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F1E6' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F1E8' }}>
         <div className="text-center animate-scale-in max-w-md px-6">
           <div className="w-20 h-20 mx-auto mb-5 rounded-full grid place-items-center animate-empty-icon"
             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -100,7 +100,7 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold mb-2" style={{ color: '#0F5132' }}>
+          <h1 className="text-xl font-bold mb-2" style={{ color: '#0A1F44' }}>
             Không tìm thấy chứng nhận
           </h1>
           <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -115,16 +115,16 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#F7F1E6' }} data-page>
+    <div className="min-h-screen" style={{ background: '#F5F1E8' }} data-page>
 
       {/* Hero header — green gradient */}
-      <div style={{ background: 'linear-gradient(135deg, #0A3622 0%, #0F5132 50%, #0A9B6C 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0A1F44 0%, #0A1F44 50%, #0A9B6C 100%)' }}>
         <div className="max-w-md mx-auto px-5 py-8 md:py-12">
           <div className="flex items-center gap-3 mb-6 animate-section">
             <div className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
               style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-7 h-7" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-7 h-7" />
             </div>
             <div>
               <p className="text-white/60 text-xs font-medium tracking-wider uppercase">AMINRA Xác minh chứng nhận</p>
@@ -148,20 +148,20 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
         <div className="rounded-2xl p-6 text-center animate-section"
           style={{
             background: data.valid
-              ? 'linear-gradient(135deg, #E8F5EF, #B7CBB8)'
+              ? 'linear-gradient(135deg, #DCE3F0, #D9B96E)'
               : 'linear-gradient(135deg, #FEF2F2, #FECACA)',
-            border: `1px solid ${data.valid ? 'rgba(15,81,50,0.2)' : 'rgba(220,38,38,0.2)'}`,
+            border: `1px solid ${data.valid ? 'rgba(10,31,68,0.2)' : 'rgba(220,38,38,0.2)'}`,
             boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
           }}>
           {data.valid ? (
             <>
               <div className="w-16 h-16 mx-auto mb-4 rounded-full grid place-items-center"
-                style={{ background: 'rgba(15,81,50,0.15)' }}>
-                <svg className="w-8 h-8" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                style={{ background: 'rgba(10,31,68,0.15)' }}>
+                <svg className="w-8 h-8" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold mb-1" style={{ color: '#0A3622' }}>Chứng nhận hợp lệ</h2>
+              <h2 className="text-xl font-bold mb-1" style={{ color: '#0A1F44' }}>Chứng nhận hợp lệ</h2>
               <p className="text-sm" style={{ color: '#047857' }}>Chứng nhận Halal này đang có hiệu lực</p>
             </>
           ) : (
@@ -195,7 +195,7 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
         <div className="rounded-2xl overflow-hidden animate-section"
           style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <div className="px-5 py-4" style={{ borderBottom: '1px solid #E2E8F0' }}>
-            <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>Thông tin chứng nhận</h3>
+            <h3 className="text-sm font-bold" style={{ color: '#0A1F44' }}>Thông tin chứng nhận</h3>
           </div>
           <div className="divide-y" style={{ borderColor: '#F0F0F0' }}>
             {[
@@ -207,18 +207,18 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
             ].map((row, i) => (
               <div key={i} className={`px-5 py-3 flex items-center justify-between animate-list-item stagger-${Math.min(i + 1, 12)}`}>
                 <span className="text-xs" style={{ color: '#6B7280' }}>{row.label}</span>
-                <span className="text-sm font-medium" style={{ color: '#0F5132' }}>{row.value}</span>
+                <span className="text-sm font-medium" style={{ color: '#0A1F44' }}>{row.value}</span>
               </div>
             ))}
             <div className={`px-5 py-3 flex items-center justify-between animate-list-item stagger-6`}>
               <span className="text-xs" style={{ color: '#6B7280' }}>Trạng thái</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                 style={{
-                  background: data.status === 'active' ? 'rgba(15,81,50,0.12)'
+                  background: data.status === 'active' ? 'rgba(10,31,68,0.12)'
                     : data.status === 'suspended' ? 'rgba(217,119,6,0.12)'
                     : data.status === 'revoked' ? 'rgba(220,38,38,0.12)'
                     : 'rgba(107,114,128,0.12)',
-                  color: data.status === 'active' ? '#0F5132'
+                  color: data.status === 'active' ? '#0A1F44'
                     : data.status === 'suspended' ? '#D97706'
                     : data.status === 'revoked' ? '#DC2626'
                     : '#6B7280',
@@ -241,7 +241,7 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
                 <svg className="w-4 h-4" style={{ color: '#7c3aed' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>
+                <h3 className="text-sm font-bold" style={{ color: '#0A1F44' }}>
                   Blockchain verification
                 </h3>
               </div>
@@ -303,11 +303,11 @@ export function VerifyContent({ cert_number }: { cert_number: string }) {
         {/* Footer */}
         <div className="pt-6 pb-4 text-center animate-section">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg grid place-items-center" style={{ background: '#0F5132' }}>
+            <div className="w-6 h-6 rounded-lg grid place-items-center" style={{ background: '#0A1F44' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-4 h-4" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold" style={{ color: '#0F5132' }}>AMINRA</span>
+            <span className="text-xs font-bold" style={{ color: '#0A1F44' }}>AMINRA</span>
           </div>
           <p className="text-xs" style={{ color: '#94A3B8' }}>Powered by AMINRA</p>
           <p className="text-xs mt-1" style={{ color: '#CBD5E1' }}>

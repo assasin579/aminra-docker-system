@@ -204,9 +204,9 @@ export default function AuditTemplatesPage() {
   if (loading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
       </div>
     </div>
   );
@@ -215,23 +215,23 @@ export default function AuditTemplatesPage() {
     <div className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden" data-page>
       {/* Header */}
       <div className="rounded-2xl p-6 mb-6 animate-section"
-        style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+        style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
         <div className="grid items-center" style={{ gridTemplateColumns: '1fr auto' }}>
           <div className="grid grid-flow-col items-center gap-3 justify-start">
             <div className="w-10 h-10 rounded-xl grid place-items-center"
-              style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
-              <svg className="w-5 h-5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              style={{ background: 'rgba(10,31,68,0.12)', border: '1px solid rgba(10,31,68,0.25)' }}>
+              <svg className="w-5 h-5" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Checklist Template</h1>
+              <h1 className="text-xl font-bold" style={{ color: '#0A1F44' }}>Checklist Template</h1>
               <p className="text-sm" style={{ color: '#6B7280' }}>{templates.length} template · {user.company_name}</p>
             </div>
           </div>
           <button onClick={openCreate}
             className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-            style={{ gridTemplateColumns: 'auto 1fr', background: '#0F5132', boxShadow: '0 4px 12px rgba(15,81,50,0.3)' }}>
+            style={{ gridTemplateColumns: 'auto 1fr', background: '#0A1F44', boxShadow: '0 4px 12px rgba(10,31,68,0.3)' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
             </svg>
@@ -244,18 +244,18 @@ export default function AuditTemplatesPage() {
       <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
         {fetching ? (
           <div className="space-y-3">
-            {[1, 2].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#F7F1E6', opacity: 1 - i * 0.2 }} />)}
+            {[1, 2].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#F5F1E8', opacity: 1 - i * 0.2 }} />)}
           </div>
         ) : templates.length === 0 ? (
-          <div className="rounded-2xl p-12 text-center animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+          <div className="rounded-2xl p-12 text-center animate-section" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
             <svg className="w-14 h-14 mx-auto mb-4" style={{ color: '#D1D5DB' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
-            <p className="font-semibold mb-2" style={{ color: '#0F5132' }}>Ch\u01b0a c\u00f3 template n\u00e0o</p>
+            <p className="font-semibold mb-2" style={{ color: '#0A1F44' }}>Ch\u01b0a c\u00f3 template n\u00e0o</p>
             <p className="text-sm mb-5" style={{ color: '#6B7280' }}>T\u1ea1o template checklist \u0111\u1ec3 s\u1eed d\u1ee5ng trong c\u00e1c \u0111\u1ee3t \u0111\u00e1nh gi\u00e1</p>
             <button onClick={handleSeedDefault} disabled={seeding}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-              style={{ background: seeding ? '#E2E8F0' : '#0F5132', color: seeding ? '#6B7280' : 'white', boxShadow: seeding ? 'none' : '0 4px 12px rgba(15,81,50,0.3)' }}>
+              style={{ background: seeding ? '#E2E8F0' : '#0A1F44', color: seeding ? '#6B7280' : 'white', boxShadow: seeding ? 'none' : '0 4px 12px rgba(10,31,68,0.3)' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
@@ -272,17 +272,17 @@ export default function AuditTemplatesPage() {
                 <div className="grid items-start gap-3" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
                   {/* Icon */}
                   <div className="w-10 h-10 rounded-xl grid place-items-center"
-                    style={{ background: 'rgba(15,81,50,0.1)', border: '1px solid rgba(15,81,50,0.2)' }}>
-                    <svg className="w-5 h-5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    style={{ background: 'rgba(10,31,68,0.1)', border: '1px solid rgba(10,31,68,0.2)' }}>
+                    <svg className="w-5 h-5" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                   </div>
                   {/* Info */}
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>{t.name}</p>
+                    <p className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{t.name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="px-2.5 py-0.5 rounded-lg text-xs font-medium"
-                        style={{ background: 'rgba(15,81,50,0.08)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.2)' }}>
+                        style={{ background: 'rgba(10,31,68,0.08)', color: '#0A1F44', border: '1px solid rgba(10,31,68,0.2)' }}>
                         {t.standard}
                       </span>
                       <span className="text-xs" style={{ color: '#6B7280' }}>{itemCount} ti\u00eau ch\u00ed</span>
@@ -292,7 +292,7 @@ export default function AuditTemplatesPage() {
                       <div className="flex items-center gap-1 mt-2 flex-wrap">
                         {categories.slice(0, 5).map(cat => (
                           <span key={cat} className="px-2 py-0.5 rounded text-xs"
-                            style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
+                            style={{ background: '#F5F1E8', color: '#6B7280', border: '1px solid #E2E8F0' }}>
                             {cat}
                           </span>
                         ))}
@@ -341,7 +341,7 @@ export default function AuditTemplatesPage() {
 
             {/* Modal Header */}
             <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>
+              <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>
                 {editingId ? 'Ch\u1ec9nh s\u1eeda Template' : 'T\u1ea1o Template m\u1edbi'}
               </h3>
               <button onClick={() => setShowModal(false)}
@@ -361,7 +361,7 @@ export default function AuditTemplatesPage() {
                       onChange={e => setFormName(e.target.value)}
                       placeholder="VD: Checklist MS 1500"
                       className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                      style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                   </div>
                   <div>
                     <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Ti\u00eau chu\u1ea9n *</label>
@@ -369,7 +369,7 @@ export default function AuditTemplatesPage() {
                       onChange={e => setFormStandard(e.target.value)}
                       placeholder="VD: MS 1500:2019"
                       className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                      style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                   </div>
                 </div>
 
@@ -384,7 +384,7 @@ export default function AuditTemplatesPage() {
                     </label>
                     <button type="button" onClick={addItem}
                       className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-all hover:scale-105"
-                      style={{ background: '#E8F5EF', color: '#0F5132', border: '1px solid #B7CBB8' }}>
+                      style={{ background: '#DCE3F0', color: '#0A1F44', border: '1px solid #D9B96E' }}>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                       </svg>
@@ -408,11 +408,11 @@ export default function AuditTemplatesPage() {
                                 onChange={e => updateItem(idx, 'category', e.target.value)}
                                 placeholder="Danh m\u1ee5c (VD: Nguy\u00ean li\u1ec7u)"
                                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                               <select value={item.severity}
                                 onChange={e => updateItem(idx, 'severity', e.target.value)}
                                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}>
+                                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}>
                                 <option value="critical">Nghi\u00eam tr\u1ecdng (Critical)</option>
                                 <option value="major">Ch\u00ednh (Major)</option>
                                 <option value="minor">Ph\u1ee5 (Minor)</option>
@@ -423,7 +423,7 @@ export default function AuditTemplatesPage() {
                               placeholder="Ti\u00eau ch\u00ed \u0111\u00e1nh gi\u00e1..."
                               rows={2}
                               className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
-                              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                           </div>
                           {/* Delete item */}
                           {formItems.length > 1 && (
@@ -453,7 +453,7 @@ export default function AuditTemplatesPage() {
                 </button>
                 <button type="submit" disabled={saving}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-                  style={{ background: saving ? '#E2E8F0' : '#0F5132', color: saving ? '#6B7280' : 'white', boxShadow: saving ? 'none' : '0 4px 12px rgba(15,81,50,0.3)' }}>
+                  style={{ background: saving ? '#E2E8F0' : '#0A1F44', color: saving ? '#6B7280' : 'white', boxShadow: saving ? 'none' : '0 4px 12px rgba(10,31,68,0.3)' }}>
                   {saving ? '\u0110ang l\u01b0u...' : (editingId ? 'C\u1eadp nh\u1eadt' : 'T\u1ea1o Template')}
                 </button>
               </div>

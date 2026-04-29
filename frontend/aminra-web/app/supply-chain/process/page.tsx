@@ -39,25 +39,25 @@ function StepNode({ data, selected }: { data: { label: string; nodeType: string;
     <div className="rounded-xl px-4 py-3 min-w-[160px] transition-shadow"
       style={{
         background: isMain ? '#FFFFFF' : '#FFFFFF',
-        border: `2px solid ${selected ? '#0F5132' : isMain ? '#E2E8F0' : '#F7F1E6'}`,
-        boxShadow: selected ? '0 0 0 3px rgba(15,81,50,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
+        border: `2px solid ${selected ? '#0A1F44' : isMain ? '#E2E8F0' : '#F5F1E8'}`,
+        boxShadow: selected ? '0 0 0 3px rgba(10,31,68,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
       }}>
-      <Handle type="target" position={Position.Top} style={{ background: '#0F5132', width: 8, height: 8 }} />
+      <Handle type="target" position={Position.Top} style={{ background: '#0A1F44', width: 8, height: 8 }} />
       <div className="flex items-center gap-2">
         {data.order != null && (
           <span className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold text-white flex-shrink-0"
-            style={{ background: isMain ? '#0F5132' : '#9CA3AF' }}>
+            style={{ background: isMain ? '#0A1F44' : '#9CA3AF' }}>
             {data.order}
           </span>
         )}
         <div>
-          <span className="text-xs font-bold" style={{ color: '#0F5132' }}>{data.label}</span>
+          <span className="text-xs font-bold" style={{ color: '#0A1F44' }}>{data.label}</span>
           <div className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
             {isMain ? 'Bước chính' : 'Bước phụ'}
           </div>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} style={{ background: '#0F5132', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Bottom} style={{ background: '#0A1F44', width: 8, height: 8 }} />
     </div>
   );
 }
@@ -79,7 +79,7 @@ function flowToReact(nodes: FlowNode[], edges: FlowEdge[]): { rfNodes: Node[]; r
     target: e.to,
     type: 'smoothstep',
     animated: e.type === 'parallel',
-    style: { stroke: e.type === 'parallel' ? '#B45309' : '#0F5132', strokeWidth: 2 },
+    style: { stroke: e.type === 'parallel' ? '#B45309' : '#0A1F44', strokeWidth: 2 },
     label: e.type === 'parallel' ? 'song song' : undefined,
   }));
   return { rfNodes, rfEdges };
@@ -249,7 +249,7 @@ export default function ProcessPage() {
 
   const onConnect = useCallback((conn: Connection) => {
     setEdges(eds => addEdge({
-      ...conn, type: 'smoothstep', style: { stroke: '#0F5132', strokeWidth: 2 },
+      ...conn, type: 'smoothstep', style: { stroke: '#0A1F44', strokeWidth: 2 },
     }, eds));
   }, [setEdges]);
 
@@ -278,17 +278,17 @@ export default function ProcessPage() {
 
   if (authLoading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
-      <div className="w-8 h-8 border-2 border-[#0F5132] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#0A1F44] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
-  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' };
 
   return (
     <div data-page className="flex flex-col flex-1 lg:min-h-0 w-full overflow-hidden">
 
       {/* Header */}
-      <div className="rounded-2xl p-5 mb-4 animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+      <div className="rounded-2xl p-5 mb-4 animate-section" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl grid place-items-center"
@@ -298,7 +298,7 @@ export default function ProcessPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold" style={{ color: '#0F5132' }}>Quy trình sản xuất</h1>
+              <h1 className="text-lg font-bold" style={{ color: '#0A1F44' }}>Quy trình sản xuất</h1>
               <p className="text-xs" style={{ color: '#6B7280' }}>
                 {processes.length} quy trình {activeId && `· Đang sửa: ${processName}`}
               </p>
@@ -313,14 +313,14 @@ export default function ProcessPage() {
                 </button>
                 <button onClick={saveProcess} disabled={saving}
                   className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all"
-                  style={{ background: saving ? '#E2E8F0' : '#0F5132' }}>
+                  style={{ background: saving ? '#E2E8F0' : '#0A1F44' }}>
                   {saving ? 'Đang lưu...' : saved ? 'Đã lưu' : 'Lưu quy trình'}
                 </button>
               </>
             )}
             <button onClick={() => setShowCreate(true)}
               className="px-4 py-2 rounded-lg text-xs font-semibold text-white"
-              style={{ background: '#0F5132' }}>
+              style={{ background: '#0A1F44' }}>
               + Tạo mới
             </button>
           </div>
@@ -334,9 +334,9 @@ export default function ProcessPage() {
         <div className="w-56 flex-shrink-0 overflow-y-auto space-y-1.5 pr-1">
           {listLoading ? (
             <div className="py-8 flex items-center justify-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
             </div>
           ) : processes.length === 0 ? (
             <div className="py-8 text-center text-xs animate-scale-in" style={{ color: '#6B7280' }}>Chưa có quy trình</div>
@@ -344,9 +344,9 @@ export default function ProcessPage() {
             processes.map((p, idx) => (
               <div key={p.id} className={`rounded-lg p-3 cursor-pointer transition-all animate-list-item stagger-${Math.min(idx + 1, 12)}`}
                 style={{
-                  background: activeId === p.id ? '#0F5132' : '#FFFFFF',
-                  color: activeId === p.id ? '#FFFFFF' : '#0F5132',
-                  border: `1px solid ${activeId === p.id ? '#0F5132' : '#E2E8F0'}`,
+                  background: activeId === p.id ? '#0A1F44' : '#FFFFFF',
+                  color: activeId === p.id ? '#FFFFFF' : '#0A1F44',
+                  border: `1px solid ${activeId === p.id ? '#0A1F44' : '#E2E8F0'}`,
                 }}
                 onClick={() => loadProcess(p)}>
                 <p className="text-sm font-medium truncate">{p.name}</p>
@@ -388,14 +388,14 @@ export default function ProcessPage() {
               <Background color="#E2E8F0" gap={20} />
               <Controls position="bottom-left" />
               <MiniMap
-                nodeColor={() => '#0F5132'}
+                nodeColor={() => '#0A1F44'}
                 style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}
               />
               <Panel position="top-left">
                 <div className="flex gap-2">
                   <button onClick={() => addNode('main')}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow"
-                    style={{ background: '#0F5132' }}>
+                    style={{ background: '#0A1F44' }}>
                     + Bước chính
                   </button>
                   <button onClick={() => addNode('sub')}
@@ -421,7 +421,7 @@ export default function ProcessPage() {
           <div className="w-72 flex-shrink-0 overflow-y-auto rounded-xl p-4 space-y-3"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold" style={{ color: '#0F5132' }}>Chi tiết bước</h3>
+              <h3 className="text-sm font-bold" style={{ color: '#0A1F44' }}>Chi tiết bước</h3>
               <button onClick={() => setSelectedNode(null)} className="text-xs" style={{ color: '#9CA3AF' }}>✕</button>
             </div>
             {[
@@ -463,7 +463,7 @@ export default function ProcessPage() {
                 </div>
               ))}
               <button onClick={() => updateNodeData('checklist', [...(selectedNode.data?.checklist || []), ''])}
-                className="text-xs mt-1" style={{ color: '#0F5132' }}>+ Thêm item</button>
+                className="text-xs mt-1" style={{ color: '#0A1F44' }}>+ Thêm item</button>
             </div>
           </div>
         )}
@@ -475,12 +475,12 @@ export default function ProcessPage() {
           style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowCreate(false)}>
           <div className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }} onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-bold mb-4" style={{ color: '#0F5132' }}>Tạo quy trình mới</h3>
+            <h3 className="text-base font-bold mb-4" style={{ color: '#0A1F44' }}>Tạo quy trình mới</h3>
             <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Tên quy trình"
               className="w-full px-4 py-2.5 rounded-lg text-sm outline-none mb-4" style={inputStyle} autoFocus />
             <button onClick={createProcess} disabled={!newName.trim()}
               className="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
-              style={{ background: !newName.trim() ? '#E2E8F0' : '#0F5132', color: !newName.trim() ? '#9CA3AF' : '#fff' }}>
+              style={{ background: !newName.trim() ? '#E2E8F0' : '#0A1F44', color: !newName.trim() ? '#9CA3AF' : '#fff' }}>
               Tạo
             </button>
           </div>

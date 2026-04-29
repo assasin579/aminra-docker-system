@@ -34,7 +34,7 @@ function daysUntil(iso: string | null) {
 
 function scoreColor(s: number | null) {
   if (s === null) return '#94A3B8';
-  if (s >= 80) return '#0F5132';
+  if (s >= 80) return '#0A1F44';
   if (s >= 60) return '#D97706';
   return '#DC2626';
 }
@@ -66,9 +66,9 @@ export default function PortfolioPage() {
   if (loading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
       </div>
     </div>
   );
@@ -84,16 +84,16 @@ export default function PortfolioPage() {
   return (
     <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
       {/* Header */}
-      <div className="rounded-2xl p-6 mb-6 animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+      <div className="rounded-2xl p-6 mb-6 animate-section" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
-              <svg className="w-5 h-5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: 'rgba(10,31,68,0.12)', border: '1px solid rgba(10,31,68,0.25)' }}>
+              <svg className="w-5 h-5" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Doanh nghiệp</h1>
+              <h1 className="text-xl font-bold" style={{ color: '#0A1F44' }}>Doanh nghiệp</h1>
               <p className="text-sm" style={{ color: '#6B7280' }}>{businesses.length} doanh nghiệp đang quản lý</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function PortfolioPage() {
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 animate-section">
         {[
-          { label: 'Doanh nghiệp', value: businesses.length, color: '#0F5132', bg: '#E8F5EF' },
+          { label: 'Doanh nghiệp', value: businesses.length, color: '#0A1F44', bg: '#DCE3F0' },
           { label: 'Cert đang hoạt động', value: totalCerts, color: '#2563EB', bg: '#DBEAFE' },
           { label: 'Sắp hết hạn', value: totalExpiring, color: '#D97706', bg: '#FEF3C7' },
           { label: 'NCR mở', value: totalNcr, color: '#DC2626', bg: '#FEF2F2' },
@@ -135,7 +135,7 @@ export default function PortfolioPage() {
             <svg className="w-16 h-16 mx-auto mb-4 animate-empty-icon" style={{ color: '#CBD5E1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
             </svg>
-            <p className="font-semibold" style={{ color: '#0F5132' }}>{search ? 'Không tìm thấy' : 'Chưa có doanh nghiệp nào'}</p>
+            <p className="font-semibold" style={{ color: '#0A1F44' }}>{search ? 'Không tìm thấy' : 'Chưa có doanh nghiệp nào'}</p>
             <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Doanh nghiệp sẽ xuất hiện khi gửi hồ sơ hoặc được kiểm định</p>
           </div>
         ) : (
@@ -151,16 +151,16 @@ export default function PortfolioPage() {
                   <div className="flex items-center gap-4">
                     {/* Avatar */}
                     <div className="w-11 h-11 rounded-full grid place-items-center flex-shrink-0 text-sm font-bold"
-                      style={{ background: 'rgba(15,81,50,0.1)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.2)' }}>
+                      style={{ background: 'rgba(10,31,68,0.1)', color: '#0A1F44', border: '1px solid rgba(10,31,68,0.2)' }}>
                       {biz.company_name.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: '#0F5132' }}>{biz.company_name}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: '#0A1F44' }}>{biz.company_name}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         {biz.active_certs > 0 && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: '#E8F5EF', color: '#0F5132' }}>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: '#DCE3F0', color: '#0A1F44' }}>
                             {biz.active_certs} cert
                           </span>
                         )}
@@ -196,11 +196,11 @@ export default function PortfolioPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4">
                       <div>
                         <p className="text-xs" style={{ color: '#94A3B8' }}>Hồ sơ gửi</p>
-                        <p className="text-sm font-bold" style={{ color: '#0F5132' }}>{biz.submission_count}</p>
+                        <p className="text-sm font-bold" style={{ color: '#0A1F44' }}>{biz.submission_count}</p>
                       </div>
                       <div>
                         <p className="text-xs" style={{ color: '#94A3B8' }}>Đã duyệt</p>
-                        <p className="text-sm font-bold" style={{ color: '#0F5132' }}>{biz.approved_count}</p>
+                        <p className="text-sm font-bold" style={{ color: '#0A1F44' }}>{biz.approved_count}</p>
                       </div>
                       <div>
                         <p className="text-xs" style={{ color: '#94A3B8' }}>Kiểm định</p>
@@ -208,7 +208,7 @@ export default function PortfolioPage() {
                       </div>
                       <div>
                         <p className="text-xs" style={{ color: '#94A3B8' }}>Lần kiểm cuối</p>
-                        <p className="text-sm font-bold" style={{ color: '#0F5132' }}>{fmtDate(biz.last_audit)}</p>
+                        <p className="text-sm font-bold" style={{ color: '#0A1F44' }}>{fmtDate(biz.last_audit)}</p>
                       </div>
                     </div>
 
@@ -233,12 +233,12 @@ export default function PortfolioPage() {
                     <div className="flex flex-wrap gap-2">
                       <Link href={`/businesses/${biz.id}`}
                         className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
-                        style={{ background: '#0F5132' }}>
+                        style={{ background: '#0A1F44' }}>
                         Mở thư mục + chấm điểm
                       </Link>
                       <Link href={`/submissions?company=${encodeURIComponent(biz.company_name)}`}
                         className="px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:scale-105"
-                        style={{ background: 'rgba(15,81,50,0.1)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.2)' }}>
+                        style={{ background: 'rgba(10,31,68,0.1)', color: '#0A1F44', border: '1px solid rgba(10,31,68,0.2)' }}>
                         Xem hồ sơ
                       </Link>
                       <Link href={`/audits`}

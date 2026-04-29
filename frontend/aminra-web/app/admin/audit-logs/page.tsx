@@ -103,7 +103,7 @@ export default function AuditLogsPage() {
     <div className="max-w-7xl mx-auto px-4 py-8" data-page>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Nhật ký kiểm toán</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#0A1F44' }}>Nhật ký kiểm toán</h1>
           <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
             Append-only audit trail. Hiển thị {logs.length} / {total} bản ghi.
           </p>
@@ -111,7 +111,7 @@ export default function AuditLogsPage() {
         <Link
           href="/admin"
           className="text-sm font-medium"
-          style={{ color: '#0F5132' }}
+          style={{ color: '#0A1F44' }}
         >
           ← Quay lại Admin
         </Link>
@@ -134,7 +134,7 @@ export default function AuditLogsPage() {
           <button
             type="button" onClick={onResetFilters}
             className="px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ background: '#F1F5F9', color: '#0F5132' }}
+            style={{ background: '#F1F5F9', color: '#0A1F44' }}
           >
             Reset
           </button>
@@ -142,7 +142,7 @@ export default function AuditLogsPage() {
             type="submit" disabled={loading}
             className="px-4 py-2 rounded-lg text-sm font-medium"
             style={{
-              background: loading ? '#94A3B8' : '#0F5132',
+              background: loading ? '#94A3B8' : '#0A1F44',
               color: 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
             }}
@@ -193,7 +193,7 @@ export default function AuditLogsPage() {
                 <td className="px-4 py-3 align-top">
                   {log.user_email ? (
                     <>
-                      <div className="font-medium" style={{ color: '#0F5132' }}>{log.user_email}</div>
+                      <div className="font-medium" style={{ color: '#0A1F44' }}>{log.user_email}</div>
                       {log.user_role && (
                         <div className="text-xs" style={{ color: '#94A3B8' }}>{log.user_role}</div>
                       )}
@@ -203,7 +203,7 @@ export default function AuditLogsPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 align-top">
-                  <code className="px-2 py-1 rounded text-xs" style={{ background: '#FFFFFF', color: '#0F5132' }}>
+                  <code className="px-2 py-1 rounded text-xs" style={{ background: '#FFFFFF', color: '#0A1F44' }}>
                     {log.action}
                   </code>
                 </td>
@@ -220,10 +220,10 @@ export default function AuditLogsPage() {
                     <div className="space-y-1 mb-2">
                       {Object.entries(log.changes).map(([key, [before, after]]) => (
                         <div key={key} className="text-xs">
-                          <span className="font-medium" style={{ color: '#0F5132' }}>{key}:</span>{' '}
+                          <span className="font-medium" style={{ color: '#0A1F44' }}>{key}:</span>{' '}
                           <span style={{ color: '#dc2626' }}>{String(before ?? '∅')}</span>
                           {' → '}
-                          <span style={{ color: '#198754' }}>{String(after ?? '∅')}</span>
+                          <span style={{ color: '#102A5C' }}>{String(after ?? '∅')}</span>
                         </div>
                       ))}
                     </div>
@@ -257,7 +257,7 @@ export default function AuditLogsPage() {
               style={{
                 background: page <= 1 ? '#F1F5F9' : 'white',
                 border: '1px solid #E2E8F0',
-                color: page <= 1 ? '#94A3B8' : '#0F5132',
+                color: page <= 1 ? '#94A3B8' : '#0A1F44',
                 cursor: page <= 1 ? 'not-allowed' : 'pointer',
               }}
             >
@@ -270,7 +270,7 @@ export default function AuditLogsPage() {
               style={{
                 background: page >= totalPages ? '#F1F5F9' : 'white',
                 border: '1px solid #E2E8F0',
-                color: page >= totalPages ? '#94A3B8' : '#0F5132',
+                color: page >= totalPages ? '#94A3B8' : '#0A1F44',
                 cursor: page >= totalPages ? 'not-allowed' : 'pointer',
               }}
             >
@@ -299,7 +299,7 @@ function FilterInput(props: {
         onChange={e => props.onChange(e.target.value)}
         placeholder={props.placeholder}
         className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
       />
     </label>
   );

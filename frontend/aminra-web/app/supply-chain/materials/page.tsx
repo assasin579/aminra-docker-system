@@ -34,7 +34,7 @@ const CATEGORIES = [
 ];
 
 const RISK_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  safe:          { bg: '#E8F5EF', color: '#198754', label: 'An toàn' },
+  safe:          { bg: '#DCE3F0', color: '#102A5C', label: 'An toàn' },
   requires_cert: { bg: '#FFFBEB', color: '#B45309', label: 'Cần chứng nhận' },
   prohibited:    { bg: '#FEF2F2', color: '#DC2626', label: 'Cấm sử dụng' },
   unknown:       { bg: '#F3F4F6', color: '#6B7280', label: 'Chưa xác định' },
@@ -42,7 +42,7 @@ const RISK_COLORS: Record<string, { bg: string; color: string; label: string }> 
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
   pending:   { bg: '#F3F4F6', color: '#6B7280', label: 'Chờ xác minh' },
-  verified:  { bg: '#E8F5EF', color: '#198754', label: 'Đã xác minh' },
+  verified:  { bg: '#DCE3F0', color: '#102A5C', label: 'Đã xác minh' },
   expired:   { bg: '#FEF2F2', color: '#DC2626', label: 'Hết hạn' },
   suspended: { bg: '#FFFBEB', color: '#B45309', label: 'Tạm ngưng' },
 };
@@ -231,11 +231,11 @@ export default function MaterialsPage() {
 
   if (authLoading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
-      <div className="w-8 h-8 border-2 border-[#0F5132] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#0A1F44] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
-  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' };
   const cardStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -244,17 +244,17 @@ export default function MaterialsPage() {
     <div data-page className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden">
 
       {/* Header */}
-      <div className="rounded-2xl p-6 mb-5 animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+      <div className="rounded-2xl p-6 mb-5 animate-section" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl grid place-items-center"
-              style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
-              <svg className="w-5 h-5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              style={{ background: 'rgba(10,31,68,0.12)', border: '1px solid rgba(10,31,68,0.25)' }}>
+              <svg className="w-5 h-5" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Nguyên vật liệu đầu vào</h1>
+              <h1 className="text-xl font-bold" style={{ color: '#0A1F44' }}>Nguyên vật liệu đầu vào</h1>
               <p className="text-sm" style={{ color: '#6B7280' }}>
                 {materials.length} nguyên liệu · {suppliers.length} nhà cung cấp
               </p>
@@ -262,14 +262,14 @@ export default function MaterialsPage() {
           </div>
           <button onClick={activeTab === 'materials' ? openMatCreate : openSupCreate}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-            style={{ background: '#0F5132' }}>
+            style={{ background: '#0A1F44' }}>
             + {activeTab === 'materials' ? 'Thêm nguyên liệu' : 'Thêm nhà cung cấp'}
           </button>
         </div>
       </div>
 
       {/* Sub-tabs */}
-      <div className="grid grid-cols-2 gap-1 mb-5 p-1 rounded-xl animate-section" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+      <div className="grid grid-cols-2 gap-1 mb-5 p-1 rounded-xl animate-section" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
         {[
           { id: 'materials' as const, label: 'Nguyên phụ liệu', count: materials.length },
           { id: 'suppliers' as const, label: 'Nhà cung cấp', count: suppliers.length },
@@ -277,9 +277,9 @@ export default function MaterialsPage() {
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all"
             style={{
-              background: activeTab === tab.id ? '#0F5132' : 'transparent',
+              background: activeTab === tab.id ? '#0A1F44' : 'transparent',
               color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
-              boxShadow: activeTab === tab.id ? '0 2px 8px rgba(15,81,50,0.25)' : 'none',
+              boxShadow: activeTab === tab.id ? '0 2px 8px rgba(10,31,68,0.25)' : 'none',
             }}>
             {tab.label}
             <span className="px-1.5 py-0.5 rounded text-xs"
@@ -307,13 +307,13 @@ export default function MaterialsPage() {
 
           {matLoading ? (
             <div className="py-12 flex items-center justify-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
             </div>
           ) : materials.length === 0 ? (
             <div className="rounded-2xl p-12 text-center animate-scale-in" style={cardStyle}>
-              <p className="font-semibold" style={{ color: '#0F5132' }}>Chưa có nguyên liệu nào</p>
+              <p className="font-semibold" style={{ color: '#0A1F44' }}>Chưa có nguyên liệu nào</p>
               <p className="text-sm mt-1" style={{ color: '#6B7280' }}>Thêm nhà cung cấp trước, sau đó tạo nguyên liệu liên kết</p>
             </div>
           ) : (
@@ -325,7 +325,7 @@ export default function MaterialsPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-sm font-semibold" style={{ color: '#0F5132' }}>{m.name}</span>
+                        <span className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{m.name}</span>
                         {m.sku && <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#F0F9FF', color: '#0369A1' }}>{m.sku}</span>}
                         <span className="text-xs px-2 py-0.5 rounded animate-chip" style={{ background: risk.bg, color: risk.color }}>{risk.label}</span>
                         {cat && <span className="text-xs" style={{ color: '#9CA3AF' }}>{cat.label}</span>}
@@ -363,13 +363,13 @@ export default function MaterialsPage() {
         <div key="suppliers" className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3 animate-tab-content">
           {supLoading ? (
             <div className="py-12 flex items-center justify-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-              <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+              <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
             </div>
           ) : suppliers.length === 0 ? (
             <div className="rounded-2xl p-12 text-center animate-scale-in" style={cardStyle}>
-              <p className="font-semibold" style={{ color: '#0F5132' }}>Chưa có nhà cung cấp nào</p>
+              <p className="font-semibold" style={{ color: '#0A1F44' }}>Chưa có nhà cung cấp nào</p>
               <p className="text-sm mt-1" style={{ color: '#6B7280' }}>Thêm nhà cung cấp để bắt đầu quản lý nguyên liệu</p>
             </div>
           ) : (
@@ -379,12 +379,12 @@ export default function MaterialsPage() {
                 <div key={s.id} className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${Math.min(idx + 1, 12)}`} style={cardStyle}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full grid place-items-center flex-shrink-0 text-sm font-bold"
-                      style={{ background: '#E8F5EF', color: '#198754' }}>
+                      style={{ background: '#DCE3F0', color: '#102A5C' }}>
                       {s.name[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-sm font-semibold" style={{ color: '#0F5132' }}>{s.name}</span>
+                        <span className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{s.name}</span>
                         <span className="text-xs px-2 py-0.5 rounded animate-chip" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                         {s.supplier_type && <span className="text-xs" style={{ color: '#9CA3AF' }}>{s.supplier_type}</span>}
                       </div>
@@ -398,8 +398,8 @@ export default function MaterialsPage() {
                       {s.status !== 'verified' && s.cert_count > 0 && (
                         <button onClick={() => verifySupplier(s.id)} title="Xác minh NCC"
                           className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
-                          style={{ background: '#E8F5EF', border: '1px solid #B7CBB8' }}>
-                          <svg className="w-4 h-4" style={{ color: '#198754' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          style={{ background: '#DCE3F0', border: '1px solid #D9B96E' }}>
+                          <svg className="w-4 h-4" style={{ color: '#102A5C' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
                         </button>
@@ -456,7 +456,7 @@ export default function MaterialsPage() {
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}
             onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>{editMat ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}</h3>
+              <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>{editMat ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}</h3>
               <button onClick={() => setShowMatForm(false)} style={{ color: '#6B7280' }}>✕</button>
             </div>
             <div className="space-y-4">
@@ -509,7 +509,7 @@ export default function MaterialsPage() {
               </div>
               <button onClick={saveMaterial} disabled={matSaving || !matForm.name || !matForm.supplier_id}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
-                style={{ background: (!matForm.name || !matForm.supplier_id) ? '#E2E8F0' : '#0F5132',
+                style={{ background: (!matForm.name || !matForm.supplier_id) ? '#E2E8F0' : '#0A1F44',
                          color: (!matForm.name || !matForm.supplier_id) ? '#9CA3AF' : '#fff' }}>
                 {matSaving ? 'Đang lưu...' : editMat ? 'Cập nhật' : 'Tạo nguyên liệu'}
               </button>
@@ -527,7 +527,7 @@ export default function MaterialsPage() {
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}
             onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>{editSup ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}</h3>
+              <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>{editSup ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}</h3>
               <button onClick={() => setShowSupForm(false)} style={{ color: '#6B7280' }}>✕</button>
             </div>
             <div className="space-y-4">
@@ -593,7 +593,7 @@ export default function MaterialsPage() {
                   } finally { setSupSaving(false); }
                 }} disabled={supSaving || !supForm.name}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
-                style={{ background: !supForm.name ? '#E2E8F0' : '#0F5132', color: !supForm.name ? '#9CA3AF' : '#fff' }}>
+                style={{ background: !supForm.name ? '#E2E8F0' : '#0A1F44', color: !supForm.name ? '#9CA3AF' : '#fff' }}>
                 {supSaving ? 'Đang lưu...' : editSup ? 'Cập nhật' : 'Tạo nhà cung cấp'}
               </button>
             </div>
@@ -611,7 +611,7 @@ export default function MaterialsPage() {
             onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E2E8F0' }}>
               <div>
-                <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>Hồ sơ & Chứng chỉ</h3>
+                <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>Hồ sơ & Chứng chỉ</h3>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                   {suppliers.find(s => s.id === certsOpen)?.name} · Được gửi bởi NCC
                 </p>
@@ -621,9 +621,9 @@ export default function MaterialsPage() {
             <div className="px-6 py-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
               {certsLoading ? (
                 <div className="py-8 flex items-center justify-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+                  <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+                  <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+                  <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
                 </div>
               ) : certs.length === 0 ? (
                 <div className="py-12 text-center animate-scale-in">
@@ -641,7 +641,7 @@ export default function MaterialsPage() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: '#0F5132' }}>{c.original_filename}</p>
+                      <p className="text-sm font-medium truncate" style={{ color: '#0A1F44' }}>{c.original_filename}</p>
                       <p className="text-xs" style={{ color: '#9CA3AF' }}>
                         {CERT_TYPES.find(t => t.id === c.cert_type)?.label || c.cert_type}
                         {c.cert_number && ` · ${c.cert_number}`}

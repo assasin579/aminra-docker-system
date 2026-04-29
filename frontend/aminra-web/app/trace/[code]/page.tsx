@@ -54,12 +54,12 @@ interface TraceData {
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string; icon: string }> = {
   draft:       { label: 'Nháp',        bg: '#F3F4F6', color: '#6B7280', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
   in_progress: { label: 'Đang sản xuất', bg: '#FFFBEB', color: '#B45309', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-  completed:   { label: 'Hoàn thành',  bg: '#E8F5EF', color: '#198754', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+  completed:   { label: 'Hoàn thành',  bg: '#DCE3F0', color: '#102A5C', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
   rejected:    { label: 'Từ chối',     bg: '#FEF2F2', color: '#DC2626', icon: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' },
 };
 
 const RISK_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  safe:          { label: 'An toàn',     bg: '#E8F5EF', color: '#198754' },
+  safe:          { label: 'An toàn',     bg: '#DCE3F0', color: '#102A5C' },
   requires_cert: { label: 'Cần chứng nhận', bg: '#FFFBEB', color: '#B45309' },
   prohibited:    { label: 'Cấm',        bg: '#FEF2F2', color: '#DC2626' },
   unknown:       { label: 'Chưa xác định', bg: '#F3F4F6', color: '#6B7280' },
@@ -95,16 +95,16 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F1E6' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F1E8' }}>
         <div className="text-center animate-scale-in">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl grid place-items-center" style={{ background: '#0F5132' }}>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl grid place-items-center" style={{ background: '#0A1F44' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-10 h-10" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-10 h-10" />
           </div>
           <div className="flex items-center justify-center gap-2 mt-4">
-            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-            <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+            <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
           </div>
           <p className="text-sm mt-3" style={{ color: '#6B7280' }}>Đang tải thông tin truy xuất...</p>
         </div>
@@ -115,7 +115,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
   // Error
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F1E6' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F1E8' }}>
         <div className="text-center animate-scale-in max-w-md px-6">
           <div className="w-20 h-20 mx-auto mb-5 rounded-full grid place-items-center animate-empty-icon"
             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -123,7 +123,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold mb-2" style={{ color: '#0F5132' }}>
+          <h1 className="text-xl font-bold mb-2" style={{ color: '#0A1F44' }}>
             {error === 'not_found' ? 'Không tìm thấy lô hàng' : 'Đã xảy ra lỗi'}
           </h1>
           <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -143,16 +143,16 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
   const st = STATUS_MAP[batch.status] || STATUS_MAP.draft;
 
   return (
-    <div className="min-h-screen" style={{ background: '#F7F1E6' }} data-page>
+    <div className="min-h-screen" style={{ background: '#F5F1E8' }} data-page>
 
       {/* ── Hero header ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0A3622 0%, #0F5132 50%, #0A9B6C 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0A1F44 0%, #0A1F44 50%, #0A9B6C 100%)' }}>
         <div className="max-w-2xl mx-auto px-5 py-8 md:py-12">
           <div className="flex items-center gap-3 mb-6 animate-section">
             <div className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
               style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-7 h-7" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-7 h-7" />
             </div>
             <div>
               <p className="text-white/60 text-xs font-medium tracking-wider uppercase">AMINRA Truy xuất nguồn gốc</p>
@@ -171,7 +171,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
               </span>
               {integrity?.verified && (
                 <span className="px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"
-                  style={{ background: 'rgba(16,185,129,0.2)', color: '#B7CBB8' }}>
+                  style={{ background: 'rgba(16,185,129,0.2)', color: '#D9B96E' }}>
                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -208,12 +208,12 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
             <div>
               <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>Tiến độ sản xuất</p>
               <div className="flex items-end gap-2 mb-2">
-                <span className="text-2xl font-bold" style={{ color: '#0F5132' }}>{progress.percent}%</span>
+                <span className="text-2xl font-bold" style={{ color: '#0A1F44' }}>{progress.percent}%</span>
                 <span className="text-xs pb-1" style={{ color: '#94A3B8' }}>{progress.completed}/{progress.total} bước</span>
               </div>
               <div className="h-2 rounded-full overflow-hidden" style={{ background: '#E2E8F0' }}>
                 <div className="h-full rounded-full animate-progress"
-                  style={{ width: `${progress.percent}%`, background: progress.percent === 100 ? '#0F5132' : '#F59E0B' }} />
+                  style={{ width: `${progress.percent}%`, background: progress.percent === 100 ? '#0A1F44' : '#F59E0B' }} />
               </div>
             </div>
             {/* Compliance score */}
@@ -226,12 +226,12 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                       <circle cx="20" cy="20" r="16" fill="none" stroke="#E2E8F0" strokeWidth="3" />
                       <circle cx="20" cy="20" r="16" fill="none"
                         className="animate-score-fill"
-                        stroke={batch.compliance_score >= 75 ? '#0F5132' : batch.compliance_score >= 50 ? '#F59E0B' : '#EF4444'}
+                        stroke={batch.compliance_score >= 75 ? '#0A1F44' : batch.compliance_score >= 50 ? '#F59E0B' : '#EF4444'}
                         strokeWidth="3" strokeLinecap="round"
                         strokeDasharray={`${batch.compliance_score * 1.005} 100.5`} />
                     </svg>
                     <span className="absolute inset-0 grid place-items-center text-sm font-bold"
-                      style={{ color: batch.compliance_score >= 75 ? '#0F5132' : batch.compliance_score >= 50 ? '#F59E0B' : '#EF4444' }}>
+                      style={{ color: batch.compliance_score >= 75 ? '#0A1F44' : batch.compliance_score >= 50 ? '#F59E0B' : '#EF4444' }}>
                       {batch.compliance_score}
                     </span>
                   </div>
@@ -246,11 +246,11 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
           <div className="grid grid-cols-2 gap-3 mt-4 pt-4" style={{ borderTop: '1px solid #F0F0F0' }}>
             <div>
               <p className="text-xs" style={{ color: '#94A3B8' }}>Bắt đầu</p>
-              <p className="text-xs font-medium" style={{ color: '#0F5132' }}>{formatDate(batch.started_at) || 'Chưa bắt đầu'}</p>
+              <p className="text-xs font-medium" style={{ color: '#0A1F44' }}>{formatDate(batch.started_at) || 'Chưa bắt đầu'}</p>
             </div>
             <div>
               <p className="text-xs" style={{ color: '#94A3B8' }}>Hoàn thành</p>
-              <p className="text-xs font-medium" style={{ color: '#0F5132' }}>{formatDate(batch.completed_at) || 'Chưa hoàn thành'}</p>
+              <p className="text-xs font-medium" style={{ color: '#0A1F44' }}>{formatDate(batch.completed_at) || 'Chưa hoàn thành'}</p>
             </div>
           </div>
         </div>
@@ -259,14 +259,14 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
         {integrity && (
           <div className={`rounded-2xl p-5 animate-section ${integrity.verified ? '' : ''}`}
             style={{
-              background: integrity.verified ? 'linear-gradient(135deg, #E8F5EF, #B7CBB8)' : '#FEF2F2',
-              border: `1px solid ${integrity.verified ? 'rgba(15,81,50,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              background: integrity.verified ? 'linear-gradient(135deg, #DCE3F0, #D9B96E)' : '#FEF2F2',
+              border: `1px solid ${integrity.verified ? 'rgba(10,31,68,0.2)' : 'rgba(239,68,68,0.2)'}`,
             }}>
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
-                style={{ background: integrity.verified ? 'rgba(15,81,50,0.15)' : 'rgba(239,68,68,0.15)' }}>
+                style={{ background: integrity.verified ? 'rgba(10,31,68,0.15)' : 'rgba(239,68,68,0.15)' }}>
                 {integrity.verified ? (
-                  <svg className="w-5 h-5" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 ) : (
@@ -276,7 +276,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold" style={{ color: integrity.verified ? '#0A3622' : '#DC2626' }}>
+                <h3 className="text-sm font-bold" style={{ color: integrity.verified ? '#0A1F44' : '#DC2626' }}>
                   {integrity.verified ? 'Dữ liệu toàn vẹn — Đã xác minh' : 'Cảnh báo: Dữ liệu có thể bị thay đổi'}
                 </h3>
                 <p className="text-xs mt-1" style={{ color: integrity.verified ? '#047857' : '#B91C1C' }}>
@@ -297,7 +297,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
           <div className="rounded-2xl overflow-hidden animate-section"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <div className="px-5 py-4" style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <h2 className="text-sm font-bold" style={{ color: '#0F5132' }}>
+              <h2 className="text-sm font-bold" style={{ color: '#0A1F44' }}>
                 Các bước sản xuất
                 <span className="ml-2 text-xs font-normal" style={{ color: '#94A3B8' }}>
                   {progress.completed}/{progress.total}
@@ -312,7 +312,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                     {/* Step indicator */}
                     <div className={`w-7 h-7 rounded-full grid place-items-center flex-shrink-0 mt-0.5 ${done ? '' : ''}`}
                       style={{
-                        background: done ? '#0F5132' : '#E2E8F0',
+                        background: done ? '#0A1F44' : '#E2E8F0',
                         transition: 'background 0.3s ease',
                       }}>
                       {done ? (
@@ -324,7 +324,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: done ? '#0F5132' : '#94A3B8' }}>{step.name}</p>
+                      <p className="text-sm font-medium" style={{ color: done ? '#0A1F44' : '#94A3B8' }}>{step.name}</p>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
                         {step.performed_by && (
                           <span className="text-xs" style={{ color: '#6B7280' }}>{step.performed_by}</span>
@@ -333,7 +333,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                           <span className="text-xs" style={{ color: '#94A3B8' }}>{formatDate(step.completed_at)}</span>
                         )}
                         {step.approved_by && (
-                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#E8F5EF', color: '#198754' }}>
+                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#DCE3F0', color: '#102A5C' }}>
                             Xác nhận: {step.approved_by}
                           </span>
                         )}
@@ -351,7 +351,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
           <div className="rounded-2xl overflow-hidden animate-section"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <div className="px-5 py-4" style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <h2 className="text-sm font-bold" style={{ color: '#0F5132' }}>Nguyên liệu sử dụng</h2>
+              <h2 className="text-sm font-bold" style={{ color: '#0A1F44' }}>Nguyên liệu sử dụng</h2>
             </div>
             <div className="divide-y" style={{ borderColor: '#F0F0F0' }}>
               {materials.map((mat, i) => {
@@ -360,13 +360,13 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                   <div key={i} className={`px-5 py-3.5 animate-list-item stagger-${Math.min(i + 1, 12)}`}>
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium" style={{ color: '#0F5132' }}>{mat.name}</p>
+                        <p className="text-sm font-medium" style={{ color: '#0A1F44' }}>{mat.name}</p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {mat.sku && <span className="text-xs" style={{ color: '#94A3B8' }}>SKU: {mat.sku}</span>}
                           {mat.supplier_name && (
                             <span className="text-xs flex items-center gap-1" style={{ color: '#6B7280' }}>
                               {mat.supplier_verified && (
-                                <svg className="w-3 h-3" style={{ color: '#198754' }} fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-3 h-3" style={{ color: '#102A5C' }} fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
                               )}
@@ -395,7 +395,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
           <div className="rounded-2xl overflow-hidden animate-section"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
             <div className="px-5 py-4" style={{ borderBottom: '1px solid #E2E8F0' }}>
-              <h2 className="text-sm font-bold" style={{ color: '#0F5132' }}>Chứng chỉ nhà cung cấp</h2>
+              <h2 className="text-sm font-bold" style={{ color: '#0A1F44' }}>Chứng chỉ nhà cung cấp</h2>
             </div>
             <div className="divide-y" style={{ borderColor: '#F0F0F0' }}>
               {certificates.map((cert, i) => {
@@ -404,7 +404,7 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                   <div key={i} className={`px-5 py-3.5 animate-list-item stagger-${Math.min(i + 1, 12)}`}>
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium" style={{ color: '#0F5132' }}>
+                        <p className="text-sm font-medium" style={{ color: '#0A1F44' }}>
                           {cert.cert_type || 'Chứng chỉ'}
                           {cert.cert_number && <span className="text-xs ml-1.5" style={{ color: '#94A3B8' }}>#{cert.cert_number}</span>}
                         </p>
@@ -416,8 +416,8 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
                       {cert.expiry_date && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
                           style={{
-                            background: expired ? '#FEF2F2' : '#E8F5EF',
-                            color: expired ? '#DC2626' : '#198754',
+                            background: expired ? '#FEF2F2' : '#DCE3F0',
+                            color: expired ? '#DC2626' : '#102A5C',
                           }}>
                           {expired ? 'Hết hạn' : `HSD: ${new Date(cert.expiry_date).toLocaleDateString('vi-VN')}`}
                         </span>
@@ -433,11 +433,11 @@ export default function TracePage({ params }: { params: Promise<{ code: string }
         {/* Footer */}
         <div className="pt-6 pb-4 text-center animate-section">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg grid place-items-center" style={{ background: '#0F5132' }}>
+            <div className="w-6 h-6 rounded-lg grid place-items-center" style={{ background: '#0A1F44' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/aminra-mark.svg" alt="AMINRA" className="w-4 h-4" />
+            <img src="/aminra-mark.png" alt="AMINRA" className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold" style={{ color: '#0F5132' }}>AMINRA</span>
+            <span className="text-xs font-bold" style={{ color: '#0A1F44' }}>AMINRA</span>
           </div>
           <p className="text-xs" style={{ color: '#94A3B8' }}>
             Halal Supply Chain Integrity Platform

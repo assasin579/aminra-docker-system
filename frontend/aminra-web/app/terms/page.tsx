@@ -11,8 +11,8 @@ export default function TermsPage() {
   return (
     <article className="max-w-3xl mx-auto px-6 py-12 prose prose-slate" data-page>
       <header className="mb-8">
-        <Link href="/" className="inline-block text-sm py-2 -my-2" style={{ color: '#0F5132' }}>← Về trang chủ</Link>
-        <h1 className="text-3xl font-bold mt-4" style={{ color: '#0F5132' }}>
+        <Link href="/" className="inline-block text-sm py-2 -my-2" style={{ color: '#0A1F44' }}>← Về trang chủ</Link>
+        <h1 className="text-3xl font-bold mt-4" style={{ color: '#0A1F44' }}>
           Điều khoản dịch vụ
         </h1>
         <p className="text-sm mt-2" style={{ color: '#6B7280' }}>
@@ -110,7 +110,7 @@ export default function TermsPage() {
         Bạn có thể chấm dứt tài khoản bất kỳ lúc nào bằng cách gửi yêu cầu tới{' '}
         <a href="mailto:support@aminra.vn"
            className="inline-block py-1.5 -my-1.5 underline"
-           style={{ color: '#0F5132' }}>
+           style={{ color: '#0A1F44' }}>
           support@aminra.vn
         </a>.
       </Section>
@@ -135,7 +135,7 @@ export default function TermsPage() {
             Email:{" "}
             <a href="mailto:legal@aminra.vn"
                className="inline-block py-1.5 -my-1.5 underline"
-               style={{ color: '#0F5132' }}>
+               style={{ color: '#0A1F44' }}>
               legal@aminra.vn
             </a>
           </li>
@@ -143,7 +143,7 @@ export default function TermsPage() {
             Hỗ trợ:{" "}
             <a href="mailto:support@aminra.vn"
                className="inline-block py-1.5 -my-1.5 underline"
-               style={{ color: '#0F5132' }}>
+               style={{ color: '#0A1F44' }}>
               support@aminra.vn
             </a>
           </li>
@@ -152,7 +152,7 @@ export default function TermsPage() {
 
       <footer className="mt-12 pt-6 border-t text-sm" style={{ borderColor: '#E2E8F0', color: '#94A3B8' }}>
         Xem thêm:{' '}
-        <Link href="/privacy" className="inline-flex items-center min-h-[32px] underline" style={{ color: '#0F5132' }}>Chính sách bảo mật</Link>
+        <Link href="/privacy" className="inline-flex items-center min-h-[32px] underline" style={{ color: '#0A1F44' }}>Chính sách bảo mật</Link>
       </footer>
     </article>
   );
@@ -161,7 +161,7 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-bold mb-3" style={{ color: '#0F5132' }}>{title}</h2>
+      <h2 className="text-xl font-bold mb-3" style={{ color: '#0A1F44' }}>{title}</h2>
       <div className="text-sm leading-relaxed" style={{ color: '#374151' }}>{children}</div>
     </section>
   );

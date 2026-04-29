@@ -50,7 +50,7 @@ function Particles() {
         if (p.y > h) p.y = 0;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(15,81,50, ${p.o * 0.6})`;
+        ctx.fillStyle = `rgba(10,31,68, ${p.o * 0.6})`;
         ctx.fill();
       }
       // Draw connections
@@ -63,7 +63,7 @@ function Particles() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(15,81,50, ${0.05 * (1 - dist / 150)})`;
+            ctx.strokeStyle = `rgba(10,31,68, ${0.05 * (1 - dist / 150)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -148,11 +148,11 @@ function OrbitRings() {
         <div key={i} className="absolute rounded-full"
           style={{
             width: size, height: size,
-            border: `1px solid rgba(15,81,50,${0.12 - i * 0.03})`,
+            border: `1px solid rgba(10,31,68,${0.12 - i * 0.03})`,
             animation: `orbit-spin ${20 + i * 10}s linear infinite ${i % 2 === 0 ? '' : 'reverse'}`,
           }}>
           <div className="absolute w-2 h-2 rounded-full"
-            style={{ top: 0, left: '50%', transform: 'translate(-50%,-50%)', background: `rgba(15,81,50,${0.4 - i * 0.1})`, boxShadow: `0 0 8px rgba(15,81,50,${0.3})` }} />
+            style={{ top: 0, left: '50%', transform: 'translate(-50%,-50%)', background: `rgba(10,31,68,${0.4 - i * 0.1})`, boxShadow: `0 0 8px rgba(10,31,68,${0.3})` }} />
         </div>
       ))}
     </div>
@@ -201,35 +201,32 @@ export default function LandingPage() {
 
       {/* ── Hero (light, brand-aligned) ── */}
       <section className="relative min-h-screen grid place-items-center px-6"
-        style={{ zIndex: 2, background: 'linear-gradient(180deg, #E8F5EF 0%, #F7F1E6 50%, #FFFFFF 100%)' }}>
+        style={{ zIndex: 2, background: 'linear-gradient(180deg, #DCE3F0 0%, #F5F1E8 50%, #FFFFFF 100%)' }}>
         <OrbitRings />
 
         {/* Radial glow */}
         <div className="absolute w-[600px] h-[600px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(15,81,50,0.06) 0%, transparent 70%)', animation: 'glow-pulse 4s ease-in-out infinite' }} />
+          style={{ background: 'radial-gradient(circle, rgba(10,31,68,0.06) 0%, transparent 70%)', animation: 'glow-pulse 4s ease-in-out infinite' }} />
 
         <div className="relative text-center max-w-4xl py-16" style={{ zIndex: 3 }}>
           {/* Badge */}
           <FadeIn>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8"
-              style={{ background: '#FFFFFF', border: '1px solid #B7CBB8', boxShadow: '0 2px 8px rgba(15,81,50,0.06)' }}>
-              <div className="w-2 h-2 rounded-full" style={{ background: '#198754', animation: 'glow-pulse 2s ease-in-out infinite' }} />
-              <span className="text-xs font-semibold" style={{ color: '#0F5132' }}>Halal × AI</span>
+              style={{ background: '#FFFFFF', border: '1px solid #D9B96E', boxShadow: '0 2px 8px rgba(10,31,68,0.06)' }}>
+              <div className="w-2 h-2 rounded-full" style={{ background: '#102A5C', animation: 'glow-pulse 2s ease-in-out infinite' }} />
+              <span className="text-xs font-semibold" style={{ color: '#0A1F44' }}>Halal × AI</span>
             </div>
           </FadeIn>
 
-          {/* Logo on neutral plaque */}
+          {/* Brand lockup */}
           <FadeIn delay={0.1}>
-            <div className="inline-flex flex-col items-center gap-3 mb-8">
-              <div className="w-28 h-28 rounded-3xl grid place-items-center p-3"
-                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 12px 40px rgba(15,81,50,0.12)' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/aminra-mark.svg" alt="AMINRA" className="w-full h-full object-contain" />
-              </div>
+            <div className="inline-flex flex-col items-center gap-4 mb-8">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/aminra-lockup.png" alt="AMINRA" className="h-32 md:h-40 object-contain" />
               <div className="flex items-center gap-3">
-                <span className="block w-10 h-px" style={{ background: '#D4AF37' }} />
-                <span className="text-xs font-medium" style={{ color: '#0F5132', letterSpacing: '0.18em' }}>HALAL INTEGRITY · DIGITAL TRUST</span>
-                <span className="block w-10 h-px" style={{ background: '#D4AF37' }} />
+                <span className="block w-10 h-px" style={{ background: '#C9A24A' }} />
+                <span className="text-xs font-medium" style={{ color: '#A88224', letterSpacing: '0.18em' }}>HALAL INTEGRITY · DIGITAL TRUST</span>
+                <span className="block w-10 h-px" style={{ background: '#C9A24A' }} />
               </div>
             </div>
           </FadeIn>
@@ -237,16 +234,16 @@ export default function LandingPage() {
           {/* Headline */}
           <FadeIn delay={0.2}>
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight mb-6"
-              style={{ color: '#0F5132', lineHeight: 1.1 }}>
+              style={{ color: '#0A1F44', lineHeight: 1.1 }}>
               Chứng nhận Halal,<br />
-              <span style={{ color: '#198754' }}>Chuẩn quốc tế.</span>
+              <span style={{ color: '#102A5C' }}>Chuẩn quốc tế.</span>
             </h1>
           </FadeIn>
 
           {/* Slogan */}
           <FadeIn delay={0.35}>
             <p className="text-lg md:text-xl max-w-xl mx-auto mb-10 leading-relaxed" style={{ color: '#374151' }}>
-              AI hỗ trợ doanh nghiệp Việt đạt chứng nhận Halal — <span className="font-semibold" style={{ color: '#198754' }}>nhanh hơn, chuẩn hơn</span>.
+              AI hỗ trợ doanh nghiệp Việt đạt chứng nhận Halal — <span className="font-semibold" style={{ color: '#102A5C' }}>nhanh hơn, chuẩn hơn</span>.
             </p>
           </FadeIn>
 
@@ -256,27 +253,29 @@ export default function LandingPage() {
               <Link href="/business/register"
                 className="px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:scale-105 active:scale-95"
                 style={{
-                  background: 'linear-gradient(135deg, #0F5132, #198754)',
-                  boxShadow: '0 8px 32px rgba(15,81,50,0.30)',
+                  background: 'linear-gradient(135deg, #0A1F44, #102A5C)',
+                  boxShadow: '0 8px 32px rgba(10,31,68,0.30)',
                 }}>
                 Bắt đầu miễn phí
               </Link>
               <Link href="/business/login"
                 className="px-8 py-4 rounded-2xl font-bold text-base transition-all hover:scale-105"
-                style={{ color: '#0F5132', border: '1.5px solid #0F5132', background: '#FFFFFF' }}>
+                style={{ color: '#0A1F44', border: '1.5px solid #0A1F44', background: '#FFFFFF' }}>
                 Đăng nhập
               </Link>
             </div>
           </FadeIn>
 
-          {/* Scroll hint */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2" style={{ animation: 'float 3s ease-in-out infinite' }}>
-            <svg className="w-6 h-6" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </div>
         </div>
       </section>
+
+      {/* ── Scroll cue (between hero CTA and stats) ── */}
+      <div className="relative grid place-items-center pt-6 pb-2" style={{ zIndex: 2, background: '#FFFFFF' }}>
+        <div className="flex flex-col items-center gap-1" style={{ animation: 'float 3s ease-in-out infinite' }}>
+          <span className="text-[10px] font-medium uppercase tracking-[0.25em]" style={{ color: '#A88224' }}>Khám phá</span>
+          <span className="text-2xl leading-none" style={{ color: '#C9A24A' }}>⌄</span>
+        </div>
+      </div>
 
       {/* ── Stats Bar ── */}
       <section className="relative py-16 px-6" style={{ zIndex: 2, background: '#FFFFFF' }}>
@@ -284,13 +283,13 @@ export default function LandingPage() {
           style={{
             background: '#FFFFFF',
             border: '1px solid #E2E8F0',
-            boxShadow: '0 20px 60px rgba(15,81,50,0.06)',
+            boxShadow: '0 20px 60px rgba(10,31,68,0.06)',
           }}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((s, i) => (
               <FadeIn key={s.label} delay={i * 0.1}>
                 <div className="text-center">
-                  <div className="text-3xl md:text-4xl font-black" style={{ color: '#0F5132' }}>
+                  <div className="text-3xl md:text-4xl font-black" style={{ color: '#0A1F44' }}>
                     <Counter target={s.value} suffix={s.suffix} />
                   </div>
                   <div className="text-xs mt-2 font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>{s.label}</div>
@@ -306,7 +305,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <FadeIn>
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black mb-3" style={{ color: '#0F5132' }}>Giải pháp toàn diện</h2>
+              <h2 className="text-3xl md:text-4xl font-black mb-3" style={{ color: '#0A1F44' }}>Giải pháp toàn diện</h2>
               <p className="text-base" style={{ color: '#6B7280' }}>Từ hồ sơ đến chứng nhận, trên một nền tảng.</p>
             </div>
           </FadeIn>
@@ -318,15 +317,15 @@ export default function LandingPage() {
                   style={{
                     background: '#FFFFFF',
                     border: '1px solid #E2E8F0',
-                    boxShadow: '0 4px 20px rgba(15,81,50,0.04)',
+                    boxShadow: '0 4px 20px rgba(10,31,68,0.04)',
                   }}>
                   <div className="w-12 h-12 rounded-xl grid place-items-center mb-4 transition-all group-hover:scale-110"
-                    style={{ background: '#E8F5EF', border: '1px solid #B7CBB8' }}>
-                    <svg className="w-6 h-6" fill="none" stroke="#0F5132" strokeWidth="1.8" viewBox="0 0 24 24">
+                    style={{ background: '#DCE3F0', border: '1px solid #D9B96E' }}>
+                    <svg className="w-6 h-6" fill="none" stroke="#0A1F44" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />
                     </svg>
                   </div>
-                  <h3 className="text-base font-bold mb-2" style={{ color: '#0F5132' }}>{f.title}</h3>
+                  <h3 className="text-base font-bold mb-2" style={{ color: '#0A1F44' }}>{f.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: '#6B7280' }}>{f.desc}</p>
                 </div>
               </FadeIn>
@@ -336,11 +335,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="relative py-24 px-6" style={{ zIndex: 2, background: '#F7F1E6' }}>
+      <section className="relative py-24 px-6" style={{ zIndex: 2, background: '#F5F1E8' }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn>
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black" style={{ color: '#0F5132' }}>Ba bước đến chứng nhận</h2>
+              <h2 className="text-3xl md:text-4xl font-black" style={{ color: '#0A1F44' }}>Ba bước đến chứng nhận</h2>
             </div>
           </FadeIn>
 
@@ -355,12 +354,12 @@ export default function LandingPage() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-5"
                     style={{
                       background: '#FFFFFF',
-                      border: '2px solid #D4AF37',
-                      boxShadow: '0 8px 24px rgba(212,175,55,0.20)',
+                      border: '2px solid #C9A24A',
+                      boxShadow: '0 8px 24px rgba(201,162,74,0.20)',
                     }}>
-                    <span className="text-xl font-black" style={{ color: '#0F5132' }}>{s.step}</span>
+                    <span className="text-xl font-black" style={{ color: '#0A1F44' }}>{s.step}</span>
                   </div>
-                  <h3 className="text-lg font-bold mb-2" style={{ color: '#0F5132' }}>{s.title}</h3>
+                  <h3 className="text-lg font-bold mb-2" style={{ color: '#0A1F44' }}>{s.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>{s.desc}</p>
                 </div>
               </FadeIn>
@@ -374,12 +373,12 @@ export default function LandingPage() {
         <FadeIn>
           <div className="max-w-3xl mx-auto text-center rounded-3xl p-12 relative overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #0F5132 0%, #198754 100%)',
-              boxShadow: '0 20px 60px rgba(15,81,50,0.30)',
+              background: 'linear-gradient(135deg, #0A1F44 0%, #102A5C 100%)',
+              boxShadow: '0 20px 60px rgba(10,31,68,0.30)',
             }}>
             {/* Gold radial accent */}
             <div className="absolute top-0 right-0 w-72 h-72 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.20), transparent 70%)' }} />
+              style={{ background: 'radial-gradient(circle, rgba(201,162,74,0.20), transparent 70%)' }} />
 
             <div className="relative">
               <h2 className="text-3xl md:text-4xl font-black text-white mb-6">
@@ -388,9 +387,9 @@ export default function LandingPage() {
               <Link href="/business/register"
                 className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:scale-105"
                 style={{
-                  background: '#D4AF37',
-                  color: '#0F5132',
-                  boxShadow: '0 8px 32px rgba(212,175,55,0.35)',
+                  background: '#C9A24A',
+                  color: '#0A1F44',
+                  boxShadow: '0 8px 32px rgba(201,162,74,0.35)',
                 }}>
                 Đăng ký miễn phí
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,23 +402,24 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative py-12 px-6" style={{ zIndex: 2, background: '#0A3622' }}>
+      <footer className="relative py-12 px-6" style={{ zIndex: 2, background: '#0A1F44' }}>
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg grid place-items-center p-1" style={{ background: '#FFFFFF' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/aminra-mark.svg" alt="AMINRA" className="w-full h-full object-contain" />
+              <img src="/aminra-mark.png" alt="" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-white tracking-wider">AMINRA</span>
-              <span className="text-[10px]" style={{ color: '#D4AF37', letterSpacing: '0.1em' }}>HALAL INTEGRITY, DIGITAL TRUST</span>
+            <div className="flex flex-col leading-tight gap-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/aminra-wordmark-white.png" alt="AMINRA" className="h-3.5 object-contain self-start" />
+              <span className="text-[10px]" style={{ color: '#C9A24A', letterSpacing: '0.1em' }}>HALAL INTEGRITY · DIGITAL TRUST</span>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            <Link href="/business/login" className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Đăng nhập Doanh nghiệp</Link>
-            <Link href="/provider/login" className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Đăng nhập Tổ chức</Link>
-            <Link href="/privacy"        className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Chính sách bảo mật</Link>
-            <Link href="/terms"          className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#B7CBB8' }}>Điều khoản</Link>
+            <Link href="/business/login" className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#D9B96E' }}>Đăng nhập Doanh nghiệp</Link>
+            <Link href="/provider/login" className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#D9B96E' }}>Đăng nhập Tổ chức</Link>
+            <Link href="/privacy"        className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#D9B96E' }}>Chính sách bảo mật</Link>
+            <Link href="/terms"          className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white" style={{ color: '#D9B96E' }}>Điều khoản</Link>
           </div>
           <p className="text-xs" style={{ color: '#94A3B8' }} suppressHydrationWarning>
             &copy; {new Date().getFullYear()} AMINRA. Mọi quyền được bảo lưu.

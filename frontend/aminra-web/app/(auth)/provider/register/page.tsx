@@ -57,21 +57,21 @@ export default function ProviderRegisterPage() {
       <div className="w-full max-w-md text-center" data-page>
         <div className="rounded-2xl p-10 animate-section" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
           <div className="w-16 h-16 rounded-full grid place-items-center mx-auto mb-5"
-            style={{ background: 'rgba(15,81,50,0.1)', border: '1px solid rgba(15,81,50,0.25)' }}>
-            <svg className="w-8 h-8" style={{ color: '#0F5132' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            style={{ background: 'rgba(10,31,68,0.1)', border: '1px solid rgba(10,31,68,0.25)' }}>
+            <svg className="w-8 h-8" style={{ color: '#0A1F44' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold mb-3" style={{ color: '#0F5132' }}>Đăng ký thành công!</h2>
+          <h2 className="text-xl font-bold mb-3" style={{ color: '#0A1F44' }}>Đăng ký thành công!</h2>
           <p className="text-sm mb-2" style={{ color: '#6B7280' }}>
-            Tài khoản <strong style={{ color: '#0F5132' }}>{pendingEmail}</strong> đang chờ xét duyệt.
+            Tài khoản <strong style={{ color: '#0A1F44' }}>{pendingEmail}</strong> đang chờ xét duyệt.
           </p>
           <p className="text-sm" style={{ color: '#6B7280' }}>
             Đội ngũ AMINRA sẽ xem xét hồ sơ của tổ chức bạn. Sau khi được phê duyệt, bạn có thể đăng nhập.
           </p>
           <Link href="/provider/login"
-            className="inline-block mt-6 px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
-            style={{ background: '#0F5132' }}>
+            className="btn-lift inline-block mt-6 px-6 py-2.5 rounded-xl text-sm font-medium text-white"
+            style={{ background: '#0A1F44' }}>
             Về trang đăng nhập
           </Link>
         </div>
@@ -79,19 +79,19 @@ export default function ProviderRegisterPage() {
     );
   }
 
-  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' };
   const inputClass = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all";
 
   return (
     <div className="w-full max-w-lg" data-page>
       <div className="text-center mb-8 animate-section">
         <div className="inline-grid place-items-center w-16 h-16 rounded-2xl mb-4"
-          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,81,50,0.12)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(10,31,68,0.12)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.svg" alt="AMINRA" className="w-11 h-11" />
+          <img src="/aminra-mark.png" alt="" className="w-11 h-11 object-contain" />
         </div>
-        <h1 className="text-2xl font-bold tracking-wide" style={{ color: '#0F5132' }}>AMINRA</h1>
-        <p className="text-xs mt-0.5" style={{ color: '#D4AF37', letterSpacing: '0.08em' }}>HALAL INTEGRITY, DIGITAL TRUST</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/aminra-wordmark-navy.png" alt="AMINRA" className="h-7 mx-auto object-contain" />
         <p className="mt-3 text-sm" style={{ color: '#6B7280' }}>
           Đăng ký tổ chức — JAKIM, HDC, MUI và các tổ chức chứng nhận Halal
         </p>
@@ -104,7 +104,7 @@ export default function ProviderRegisterPage() {
             <input required value={form.company_name} onChange={set('company_name')}
               placeholder="VD: JAKIM, HDC, MUI Vietnam"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
@@ -115,7 +115,7 @@ export default function ProviderRegisterPage() {
             <input value={form.company_code} onChange={set('company_code')}
               placeholder="Số giấy phép hoạt động (tuỳ chọn)"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
@@ -124,7 +124,7 @@ export default function ProviderRegisterPage() {
             <input type="email" required value={form.email} onChange={set('email')}
               placeholder="official@organization.org"
               className={inputClass} style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
           </div>
 
@@ -135,7 +135,7 @@ export default function ProviderRegisterPage() {
                 placeholder="••••••••••"
                 minLength={10}
                 className={inputClass} style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = '#0F5132')}
+                onFocus={e => (e.target.style.borderColor = '#0A1F44')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
               <p className="text-xs mt-1.5" style={{ color: '#94A3B8' }}>10+ ký tự, có chữ hoa, thường, số</p>
             </div>
@@ -144,7 +144,7 @@ export default function ProviderRegisterPage() {
               <input type="password" required value={form.confirm_password} onChange={set('confirm_password')}
                 placeholder="Nhập lại"
                 className={inputClass} style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = '#0F5132')}
+                onFocus={e => (e.target.style.borderColor = '#0A1F44')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')} />
             </div>
           </div>
@@ -158,9 +158,9 @@ export default function ProviderRegisterPage() {
 
           <button
             type="submit" disabled={loading}
-            className="w-full py-3 rounded-xl font-semibold text-sm transition-all mt-2"
+            className="btn-lift w-full py-3 rounded-xl font-semibold text-sm mt-2"
             style={{
-              background: loading ? '#E2E8F0' : '#0F5132',
+              background: loading ? '#E2E8F0' : '#0A1F44',
               color: loading ? '#6B7280' : 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
             }}
@@ -172,7 +172,7 @@ export default function ProviderRegisterPage() {
         <div className="mt-6 pt-5 text-center" style={{ borderTop: '1px solid #E2E8F0' }}>
           <p className="text-sm" style={{ color: '#6B7280' }}>
             Đã đăng ký?{' '}
-            <Link href="/provider/login" className="inline-flex items-center min-h-[32px] font-medium hover:opacity-80 transition-opacity" style={{ color: '#0F5132' }}>
+            <Link href="/provider/login" className="inline-flex items-center min-h-[32px] font-medium hover:opacity-80 transition-opacity" style={{ color: '#0A1F44' }}>
               Đăng nhập
             </Link>
           </p>

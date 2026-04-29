@@ -144,9 +144,9 @@ export default function AuditorsPage() {
   if (loading || !user) return (
     <div className="grid place-items-center min-h-[60vh]">
       <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-        <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
       </div>
     </div>
   );
@@ -155,7 +155,7 @@ export default function AuditorsPage() {
     <div className="flex flex-col flex-1 lg:min-h-0 w-full overflow-x-hidden" data-page>
       {/* Header */}
       <div className="rounded-2xl p-6 mb-6 animate-section"
-        style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
+        style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
         <div className="grid items-center" style={{ gridTemplateColumns: '1fr auto' }}>
           <div className="grid grid-flow-col items-center gap-3 justify-start">
             <div className="w-10 h-10 rounded-xl grid place-items-center"
@@ -165,13 +165,13 @@ export default function AuditorsPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Quản lý Auditor</h1>
+              <h1 className="text-xl font-bold" style={{ color: '#0A1F44' }}>Quản lý Auditor</h1>
               <p className="text-sm" style={{ color: '#6B7280' }}>{auditors.length} auditor · {user.company_name}</p>
             </div>
           </div>
           <button onClick={() => setShowInvite(true)}
             className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-            style={{ gridTemplateColumns: 'auto 1fr', background: '#0F5132', boxShadow: '0 4px 12px rgba(15,81,50,0.3)' }}>
+            style={{ gridTemplateColumns: 'auto 1fr', background: '#0A1F44', boxShadow: '0 4px 12px rgba(10,31,68,0.3)' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
             </svg>
@@ -184,11 +184,11 @@ export default function AuditorsPage() {
       <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
         {fetching ? (
           <div className="space-y-3">
-            {[1, 2].map(i => <div key={i} className="rounded-2xl h-20 animate-pulse" style={{ background: '#F7F1E6', opacity: 1 - i * 0.2 }} />)}
+            {[1, 2].map(i => <div key={i} className="rounded-2xl h-20 animate-pulse" style={{ background: '#F5F1E8', opacity: 1 - i * 0.2 }} />)}
           </div>
         ) : auditors.length === 0 ? (
-          <div className="rounded-2xl p-12 text-center" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0' }}>
-            <p className="font-semibold mb-2" style={{ color: '#0F5132' }}>Chưa có auditor nào</p>
+          <div className="rounded-2xl p-12 text-center" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0' }}>
+            <p className="font-semibold mb-2" style={{ color: '#0A1F44' }}>Chưa có auditor nào</p>
             <p className="text-sm" style={{ color: '#6B7280' }}>Tạo auditor để gán đánh giá hồ sơ doanh nghiệp</p>
           </div>
         ) : (
@@ -202,33 +202,33 @@ export default function AuditorsPage() {
                       <label className="text-xs font-medium mb-1 block" style={{ color: '#6B7280' }}>Họ tên</label>
                       <input value={editData.display_name} onChange={e => setEditData(d => ({ ...d, display_name: e.target.value }))}
                         className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block" style={{ color: '#6B7280' }}>Chuyên môn</label>
                       <input value={editData.specialty} onChange={e => setEditData(d => ({ ...d, specialty: e.target.value }))}
                         placeholder="Food Safety, Halal..."
                         className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block" style={{ color: '#6B7280' }}>Email</label>
                       <input type="email" value={editData.email} onChange={e => setEditData(d => ({ ...d, email: e.target.value }))}
                         className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block" style={{ color: '#6B7280' }}>Mật khẩu mới</label>
                       <input type="password" value={editData.password} onChange={e => setEditData(d => ({ ...d, password: e.target.value }))}
                         placeholder="Để trống nếu không đổi"
                         className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={handleSave} disabled={saving}
                       className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
-                      style={{ background: '#0F5132' }}>
+                      style={{ background: '#0A1F44' }}>
                       {saving ? 'Lưu...' : 'Lưu'}
                     </button>
                     <button onClick={() => setEditId(null)}
@@ -245,7 +245,7 @@ export default function AuditorsPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>{a.display_name}</p>
+                      <p className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{a.display_name}</p>
                       {a.specialty && (
                         <span className="px-2.5 py-0.5 rounded-lg text-xs font-medium"
                           style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.25)' }}>
@@ -297,7 +297,7 @@ export default function AuditorsPage() {
           <div className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 25px 60px rgba(0,0,0,0.15)' }}>
             <div className="grid items-center mb-5" style={{ gridTemplateColumns: '1fr auto' }}>
-              <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>Thêm Auditor</h3>
+              <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>Thêm Auditor</h3>
               <button onClick={() => setShowInvite(false)}
                 className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(0,0,0,0.05)' }}>
                 <span className="hover:text-gray-700">✕</span>
@@ -310,7 +310,7 @@ export default function AuditorsPage() {
                   onChange={e => setInvite(i => ({ ...i, display_name: e.target.value }))}
                   placeholder="Nguyễn Văn A"
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Chuyên môn</label>
@@ -318,7 +318,7 @@ export default function AuditorsPage() {
                   onChange={e => setInvite(i => ({ ...i, specialty: e.target.value }))}
                   placeholder="Food Safety, Halal Compliance..."
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Email *</label>
@@ -326,7 +326,7 @@ export default function AuditorsPage() {
                   onChange={e => setInvite(i => ({ ...i, email: e.target.value }))}
                   placeholder="auditor@org.vn"
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#6B7280' }}>Mật khẩu *</label>
@@ -334,12 +334,12 @@ export default function AuditorsPage() {
                   onChange={e => setInvite(i => ({ ...i, password: e.target.value }))}
                   placeholder="Tối thiểu 8 ký tự"
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }} />
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }} />
               </div>
               {inviteError && <p className="text-xs text-red-400">{inviteError}</p>}
               <button type="submit" disabled={inviting}
                 className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
-                style={{ background: inviting ? '#E2E8F0' : '#0F5132', color: inviting ? '#6B7280' : 'white' }}>
+                style={{ background: inviting ? '#E2E8F0' : '#0A1F44', color: inviting ? '#6B7280' : 'white' }}>
                 {inviting ? 'Đang tạo...' : 'Tạo Auditor'}
               </button>
               <p className="text-xs text-center" style={{ color: '#94A3B8' }}>
@@ -362,7 +362,7 @@ export default function AuditorsPage() {
             {/* Header */}
             <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E2E8F0' }}>
               <div>
-                <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>Chứng chỉ & Bằng cấp</h3>
+                <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>Chứng chỉ & Bằng cấp</h3>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                   {auditors.find(a => a.id === certsOpen)?.display_name}
                 </p>
@@ -372,7 +372,7 @@ export default function AuditorsPage() {
                   onChange={e => { const f = e.target.files?.[0]; if (f && certsOpen) uploadCert(certsOpen, f); }} />
                 <button onClick={() => certInputRef.current?.click()} disabled={certUploading}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all"
-                  style={{ background: '#0F5132' }}>
+                  style={{ background: '#0A1F44' }}>
                   {certUploading ? 'Đang upload...' : 'Upload chứng chỉ'}
                 </button>
                 <button onClick={() => setCertsOpen(null)}
@@ -386,9 +386,9 @@ export default function AuditorsPage() {
             <div className="px-6 py-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
               {certsLoading ? (
                 <div className="flex items-center justify-center gap-1.5 py-8">
-                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-                  <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+                  <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+                  <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+                  <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
                 </div>
               ) : certs.length === 0 ? (
                 <div className="py-12 text-center">
@@ -411,7 +411,7 @@ export default function AuditorsPage() {
                     </div>
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: '#0F5132' }}>{c.filename}</p>
+                      <p className="text-sm font-medium truncate" style={{ color: '#0A1F44' }}>{c.filename}</p>
                       <p className="text-xs" style={{ color: '#9CA3AF' }}>
                         {(c.size / 1024).toFixed(0)} KB · {new Date(c.uploaded_at + 'Z').toLocaleDateString('vi-VN')}
                       </p>

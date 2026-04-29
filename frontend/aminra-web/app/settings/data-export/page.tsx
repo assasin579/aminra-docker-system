@@ -50,9 +50,9 @@ export default function DataExportPage() {
 
   return (
     <article className="max-w-3xl mx-auto px-6 py-10" data-page>
-      <Link href="/settings" className="text-sm" style={{ color: '#0F5132' }}>← Quay lại Cài đặt</Link>
+      <Link href="/settings" className="text-sm" style={{ color: '#0A1F44' }}>← Quay lại Cài đặt</Link>
 
-      <h1 className="text-3xl font-bold mt-4 mb-3" style={{ color: '#0F5132' }}>
+      <h1 className="text-3xl font-bold mt-4 mb-3" style={{ color: '#0A1F44' }}>
         Xuất dữ liệu cá nhân
       </h1>
 
@@ -63,7 +63,7 @@ export default function DataExportPage() {
       </p>
 
       <section className="bg-white rounded-2xl p-6 mb-6" style={{ border: '1px solid #E2E8F0' }}>
-        <h2 className="text-base font-bold mb-3" style={{ color: '#0F5132' }}>
+        <h2 className="text-base font-bold mb-3" style={{ color: '#0A1F44' }}>
           Bản xuất sẽ bao gồm:
         </h2>
         <ul className="text-sm space-y-1.5" style={{ color: '#374151' }}>
@@ -85,7 +85,7 @@ export default function DataExportPage() {
         disabled={downloading}
         className="px-6 py-3 rounded-xl font-semibold text-sm transition-all"
         style={{
-          background: downloading ? '#94A3B8' : '#0F5132',
+          background: downloading ? '#94A3B8' : '#0A1F44',
           color: 'white',
           cursor: downloading ? 'not-allowed' : 'pointer',
         }}
@@ -101,8 +101,8 @@ export default function DataExportPage() {
       )}
 
       {lastFilename && (
-        <div role="status" className="mt-4 bg-[#E8F5EF] border border-[#E8F5EF] rounded-lg p-3 text-sm"
-          style={{ color: '#0A3622' }}>
+        <div role="status" className="mt-4 bg-[#DCE3F0] border border-[#DCE3F0] rounded-lg p-3 text-sm"
+          style={{ color: '#0A1F44' }}>
           ✓ Đã tải <code>{lastFilename}</code>
         </div>
       )}
@@ -159,8 +159,8 @@ function DeletionRequestSection() {
       </p>
 
       {requested ? (
-        <div role="status" className="bg-[#E8F5EF] border border-[#E8F5EF] rounded-lg p-3 text-sm"
-          style={{ color: '#0A3622' }}>
+        <div role="status" className="bg-[#DCE3F0] border border-[#DCE3F0] rounded-lg p-3 text-sm"
+          style={{ color: '#0A1F44' }}>
           ✓ Email xác nhận đã gửi tới hộp thư của bạn. Vui lòng nhấn link xác nhận trong vòng 60 phút.
         </div>
       ) : (

@@ -44,21 +44,21 @@ export default function ConfirmDeletionPage() {
 
   return (
     <article className="max-w-xl mx-auto px-6 py-12" data-page>
-      <h1 className="text-3xl font-bold mb-3" style={{ color: '#0F5132' }}>
+      <h1 className="text-3xl font-bold mb-3" style={{ color: '#0A1F44' }}>
         Xác nhận xoá tài khoản
       </h1>
 
       {done ? (
         <div role="status"
-          className="bg-[#E8F5EF] border border-[#E8F5EF] rounded-2xl p-6 text-sm"
-          style={{ color: '#0A3622' }}
+          className="bg-[#DCE3F0] border border-[#DCE3F0] rounded-2xl p-6 text-sm"
+          style={{ color: '#0A1F44' }}
         >
           <p className="font-semibold mb-2">✓ Tài khoản đã được xoá</p>
           <p>
             Email và thông tin liên hệ đã được ẩn danh. Audit log có thể được giữ tới 5 năm
             theo nghĩa vụ pháp lý. Đang chuyển về trang chủ trong 5 giây...
           </p>
-          <Link href="/" className="inline-block mt-4 font-medium" style={{ color: '#0F5132' }}>
+          <Link href="/" className="inline-block mt-4 font-medium" style={{ color: '#0A1F44' }}>
             Về trang chủ ngay →
           </Link>
         </div>
@@ -91,7 +91,7 @@ export default function ConfirmDeletionPage() {
             <Link
               href="/settings"
               className="px-6 py-3 rounded-xl font-semibold text-sm"
-              style={{ background: '#F1F5F9', color: '#0F5132' }}
+              style={{ background: '#F1F5F9', color: '#0A1F44' }}
             >
               Huỷ
             </Link>

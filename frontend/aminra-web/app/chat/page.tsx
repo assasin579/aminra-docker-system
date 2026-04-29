@@ -270,7 +270,7 @@ export default function HomePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
-      titleKey: 'home.why1_title', descKey: 'home.why1_desc', color: '#0F5132', bg: 'rgba(15,81,50,0.12)'
+      titleKey: 'home.why1_title', descKey: 'home.why1_desc', color: '#0A1F44', bg: 'rgba(10,31,68,0.12)'
     },
     {
       icon: (
@@ -302,7 +302,7 @@ export default function HomePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      titleKey: 'home.why5_title', descKey: 'home.why5_desc', color: '#198754', bg: 'rgba(16,185,129,0.15)'
+      titleKey: 'home.why5_title', descKey: 'home.why5_desc', color: '#102A5C', bg: 'rgba(16,185,129,0.15)'
     },
     {
       icon: (
@@ -326,10 +326,10 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative flex-shrink-0">
-                <div className="h-11 w-11 rounded-full overflow-hidden ring-2 ring-[#0F5132]/50" style={{animation:'pulse-ring 2.5s ease-in-out infinite'}}>
+                <div className="h-11 w-11 rounded-full overflow-hidden ring-2 ring-[#0A1F44]/50" style={{animation:'pulse-ring 2.5s ease-in-out infinite'}}>
                   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                     {/* App bg fill */}
-                    <circle cx="50" cy="50" r="50" fill="#F7F1E6"/>
+                    <circle cx="50" cy="50" r="50" fill="#F5F1E8"/>
                     {/* Blue coat - bottom 35% */}
                     <ellipse cx="50" cy="97" rx="40" ry="22" fill="#4070b8"/>
                     {/* Pink hijab scarf draping over coat */}
@@ -359,12 +359,12 @@ export default function HomePage() {
                     <circle cx="50" cy="96" r="2.5" fill="white"/>
                   </svg>
                 </div>
-                <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#0F5132]" style={{outline:'2px solid #FFFFFF', animation:'blink 1.8s ease-in-out infinite'}}></div>
+                <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#0A1F44]" style={{outline:'2px solid #FFFFFF', animation:'blink 1.8s ease-in-out infinite'}}></div>
               </div>
               <div>
-                <h2 className="text-base font-semibold leading-tight" style={{color:'#0F5132'}}>{t('home.chat_title')}</h2>
-                <p className="text-xs flex items-center gap-1" style={{color:'#0F5132'}}>
-                  <span className="inline-block h-1.5 w-1.5 rounded-full" style={{background:'#0F5132', animation:'blink 1.8s ease-in-out infinite'}}></span>
+                <h2 className="text-base font-semibold leading-tight" style={{color:'#0A1F44'}}>{t('home.chat_title')}</h2>
+                <p className="text-xs flex items-center gap-1" style={{color:'#0A1F44'}}>
+                  <span className="inline-block h-1.5 w-1.5 rounded-full" style={{background:'#0A1F44', animation:'blink 1.8s ease-in-out infinite'}}></span>
                   {t('home.online')}
                 </p>
               </div>
@@ -395,9 +395,9 @@ export default function HomePage() {
                     {availableVoices.map(v => (
                       <button key={v.name} onClick={() => { setSelectedVoiceName(v.name); setShowVoicePicker(false); }}
                         className="w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2"
-                        style={{ color: selectedVoiceName === v.name ? '#0F5132' : '#374151', background: selectedVoiceName === v.name ? 'rgba(15,81,50,0.06)' : 'transparent' }}>
+                        style={{ color: selectedVoiceName === v.name ? '#0A1F44' : '#374151', background: selectedVoiceName === v.name ? 'rgba(10,31,68,0.06)' : 'transparent' }}>
                         <span className="truncate">{v.name}</span>
-                        {!v.localService && <span className="text-xs flex-shrink-0" style={{color:'#0F5132'}}>online</span>}
+                        {!v.localService && <span className="text-xs flex-shrink-0" style={{color:'#0A1F44'}}>online</span>}
                       </button>
                     ))}
                   </div>
@@ -409,8 +409,8 @@ export default function HomePage() {
 
         <style>{`
           @keyframes pulse-ring {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(15,81,50,0.4); }
-            50% { box-shadow: 0 0 0 6px rgba(15,81,50,0); }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(10,31,68,0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(10,31,68,0); }
           }
           @keyframes blink {
             0%, 100% { opacity: 1; }
@@ -434,7 +434,7 @@ export default function HomePage() {
             style={{background:'#FFFFFF', border:'1px solid #E2E8F0'}}
             title="Lên đầu trang"
           >
-            <svg className="w-4 h-4" style={{color:'#0F5132'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" style={{color:'#0A1F44'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"/>
             </svg>
           </button>
@@ -451,7 +451,7 @@ export default function HomePage() {
             style={{background:'#FFFFFF', border:'1px solid #E2E8F0'}}
             title="Xuống cuối trang"
           >
-            <svg className="w-4 h-4" style={{color:'#0F5132'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" style={{color:'#0A1F44'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </button>
@@ -462,8 +462,8 @@ export default function HomePage() {
               <div
                 className={`max-w-[80%] rounded-2xl p-4 shadow-sm`}
                 style={msg.sender === 'user'
-                  ? {background:'#0F5132', color:'white'}
-                  : {background: speakingId === msg.id ? '#E8F5EF' : '#F7F1E6', border:`1px solid ${speakingId === msg.id ? '#0F5132' : '#E2E8F0'}`, color:'#0F5132'}}
+                  ? {background:'#0A1F44', color:'white'}
+                  : {background: speakingId === msg.id ? '#DCE3F0' : '#F5F1E8', border:`1px solid ${speakingId === msg.id ? '#0A1F44' : '#E2E8F0'}`, color:'#0A1F44'}}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-medium">
@@ -478,7 +478,7 @@ export default function HomePage() {
                         className="opacity-60 hover:opacity-100 transition-opacity p-2 -m-2 rounded touch-manipulation"
                       >
                         {speakingId === msg.id ? (
-                          <svg className="w-4 h-4" style={{color:'#0F5132'}} fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" style={{color:'#0A1F44'}} fill="currentColor" viewBox="0 0 24 24">
                             <rect x="6" y="6" width="4" height="12" rx="1"/>
                             <rect x="14" y="6" width="4" height="12" rx="1"/>
                           </svg>
@@ -497,17 +497,17 @@ export default function HomePage() {
                 <div className="whitespace-pre-wrap">
                   {msg.text}
                   {streamingId === msg.id && (
-                    <span className="inline-block w-0.5 h-4 ml-0.5 align-middle" style={{background:'#0F5132', animation:'blink 0.8s ease-in-out infinite'}} />
+                    <span className="inline-block w-0.5 h-4 ml-0.5 align-middle" style={{background:'#0A1F44', animation:'blink 0.8s ease-in-out infinite'}} />
                   )}
                 </div>
                 {speakingId === msg.id && (
                   <div className="flex items-center gap-1 mt-2">
                     {[0, 0.15, 0.3, 0.15, 0].map((delay, i) => (
                       <span key={i} className="inline-block w-0.5 rounded-full"
-                        style={{background:'#0F5132', height:`${8 + i * 3}px`, animation:'soundwave 0.8s ease-in-out infinite', animationDelay:`${delay}s`}}
+                        style={{background:'#0A1F44', height:`${8 + i * 3}px`, animation:'soundwave 0.8s ease-in-out infinite', animationDelay:`${delay}s`}}
                       />
                     ))}
-                    <span className="text-xs ml-1" style={{color:'#0F5132'}}>Đang đọc...</span>
+                    <span className="text-xs ml-1" style={{color:'#0A1F44'}}>Đang đọc...</span>
                   </div>
                 )}
               </div>
@@ -515,11 +515,11 @@ export default function HomePage() {
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl p-4" style={{background:'#F7F1E6', border:'1px solid #E2E8F0'}}>
+              <div className="rounded-2xl p-4" style={{background:'#F5F1E8', border:'1px solid #E2E8F0'}}>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{background:'#0F5132'}}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{background:'#0F5132', animationDelay: '0.2s'}}></div>
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{background:'#0F5132', animationDelay: '0.4s'}}></div>
+                  <div className="w-2 h-2 rounded-full animate-bounce" style={{background:'#0A1F44'}}></div>
+                  <div className="w-2 h-2 rounded-full animate-bounce" style={{background:'#0A1F44', animationDelay: '0.2s'}}></div>
+                  <div className="w-2 h-2 rounded-full animate-bounce" style={{background:'#0A1F44', animationDelay: '0.4s'}}></div>
                 </div>
               </div>
             </div>
@@ -533,8 +533,8 @@ export default function HomePage() {
             <div className="flex-1 relative">
               <textarea
                 ref={inputRef}
-                className="w-full rounded-xl p-4 focus:ring-2 focus:ring-[#0F5132] focus:outline-none resize-none"
-                style={{background:'#FFFFFF', border:`1px solid ${isListening ? '#0F5132' : '#E2E8F0'}`, color:'#0F5132'}}
+                className="w-full rounded-xl p-4 focus:ring-2 focus:ring-[#0A1F44] focus:outline-none resize-none"
+                style={{background:'#FFFFFF', border:`1px solid ${isListening ? '#0A1F44' : '#E2E8F0'}`, color:'#0A1F44'}}
                 placeholder={isListening ? t('home.listening') : t('home.input_placeholder')}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -555,7 +555,7 @@ export default function HomePage() {
                   onClick={toggleListening}
                   disabled={loading}
                   title={isListening ? 'Dừng ghi âm' : 'Nhận diện giọng nói'}
-                  className={`p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 hover:bg-red-400 shadow-lg shadow-red-500/30' : 'hover:bg-[#0F5132]/10'}`}
+                  className={`p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 hover:bg-red-400 shadow-lg shadow-red-500/30' : 'hover:bg-[#0A1F44]/10'}`}
                   style={isListening ? {} : {border:'1px solid #E2E8F0', background:'#FFFFFF'}}
                 >
                   {isListening ? (
@@ -563,7 +563,7 @@ export default function HomePage() {
                       <rect x="6" y="6" width="12" height="12" rx="2"/>
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5" style={{color:'#0F5132'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" style={{color:'#0A1F44'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
                     </svg>
                   )}
@@ -573,7 +573,7 @@ export default function HomePage() {
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
                 className="px-8 py-4 text-white font-semibold rounded-xl disabled:opacity-50 transition-all shadow-md"
-                style={{background:'#0F5132'}}
+                style={{background:'#0A1F44'}}
               >
                 {loading ? t('home.thinking') : t('home.send')}
               </button>
@@ -586,8 +586,8 @@ export default function HomePage() {
                 onClick={() => setInput(t(`home.${key}`))}
                 disabled={loading}
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105 disabled:opacity-40"
-                style={{background:'#F7F1E6', border:'1px solid #E2E8F0', color:'#374151'}}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#0F5132'; (e.currentTarget as HTMLElement).style.color = '#0F5132'; }}
+                style={{background:'#F5F1E8', border:'1px solid #E2E8F0', color:'#374151'}}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#0A1F44'; (e.currentTarget as HTMLElement).style.color = '#0A1F44'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.color = '#374151'; }}
               >
                 {t(`home.${key}`)}
@@ -604,15 +604,15 @@ export default function HomePage() {
       {/* Why Choose Aminra */}
       <div className="lg:w-80 rounded-2xl overflow-hidden flex flex-col lg:min-h-0" style={{background:'#FFFFFF', border:'1px solid #E2E8F0'}}>
         <div className="px-5 pt-5 pb-3">
-          <h3 className="text-lg font-bold" style={{color:'#0F5132'}}>{t('home.why_title')}</h3>
-          <div className="h-0.5 mt-3 rounded-full" style={{background:'linear-gradient(to right, #0F5132, transparent)'}}></div>
+          <h3 className="text-lg font-bold" style={{color:'#0A1F44'}}>{t('home.why_title')}</h3>
+          <div className="h-0.5 mt-3 rounded-full" style={{background:'linear-gradient(to right, #0A1F44, transparent)'}}></div>
         </div>
         <div className="px-3 pb-4 space-y-1 overflow-y-auto flex-1 lg:min-h-0">
           {whyItems.map((item) => (
             <div
               key={item.titleKey}
               className="flex items-start gap-3 px-3 py-3 rounded-xl cursor-default transition-all duration-200 group"
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F7F1E6'}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F5F1E8'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
             >
               <div
@@ -622,7 +622,7 @@ export default function HomePage() {
                 {item.icon}
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-semibold leading-tight" style={{color:'#0F5132'}}>{t(item.titleKey)}</div>
+                <div className="text-sm font-semibold leading-tight" style={{color:'#0A1F44'}}>{t(item.titleKey)}</div>
                 <div className="text-xs mt-0.5 leading-relaxed" style={{color:'#6B7280'}}>{t(item.descKey)}</div>
               </div>
             </div>

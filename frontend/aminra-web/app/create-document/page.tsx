@@ -250,7 +250,7 @@ export default function CreateDocumentPage() {
         <div className="text-center space-y-4">
           <p style={{ color: '#6B7280' }}>Vui lòng đăng nhập để sử dụng chức năng này</p>
           <Link href="/business/login" className="inline-block px-6 py-3 rounded-xl font-semibold text-white"
-            style={{ background: '#0F5132' }}>
+            style={{ background: '#0A1F44' }}>
             Đăng nhập
           </Link>
         </div>
@@ -270,9 +270,9 @@ export default function CreateDocumentPage() {
     return (
       <div className="min-h-screen grid place-items-center" style={{ background: '#FFFFFF' }}>
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" />
-          <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
-          <div className="w-2 h-2 rounded-full bg-[#0F5132] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
+          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.15s' }} />
+          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" style={{ animationDelay: '0.3s' }} />
         </div>
       </div>
     );
@@ -300,7 +300,7 @@ export default function CreateDocumentPage() {
 
         {/* Header */}
         <div className="animate-section">
-          <h1 className="text-xl font-bold" style={{ color: '#0F5132' }}>Tạo hồ sơ theo đúng chuẩn</h1>
+          <h1 className="text-xl font-bold" style={{ color: '#0A1F44' }}>Tạo hồ sơ theo đúng chuẩn</h1>
           <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
             Chọn mẫu tài liệu Halal, hệ thống tự động điền thông tin doanh nghiệp và tải về file DOCX
           </p>
@@ -316,17 +316,17 @@ export default function CreateDocumentPage() {
               <div className="grid items-center" style={{ gridTemplateColumns: 'auto auto', gap: '8px' }}>
                 <div className="w-8 h-8 rounded-full grid place-items-center text-xs font-bold"
                   style={{
-                    background: step >= s.n ? '#0F5132' : '#E2E8F0',
+                    background: step >= s.n ? '#0A1F44' : '#E2E8F0',
                     color: step >= s.n ? '#fff' : '#6B7280',
                   }}>
                   {s.n}
                 </div>
-                <span className="text-sm font-medium" style={{ color: step >= s.n ? '#0F5132' : '#6B7280' }}>
+                <span className="text-sm font-medium" style={{ color: step >= s.n ? '#0A1F44' : '#6B7280' }}>
                   {s.label}
                 </span>
               </div>
               {i < 1 && (
-                <div className="h-0.5 w-12" style={{ background: step > s.n ? '#0F5132' : '#E2E8F0' }} />
+                <div className="h-0.5 w-12" style={{ background: step > s.n ? '#0A1F44' : '#E2E8F0' }} />
               )}
             </div>
           ))}
@@ -347,9 +347,9 @@ export default function CreateDocumentPage() {
             {/* Company profile panel (read-only) */}
             <div className="rounded-2xl p-5" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
               <div className="grid items-center mb-3" style={{ gridTemplateColumns: '1fr auto' }}>
-                <h3 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Thông tin doanh nghiệp</h3>
+                <h3 className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Thông tin doanh nghiệp</h3>
                 <Link href="/settings" className="text-xs px-3 py-1 rounded-lg transition-colors hover:opacity-80"
-                  style={{ background: 'rgba(15,81,50,0.1)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.2)' }}>
+                  style={{ background: 'rgba(10,31,68,0.1)', color: '#0A1F44', border: '1px solid rgba(10,31,68,0.2)' }}>
                   Cập nhật
                 </Link>
               </div>
@@ -366,7 +366,7 @@ export default function CreateDocumentPage() {
                   <div key={r.label} className="text-xs">
                     <span style={{ color: '#6B7280' }}>{r.label}: </span>
                     {r.value ? (
-                      <span className="font-medium" style={{ color: '#0F5132' }}>{r.value}</span>
+                      <span className="font-medium" style={{ color: '#0A1F44' }}>{r.value}</span>
                     ) : (
                       <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Chưa cập nhật</span>
                     )}
@@ -374,21 +374,21 @@ export default function CreateDocumentPage() {
                 ))}
                 <div className="text-xs">
                   <span style={{ color: '#6B7280' }}>Ngày tạo: </span>
-                  <span className="font-medium" style={{ color: '#0F5132' }}>{dateStr}</span>
+                  <span className="font-medium" style={{ color: '#0A1F44' }}>{dateStr}</span>
                 </div>
               </div>
             </div>
 
             {/* Template list */}
             <div>
-              <h2 className="text-base font-bold mb-1" style={{ color: '#0F5132' }}>Chọn mẫu tài liệu</h2>
+              <h2 className="text-base font-bold mb-1" style={{ color: '#0A1F44' }}>Chọn mẫu tài liệu</h2>
               <p className="text-xs mb-4" style={{ color: '#6B7280' }}>
                 Chọn tối đa 3 mẫu. Hệ thống sẽ thay thế các placeholder bằng thông tin doanh nghiệp.
               </p>
 
               {templates.length === 0 ? (
                 <div className="rounded-2xl p-8 text-center" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-                  <p className="text-sm font-semibold mb-1" style={{ color: '#0F5132' }}>Chưa có mẫu tài liệu</p>
+                  <p className="text-sm font-semibold mb-1" style={{ color: '#0A1F44' }}>Chưa có mẫu tài liệu</p>
                   <p className="text-xs" style={{ color: '#6B7280' }}>Admin cần upload template DOCX tại trang quản lý.</p>
                 </div>
               ) : (
@@ -401,16 +401,16 @@ export default function CreateDocumentPage() {
                       <button key={t.doc_type} onClick={() => toggleTemplate(t.doc_type)} disabled={disabled}
                         className="text-left rounded-xl p-4 transition-all"
                         style={{
-                          background: selected ? 'rgba(15,81,50,0.06)' : '#FFFFFF',
-                          border: `2px solid ${selected ? '#0F5132' : '#E2E8F0'}`,
+                          background: selected ? 'rgba(10,31,68,0.06)' : '#FFFFFF',
+                          border: `2px solid ${selected ? '#0A1F44' : '#E2E8F0'}`,
                           opacity: disabled ? 0.4 : 1,
                           cursor: disabled ? 'not-allowed' : 'pointer',
                         }}>
                         <div className="grid" style={{ gridTemplateColumns: 'auto 1fr', gap: '12px' }}>
                           <div className="w-5 h-5 rounded grid place-items-center mt-0.5"
                             style={{
-                              border: `2px solid ${selected ? '#0F5132' : '#E2E8F0'}`,
-                              background: selected ? '#0F5132' : 'transparent',
+                              border: `2px solid ${selected ? '#0A1F44' : '#E2E8F0'}`,
+                              background: selected ? '#0A1F44' : 'transparent',
                             }}>
                             {selected && (
                               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#fff" strokeWidth={3}>
@@ -419,7 +419,7 @@ export default function CreateDocumentPage() {
                             )}
                           </div>
                           <div>
-                            <div className="text-sm font-semibold" style={{ color: '#0F5132' }}>{t.label}</div>
+                            <div className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{t.label}</div>
                             <div className="text-xs mt-1" style={{ color: '#6B7280' }}>
                               {[t.has_vi && 'VI', t.has_en && 'EN'].filter(Boolean).join(' · ')}
                             </div>
@@ -439,7 +439,7 @@ export default function CreateDocumentPage() {
                 disabled={selectedTypes.length === 0 || !profileComplete}
                 className="px-6 py-3 rounded-xl font-semibold text-sm transition-all"
                 style={{
-                  background: selectedTypes.length > 0 && profileComplete ? '#0F5132' : '#E2E8F0',
+                  background: selectedTypes.length > 0 && profileComplete ? '#0A1F44' : '#E2E8F0',
                   color: selectedTypes.length > 0 && profileComplete ? '#fff' : '#6B7280',
                   cursor: selectedTypes.length > 0 && profileComplete ? 'pointer' : 'not-allowed',
                 }}>
@@ -470,13 +470,13 @@ export default function CreateDocumentPage() {
                       disabled={!available}
                       className="rounded-xl p-4 text-left transition-all"
                       style={{
-                        background: lang === l.id ? 'rgba(15,81,50,0.06)' : '#FFFFFF',
-                        border: `2px solid ${lang === l.id ? '#0F5132' : '#E2E8F0'}`,
+                        background: lang === l.id ? 'rgba(10,31,68,0.06)' : '#FFFFFF',
+                        border: `2px solid ${lang === l.id ? '#0A1F44' : '#E2E8F0'}`,
                         opacity: available ? 1 : 0.35,
                         cursor: available ? 'pointer' : 'not-allowed',
                       }}>
                       <div className="text-lg mb-1">{l.flag}</div>
-                      <div className="text-sm font-semibold" style={{ color: '#0F5132' }}>{l.label}</div>
+                      <div className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{l.label}</div>
                       {!available && (
                         <div className="text-xs mt-1" style={{ color: '#f59e0b' }}>Chưa có template</div>
                       )}
@@ -495,7 +495,7 @@ export default function CreateDocumentPage() {
                     const t = templates.find(tpl => tpl.doc_type === dt);
                     return (
                       <span key={dt} className="px-3 py-1 rounded-full text-xs font-medium"
-                        style={{ background: 'rgba(15,81,50,0.1)', color: '#0F5132' }}>
+                        style={{ background: 'rgba(10,31,68,0.1)', color: '#0A1F44' }}>
                         {t?.label || dt}
                       </span>
                     );
@@ -511,7 +511,7 @@ export default function CreateDocumentPage() {
                     .map(r => (
                       <div key={r.label} className="text-xs">
                         <span style={{ color: '#6B7280' }}>{r.label}: </span>
-                        <span className="font-medium" style={{ color: '#0F5132' }}>{r.value}</span>
+                        <span className="font-medium" style={{ color: '#0A1F44' }}>{r.value}</span>
                       </div>
                     ))}
                 </div>
@@ -521,7 +521,7 @@ export default function CreateDocumentPage() {
             {/* Success */}
             {generated && (
               <div className="px-4 py-3 rounded-xl text-sm"
-                style={{ background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)', color: '#0F5132' }}>
+                style={{ background: 'rgba(10,31,68,0.08)', border: '1px solid rgba(10,31,68,0.2)', color: '#0A1F44' }}>
                 Tạo thành công {selectedTypes.length} file DOCX! Kiểm tra thư mục Downloads.
               </div>
             )}
@@ -536,10 +536,10 @@ export default function CreateDocumentPage() {
               <button onClick={handleGenerate} disabled={generating}
                 className="w-full py-3.5 rounded-xl font-semibold text-base transition-all hover:scale-[1.01] active:scale-[0.99]"
                 style={{
-                  background: generating ? '#E2E8F0' : '#0F5132',
+                  background: generating ? '#E2E8F0' : '#0A1F44',
                   color: '#fff',
                   cursor: generating ? 'not-allowed' : 'pointer',
-                  boxShadow: generating ? 'none' : '0 4px 20px rgba(15,81,50,0.35)',
+                  boxShadow: generating ? 'none' : '0 4px 20px rgba(10,31,68,0.35)',
                 }}>
                 {generating ? (
                   <span className="grid grid-flow-col items-center gap-2 justify-center">
@@ -553,7 +553,7 @@ export default function CreateDocumentPage() {
             </div>
 
             {/* Info */}
-            <div className="rounded-xl p-4 text-xs" style={{ background: '#F7F1E6', border: '1px solid #E2E8F0', color: '#6B7280' }}>
+            <div className="rounded-xl p-4 text-xs" style={{ background: '#F5F1E8', border: '1px solid #E2E8F0', color: '#6B7280' }}>
               <strong style={{ color: '#374151' }}>Cách hoạt động:</strong>
               <ul className="mt-2 space-y-1 list-disc pl-4">
                 <li>Hệ thống lấy file DOCX mẫu do admin upload sẵn</li>

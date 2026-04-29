@@ -6,8 +6,8 @@ import Sidebar from './Sidebar';
 import { AdminAuthProvider } from './AdminAuthContext';
 import { UserAuthProvider } from './UserAuthContext';
 
-const FULL_SCREEN_ROUTES = ['/landing'];
-const FULL_SCREEN_PREFIXES = ['/supplier-portal', '/invite', '/trace', '/verify'];
+const FULL_SCREEN_ROUTES = ['/landing', '/forgot-password', '/reset-password'];
+const FULL_SCREEN_PREFIXES = ['/supplier-portal', '/invite', '/trace', '/verify', '/business/login', '/business/register', '/provider/login', '/provider/register', '/account/'];
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -52,7 +52,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         {/* Mobile header */}
         <header
           className="md:hidden flex items-center px-4 py-3"
-          style={{ background: '#0A3622', borderBottom: '1px solid #334155' }}
+          style={{ background: '#0A1F44', borderBottom: '1px solid #334155' }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
@@ -64,8 +64,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
             </svg>
           </button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.svg" alt="AMINRA" className="h-7 w-7 mr-2" />
-          <span className="text-white font-bold tracking-wider">AMINRA</span>
+          <img src="/aminra-mark.png" alt="" className="h-7 w-7 mr-2 object-contain" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aminra-wordmark-white.png" alt="AMINRA" className="h-4 object-contain" />
         </header>
 
         <main className="flex-1 p-5 md:p-8 lg:p-10 flex flex-col lg:min-h-0 lg:overflow-y-auto">

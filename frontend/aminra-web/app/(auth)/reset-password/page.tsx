@@ -80,11 +80,11 @@ export default function ResetPasswordPage() {
     <div className="w-full max-w-md" data-page>
       <div className="text-center mb-8 animate-section">
         <div className="inline-grid place-items-center w-16 h-16 rounded-2xl mb-4"
-          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(15,81,50,0.12)' }}>
+          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(10,31,68,0.12)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.svg" alt="AMINRA" className="w-11 h-11" />
+          <img src="/aminra-mark.png" alt="AMINRA" className="w-11 h-11 object-contain" />
         </div>
-        <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Đặt lại mật khẩu</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#0A1F44' }}>Đặt lại mật khẩu</h1>
         {email && (
           <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
             Tài khoản: <strong>{email}</strong>
@@ -107,13 +107,13 @@ export default function ResetPasswordPage() {
             <div className="inline-grid place-items-center w-12 h-12 rounded-full" style={{ background: 'rgba(239,68,68,0.1)' }}>
               <span style={{ color: '#ef4444', fontSize: 20 }}>!</span>
             </div>
-            <p className="text-sm" style={{ color: '#0F5132' }}>
+            <p className="text-sm" style={{ color: '#0A1F44' }}>
               Liên kết đặt lại không hợp lệ hoặc đã hết hạn (60 phút).
             </p>
             <Link
               href="/forgot-password"
               className="inline-block mt-2 text-sm font-medium py-2 -my-2 underline"
-              style={{ color: '#0F5132' }}
+              style={{ color: '#0A1F44' }}
             >
               Yêu cầu liên kết mới →
             </Link>
@@ -122,10 +122,10 @@ export default function ResetPasswordPage() {
 
         {status === 'valid' && done && (
           <div role="status" className="text-center space-y-4">
-            <div className="inline-grid place-items-center w-12 h-12 rounded-full bg-[#E8F5EF]">
-              <span className="text-[#0F5132] text-xl">✓</span>
+            <div className="inline-grid place-items-center w-12 h-12 rounded-full bg-[#DCE3F0]">
+              <span className="text-[#0A1F44] text-xl">✓</span>
             </div>
-            <p className="text-sm" style={{ color: '#0F5132' }}>
+            <p className="text-sm" style={{ color: '#0A1F44' }}>
               Mật khẩu đã được đặt lại thành công. Đang chuyển về đăng nhập...
             </p>
           </div>
@@ -142,8 +142,8 @@ export default function ResetPasswordPage() {
                 value={pw1} onChange={e => setPw1(e.target.value)}
                 placeholder="••••••••••"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
-                onFocus={e => (e.target.style.borderColor = '#0F5132')}
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
+                onFocus={e => (e.target.style.borderColor = '#0A1F44')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')}
               />
               <p className="text-xs mt-1.5" style={{ color: '#94A3B8' }}>
@@ -160,8 +160,8 @@ export default function ResetPasswordPage() {
                 value={pw2} onChange={e => setPw2(e.target.value)}
                 placeholder="••••••••••"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
-                onFocus={e => (e.target.style.borderColor = '#0F5132')}
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
+                onFocus={e => (e.target.style.borderColor = '#0A1F44')}
                 onBlur={e  => (e.target.style.borderColor = '#E2E8F0')}
               />
             </div>
@@ -180,7 +180,7 @@ export default function ResetPasswordPage() {
               disabled={submitting || !pw1 || !pw2}
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
               style={{
-                background: submitting || !pw1 || !pw2 ? '#E2E8F0' : '#0F5132',
+                background: submitting || !pw1 || !pw2 ? '#E2E8F0' : '#0A1F44',
                 color: submitting || !pw1 || !pw2 ? '#6B7280' : 'white',
                 cursor: submitting || !pw1 || !pw2 ? 'not-allowed' : 'pointer',
               }}

@@ -61,11 +61,11 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const STATUS_COLOR: Record<string, string> = {
   pending: '#94A3B8', assigned: '#3B82F6', reviewing: '#F59E0B', revision_required: '#EF4444',
-  returned: '#94A3B8', rejected: '#DC2626', approved: '#0F5132',
-  scheduled: '#3B82F6', in_progress: '#F59E0B', completed: '#0F5132', report_submitted: '#0F5132',
+  returned: '#94A3B8', rejected: '#DC2626', approved: '#0A1F44',
+  scheduled: '#3B82F6', in_progress: '#F59E0B', completed: '#0A1F44', report_submitted: '#0A1F44',
 };
 const RATING_LABEL: Record<string, { label: string; color: string; bg: string }> = {
-  excellent:         { label: 'Xuất sắc',     color: '#0F5132', bg: '#E8F5EF' },
+  excellent:         { label: 'Xuất sắc',     color: '#0A1F44', bg: '#DCE3F0' },
   good:              { label: 'Tốt',          color: '#0EA5E9', bg: '#E0F2FE' },
   fair:              { label: 'Trung bình',   color: '#D97706', bg: '#FEF3C7' },
   needs_improvement: { label: 'Cần cải thiện', color: '#DC2626', bg: '#FEF2F2' },
@@ -137,8 +137,8 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <Link href="/portfolio" className="inline-flex items-center min-h-[32px] text-sm font-medium" style={{ color: '#0F5132' }}>← Portfolio</Link>
-          <h1 className="text-2xl font-bold mt-1" style={{ color: '#0F5132' }}>{dossier.business.company_name}</h1>
+          <Link href="/portfolio" className="inline-flex items-center min-h-[32px] text-sm font-medium" style={{ color: '#0A1F44' }}>← Portfolio</Link>
+          <h1 className="text-2xl font-bold mt-1" style={{ color: '#0A1F44' }}>{dossier.business.company_name}</h1>
           <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
             {dossier.business.email}{dossier.business.phone ? ' • ' + dossier.business.phone : ''}
           </p>
@@ -182,7 +182,7 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
       {/* Documents by type — the "folder" */}
       <section className="rounded-2xl mb-6" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #F0F0F0' }}>
-          <h2 className="text-base font-bold" style={{ color: '#0F5132' }}>Thư mục tài liệu — {dossier.documents_by_type.length} loại</h2>
+          <h2 className="text-base font-bold" style={{ color: '#0A1F44' }}>Thư mục tài liệu — {dossier.documents_by_type.length} loại</h2>
         </div>
         {dossier.documents_by_type.length === 0 ? (
           <p className="px-6 py-8 text-sm text-center" style={{ color: '#94A3B8' }}>Chưa có tài liệu nào từ doanh nghiệp này</p>
@@ -196,13 +196,13 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
                     className="w-full px-6 py-4 text-left transition-colors hover:bg-black/[0.02]">
                     <div className="flex items-center gap-4">
                       <div className="w-9 h-9 rounded-lg grid place-items-center flex-shrink-0"
-                        style={{ background: 'rgba(15,81,50,0.08)', color: '#0F5132' }}>📁</div>
+                        style={{ background: 'rgba(10,31,68,0.08)', color: '#0A1F44' }}>📁</div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>{b.doc_type}</p>
+                        <p className="text-sm font-semibold" style={{ color: '#0A1F44' }}>{b.doc_type}</p>
                         <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>
                           {b.revision_count} revision • Mới nhất: {b.current?.original_filename ?? '—'}
                           {b.current?.compliance_score !== null && b.current?.compliance_score !== undefined && (
-                            <span className="ml-2 font-bold" style={{ color: '#0F5132' }}>{b.current.compliance_score}/100</span>
+                            <span className="ml-2 font-bold" style={{ color: '#0A1F44' }}>{b.current.compliance_score}/100</span>
                           )}
                         </p>
                       </div>
@@ -226,16 +226,16 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
                         <tbody>
                           {b.revisions.map((r, i) => (
                             <tr key={r.id} style={{ borderTop: '1px solid #F8F8F8' }}>
-                              <td className="py-2.5" style={{ color: '#0F5132' }}>
-                                {i === 0 && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold mr-2" style={{ background: '#E8F5EF', color: '#0F5132' }}>HIỆN TẠI</span>}
+                              <td className="py-2.5" style={{ color: '#0A1F44' }}>
+                                {i === 0 && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold mr-2" style={{ background: '#DCE3F0', color: '#0A1F44' }}>HIỆN TẠI</span>}
                                 {r.original_filename}
                               </td>
                               <td className="py-2.5" style={{ color: '#64748B' }}>{fmtDate(r.uploaded_at)}</td>
                               <td className="py-2.5 text-right" style={{ color: '#64748B' }}>{fmtSize(r.file_size)}</td>
-                              <td className="py-2.5 text-right font-semibold" style={{ color: r.compliance_score === null ? '#94A3B8' : (r.compliance_score >= 80 ? '#0F5132' : r.compliance_score >= 60 ? '#D97706' : '#DC2626') }}>
+                              <td className="py-2.5 text-right font-semibold" style={{ color: r.compliance_score === null ? '#94A3B8' : (r.compliance_score >= 80 ? '#0A1F44' : r.compliance_score >= 60 ? '#D97706' : '#DC2626') }}>
                                 {r.compliance_score ?? '—'}
                               </td>
-                              <td className="py-2.5 text-right" style={{ color: r.overall_status === 'cb_approved' ? '#0F5132' : '#94A3B8' }}>
+                              <td className="py-2.5 text-right" style={{ color: r.overall_status === 'cb_approved' ? '#0A1F44' : '#94A3B8' }}>
                                 {r.overall_status === 'cb_approved' ? '✓' : '—'}
                               </td>
                             </tr>
@@ -254,7 +254,7 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
       {/* Submissions */}
       <section className="rounded-2xl mb-6" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
         <div className="px-6 py-4" style={{ borderBottom: '1px solid #F0F0F0' }}>
-          <h2 className="text-base font-bold" style={{ color: '#0F5132' }}>Hồ sơ đã gửi — {dossier.submissions.length}</h2>
+          <h2 className="text-base font-bold" style={{ color: '#0A1F44' }}>Hồ sơ đã gửi — {dossier.submissions.length}</h2>
         </div>
         {dossier.submissions.length === 0 ? (
           <p className="px-6 py-8 text-sm text-center" style={{ color: '#94A3B8' }}>Chưa có hồ sơ nào</p>
@@ -266,13 +266,13 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
                   {STATUS_LABEL[s.status] ?? s.status}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm" style={{ color: '#0F5132' }}>
+                  <p className="text-sm" style={{ color: '#0A1F44' }}>
                     {s.document_ids.length} tài liệu • Gửi {fmtDate(s.submitted_at)}
                     {s.deadline && <span className="ml-2 text-xs" style={{ color: '#D97706' }}>(deadline {fmtDate(s.deadline)})</span>}
                   </p>
                   {s.auditor_notes && <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>{s.auditor_notes}</p>}
                 </div>
-                <Link href={`/submissions`} className="text-xs font-medium" style={{ color: '#0F5132' }}>Mở →</Link>
+                <Link href={`/submissions`} className="text-xs font-medium" style={{ color: '#0A1F44' }}>Mở →</Link>
               </div>
             ))}
           </div>
@@ -282,7 +282,7 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
       {/* Audit visits */}
       <section className="rounded-2xl" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
         <div className="px-6 py-4" style={{ borderBottom: '1px solid #F0F0F0' }}>
-          <h2 className="text-base font-bold" style={{ color: '#0F5132' }}>Kiểm định thực tế — {dossier.audit_visits.length}</h2>
+          <h2 className="text-base font-bold" style={{ color: '#0A1F44' }}>Kiểm định thực tế — {dossier.audit_visits.length}</h2>
         </div>
         {dossier.audit_visits.length === 0 ? (
           <p className="px-6 py-8 text-sm text-center" style={{ color: '#94A3B8' }}>Chưa có lần kiểm định nào</p>
@@ -294,14 +294,14 @@ export default function ProviderBusinessPage({ params }: { params: Promise<{ id:
                   {STATUS_LABEL[v.status] ?? v.status}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm" style={{ color: '#0F5132' }}>{v.visit_type} • {fmtDate(v.scheduled_date)}</p>
+                  <p className="text-sm" style={{ color: '#0A1F44' }}>{v.visit_type} • {fmtDate(v.scheduled_date)}</p>
                 </div>
                 {v.compliance_score !== null && (
-                  <span className="text-sm font-bold" style={{ color: v.compliance_score >= 80 ? '#0F5132' : v.compliance_score >= 60 ? '#D97706' : '#DC2626' }}>
+                  <span className="text-sm font-bold" style={{ color: v.compliance_score >= 80 ? '#0A1F44' : v.compliance_score >= 60 ? '#D97706' : '#DC2626' }}>
                     {v.compliance_score}/100
                   </span>
                 )}
-                <Link href={`/audits/${v.id}`} className="text-xs font-medium" style={{ color: '#0F5132' }}>Mở →</Link>
+                <Link href={`/audits/${v.id}`} className="text-xs font-medium" style={{ color: '#0A1F44' }}>Mở →</Link>
               </div>
             ))}
           </div>
@@ -315,7 +315,7 @@ function ScoreComponent({ title, score, meta, weight }: { title: string; score: 
   return (
     <div className="text-right">
       <p className="text-xs" style={{ color: '#64748B' }}>{title} <span className="opacity-60">({Math.round(weight * 100)}%)</span></p>
-      <p className="text-2xl font-bold" style={{ color: score === null ? '#94A3B8' : score >= 80 ? '#0F5132' : score >= 60 ? '#D97706' : '#DC2626' }}>
+      <p className="text-2xl font-bold" style={{ color: score === null ? '#94A3B8' : score >= 80 ? '#0A1F44' : score >= 60 ? '#D97706' : '#DC2626' }}>
         {score ?? '—'}
         {score !== null && <span className="text-xs font-medium opacity-60 ml-1">/100</span>}
       </p>
