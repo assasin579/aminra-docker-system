@@ -31,6 +31,8 @@ repos:
         exclude: '\.snap$|package-lock\.json|\.lock$|^branding/'
       - id: check-yaml
         args: [--allow-multiple-documents]
+        # docker-compose.registry.yml uses Compose-specific !reset tag
+        exclude: '^docker-compose\.registry\.yml$'
       - id: check-json
         exclude: 'tsconfig.*\.json|\.vscode/'
       - id: check-toml
