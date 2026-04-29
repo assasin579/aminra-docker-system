@@ -24,8 +24,9 @@ export default function Navbar() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.svg" alt="AMINRA" className="h-8 w-8" />
-          <span className="text-xl font-bold tracking-wider" style={{ color: '#0F5132' }}>AMINRA</span>
+          <img src="/aminra-mark.png" alt="" className="h-8 w-8 object-contain" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aminra-wordmark-navy.png" alt="AMINRA" className="h-5 object-contain" />
         </div>
 
         <nav className="hidden md:flex items-center space-x-8">
@@ -75,7 +76,7 @@ export default function Navbar() {
                   key={lang.code}
                   onClick={() => changeLanguage(lang.code)}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-                  style={{ color: i18n.language === lang.code ? '#0F5132' : '#374151', background: i18n.language === lang.code ? '#E8F5EF' : 'transparent', fontWeight: i18n.language === lang.code ? 600 : 400 }}
+                  style={{ color: i18n.language === lang.code ? '#0A1F44' : '#374151', background: i18n.language === lang.code ? '#DCE3F0' : 'transparent', fontWeight: i18n.language === lang.code ? 600 : 400 }}
                 >
                   {lang.name}
                 </button>

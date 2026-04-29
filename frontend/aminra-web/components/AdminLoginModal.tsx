@@ -41,7 +41,7 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-bold" style={{ color: '#0F5132' }}>Đăng nhập Admin</h2>
+            <h2 className="text-lg font-bold" style={{ color: '#0A1F44' }}>Đăng nhập Admin</h2>
             <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Quản lý template và tiêu chí đánh giá</p>
           </div>
           <button onClick={() => onClose()} className="p-1.5 rounded-lg transition-colors"
@@ -62,8 +62,8 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
               value={username} onChange={e => setUsername(e.target.value)}
               placeholder="admin"
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
-              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
@@ -77,8 +77,8 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
               value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
-              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
-              onFocus={e => (e.target.style.borderColor = '#0F5132')}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
+              onFocus={e => (e.target.style.borderColor = '#0A1F44')}
               onBlur={e => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
@@ -92,7 +92,7 @@ export default function AdminLoginModal({ onClose }: { onClose: (loggedIn?: bool
           <button type="submit" disabled={loading || !username || !password}
             className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all"
             style={{
-              background: loading || !username || !password ? '#E2E8F0' : '#0F5132',
+              background: loading || !username || !password ? '#E2E8F0' : '#0A1F44',
               color: loading || !username || !password ? '#6B7280' : 'white',
               cursor: loading || !username || !password ? 'not-allowed' : 'pointer',
             }}>

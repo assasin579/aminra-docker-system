@@ -179,7 +179,7 @@ function CriterionRow({ c, idx, onChange, onDelete }: {
             onChange={e => onChange({ ...c, name: e.target.value })}
             placeholder="Tên tiêu chí (vd: Chứng nhận Halal nhà cung cấp)"
             className="admin-input w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200"
-            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
           />
           <textarea
             value={c.description}
@@ -187,7 +187,7 @@ function CriterionRow({ c, idx, onChange, onDelete }: {
             placeholder="Mô tả tiêu chí và cách đánh giá…"
             rows={2}
             className="admin-textarea w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 resize-none"
-            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
           />
         </div>
 
@@ -420,14 +420,14 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
             {/* Header: icon + title + lang tabs + upload btn */}
             <div className="px-5 py-4 flex items-center gap-3 flex-wrap" style={{ borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
               <div className="w-8 h-8 rounded-lg grid place-items-center flex-shrink-0"
-                style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
-                <svg className="w-4 h-4" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
+                style={{ background: 'rgba(10,31,68,0.12)', border: '1px solid rgba(10,31,68,0.25)' }}>
+                <svg className="w-4 h-4" fill="none" stroke="#0A1F44" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Template DOCX cho tạo hồ sơ</h3>
+                <h3 className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Template DOCX cho tạo hồ sơ</h3>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>File DOCX chứa {`{{placeholders}}`} sẽ được điền thông tin doanh nghiệp</p>
               </div>
               <div className="flex gap-2">
@@ -446,7 +446,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
               </div>
               <button onClick={() => tplInputRef.current?.click()} disabled={tplUploading !== null}
                 className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95 flex-shrink-0"
-                style={{ gridTemplateColumns: 'auto 1fr', background: tplUploading ? 'rgba(226,232,240,0.5)' : 'rgba(15,81,50,0.15)', color: tplUploading ? '#6B7280' : '#0F5132', border: '1px solid rgba(15,81,50,0.3)' }}>
+                style={{ gridTemplateColumns: 'auto 1fr', background: tplUploading ? 'rgba(226,232,240,0.5)' : 'rgba(10,31,68,0.15)', color: tplUploading ? '#6B7280' : '#0A1F44', border: '1px solid rgba(10,31,68,0.3)' }}>
                 {tplUploading ? (
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
                 ) : (
@@ -476,13 +476,13 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                   <div className="grid items-center gap-3 px-4 py-3 rounded-xl group/file"
                     style={{ gridTemplateColumns: 'auto 1fr auto', background: '#FFFFFF', border: '1px solid rgba(226,232,240,0.6)' }}>
                     <div className="w-8 h-8 rounded-lg grid place-items-center"
-                      style={{ background: 'rgba(15,81,50,0.1)', border: '1px solid rgba(15,81,50,0.2)' }}>
-                      <svg className="w-4 h-4" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
+                      style={{ background: 'rgba(10,31,68,0.1)', border: '1px solid rgba(10,31,68,0.2)' }}>
+                      <svg className="w-4 h-4" fill="none" stroke="#0A1F44" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: '#0F5132' }}>{tplInfo.filename}</p>
+                      <p className="text-sm font-medium truncate" style={{ color: '#0A1F44' }}>{tplInfo.filename}</p>
                       <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                         {formatBytes(tplInfo.size)}
                         {tplInfo.updated_at && ` · ${new Date(tplInfo.updated_at + 'Z').toLocaleString('vi-VN')}`}
@@ -495,7 +495,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                         rel="noopener noreferrer"
                         title="Mở file ở tab mới — verify nội dung trước khi business dùng"
                         className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
-                        style={{ gridTemplateColumns: 'auto auto', color: '#0F5132', background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)' }}>
+                        style={{ gridTemplateColumns: 'auto auto', color: '#0A1F44', background: 'rgba(10,31,68,0.08)', border: '1px solid rgba(10,31,68,0.2)' }}>
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -531,7 +531,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Tài liệu mẫu tham chiếu</h3>
+            <h3 className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Tài liệu mẫu tham chiếu</h3>
             <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>AI dùng file theo ngôn ngữ tương ứng để đánh giá</p>
           </div>
           <div className="flex gap-2">
@@ -599,14 +599,14 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="w-8 h-8 rounded-lg grid place-items-center"
-                    style={{ background: 'rgba(15,81,50,0.1)', border: '1px solid rgba(15,81,50,0.2)' }}>
-                    <svg className="w-4 h-4" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
+                    style={{ background: 'rgba(10,31,68,0.1)', border: '1px solid rgba(10,31,68,0.2)' }}>
+                    <svg className="w-4 h-4" fill="none" stroke="#0A1F44" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: '#0F5132' }}>{f.name}</p>
+                    <p className="text-sm font-medium truncate" style={{ color: '#0A1F44' }}>{f.name}</p>
                     <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{formatBytes(f.size)}</p>
                   </div>
                   <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
@@ -617,7 +617,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                       onClick={e => e.stopPropagation()}
                       title="Mở file ở tab mới"
                       className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
-                      style={{ gridTemplateColumns: 'auto auto', color: '#0F5132', background: 'rgba(15,81,50,0.08)', border: '1px solid rgba(15,81,50,0.2)' }}>
+                      style={{ gridTemplateColumns: 'auto auto', color: '#0A1F44', background: 'rgba(10,31,68,0.08)', border: '1px solid rgba(10,31,68,0.2)' }}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -668,14 +668,14 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
           <div className="grid items-center" style={{ gridTemplateColumns: '1fr auto' }}>
             <div className="grid grid-flow-col items-center gap-3 justify-start">
               <div className="w-8 h-8 rounded-lg grid place-items-center"
-                style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
-                <svg className="w-4 h-4" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
+                style={{ background: 'rgba(10,31,68,0.12)', border: '1px solid rgba(10,31,68,0.25)' }}>
+                <svg className="w-4 h-4" fill="none" stroke="#0A1F44" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Tiêu chí bắt buộc</h3>
+                <h3 className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Tiêu chí bắt buộc</h3>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                   {criteria.length} tiêu chí — AI dùng để chấm điểm từng mục
                 </p>
@@ -684,7 +684,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
             <button
               onClick={addCriterion}
               className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(15,81,50,0.12)', color: '#0F5132', border: '1px solid rgba(15,81,50,0.25)' }}
+              style={{ gridTemplateColumns: 'auto 1fr', background: 'rgba(10,31,68,0.12)', color: '#0A1F44', border: '1px solid rgba(10,31,68,0.25)' }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -698,7 +698,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
             <div className="mt-4 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs" style={{ color: '#6B7280' }}>Tổng điểm</span>
-                <span className="text-xs font-bold" style={{ color: weightOk ? '#0F5132' : '#f59e0b' }}>
+                <span className="text-xs font-bold" style={{ color: weightOk ? '#0A1F44' : '#f59e0b' }}>
                   {totalWeight} / 100 {weightOk ? '✓' : '(nên = 100)'}
                 </span>
               </div>
@@ -708,7 +708,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                   style={{
                     width: `${weightPct}%`,
                     background: weightOk
-                      ? 'linear-gradient(90deg, #0F5132, #0F5132)'
+                      ? 'linear-gradient(90deg, #0A1F44, #0A1F44)'
                       : totalWeight > 100
                         ? 'linear-gradient(90deg, #dc2626, #EF4444)'
                         : 'linear-gradient(90deg, #d97706, #F59E0B)',
@@ -758,7 +758,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Hướng dẫn đánh giá cho AI</h3>
+              <h3 className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Hướng dẫn đánh giá cho AI</h3>
               <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                 AI đọc hướng dẫn này để hiểu ngữ cảnh và cách chấm điểm
               </p>
@@ -772,7 +772,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
             placeholder="Nhập hướng dẫn đánh giá tổng quát cho loại tài liệu này. AI sẽ đọc hướng dẫn này khi chấm điểm…"
             rows={5}
             className="admin-textarea w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 resize-none"
-            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
           />
         </div>
       </div>
@@ -784,7 +784,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
           <div className="grid grid-flow-col items-center gap-2.5 justify-start">
             <span style={{ color: '#6366F1', fontSize: 16 }}>⎙</span>
             <div>
-              <h3 className="text-sm font-semibold" style={{ color: '#0F5132' }}>Định dạng tài liệu DOCX</h3>
+              <h3 className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Định dạng tài liệu DOCX</h3>
               <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                 Cấu hình trang bìa, phần mục, metadata cho file xuất ra
               </p>
@@ -813,7 +813,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                   onChange={e => update({ confidential_label: e.target.value })}
                   placeholder="TÀI LIỆU NỘI BỘ"
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+                  style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
                 />
               </div>
 
@@ -863,7 +863,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                         }}
                         placeholder="Tên trường"
                         className="px-3 py-2 rounded-lg text-xs outline-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
                       />
                       <input
                         value={m.value}
@@ -874,7 +874,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                         }}
                         placeholder="Giá trị"
                         className="px-3 py-2 rounded-lg text-xs outline-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
                       />
                       <button
                         onClick={() => update({ cover_meta: dc.cover_meta.filter((_, j) => j !== i) })}
@@ -914,7 +914,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                           }}
                           placeholder="Tiêu đề phần"
                           className="px-3 py-2 rounded-lg text-xs outline-none font-medium"
-                          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+                          style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
                         />
                         <button
                           onClick={() => update({ custom_sections: dc.custom_sections.filter((_, j) => j !== i) })}
@@ -930,7 +930,7 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
                         placeholder="Nội dung (mỗi dòng = 1 đoạn, dùng - ở đầu dòng cho bullet)"
                         rows={3}
                         className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-none"
-                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' }}
+                        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' }}
                       />
                     </div>
                   ))}
@@ -954,9 +954,9 @@ function TemplateEditor({ docTypeId, label, token }: { docTypeId: string; label:
           className={`grid items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${saved ? 'admin-pulse-glow' : ''}`}
           style={{
             gridTemplateColumns: 'auto 1fr',
-            background: saving ? 'rgba(15,81,50,0.4)' : saved ? '#0F5132' : 'linear-gradient(135deg, #0A3622, #0F5132)',
+            background: saving ? 'rgba(10,31,68,0.4)' : saved ? '#0A1F44' : 'linear-gradient(135deg, #0A1F44, #0A1F44)',
             color: saving ? 'rgba(255,255,255,0.5)' : 'white',
-            boxShadow: saved ? '0 0 20px rgba(15,81,50,0.3)' : '0 4px 12px rgba(15,81,50,0.25)',
+            boxShadow: saved ? '0 0 20px rgba(10,31,68,0.3)' : '0 4px 12px rgba(10,31,68,0.25)',
             transform: saving ? 'scale(0.98)' : 'scale(1)',
           }}
         >
@@ -1054,20 +1054,20 @@ function PlaceholderManager({ token }: { token: string }) {
     fetchPlaceholders();
   };
 
-  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' };
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold" style={{ color: '#0F5132' }}>Quản lý Placeholders</h2>
+          <h2 className="text-lg font-bold" style={{ color: '#0A1F44' }}>Quản lý Placeholders</h2>
           <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
             Định nghĩa các biến dùng trong template DOCX. Dùng cú pháp {`{{key}}`} trong file mẫu.
           </p>
         </div>
         <button onClick={openAdd}
-          className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F5132' }}>
+          className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0A1F44' }}>
           + Thêm placeholder
         </button>
       </div>
@@ -1078,7 +1078,7 @@ function PlaceholderManager({ token }: { token: string }) {
           <div className="py-8 text-center text-sm" style={{ color: '#6B7280' }}>Đang tải...</div>
         ) : (
           <table className="w-full text-sm">
-            <thead style={{ background: '#F7F1E6' }}>
+            <thead style={{ background: '#F5F1E8' }}>
               <tr>
                 {['Placeholder', 'Tên hiển thị', 'Nguồn dữ liệu', ''].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-medium" style={{ color: '#6B7280' }}>{h}</th>
@@ -1094,7 +1094,7 @@ function PlaceholderManager({ token }: { token: string }) {
                       {`{{${p.key}}}`}
                     </code>
                   </td>
-                  <td className="px-4 py-3 font-medium" style={{ color: '#0F5132' }}>{p.label}</td>
+                  <td className="px-4 py-3 font-medium" style={{ color: '#0A1F44' }}>{p.label}</td>
                   <td className="px-4 py-3 text-xs" style={{ color: '#6B7280' }}>
                     {p.source ? (
                       <span className="px-2 py-0.5 rounded" style={{ background: '#F0F9FF', color: '#0369A1' }}>
@@ -1133,7 +1133,7 @@ function PlaceholderManager({ token }: { token: string }) {
           style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowForm(false)}>
           <div className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }} onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-bold mb-4" style={{ color: '#0F5132' }}>{editKey ? 'Sửa Placeholder' : 'Thêm Placeholder'}</h3>
+            <h3 className="text-base font-bold mb-4" style={{ color: '#0A1F44' }}>{editKey ? 'Sửa Placeholder' : 'Thêm Placeholder'}</h3>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: '#6B7280' }}>Key (không dấu, gạch dưới) *</label>
@@ -1186,7 +1186,7 @@ function PlaceholderManager({ token }: { token: string }) {
               {error && <p className="text-xs" style={{ color: '#DC2626' }}>{error}</p>}
               <button onClick={handleSave} disabled={saving || !form.key || !form.label}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
-                style={{ background: (!form.key || !form.label) ? '#E2E8F0' : '#0F5132', color: (!form.key || !form.label) ? '#9CA3AF' : '#fff' }}>
+                style={{ background: (!form.key || !form.label) ? '#E2E8F0' : '#0A1F44', color: (!form.key || !form.label) ? '#9CA3AF' : '#fff' }}>
                 {saving ? 'Đang lưu...' : editKey ? 'Cập nhật' : `Tạo {{${form.key || '...'}}}`}
               </button>
             </div>
@@ -1225,7 +1225,7 @@ export default function AdminPageClient() {
               </svg>
             </div>
           </div>
-          <h2 className="text-2xl font-bold mb-3" style={{ color: '#0F5132' }}>Không có quyền truy cập</h2>
+          <h2 className="text-2xl font-bold mb-3" style={{ color: '#0A1F44' }}>Không có quyền truy cập</h2>
           <p className="text-base mb-4 max-w-sm mx-auto leading-relaxed" style={{ color: '#6B7280' }}>
             Bạn đang đăng nhập bằng tài khoản doanh nghiệp/tổ chức. Vui lòng đăng xuất trước khi truy cập khu vực Admin.
           </p>
@@ -1254,7 +1254,7 @@ export default function AdminPageClient() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-3" style={{ color: '#0F5132' }}>Khu vực dành cho Admin</h2>
+          <h2 className="text-2xl font-bold mb-3" style={{ color: '#0A1F44' }}>Khu vực dành cho Admin</h2>
           <p className="text-base mb-8 max-w-sm mx-auto leading-relaxed" style={{ color: '#6B7280' }}>
             Bạn cần đăng nhập bằng tài khoản admin để truy cập và quản lý template đánh giá.
           </p>
@@ -1263,9 +1263,9 @@ export default function AdminPageClient() {
             className="inline-grid items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
               gridTemplateColumns: 'auto 1fr',
-              background: 'linear-gradient(135deg, #0A3622, #0F5132)',
+              background: 'linear-gradient(135deg, #0A1F44, #0A1F44)',
               color: 'white',
-              boxShadow: '0 4px 20px rgba(15,81,50,0.35)',
+              boxShadow: '0 4px 20px rgba(10,31,68,0.35)',
             }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1289,15 +1289,15 @@ export default function AdminPageClient() {
       <div className="mb-8">
         <div className="grid grid-flow-col items-center gap-3 mb-2 justify-start">
           <div className="w-10 h-10 rounded-xl grid place-items-center"
-            style={{ background: 'linear-gradient(135deg, rgba(15,81,50,0.2), rgba(15,81,50,0.08))', border: '1px solid rgba(15,81,50,0.3)' }}>
-            <svg className="w-5 h-5" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
+            style={{ background: 'linear-gradient(135deg, rgba(10,31,68,0.2), rgba(10,31,68,0.08))', border: '1px solid rgba(10,31,68,0.3)' }}>
+            <svg className="w-5 h-5" fill="none" stroke="#0A1F44" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"
                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#0F5132' }}>Admin Panel</h1>
+            <h1 className="text-2xl font-bold" style={{ color: '#0A1F44' }}>Admin Panel</h1>
             <p className="text-sm" style={{ color: '#6B7280' }}>
               Quản lý template và tiêu chí đánh giá Halal
             </p>
@@ -1315,9 +1315,9 @@ export default function AdminPageClient() {
               onClick={() => setActiveSection(tab.key as 'templates' | 'users' | 'placeholders')}
               className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
               style={{
-                background: activeSection === tab.key ? 'rgba(15,81,50,0.15)' : 'rgba(0,0,0,0.02)',
-                color: activeSection === tab.key ? '#0F5132' : '#6B7280',
-                border: activeSection === tab.key ? '1px solid rgba(15,81,50,0.3)' : '1px solid #E2E8F0',
+                background: activeSection === tab.key ? 'rgba(10,31,68,0.15)' : 'rgba(0,0,0,0.02)',
+                color: activeSection === tab.key ? '#0A1F44' : '#6B7280',
+                border: activeSection === tab.key ? '1px solid rgba(10,31,68,0.3)' : '1px solid #E2E8F0',
               }}>
               {tab.label}
             </button>
@@ -1389,9 +1389,9 @@ export default function AdminPageClient() {
                       onClick={() => { setActiveGroup(gi); setActiveType(dt.id); }}
                       className="relative w-full text-left px-3.5 rounded-xl text-sm transition-all duration-200 hover:scale-[1.02] h-9 grid items-center"
                       style={{
-                        background: isActive ? '#0F5132' : '#FFFFFF',
+                        background: isActive ? '#0A1F44' : '#FFFFFF',
                         color: isActive ? '#FFFFFF' : '#6B7280',
-                        border: isActive ? '1px solid #0F5132' : '1px solid transparent',
+                        border: isActive ? '1px solid #0A1F44' : '1px solid transparent',
                         fontWeight: isActive ? '600' : '400',
                       }}
                     >
@@ -1413,19 +1413,19 @@ export default function AdminPageClient() {
           {/* Tab header */}
           <div className="rounded-2xl px-6 py-5 mb-5"
             style={{
-              background: 'linear-gradient(135deg, #FFFFFF, #F7F1E6)',
+              background: 'linear-gradient(135deg, #FFFFFF, #F5F1E8)',
               border: '1px solid rgba(226,232,240,0.8)',
             }}>
             <div className="grid grid-flow-col items-center gap-3 justify-start">
               <div className="w-9 h-9 rounded-xl grid place-items-center"
-                style={{ background: 'rgba(15,81,50,0.12)', border: '1px solid rgba(15,81,50,0.25)' }}>
-                <svg className="w-4 h-4" fill="none" stroke="#0F5132" viewBox="0 0 24 24">
+                style={{ background: 'rgba(10,31,68,0.12)', border: '1px solid rgba(10,31,68,0.25)' }}>
+                <svg className="w-4 h-4" fill="none" stroke="#0A1F44" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8"
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-bold" style={{ color: '#0F5132' }}>{currentType.label}</h2>
+                <h2 className="text-lg font-bold" style={{ color: '#0A1F44' }}>{currentType.label}</h2>
                 <p className="text-sm" style={{ color: '#6B7280' }}>
                   Template · Tiêu chí · Hướng dẫn AI
                 </p>

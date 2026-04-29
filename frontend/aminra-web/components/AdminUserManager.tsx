@@ -18,12 +18,12 @@ interface User {
 }
 
 const STATUS_CFG = {
-  active:    { label: 'Hoạt động',  bg: 'rgba(15,81,50,0.1)',   color: '#0F5132' },
+  active:    { label: 'Hoạt động',  bg: 'rgba(10,31,68,0.1)',   color: '#0A1F44' },
   pending:   { label: 'Chờ duyệt',  bg: 'rgba(245,158,11,0.1)', color: '#F59E0B' },
   suspended: { label: 'Đình chỉ',   bg: 'rgba(239,68,68,0.1)',  color: '#f87171' },
 };
 const ROLE_CFG = {
-  business: { label: 'Doanh nghiệp', color: '#0F5132' },
+  business: { label: 'Doanh nghiệp', color: '#0A1F44' },
   provider: { label: 'Tổ chức',      color: '#0EA5E9' },
 };
 
@@ -193,7 +193,7 @@ export default function AdminUserManager({ token }: { token: string }) {
     setForm(f => ({ ...f, [k]: e.target.value }));
 
   const inputCls = "w-full px-3 py-2.5 rounded-xl text-sm outline-none";
-  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F5132' };
+  const inputStyle = { background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0A1F44' };
 
   return (
     <div>
@@ -223,7 +223,7 @@ export default function AdminUserManager({ token }: { token: string }) {
         </div>
         <button onClick={openCreate}
           className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
-          style={{ gridTemplateColumns: 'auto 1fr', background: '#0F5132' }}>
+          style={{ gridTemplateColumns: 'auto 1fr', background: '#0A1F44' }}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -252,14 +252,14 @@ export default function AdminUserManager({ token }: { token: string }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <p className="font-medium text-sm" style={{ color: '#0F5132' }}>Không có user nào</p>
+            <p className="font-medium text-sm" style={{ color: '#0A1F44' }}>Không có user nào</p>
             <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
               {filterRole || filterStatus || search ? 'Thử bỏ bớt filter' : 'Chưa có ai đăng ký'}
             </p>
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead style={{ background: '#F7F1E6' }}>
+            <thead style={{ background: '#F5F1E8' }}>
               <tr>
                 {['Email / Tên', 'Loại', 'Trạng thái', 'Ngày tạo', ''].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-medium" style={{ color: '#6B7280' }}>{h}</th>
@@ -276,7 +276,7 @@ export default function AdminUserManager({ token }: { token: string }) {
                     borderTop: '1px solid #E2E8F0',
                   }}>
                     <td className="px-4 py-3">
-                      <p className="font-medium" style={{ color: '#0F5132' }}>{u.email}</p>
+                      <p className="font-medium" style={{ color: '#0A1F44' }}>{u.email}</p>
                       <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{u.company_name}</p>
                     </td>
                     <td className="px-4 py-3">
@@ -323,12 +323,12 @@ export default function AdminUserManager({ token }: { token: string }) {
           onClick={() => setModal(null)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
-            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 12px 40px rgba(15,81,50,0.18)' }}
+            style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 12px 40px rgba(10,31,68,0.18)' }}
             onClick={e => e.stopPropagation()}
             onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSave(); }}>
             <div className="flex items-start justify-between gap-3 mb-5">
               <div className="min-w-0">
-                <h3 className="text-base font-bold" style={{ color: '#0F5132' }}>
+                <h3 className="text-base font-bold" style={{ color: '#0A1F44' }}>
                   {modal === 'create' ? 'Thêm user mới' : 'Sửa thông tin user'}
                 </h3>
                 {modal === 'edit' && editTarget && (
@@ -367,7 +367,7 @@ export default function AdminUserManager({ token }: { token: string }) {
                     placeholder="user@company.vn" className={inputCls} style={inputStyle} autoFocus />
                 ) : (
                   <input type="email" value={editTarget?.email ?? ''} readOnly disabled
-                    className={inputCls} style={{ ...inputStyle, background: '#F7F1E6', cursor: 'not-allowed', color: '#6B7280' }} />
+                    className={inputCls} style={{ ...inputStyle, background: '#F5F1E8', cursor: 'not-allowed', color: '#6B7280' }} />
                 )}
               </div>
 
@@ -436,14 +436,14 @@ export default function AdminUserManager({ token }: { token: string }) {
                   onClick={() => setModal(null)}
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-xl font-medium text-sm transition-all"
-                  style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
+                  style={{ background: '#F5F1E8', color: '#6B7280', border: '1px solid #E2E8F0' }}>
                   Huỷ
                 </button>
                 <button
                   onClick={handleSave} disabled={saving}
                   className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
                   style={{
-                    background: saving ? 'rgba(15,81,50,0.4)' : '#0F5132',
+                    background: saving ? 'rgba(10,31,68,0.4)' : '#0A1F44',
                     cursor: saving ? 'wait' : 'pointer',
                   }}>
                   {saving ? 'Đang lưu...' : modal === 'create' ? 'Tạo user' : 'Lưu thay đổi'}

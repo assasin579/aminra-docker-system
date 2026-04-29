@@ -79,7 +79,7 @@ export default function RevisionPanel({
       data-revision-panel>
 
       <header className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold" style={{ color: '#0F5132' }}>
+        <h3 className="text-lg font-bold" style={{ color: '#0A1F44' }}>
           Yêu cầu sửa hồ sơ
         </h3>
         {hasHistory && (
@@ -261,7 +261,7 @@ function RequestRevisionForm({
 
       <button type="button" onClick={addDocIssue}
         className="text-xs font-medium"
-        style={{ color: '#0F5132' }}>
+        style={{ color: '#0A1F44' }}>
         + Thêm vấn đề cụ thể trên 1 document
       </button>
 
@@ -343,7 +343,7 @@ function ResubmitForm({
       <button type="submit" disabled={submitting}
         className="w-full py-2.5 rounded-xl font-semibold text-sm"
         style={{
-          background: submitting ? '#94A3B8' : '#0F5132',
+          background: submitting ? '#94A3B8' : '#0A1F44',
           color: 'white',
           cursor: submitting ? 'not-allowed' : 'pointer',
         }}>
@@ -404,7 +404,7 @@ function RevisionHistory({
             </span>
           </div>
 
-          <p className="text-sm mb-2 whitespace-pre-wrap" style={{ color: '#0F5132' }}>
+          <p className="text-sm mb-2 whitespace-pre-wrap" style={{ color: '#0A1F44' }}>
             {r.feedback}
           </p>
 
@@ -433,7 +433,7 @@ function RevisionHistory({
           )}
 
           {r.resolved_at && (
-            <p className="text-xs mt-2" style={{ color: '#198754' }}>
+            <p className="text-xs mt-2" style={{ color: '#102A5C' }}>
               ✓ Đã giải quyết: {new Date(r.resolved_at).toLocaleString('vi-VN', { hour12: false })}
             </p>
           )}

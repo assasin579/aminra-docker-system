@@ -86,8 +86,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'AMINRA';
   const options = {
     body: payload.message || '',
-    icon: '/aminra-mark.svg',
-    badge: '/aminra-mark.svg',
+    icon: '/aminra-mark.png',
+    badge: '/aminra-mark.png',
     data: { link: payload.link || '/', notification_id: payload.notification_id || null },
     tag: payload.tag || payload.notification_id || undefined,
     requireInteraction: false,

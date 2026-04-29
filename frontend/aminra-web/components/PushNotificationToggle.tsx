@@ -50,7 +50,7 @@ export default function PushNotificationToggle() {
     <div className="rounded-xl p-4" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>Thông báo đẩy</p>
+          <p className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Thông báo đẩy</p>
           <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>
             {state === 'enabled' && 'Đang bật — bạn sẽ nhận thông báo về hồ sơ, chứng nhận, kiểm định ngay cả khi không mở web'}
             {state === 'idle'    && 'Bật để nhận thông báo realtime về thay đổi trạng thái hồ sơ + cert sắp hết hạn'}
@@ -61,14 +61,14 @@ export default function PushNotificationToggle() {
         {state === 'idle' && (
           <button onClick={onEnable} disabled={busy}
             className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105 disabled:opacity-50"
-            style={{ background: '#0F5132' }}>
+            style={{ background: '#0A1F44' }}>
             {busy ? 'Đang bật...' : 'Bật thông báo'}
           </button>
         )}
         {state === 'enabled' && (
           <button onClick={onDisable} disabled={busy}
             className="px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
-            style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
+            style={{ background: '#F5F1E8', color: '#6B7280', border: '1px solid #E2E8F0' }}>
             {busy ? 'Đang tắt...' : 'Tắt thông báo'}
           </button>
         )}

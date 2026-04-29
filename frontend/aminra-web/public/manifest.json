@@ -4,14 +4,14 @@
   "description": "AMINRA — Halal Integrity, Digital Trust. Nền tảng chứng nhận Halal & kiểm định thực địa.",
   "start_url": "/audits",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#0F5132",
+  "background_color": "#FAF7EE",
+  "theme_color": "#0A1F44",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/aminra-mark.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/aminra-mark.png",
+      "sizes": "1310x1201",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

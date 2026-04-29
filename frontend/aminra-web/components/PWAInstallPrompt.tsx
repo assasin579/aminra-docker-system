@@ -62,10 +62,10 @@ export default function PWAInstallPrompt() {
         <div className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
           style={{ background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aminra-mark.svg" alt="AMINRA" className="w-7 h-7" />
+          <img src="/aminra-mark.png" alt="AMINRA" className="w-7 h-7" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: '#0F5132' }}>Cài AMINRA lên màn hình chính</p>
+          <p className="text-sm font-semibold" style={{ color: '#0A1F44' }}>Cài AMINRA lên màn hình chính</p>
           {iosVisible ? (
             <p className="text-xs mt-1 leading-relaxed" style={{ color: '#64748B' }}>
               Trên iPhone: bấm nút <strong>Share</strong> ở thanh dưới, sau đó chọn <strong>Add to Home Screen</strong>.
@@ -79,11 +79,11 @@ export default function PWAInstallPrompt() {
             {!iosVisible && (
               <button onClick={install}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
-                style={{ background: '#0F5132' }}>Cài đặt</button>
+                style={{ background: '#0A1F44' }}>Cài đặt</button>
             )}
             <button onClick={dismiss}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ background: '#F7F1E6', color: '#6B7280', border: '1px solid #E2E8F0' }}>
+              style={{ background: '#F5F1E8', color: '#6B7280', border: '1px solid #E2E8F0' }}>
               Để sau
             </button>
           </div>
