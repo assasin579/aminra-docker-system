@@ -68,7 +68,28 @@ cd backend
 ./run_tests.sh tests/test_auth.py              # one file
 ./run_tests.sh tests/test_auth.py -k login     # by name
 ./run_tests.sh --cov                           # coverage, fail < 80%
+./run_tests.sh tests/bdd                       # BDD/Gherkin scenarios (pytest-bdd)
 ```
+
+### Backend test toolbox (Phase 0 baseline)
+- `tests/factories.py` — six persona factories (BusinessOwner, BusinessMember,
+  ProviderAdmin, Auditor, IHCMember, Admin) + `make_business_tenant()` /
+  `make_provider_tenant()` helpers. Use these instead of inlining test users.
+- `tests/bdd/*.feature` — Gherkin scenarios for UAT. Pair each `.feature`
+  with a `test_*_steps.py` step file. Sample: `tests/bdd/login.feature`.
+- `tests/load/locustfile.py` — load-test skeleton. Run interactively:
+  ```bash
+  pip install locust
+  locust -f backend/tests/load/locustfile.py --host http://localhost:8100
+  ```
+  Or headless burst:
+  ```bash
+  locust -f backend/tests/load/locustfile.py --host http://localhost:8100 \
+    --users 50 --spawn-rate 5 --run-time 2m --headless
+  ```
+- `hypothesis` — property-based testing for invariants (multi-tenant
+  isolation, state-machine transitions). Pattern: `from hypothesis import
+  given, strategies as st`.
 
 ### Frontend unit + component (Vitest)
 ```bash

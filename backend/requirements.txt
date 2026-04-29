@@ -72,6 +72,12 @@ aiosmtpd>=1.4.0              # fake SMTP server for mailer integration tests
 fakeredis>=2.20.0            # in-process Redis stub for unit tests
 eth-tester[py-evm]>=0.13.0b1 # in-memory EVM for smart contract tests
 
+# Phase 0 expansion (2026-04-29) — required for ≥300 tests/feature target
+factory-boy>=3.3.0           # persona/model factories
+pytest-bdd>=7.0.0            # Gherkin/BDD runner for UAT scenarios
+hypothesis>=6.100.0          # property-based testing for invariants
+locust>=2.30.0               # load test (run: locust -f tests/load/locustfile.py)
+
 # ── Web Push (PWA notifications) ─────────────────────────────────────
 pywebpush>=2.0.0             # VAPID-signed delivery to browser push services
 python-dateutil>=2.9.0       # relativedelta for cert expiry day-of-month preserving
