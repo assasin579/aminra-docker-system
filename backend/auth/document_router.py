@@ -1,11 +1,16 @@
 """
 Document management API — list, detail, delete tenant documents.
+
+Tier-1 #24 (Phase 1, 2026-04-29): adds 6 version-control endpoints
+behind feature flag `document_versioning_v1`. When flag is OFF, the new
+routes return 404 (one less attack surface during rollout). The
+existing routes are unchanged — see `docs/features/document-version-control/`.
 """
 
 import json as _json
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime
 
 from uuid import UUID as _UUID
 
@@ -14,13 +19,24 @@ from pathlib import Path as _Path
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse as _FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import uuid4 as _uuid4
 
 from auth.db import get_db
 from auth.jwt_utils import get_current_user, decode_token
 from auth.upload_utils import validate_upload
-from auth.permissions import check_permission_db
+from auth.permissions import check_permission_db, get_user_permissions
+from services.feature_flags import is_feature_enabled
+from services.document_versioning import (
+    AUDIT_EVENT_APPROVED,
+    AUDIT_EVENT_REJECTED,
+    AUDIT_EVENT_SUBMITTED,
+    AUDIT_EVENT_SUPERSEDED,
+    MAX_CHAIN_DEPTH,
+    RETENTION_FLOOR_DAYS,
+    reject_self_supersede,
+    transition_allowed,
+)
 
 UPLOAD_DIR = _Path(os.getenv("UPLOAD_DIR", "./docs"))
 
@@ -869,3 +885,410 @@ async def dashboard_stats(
         "doc_type_progress": doc_type_progress,
         "recent_activity": recent,
     }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Tier-1 #24 — Document version control (feature-flagged)
+# Spec:        docs/features/document-version-control/spec.md
+# Threat:      docs/features/document-version-control/threat-model.md
+# Schema:      docs/features/document-version-control/schema.md
+# Feature flag: document_versioning_v1
+# ════════════════════════════════════════════════════════════════════════════
+
+
+class _ApprovalRequest(BaseModel):
+    effective_date: Optional[date] = None
+    next_review_date: Optional[date] = None
+    retention_period_days: Optional[int] = Field(default=None, ge=RETENTION_FLOOR_DAYS)
+
+
+class _RejectionRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class _SupersedeRequest(BaseModel):
+    new_document_id: str
+
+
+async def _require_versioning_flag(db, user) -> None:
+    """404 when feature flag is OFF (deliberately not 403 — fewer surface
+    leaks during rollout). Tenant-scoped flag resolution per migration 016."""
+    tenant_id = user.get("tenant_id")
+    if not await is_feature_enabled(db, tenant_id, "document_versioning_v1"):
+        raise HTTPException(404)
+
+
+async def _load_doc_in_tenant(db, doc_id: str, tenant_id: str):
+    """Load doc row for tenant. 404 same response for missing OR cross-tenant
+    (no existence-leak per security best practice)."""
+    _validate_uuid(doc_id)
+    row = await db.fetchrow(
+        """
+        SELECT id, tenant_id, status, approval_status, version_number,
+               version_parent_id, approver_id, approved_at, effective_date,
+               next_review_date, retention_period_days, retention_expires_at,
+               superseded_by_id
+          FROM documents WHERE id = $1 AND tenant_id = $2
+        """,
+        doc_id,
+        tenant_id,
+    )
+    if not row:
+        raise HTTPException(404, "Tài liệu không tồn tại")
+    return row
+
+
+def _approval_block(row) -> dict:
+    """Shape approval-related fields for response."""
+    return {
+        "approval_status": row["approval_status"],
+        "version_number": row["version_number"],
+        "version_parent_id": str(row["version_parent_id"]) if row["version_parent_id"] else None,
+        "approver_id": str(row["approver_id"]) if row["approver_id"] else None,
+        "approved_at": row["approved_at"].isoformat() if row["approved_at"] else None,
+        "effective_date": row["effective_date"].isoformat() if row["effective_date"] else None,
+        "next_review_date": row["next_review_date"].isoformat() if row["next_review_date"] else None,
+        "retention_period_days": row["retention_period_days"],
+        "retention_expires_at": row["retention_expires_at"].isoformat() if row["retention_expires_at"] else None,
+        "superseded_by_id": str(row["superseded_by_id"]) if row["superseded_by_id"] else None,
+        "is_obsolete": row["approval_status"] == "obsolete",
+    }
+
+
+# Atomic audit-log helper (raises on failure for state-machine R5 mitigation —
+# diverges from services.audit_log.log_audit which swallows). Same TX as the
+# state mutation so failures roll back the whole transition.
+async def _audit_strict(
+    db, *, action: str, user: dict, entity_id: str, request: Request, metadata: Optional[dict] = None
+) -> None:
+    enriched = dict(metadata or {})
+    if request and getattr(request, "client", None) and request.client.host:
+        enriched.setdefault("ip", request.client.host)
+    ua = request.headers.get("user-agent") if request else None
+    if ua:
+        enriched.setdefault("user_agent", ua)
+    await db.execute(
+        """
+        INSERT INTO audit_logs
+            (user_id, user_email, user_role, tenant_id,
+             action, entity_type, entity_id, changes, metadata)
+        VALUES ($1,$2,$3,$4,$5,'document',$6,NULL,$7::jsonb)
+        """,
+        user.get("sub"),
+        user.get("email"),
+        user.get("role"),
+        user.get("tenant_id"),
+        action,
+        entity_id,
+        _json.dumps(enriched),
+    )
+
+
+# ── 1. POST /documents/{id}/submit-for-approval ─────────────────────────────
+
+
+@router.post("/documents/{doc_id}/submit-for-approval")
+async def submit_for_approval(
+    doc_id: str,
+    request: Request,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await _require_versioning_flag(db, user)
+    await check_permission_db(user, "can_edit")
+    tenant_id = user.get("tenant_id")
+    row = await _load_doc_in_tenant(db, doc_id, tenant_id)
+    if row["approval_status"] != "draft":
+        raise HTTPException(
+            409,
+            f"Không thể submit từ trạng thái '{row['approval_status']}'. Phải ở trạng thái 'draft'.",
+        )
+    perms = get_user_permissions({**user, "permissions": None})  # IHC auto handled if applicable
+    if not transition_allowed("draft", "pending_approval", perms):
+        raise HTTPException(403, "Bạn không có quyền submit tài liệu để duyệt")
+
+    async with db.transaction():
+        await db.execute(
+            "UPDATE documents SET approval_status = 'pending_approval' WHERE id = $1",
+            doc_id,
+        )
+        await _audit_strict(
+            db,
+            action=AUDIT_EVENT_SUBMITTED,
+            user=user,
+            entity_id=doc_id,
+            request=request,
+            metadata={"prev_status": "draft", "new_status": "pending_approval"},
+        )
+    log.info(f"[documents] {doc_id} submitted for approval by {user.get('sub')}")
+    return {"message": "Đã trình duyệt", "approval_status": "pending_approval"}
+
+
+# ── 2. POST /documents/{id}/approve ─────────────────────────────────────────
+
+
+@router.post("/documents/{doc_id}/approve")
+async def approve_document(
+    doc_id: str,
+    body: _ApprovalRequest,
+    request: Request,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await _require_versioning_flag(db, user)
+    await check_permission_db(user, "can_approve_documents")
+    tenant_id = user.get("tenant_id")
+    row = await _load_doc_in_tenant(db, doc_id, tenant_id)
+    if row["approval_status"] != "pending_approval":
+        raise HTTPException(
+            409,
+            f"Không thể duyệt từ trạng thái '{row['approval_status']}'. Phải ở 'pending_approval'.",
+        )
+
+    # Defaults: today, +1y, 1825d. Server-side computation (don't trust client for floor).
+    now = datetime.utcnow()
+    eff = body.effective_date or now.date()
+    nxt = body.next_review_date or eff.replace(year=eff.year + 1)
+    retention = body.retention_period_days or RETENTION_FLOOR_DAYS
+    if retention < RETENTION_FLOOR_DAYS:
+        raise HTTPException(422, f"retention_period_days phải >= {RETENTION_FLOOR_DAYS} (5 năm)")
+
+    # Trigger auto-computes retention_expires_at; we just SET the inputs.
+    async with db.transaction():
+        await db.execute(
+            """
+            UPDATE documents
+               SET approval_status      = 'approved',
+                   approver_id          = $2,
+                   approved_at          = NOW(),
+                   effective_date       = $3,
+                   next_review_date     = $4,
+                   retention_period_days = $5
+             WHERE id = $1
+            """,
+            doc_id,
+            user.get("sub"),
+            eff,
+            nxt,
+            retention,
+        )
+        await _audit_strict(
+            db,
+            action=AUDIT_EVENT_APPROVED,
+            user=user,
+            entity_id=doc_id,
+            request=request,
+            metadata={
+                "effective_date": eff.isoformat(),
+                "next_review_date": nxt.isoformat(),
+                "retention_period_days": retention,
+            },
+        )
+    log.info(f"[documents] {doc_id} approved by {user.get('sub')}")
+    return {
+        "message": "Đã phê duyệt",
+        "approval_status": "approved",
+        "effective_date": eff.isoformat(),
+        "next_review_date": nxt.isoformat(),
+    }
+
+
+# ── 3. POST /documents/{id}/reject ──────────────────────────────────────────
+
+
+@router.post("/documents/{doc_id}/reject")
+async def reject_document(
+    doc_id: str,
+    body: _RejectionRequest,
+    request: Request,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await _require_versioning_flag(db, user)
+    await check_permission_db(user, "can_approve_documents")
+    tenant_id = user.get("tenant_id")
+    row = await _load_doc_in_tenant(db, doc_id, tenant_id)
+    if row["approval_status"] != "pending_approval":
+        raise HTTPException(
+            409,
+            f"Không thể từ chối từ trạng thái '{row['approval_status']}'.",
+        )
+
+    async with db.transaction():
+        await db.execute(
+            "UPDATE documents SET approval_status = 'draft' WHERE id = $1",
+            doc_id,
+        )
+        await _audit_strict(
+            db,
+            action=AUDIT_EVENT_REJECTED,
+            user=user,
+            entity_id=doc_id,
+            request=request,
+            metadata={"reason": body.reason},
+        )
+    log.info(f"[documents] {doc_id} rejected by {user.get('sub')}: {body.reason[:80]}")
+    return {"message": "Đã từ chối", "approval_status": "draft"}
+
+
+# ── 4. POST /documents/{id}/supersede ───────────────────────────────────────
+
+
+@router.post("/documents/{doc_id}/supersede")
+async def supersede_document(
+    doc_id: str,
+    body: _SupersedeRequest,
+    request: Request,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await _require_versioning_flag(db, user)
+    # Owner OR IHC member only (per spec §3 + Stage 2 mitigation)
+    perms = get_user_permissions({**user, "permissions": None})
+    if not user.get("is_owner") and not perms.get("can_approve_documents"):
+        raise HTTPException(403, "Chỉ chủ tài khoản hoặc thành viên IHC mới có thể thay thế phiên bản")
+
+    try:
+        reject_self_supersede(doc_id, body.new_document_id)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+    tenant_id = user.get("tenant_id")
+    old_row = await _load_doc_in_tenant(db, doc_id, tenant_id)
+    if old_row["approval_status"] != "approved":
+        raise HTTPException(409, "Chỉ có thể thay thế tài liệu đã được phê duyệt")
+    new_row = await _load_doc_in_tenant(db, body.new_document_id, tenant_id)
+    if new_row["approval_status"] == "obsolete":
+        raise HTTPException(409, "Tài liệu thay thế không được ở trạng thái obsolete")
+
+    async with db.transaction():
+        # Set superseded_by — trigger auto-flips approval_status to 'obsolete'
+        await db.execute(
+            "UPDATE documents SET superseded_by_id = $2 WHERE id = $1",
+            doc_id,
+            body.new_document_id,
+        )
+        # Link the new doc as a child version
+        next_version = (old_row["version_number"] or 1) + 1
+        await db.execute(
+            "UPDATE documents SET version_parent_id = $2, version_number = $3 WHERE id = $1",
+            body.new_document_id,
+            doc_id,
+            next_version,
+        )
+        await _audit_strict(
+            db,
+            action=AUDIT_EVENT_SUPERSEDED,
+            user=user,
+            entity_id=doc_id,
+            request=request,
+            metadata={
+                "new_document_id": body.new_document_id,
+                "new_version_number": next_version,
+            },
+        )
+    log.info(f"[documents] {doc_id} superseded by {body.new_document_id} (actor={user.get('sub')})")
+    return {
+        "message": "Đã thay thế phiên bản",
+        "old_document_id": doc_id,
+        "new_document_id": body.new_document_id,
+        "new_version_number": next_version,
+    }
+
+
+# ── 5. GET /documents/{id}/versions ─────────────────────────────────────────
+
+
+@router.get("/documents/{doc_id}/versions")
+async def get_versions(
+    doc_id: str,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await _require_versioning_flag(db, user)
+    tenant_id = user.get("tenant_id")
+    await _load_doc_in_tenant(db, doc_id, tenant_id)  # 404 if missing/cross-tenant
+
+    # Recursive CTE to walk both directions: ancestors (parent chain) + descendants
+    # Depth limit MAX_CHAIN_DEPTH defends against malformed chains (R2 mitigation).
+    rows = await db.fetch(
+        """
+        WITH RECURSIVE chain AS (
+            -- Anchor: starting doc
+            SELECT id, version_parent_id, superseded_by_id, version_number,
+                   approval_status, approved_at, effective_date, tenant_id, 0 AS depth
+              FROM documents WHERE id = $1 AND tenant_id = $2
+            UNION ALL
+            -- Walk parents (older versions)
+            SELECT d.id, d.version_parent_id, d.superseded_by_id, d.version_number,
+                   d.approval_status, d.approved_at, d.effective_date, d.tenant_id,
+                   c.depth + 1
+              FROM documents d
+              JOIN chain c ON d.id = c.version_parent_id
+             WHERE d.tenant_id = $2 AND c.depth < $3
+            UNION ALL
+            -- Walk descendants (newer via supersede chain)
+            SELECT d.id, d.version_parent_id, d.superseded_by_id, d.version_number,
+                   d.approval_status, d.approved_at, d.effective_date, d.tenant_id,
+                   c.depth + 1
+              FROM documents d
+              JOIN chain c ON d.version_parent_id = c.id
+             WHERE d.tenant_id = $2 AND c.depth < $3
+        )
+        SELECT DISTINCT id, version_number, approval_status,
+                        approved_at, effective_date
+          FROM chain
+         ORDER BY version_number ASC NULLS FIRST
+        """,
+        doc_id,
+        tenant_id,
+        MAX_CHAIN_DEPTH,
+    )
+    return {
+        "doc_id": doc_id,
+        "versions": [
+            {
+                "id": str(r["id"]),
+                "version_number": r["version_number"],
+                "approval_status": r["approval_status"],
+                "approved_at": r["approved_at"].isoformat() if r["approved_at"] else None,
+                "effective_date": r["effective_date"].isoformat() if r["effective_date"] else None,
+            }
+            for r in rows
+        ],
+        "max_depth": MAX_CHAIN_DEPTH,
+    }
+
+
+# ── 6. GET /documents/{id}/approval-status ──────────────────────────────────
+
+
+@router.get("/documents/{doc_id}/approval-status")
+async def get_approval_status(
+    doc_id: str,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await _require_versioning_flag(db, user)
+    tenant_id = user.get("tenant_id")
+    row = await _load_doc_in_tenant(db, doc_id, tenant_id)
+    block = _approval_block(row)
+    # Look up approver name if available (denormalized for UI)
+    if row["approver_id"]:
+        approver = await db.fetchrow("SELECT email, company_name FROM users WHERE id = $1", row["approver_id"])
+        if approver:
+            block["approver_email"] = approver["email"]
+            block["approver_name"] = approver["company_name"]
+    return block
