@@ -857,23 +857,26 @@ async def view_auditor_certificate(
     if cache_pdf.exists() and cache_pdf.stat().st_size > 0:
         return FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
-    pid_profile = f"/tmp/lo_profile_{os.getpid()}"
-    os.makedirs(pid_profile, exist_ok=True)
+    import tempfile, shutil
     from starlette.concurrency import run_in_threadpool
 
     def _convert():
-        result = subprocess.run(
-            ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-             f"-env:UserInstallation=file://{pid_profile}",
-             "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(target.resolve())],
-            capture_output=True, timeout=60,
-            cwd="/tmp",
-            env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
-                 "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
-        )
-        lo_output = cache_dir / (target.stem + ".pdf")
-        if lo_output.exists():
-            lo_output.rename(cache_pdf)
+        pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
+        try:
+            subprocess.run(
+                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
+                 f"-env:UserInstallation=file://{pid_profile}",
+                 "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(target.resolve())],
+                capture_output=True, timeout=60,
+                cwd=pid_profile,
+                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
+                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+            )
+            lo_output = cache_dir / (target.stem + ".pdf")
+            if lo_output.exists():
+                lo_output.rename(cache_pdf)
+        finally:
+            shutil.rmtree(pid_profile, ignore_errors=True)
 
     await run_in_threadpool(_convert)
     if not cache_pdf.exists():
@@ -1009,26 +1012,29 @@ async def view_minutes(
     if cache_pdf.exists() and cache_pdf.stat().st_size > 0 and cache_pdf.stat().st_mtime >= target.stat().st_mtime:
         return FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
-    pid_profile = f"/tmp/lo_profile_{os.getpid()}"
-    os.makedirs(pid_profile, exist_ok=True)
     abs_cache = str(cache_dir.resolve())
     abs_file = str(target.resolve())
 
+    import tempfile, shutil
     from starlette.concurrency import run_in_threadpool
 
     def _convert():
-        result = subprocess.run(
-            ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-             f"-env:UserInstallation=file://{pid_profile}",
-             "--convert-to", "pdf", "--outdir", abs_cache, abs_file],
-            capture_output=True, timeout=60,
-            cwd="/tmp",
-            env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
-                 "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
-        )
-        lo_output = _Path(abs_cache) / (_Path(abs_file).stem + ".pdf")
-        if lo_output.exists():
-            lo_output.rename(cache_pdf.resolve())
+        pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
+        try:
+            subprocess.run(
+                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
+                 f"-env:UserInstallation=file://{pid_profile}",
+                 "--convert-to", "pdf", "--outdir", abs_cache, abs_file],
+                capture_output=True, timeout=60,
+                cwd=pid_profile,
+                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
+                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+            )
+            lo_output = _Path(abs_cache) / (_Path(abs_file).stem + ".pdf")
+            if lo_output.exists():
+                lo_output.rename(cache_pdf.resolve())
+        finally:
+            shutil.rmtree(pid_profile, ignore_errors=True)
 
     await run_in_threadpool(_convert)
 

@@ -1,0 +1,141 @@
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly Monday 04:00 UTC sweep — catches new CVE disclosures.
+    - cron: '0 4 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ── Backend SAST + dependency audit ─────────────────────────────────────
+  python-security:
+    name: Python — bandit + pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install scanners
+        run: pip install --quiet bandit pip-audit
+
+      - name: Bandit — fail on medium+ severity
+        working-directory: backend
+        run: bandit -r . -ll -c .bandit
+
+      - name: pip-audit — fail on any vuln in production deps
+        working-directory: backend
+        run: pip-audit -r requirements.txt --strict
+
+  # ── Frontend dependency audit ───────────────────────────────────────────
+  node-security:
+    name: Frontend — npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/aminra-web/package-lock.json
+
+      - name: npm audit — fail on high+ severity
+        working-directory: frontend/aminra-web
+        run: npm audit --audit-level=high
+
+  # ── Secrets scan (full git history) ─────────────────────────────────────
+  gitleaks:
+    name: Secrets — gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Semgrep static analysis ─────────────────────────────────────────────
+  semgrep:
+    name: Code patterns — semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run semgrep with default + security rules
+        run: |
+          semgrep ci \
+            --config=p/security-audit \
+            --config=p/python \
+            --config=p/typescript \
+            --config=p/owasp-top-ten \
+            --error
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  # ── Container image scan (only on main push, not PR) ────────────────────
+  trivy:
+    name: Container — trivy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build backend image
+        run: docker build -t aminra-backend:scan ./backend
+
+      - name: Run trivy on backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'aminra-backend:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Build frontend image
+        run: docker build -t aminra-frontend:scan ./frontend/aminra-web
+
+      - name: Run trivy on frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'aminra-frontend:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+  # ── Summary gate ────────────────────────────────────────────────────────
+  security-gate:
+    name: Security gate
+    needs: [python-security, node-security, gitleaks, semgrep]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all scans passed
+        run: |
+          if [ "${{ needs.python-security.result }}" != "success" ] || \
+             [ "${{ needs.node-security.result }}" != "success" ] || \
+             [ "${{ needs.gitleaks.result }}" != "success" ] || \
+             [ "${{ needs.semgrep.result }}" != "success" ]; then
+            echo "❌ One or more security scans failed"
+            exit 1
+          fi
+          echo "✅ All security scans passed"

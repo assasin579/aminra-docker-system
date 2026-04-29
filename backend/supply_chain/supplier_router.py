@@ -38,24 +38,27 @@ def _require_business(user: dict):
 
 # ── CRUD Suppliers ───────────────────────────────────────────────────────────
 
+_LIST_SUPPLIERS_BASE = """
+    SELECT s.*,
+        (SELECT COUNT(*) FROM materials m WHERE m.supplier_id = s.id) AS material_count,
+        (SELECT COUNT(*) FROM supplier_certificates c WHERE c.supplier_id = s.id) AS cert_count
+    FROM suppliers s
+    WHERE s.tenant_id = $1
+"""
+_LIST_SUPPLIERS_ALL = _LIST_SUPPLIERS_BASE + " ORDER BY s.created_at DESC"
+_LIST_SUPPLIERS_BY_STATUS = _LIST_SUPPLIERS_BASE + " AND s.status = $2 ORDER BY s.created_at DESC"
+
+
 @router.get("/suppliers")
 async def list_suppliers(
     status: Optional[str] = Query(None),
     user=Depends(get_current_user), db=Depends(get_db),
 ):
     tenant_id = _require_business(user)
-    cond = "WHERE s.tenant_id = $1"
-    params = [tenant_id]
     if status:
-        cond += " AND s.status = $2"
-        params.append(status)
-
-    rows = await db.fetch(f"""
-        SELECT s.*,
-            (SELECT COUNT(*) FROM materials m WHERE m.supplier_id = s.id) AS material_count,
-            (SELECT COUNT(*) FROM supplier_certificates c WHERE c.supplier_id = s.id) AS cert_count
-        FROM suppliers s {cond} ORDER BY s.created_at DESC
-    """, *params)
+        rows = await db.fetch(_LIST_SUPPLIERS_BY_STATUS, tenant_id, status)
+    else:
+        rows = await db.fetch(_LIST_SUPPLIERS_ALL, tenant_id)
 
     return {"suppliers": [
         SupplierOut(
@@ -94,22 +97,39 @@ async def get_supplier(sid: str, user=Depends(get_current_user), db=Depends(get_
     return dict(row)
 
 
+_UPDATE_SUPPLIER_FIELDS = (
+    "name", "address", "phone", "email", "contact_person",
+    "supplier_type", "tax_code", "status", "notes",
+)
+_UPDATE_SUPPLIER_QUERY = """
+    UPDATE suppliers SET
+        name           = COALESCE($3,  name),
+        address        = COALESCE($4,  address),
+        phone          = COALESCE($5,  phone),
+        email          = COALESCE($6,  email),
+        contact_person = COALESCE($7,  contact_person),
+        supplier_type  = COALESCE($8,  supplier_type),
+        tax_code       = COALESCE($9,  tax_code),
+        status         = COALESCE($10, status),
+        notes          = COALESCE($11, notes)
+    WHERE id = $1 AND tenant_id = $2
+"""
+
+
 @router.put("/suppliers/{sid}")
 async def update_supplier(sid: str, req: SupplierUpdate, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_edit")
-    updates, params, idx = [], [sid, tenant_id], 3
-    for field in ["name", "address", "phone", "email", "contact_person", "supplier_type", "tax_code", "status", "notes"]:
-        val = getattr(req, field, None)
-        if val is not None:
-            updates.append(f"{field} = ${idx}")
-            params.append(val)
-            idx += 1
-    if not updates:
+    if all(getattr(req, f, None) is None for f in _UPDATE_SUPPLIER_FIELDS):
         return {"message": "Không có thay đổi"}
     result = await db.execute(
-        f"UPDATE suppliers SET {', '.join(updates)} WHERE id=$1 AND tenant_id=$2", *params)
+        _UPDATE_SUPPLIER_QUERY,
+        sid, tenant_id,
+        req.name, req.address, req.phone, req.email,
+        req.contact_person, req.supplier_type, req.tax_code,
+        req.status, req.notes,
+    )
     if result == "UPDATE 0":
         raise HTTPException(404)
     return {"message": "Đã cập nhật"}
@@ -239,7 +259,7 @@ async def view_certificate(
         return FileResponse(path=str(fpath), media_type=detected)
 
     # Convert to PDF
-    import subprocess, os
+    import subprocess, shutil, tempfile
     from starlette.concurrency import run_in_threadpool
     cache_dir = Path("data/preview_cache")
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -247,20 +267,24 @@ async def view_certificate(
     if cache_pdf.exists() and cache_pdf.stat().st_size > 0:
         return FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
-    pid_profile = f"/tmp/lo_profile_{os.getpid()}"
-    os.makedirs(pid_profile, exist_ok=True)
+    # Per-conversion temp dir: avoids shared-state collisions, auto-cleanup,
+    # safer permissions than /tmp/lo_profile_<pid>.
+    pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
 
     def _convert():
-        subprocess.run(
-            ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-             f"-env:UserInstallation=file://{pid_profile}",
-             "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(fpath.resolve())],
-            capture_output=True, timeout=60, cwd="/tmp",
-            env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
-        )
-        lo_output = cache_dir / (fpath.stem + ".pdf")
-        if lo_output.exists():
-            lo_output.rename(cache_pdf)
+        try:
+            subprocess.run(
+                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
+                 f"-env:UserInstallation=file://{pid_profile}",
+                 "--convert-to", "pdf", "--outdir", str(cache_dir.resolve()), str(fpath.resolve())],
+                capture_output=True, timeout=60, cwd=pid_profile,
+                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+            )
+            lo_output = cache_dir / (fpath.stem + ".pdf")
+            if lo_output.exists():
+                lo_output.rename(cache_pdf)
+        finally:
+            shutil.rmtree(pid_profile, ignore_errors=True)
 
     await run_in_threadpool(_convert)
     if not cache_pdf.exists():

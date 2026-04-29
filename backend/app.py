@@ -624,7 +624,8 @@ def _guess_media_type(filename: str) -> str:
 
 # Office formats browsers cannot render natively — convert to PDF for inline view.
 _OFFICE_CONVERT_EXTS = {"docx", "doc", "pptx", "ppt", "xlsx", "xls", "odt"}
-_PDF_PREVIEW_CACHE_DIR = Path("/tmp/aminra_pdf_preview")
+import tempfile as _tempfile
+_PDF_PREVIEW_CACHE_DIR = Path(_tempfile.gettempdir()) / "aminra_pdf_preview"
 
 
 def _convert_office_to_pdf_cached(src: Path) -> Optional[Path]:
@@ -637,7 +638,7 @@ def _convert_office_to_pdf_cached(src: Path) -> Optional[Path]:
     import hashlib, subprocess
     if not src.exists():
         return None
-    cache_key = hashlib.sha1(f"{src}|{src.stat().st_mtime}".encode()).hexdigest()[:16]
+    cache_key = hashlib.sha1(f"{src}|{src.stat().st_mtime}".encode(), usedforsecurity=False).hexdigest()[:16]
     _PDF_PREVIEW_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cached = _PDF_PREVIEW_CACHE_DIR / f"{cache_key}.pdf"
     if cached.exists() and cached.stat().st_mtime >= src.stat().st_mtime:
@@ -1536,4 +1537,4 @@ def _run_ingest(path: Path) -> int:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)  # nosec B104 — containerized service binds inside isolated network

@@ -393,28 +393,27 @@ async def preview_document(
         return _FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
     # Convert with LibreOffice — run in threadpool to avoid blocking async loop
-    import subprocess, os
+    import subprocess, shutil, tempfile
     from starlette.concurrency import run_in_threadpool
-
-    _lo_profile = _Path("/tmp/lo_profile_aminra")
-    _lo_profile.mkdir(parents=True, exist_ok=True)
 
     def _do_convert():
         abs_cache = str(cache_dir.resolve())
         abs_file = str(file_path.resolve())
-        # Use unique profile per PID to avoid lock between workers
-        pid_profile = f"/tmp/lo_profile_{os.getpid()}"
-        os.makedirs(pid_profile, exist_ok=True)
-        result = subprocess.run(
-            ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
-             f"-env:UserInstallation=file://{pid_profile}",
-             "--convert-to", "pdf",
-             "--outdir", abs_cache, abs_file],
-            capture_output=True, timeout=60,
-            cwd="/tmp",
-            env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
-                 "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
-        )
+        # Per-call ephemeral profile dir (auto-cleanup), avoids /tmp race conditions.
+        pid_profile = tempfile.mkdtemp(prefix="lo_profile_")
+        try:
+            result = subprocess.run(
+                ["/usr/bin/libreoffice", "--headless", "--norestore", "--nolockcheck",
+                 f"-env:UserInstallation=file://{pid_profile}",
+                 "--convert-to", "pdf",
+                 "--outdir", abs_cache, abs_file],
+                capture_output=True, timeout=60,
+                cwd=pid_profile,
+                env={"HOME": pid_profile, "PATH": "/usr/bin:/usr/local/bin:/bin",
+                     "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+            )
+        finally:
+            shutil.rmtree(pid_profile, ignore_errors=True)
         # Find and rename output
         stem = _Path(abs_file).stem
         lo_output = _Path(abs_cache) / (stem + ".pdf")

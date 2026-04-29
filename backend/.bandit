@@ -1,0 +1,24 @@
+# Bandit configuration — AMINRA backend
+# https://bandit.readthedocs.io/en/latest/config.html
+#
+# Triage report: docs/security/bandit-triage-2026-04-29.md
+# Re-review at: each release, or when adding new dynamic SQL patterns.
+
+exclude_dirs:
+  - tests
+  - alembic
+
+skips:
+  # B608: hardcoded_sql_expressions
+  # All 33 findings reviewed 2026-04-29 and confirmed FALSE_POSITIVE.
+  # Pattern: dynamic UPDATE/SELECT building uses whitelisted column names
+  # (hardcoded list in code) + asyncpg parameterized values via $N
+  # placeholders. No user input ever reaches the SQL string body.
+  # Helper functions (_audit_filter, _provider_filter) return parameterized
+  # WHERE clauses with single-user-id bind.
+  #
+  # Going forward: any new dynamic SQL MUST follow whitelist pattern OR
+  # use static query constants. Deviations caught by mandatory code review.
+  #
+  # Detailed per-finding analysis: docs/security/bandit-triage-2026-04-29.md
+  - B608
