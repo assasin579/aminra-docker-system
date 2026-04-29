@@ -107,13 +107,16 @@ from auth.audit_log_router import router as audit_log_router
 from auth.password_reset_router import router as password_reset_router
 from auth.admin_analytics_router import router as admin_analytics_router
 from auth.gdpr_router import router as gdpr_router
+from auth.feature_flags_router import router as feature_flags_router, admin_router as feature_flags_admin_router
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
 app.include_router(audit_log_router, prefix="/auth", tags=["audit-logs"])
 app.include_router(password_reset_router, prefix="/auth", tags=["password-reset"])
 app.include_router(admin_analytics_router, prefix="/auth", tags=["admin-analytics"])
+app.include_router(feature_flags_admin_router, prefix="/auth/admin", tags=["admin-feature-flags"])
 app.include_router(gdpr_router, prefix="/api/users", tags=["data-rights"])
+app.include_router(feature_flags_router, prefix="/api/feature-flags", tags=["feature-flags"])
 app.include_router(document_router, prefix="/api", tags=["documents"])
 app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])
 app.include_router(certificate_router, prefix="/api/submissions", tags=["certificates"])
