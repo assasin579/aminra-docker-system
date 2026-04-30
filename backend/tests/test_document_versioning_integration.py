@@ -848,7 +848,7 @@ class TestAuditAndMigration:
         finally:
             _delete_doc(doc_id)
 
-    # INT-47 — verify migration applied
+    # INT-47 — verify migration applied (017 or any later that builds on it)
     def test_migration_017_applied(self, client):
         result = subprocess.run(
             [
@@ -858,7 +858,9 @@ class TestAuditAndMigration:
             ],
             capture_output=True, timeout=10, text=True,
         )
-        assert result.stdout.strip() == "017_document_version_control"
+        head = result.stdout.strip()
+        # 017 is the migration under test; 018+ build on it (any later head OK).
+        assert head >= "017_document_version_control"
 
     # INT-48 — backfill rule: existing 'approved' rows → approval_status='approved'
     def test_backfill_existing_approved(self, client, biz):

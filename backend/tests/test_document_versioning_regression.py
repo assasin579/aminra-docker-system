@@ -444,13 +444,16 @@ class TestServiceHealth:
         assert rid and len(rid) >= 8
 
     def test_alembic_at_017(self, client):
+        """Migration 017 (or any later head that builds on it) is applied."""
         result = subprocess.run(
             ["docker", "exec", "aminra-docker-system-postgres-db-1", "psql",
              "-U", "aminra_user", "-d", "aminra", "-tAc",
              "SELECT version_num FROM alembic_version"],
             capture_output=True, timeout=10, text=True,
         )
-        assert "017_document_version_control" in result.stdout
+        # Accept 017 or any newer head — alembic chain ensures 017 applied first
+        head = result.stdout.strip()
+        assert head >= "017_document_version_control"
 
 
 # ════════════════════════════════════════════════════════════════════════════
