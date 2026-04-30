@@ -474,12 +474,16 @@ class TestSecurityExploits:
         assert r.status_code in (401, 403)
 
     def test_c50_db_invariant_no_doc_without_tenant_id(self):
-        """UAT-C-50: invariant — no document row has NULL tenant_id in practice.
+        """UAT-C-50: schema-level guarantee — documents.tenant_id is NOT NULL.
 
-        GAP: documents.tenant_id is currently nullable=YES at schema level. This is
-        defended by application code only, not the schema. Recommend ALTER COLUMN
-        SET NOT NULL in next migration. For now, verify the invariant holds at the
-        data level.
+        Fixed by migration 018 (ALTER COLUMN tenant_id SET NOT NULL).
+        Defense-in-depth: even a buggy migration cannot insert NULL anymore.
         """
-        out = psql_value("SELECT COUNT(*) FROM documents WHERE tenant_id IS NULL")
-        assert out == "0", f"Found {out} docs with NULL tenant_id — invariant violated"
+        nullable = psql_value(
+            "SELECT is_nullable FROM information_schema.columns "
+            "WHERE table_name='documents' AND column_name='tenant_id'"
+        )
+        assert nullable == "NO"
+        # Also verify no NULL data exists (zero rows)
+        cnt = psql_value("SELECT COUNT(*) FROM documents WHERE tenant_id IS NULL")
+        assert cnt == "0"

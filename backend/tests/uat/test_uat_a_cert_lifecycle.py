@@ -251,10 +251,9 @@ class TestBoundaryValues:
         assert r.status_code in (201, 400, 422)
 
     def test_a22_company_name_over_max_rejected(self, client):
-        """UAT-A-22: company_name 1000 chars — should reject (or crash).
+        """UAT-A-22: company_name 1000 chars rejected with 422 (not 500).
 
-        GAP found by UAT: backend currently returns 500 instead of 422 for
-        oversize input. Test accepts realistic behavior; fix tracked separately.
+        Fixed by migration 018 + Pydantic Field(..., max_length=255).
         """
         long = "Y" * 1000
         rid = uuid.uuid4().hex[:6]
@@ -263,16 +262,12 @@ class TestBoundaryValues:
             json={"email": f"too-{rid}@aminra-qa.com", "password": "P@ss12345!",
                   "company_name": long, "company_code": f"TL-{rid}"},
         )
-        # 500 reveals missing input length validation — not safe but documented
-        assert r.status_code in (400, 422, 500), (
-            f"Unexpected status {r.status_code} for oversize input"
-        )
+        assert r.status_code == 422
 
     def test_a23_empty_company_name_rejected(self, client):
-        """UAT-A-23: empty company_name should be rejected.
+        """UAT-A-23: empty company_name rejected with 422.
 
-        GAP found by UAT: backend currently accepts empty company_name (201).
-        Fix tracked: add min_length=1 to RegisterBusinessRequest.
+        Fixed by Pydantic Field(..., min_length=1).
         """
         rid = uuid.uuid4().hex[:6]
         r = client.post(
@@ -280,9 +275,7 @@ class TestBoundaryValues:
             json={"email": f"empty-{rid}@aminra-qa.com", "password": "P@ss12345!",
                   "company_name": "", "company_code": f"E-{rid}"},
         )
-        assert r.status_code in (201, 400, 422), (
-            f"Backend currently accepts empty name (201) — should be 422"
-        )
+        assert r.status_code == 422
 
     def test_a24_unicode_company_name_accepted(self, client):
         """UAT-A-24: Vietnamese unicode characters in name supported."""

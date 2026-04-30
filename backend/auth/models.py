@@ -1,6 +1,6 @@
 import re
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -13,8 +13,10 @@ MAX_MEMBERS = 7
 class BusinessRegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    company_name: str
-    company_code: Optional[str] = None  # Tax ID
+    # min_length=1: empty name was being accepted (UAT-A-23 gap)
+    # max_length=255: oversize input was crashing backend with 500 (UAT-A-22 DoS gap)
+    company_name: str = Field(..., min_length=1, max_length=255)
+    company_code: Optional[str] = Field(None, max_length=100)
 
     @field_validator("password")
     @classmethod
@@ -33,8 +35,8 @@ class BusinessRegisterRequest(BaseModel):
 class ProviderRegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    company_name: str  # Organization name (e.g. JAKIM, HDC)
-    company_code: Optional[str] = None  # Accreditation / license number
+    company_name: str = Field(..., min_length=1, max_length=255)
+    company_code: Optional[str] = Field(None, max_length=100)
 
     @field_validator("password")
     @classmethod
