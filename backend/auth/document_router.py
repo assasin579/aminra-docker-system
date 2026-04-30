@@ -938,7 +938,10 @@ async def dashboard_stats(
 class _ApprovalRequest(BaseModel):
     effective_date: Optional[date] = None
     next_review_date: Optional[date] = None
-    retention_period_days: Optional[int] = Field(default=None, ge=RETENTION_FLOOR_DAYS)
+    # Upper bound 36500 days = 100 years. Defends against integer overflow
+    # in PostgreSQL when computing approved_at + retention_period_days days
+    # (UAT-found gap: 10^18 caused 500).
+    retention_period_days: Optional[int] = Field(default=None, ge=RETENTION_FLOOR_DAYS, le=36_500)
 
 
 class _RejectionRequest(BaseModel):
