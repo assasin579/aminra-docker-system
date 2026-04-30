@@ -1,0 +1,272 @@
+/* AMINRA Design System — shared across all deliverables */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Brand palette — Navy + Royal Gold */
+  --green-900: #0A1F44;  /* Navy 900 — deep navy (legacy var name kept) */
+  --green-800: #102A5C;  /* Navy 800 */
+  --green-700: #18386F;  /* Navy 700 */
+  --green-600: #234A8A;  /* Navy 600 */
+  --green-500: #3A63A8;  /* Navy 500 */
+  --green-100: #DCE3F0;  /* Navy 100 — pale wash */
+
+  /* Aliases (preferred going forward) */
+  --navy-900: #0A1F44;
+  --navy-800: #102A5C;
+  --navy-700: #18386F;
+  --navy-600: #234A8A;
+
+  --gold-700: #A88224;  /* Royal Gold dark */
+  --gold-600: #B8932E;
+  --gold-500: #C9A24A;  /* Royal Gold — primary */
+  --gold-400: #D9B96E;
+  --gold-100: #F2E6C2;
+
+  --cream-50:  #FAF7EE;
+  --cream-100: #F5F1E8;
+  --cream-200: #ECE5D2;
+  --cream-300: #DDD3B6;
+
+  --ink-900: #1A1A1A;
+  --ink-700: #3D3D3D;
+  --ink-500: #6E6E6E;
+  --ink-300: #B5B5B5;
+  --ink-100: #E8E6E0;
+
+  --bg-dark: #0A1F44;
+  --bg-light: #F5F1E8;
+
+  /* Typography — Inter (full Vietnamese support) */
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Reset and base */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  color: var(--ink-900);
+  background: var(--cream-100);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Common slide structure */
+.slide {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide-frame {
+  position: absolute;
+  inset: 0;
+  padding: 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+.slide.dark { background: var(--green-900); color: var(--cream-100); }
+.slide.cream { background: var(--cream-100); color: var(--ink-900); }
+.slide.gold { background: var(--gold-500); color: var(--green-900); }
+.slide.white { background: #FFFFFF; color: var(--ink-900); }
+
+/* Type system */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.title-md {
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.body {
+  font-family: var(--font-body);
+  font-size: 30px;
+  line-height: 1.45;
+  font-weight: 400;
+  margin: 0;
+}
+
+.small {
+  font-family: var(--font-body);
+  font-size: 24px;
+  line-height: 1.4;
+  font-weight: 400;
+  margin: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+/* Slide header (page number, brand) */
+.slide-header {
+  position: absolute;
+  top: 48px;
+  left: 100px;
+  right: 100px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.brand-mark-img {
+  height: 44px;
+  width: auto;
+  display: block;
+  opacity: 0.9;
+}
+.brand-mark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 22px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* Logo */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.logo-mark {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  background: url('assets/logo-mark.png') center/contain no-repeat;
+}
+.logo-img-full {
+  height: 80px;
+  width: auto;
+  display: block;
+}
+.logo-img-mark {
+  height: 80px;
+  width: auto;
+  display: block;
+}
+
+.logo-text {
+  font-size: 32px;
+  letter-spacing: 0.06em;
+  color: currentColor;
+}
+
+/* Image placeholder */
+.placeholder {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(14, 90, 74, 0.08) 0,
+      rgba(14, 90, 74, 0.08) 12px,
+      rgba(14, 90, 74, 0.04) 12px,
+      rgba(14, 90, 74, 0.04) 24px
+    ),
+    var(--cream-200);
+  border: 1px solid var(--cream-300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--ink-500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.slide.dark .placeholder {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(212, 175, 55, 0.10) 0,
+      rgba(212, 175, 55, 0.10) 12px,
+      rgba(212, 175, 55, 0.04) 12px,
+      rgba(212, 175, 55, 0.04) 24px
+    ),
+    rgba(255,255,255,0.03);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  color: var(--gold-400);
+}
+
+/* Arabesque pattern accent (subtle, geometric) */
+.pattern-accent {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.06;
+}
+
+/* Rule */
+.hairline {
+  border: none;
+  border-top: 1px solid currentColor;
+  opacity: 0.18;
+  margin: 0;
+}
+
+/* Stat block */
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 144px;
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.stat-num-md {
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+}
+.stat-label {
+  font-family: var(--font-body);
+  font-size: 24px;
+  line-height: 1.4;
+  opacity: 0.75;
+  font-weight: 400;
+}

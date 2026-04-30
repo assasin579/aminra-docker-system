@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>AMINRA — Financial Model</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+  body { background: var(--cream-100); color: var(--ink-900); }
+  .fm {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 64px 56px 120px;
+  }
+
+  .fm-eye {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-700);
+    margin-bottom: 18px;
+  }
+  .fm-h1 {
+    font-family: var(--font-display);
+    font-size: 76px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    margin: 0 0 14px;
+    color: var(--green-900);
+  }
+  .fm-lead {
+    font-family: var(--font-display);
+    font-size: 24px;
+    line-height: 1.35;
+    color: var(--green-700);
+    max-width: 900px;
+    margin: 0 0 56px;
+    font-weight: 400;
+  }
+
+  .fm-section { margin-top: 72px; }
+  .fm-section h2 {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-700);
+    font-weight: 500;
+    margin: 0 0 18px;
+  }
+  .fm-section h3 {
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0 0 20px;
+    color: var(--green-900);
+  }
+  .fm-section p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-700);
+    margin: 0 0 24px;
+    max-width: 900px;
+  }
+
+  /* KPI strip */
+  .fm-kpi {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: var(--green-900);
+    color: var(--cream-100);
+  }
+  .fm-kpi > div {
+    padding: 28px 32px;
+    border-right: 1px solid rgba(201,162,74,0.18);
+  }
+  .fm-kpi > div:last-child { border-right: none; }
+  .fm-kpi-eye {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--gold-400);
+    text-transform: uppercase;
+  }
+  .fm-kpi-num {
+    font-family: var(--font-display);
+    font-size: 44px;
+    font-weight: 500;
+    line-height: 1;
+    margin-top: 14px;
+    letter-spacing: -0.02em;
+  }
+  .fm-kpi-sub {
+    font-size: 13px;
+    line-height: 1.45;
+    margin-top: 8px;
+    opacity: 0.75;
+  }
+
+  /* Tables */
+  .fm-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-feature-settings: "tnum" 1;
+  }
+  .fm-table th, .fm-table td {
+    text-align: right;
+    padding: 12px 14px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(10,31,68,0.12);
+    font-variant-numeric: tabular-nums;
+  }
+  .fm-table th:first-child, .fm-table td:first-child {
+    text-align: left;
+  }
+  .fm-table thead th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green-700);
+    font-weight: 500;
+    border-bottom: 2px solid var(--green-700);
+    padding: 14px 14px;
+  }
+  .fm-table tbody td:first-child {
+    color: var(--ink-900);
+    font-weight: 500;
+  }
+  .fm-table tbody tr.section td {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold-700);
+    font-weight: 500;
+    background: var(--cream-50);
+    padding-top: 18px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(201,162,74,0.4);
+  }
+  .fm-table tbody tr.total td {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-900);
+    background: rgba(201,162,74,0.18);
+    border-top: 2px solid var(--gold-500);
+    border-bottom: 2px solid var(--gold-500);
+  }
+  .fm-table tbody tr.subtotal td {
+    color: var(--green-700);
+    font-weight: 600;
+    border-top: 1px solid var(--green-700);
+  }
+  .fm-table tbody tr.highlight td {
+    background: rgba(10,31,68,0.06);
+  }
+  .pos { color: var(--green-700); font-weight: 500; }
+  .neg { color: #B23A3A; }
+
+  /* Bar chart */
+  .fm-chart {
+    margin-top: 28px;
+    padding: 32px;
+    background: #fff;
+    border: 1px solid rgba(10,31,68,0.18);
+  }
+  .fm-chart-h {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green-700);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .bars {
+    display: flex;
+    align-items: end;
+    gap: 24px;
+    height: 280px;
+    padding-top: 20px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid rgba(10,31,68,0.18);
+  }
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    position: relative;
+  }
+  .bar-stack {
+    width: 100%;
+    max-width: 90px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    height: 100%;
+  }
+  .bar-seg {
+    width: 100%;
+    color: var(--green-900);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-align: center;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: height 0.3s;
+  }
+  .bar-saas { background: var(--green-700); color: var(--cream-100); }
+  .bar-cert { background: var(--gold-500); color: var(--green-900); }
+  .bar-mp { background: var(--gold-400); color: var(--green-900); }
+  .bar-label {
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-700);
+  }
+  .bar-total {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--green-900);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ink-700);
+    text-transform: uppercase;
+  }
+  .legend span::before {
+    content: "■";
+    margin-right: 8px;
+  }
+  .legend .l1::before { color: var(--green-700); }
+  .legend .l2::before { color: var(--gold-500); }
+  .legend .l3::before { color: var(--gold-400); }
+
+  /* Cash runway chart */
+  .runway {
+    margin-top: 28px;
+    padding: 32px;
+    background: #fff;
+    border: 1px solid rgba(10,31,68,0.18);
+  }
+  .runway-svg { width: 100%; height: 320px; }
+
+  /* Allocation */
+  .allocation {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .alloc-card {
+    padding: 28px 24px;
+    background: #fff;
+    border-top: 4px solid var(--gold-500);
+  }
+  .alloc-pct {
+    font-family: var(--font-display);
+    font-size: 56px;
+    line-height: 1;
+    font-weight: 500;
+    color: var(--green-700);
+    letter-spacing: -0.02em;
+  }
+  .alloc-name {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold-700);
+    margin-top: 14px;
+  }
+  .alloc-amt {
+    font-family: var(--font-display);
+    font-size: 22px;
+    margin-top: 4px;
+    color: var(--ink-900);
+    font-weight: 500;
+  }
+  .alloc-detail {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-700);
+    margin-top: 12px;
+  }
+
+  /* Assumptions card */
+  .assump {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .assump-card {
+    background: #fff;
+    border: 1px solid rgba(10,31,68,0.18);
+    padding: 24px 28px;
+  }
+  .assump-card h4 {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--green-700);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  .assump-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .assump-card li {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-700);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(10,31,68,0.14);
+  }
+  .assump-card li:last-child { border-bottom: none; }
+  .assump-card li b {
+    font-family: var(--font-mono);
+    color: var(--green-700);
+    font-weight: 500;
+  }
+
+  /* Footer */
+  .fm-footer {
+    margin-top: 80px;
+    padding: 32px 0;
+    border-top: 1px solid rgba(10,31,68,0.18);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ink-500);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  hr.line { border: none; border-top: 1px solid rgba(10,31,68,0.18); margin: 0; }
+</style>
+</head>
+<body>
+<div class="fm">
+
+  <!-- HEADER -->
+  <img src="assets/logo-full-v2.png" alt="AMINRA" style="height: 100px; width: auto; display: block; margin-bottom: 32px;"/>
+  <div class="fm-eye">Financial model · Mô hình tài chính · 2026 — 2028</div>
+  <h1 class="fm-h1">AMINRA · Financial Plan</h1>
+  <p class="fm-lead">Mô hình tài chính 3 năm cho vòng gọi vốn Pre-Seed. Số liệu thể hiện kịch bản cơ sở (base case); đơn vị VNĐ với đối chiếu USD (1 USD ≈ 24.000 VNĐ).</p>
+
+  <!-- KPI STRIP -->
+  <div class="fm-kpi">
+    <div>
+      <div class="fm-kpi-eye">ARR · Cuối 2028</div>
+      <div class="fm-kpi-num">86 tỷ</div>
+      <div class="fm-kpi-sub">≈ 3,6M USD · từ 1,2 tỷ cuối 2026</div>
+    </div>
+    <div>
+      <div class="fm-kpi-eye">Gross Margin</div>
+      <div class="fm-kpi-num">78%</div>
+      <div class="fm-kpi-sub">SaaS chiếm tỷ trọng chính · ổn định</div>
+    </div>
+    <div>
+      <div class="fm-kpi-eye">LTV / CAC</div>
+      <div class="fm-kpi-num">4,8×</div>
+      <div class="fm-kpi-sub">Payback CAC trong 11 tháng</div>
+    </div>
+    <div>
+      <div class="fm-kpi-eye">Runway · Pre-Seed</div>
+      <div class="fm-kpi-num">18 tháng</div>
+      <div class="fm-kpi-sub">Đủ để đạt Series A milestones</div>
+    </div>
+  </div>
+
+  <!-- USE OF FUNDS -->
+  <section class="fm-section">
+    <h2>1 · Cơ cấu sử dụng vốn</h2>
+    <h3>12 tỷ VNĐ — phân bổ trên 18 tháng</h3>
+    <p>Vốn huy động được phân bổ tập trung vào sản phẩm và go-to-market — hai đòn bẩy quyết định cho việc đạt Series A milestones (3 tỷ ARR và 100 doanh nghiệp trả phí cuối năm 2027).</p>
+    <div class="allocation">
+      <div class="alloc-card">
+        <div class="alloc-pct">40%</div>
+        <div class="alloc-name">Product & Engineering</div>
+        <div class="alloc-amt">4,8 tỷ</div>
+        <div class="alloc-detail">Marketplace xuất khẩu, mobile auditor app, AI rà soát nguyên liệu, hạ tầng cloud.</div>
+      </div>
+      <div class="alloc-card">
+        <div class="alloc-pct">30%</div>
+        <div class="alloc-name">Go-to-market</div>
+        <div class="alloc-amt">3,6 tỷ</div>
+        <div class="alloc-detail">Đội sales B2B 4 người, marketing nội dung, tổ chức 6 hội thảo doanh nghiệp xuất khẩu.</div>
+      </div>
+      <div class="alloc-card">
+        <div class="alloc-pct">20%</div>
+        <div class="alloc-name">Partnerships</div>
+        <div class="alloc-amt">2,4 tỷ</div>
+        <div class="alloc-detail">Mở rộng MOU với tổ chức chứng nhận tại Indonesia, Malaysia, GCC; tích hợp API.</div>
+      </div>
+      <div class="alloc-card">
+        <div class="alloc-pct">10%</div>
+        <div class="alloc-name">Operations</div>
+        <div class="alloc-amt">1,2 tỷ</div>
+        <div class="alloc-detail">Pháp lý, kế toán, nhân sự core, văn phòng.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REVENUE -->
+  <section class="fm-section">
+    <h2>2 · Dự phóng doanh thu</h2>
+    <h3>Doanh thu theo dòng · 2026 — 2028</h3>
+    <p>Ba dòng doanh thu — SaaS subscription, phí trên mỗi chứng nhận, và phí marketplace — bổ sung lẫn nhau. SaaS đảm bảo doanh thu định kỳ, phí chứng nhận tạo hiệu ứng lưới giữa doanh nghiệp và tổ chức chứng nhận, marketplace kích hoạt khi có khối lượng đủ lớn năm 2028.</p>
+
+    <table class="fm-table">
+      <thead>
+        <tr>
+          <th>Dòng doanh thu (VNĐ)</th>
+          <th>2026 (E)</th>
+          <th>2027 (E)</th>
+          <th>2028 (E)</th>
+          <th>CAGR</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section"><td colspan="5">Doanh thu</td></tr>
+        <tr>
+          <td>SaaS subscription</td>
+          <td>820 triệu</td>
+          <td>8,4 tỷ</td>
+          <td>32 tỷ</td>
+          <td>525%</td>
+        </tr>
+        <tr>
+          <td>Phí chứng nhận (12% / hồ sơ)</td>
+          <td>340 triệu</td>
+          <td>4,2 tỷ</td>
+          <td>26 tỷ</td>
+          <td>776%</td>
+        </tr>
+        <tr>
+          <td>Marketplace (2–5% GMV)</td>
+          <td>0</td>
+          <td>1,8 tỷ</td>
+          <td>28 tỷ</td>
+          <td>—</td>
+        </tr>
+        <tr class="total">
+          <td>Tổng doanh thu</td>
+          <td>1,16 tỷ</td>
+          <td>14,4 tỷ</td>
+          <td>86 tỷ</td>
+          <td>761%</td>
+        </tr>
+        <tr>
+          <td style="color: var(--ink-500); font-weight: 400;">≈ USD</td>
+          <td style="color: var(--ink-500);">48K</td>
+          <td style="color: var(--ink-500);">600K</td>
+          <td style="color: var(--ink-500);">3,6M</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="fm-chart">
+      <div class="fm-chart-h">Doanh thu theo năm · tỷ VNĐ</div>
+      <div class="bars">
+        <div class="bar-group">
+          <div class="bar-stack">
+            <div class="bar-seg bar-saas" style="height: 14px;"></div>
+            <div class="bar-seg bar-cert" style="height: 6px;"></div>
+            <div class="bar-seg bar-mp" style="height: 0;"></div>
+          </div>
+          <div class="bar-label">2026</div>
+          <div class="bar-total">1,16 tỷ</div>
+        </div>
+        <div class="bar-group">
+          <div class="bar-stack">
+            <div class="bar-seg bar-saas" style="height: 140px;">8,4</div>
+            <div class="bar-seg bar-cert" style="height: 70px;">4,2</div>
+            <div class="bar-seg bar-mp" style="height: 30px;">1,8</div>
+          </div>
+          <div class="bar-label">2027</div>
+          <div class="bar-total">14,4 tỷ</div>
+        </div>
+        <div class="bar-group">
+          <div class="bar-stack">
+            <div class="bar-seg bar-saas" style="height: 100px;">32</div>
+            <div class="bar-seg bar-cert" style="height: 80px;">26</div>
+            <div class="bar-seg bar-mp" style="height: 86px;">28</div>
+          </div>
+          <div class="bar-label">2028</div>
+          <div class="bar-total">86 tỷ</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="l1">SaaS</span>
+        <span class="l2">Phí chứng nhận</span>
+        <span class="l3">Marketplace</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CUSTOMER METRICS -->
+  <section class="fm-section">
+    <h2>3 · Số liệu khách hàng & unit economics</h2>
+    <h3>Tăng trưởng khách hàng và hiệu quả thu hút</h3>
+    <table class="fm-table">
+      <thead>
+        <tr>
+          <th>Chỉ số</th>
+          <th>2026 (E)</th>
+          <th>2027 (E)</th>
+          <th>2028 (E)</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section"><td colspan="5">Khách hàng</td></tr>
+        <tr><td>Doanh nghiệp trả phí · cuối năm</td><td>50</td><td>320</td><td>980</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Net new + giữ chân 92%</td></tr>
+        <tr><td>Tổ chức chứng nhận đối tác</td><td>4</td><td>9</td><td>16</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Bao gồm 4 quốc gia</td></tr>
+        <tr><td>Hồ sơ chứng nhận xử lý / năm</td><td>120</td><td>820</td><td>3.400</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Trung bình 2,8 hồ sơ / KH / năm</td></tr>
+        <tr class="section"><td colspan="5">Unit Economics (VNĐ)</td></tr>
+        <tr><td>ARPU trung bình / tháng</td><td>2,8 triệu</td><td>4,5 triệu</td><td>6,2 triệu</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Mix nâng cấp lên Growth</td></tr>
+        <tr><td>CAC (chi phí thu hút / KH)</td><td>11 triệu</td><td>9 triệu</td><td>7 triệu</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Giảm nhờ inbound + referral</td></tr>
+        <tr><td>LTV (gross profit lifetime)</td><td>38 triệu</td><td>43 triệu</td><td>52 triệu</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Churn 8% / năm</td></tr>
+        <tr class="highlight"><td>LTV / CAC</td><td class="pos">3,5×</td><td class="pos">4,8×</td><td class="pos">7,4×</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Mục tiêu &gt; 3×</td></tr>
+        <tr><td>Payback period</td><td>14 tháng</td><td>11 tháng</td><td>8 tháng</td><td style="text-align: left; font-size: 13px; color: var(--ink-500);">Cải thiện qua scale</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- P&L -->
+  <section class="fm-section">
+    <h2>4 · Báo cáo kết quả kinh doanh</h2>
+    <h3>P&amp;L tóm tắt 2026 — 2028 · tỷ VNĐ</h3>
+    <table class="fm-table">
+      <thead>
+        <tr>
+          <th>P&L</th>
+          <th>2026 (E)</th>
+          <th>2027 (E)</th>
+          <th>2028 (E)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="total"><td>Doanh thu</td><td>1,16</td><td>14,4</td><td>86,0</td></tr>
+        <tr><td>Giá vốn (cloud, ops, partner share)</td><td>0,28</td><td>3,2</td><td>18,9</td></tr>
+        <tr class="subtotal"><td>Lợi nhuận gộp</td><td class="pos">0,88</td><td class="pos">11,2</td><td class="pos">67,1</td></tr>
+        <tr><td>Gross Margin %</td><td>76%</td><td>78%</td><td>78%</td></tr>
+        <tr class="section"><td colspan="4">Chi phí vận hành</td></tr>
+        <tr><td>Lương & nhân sự</td><td>4,8</td><td>11,2</td><td>26,4</td></tr>
+        <tr><td>Sales & Marketing</td><td>2,4</td><td>5,8</td><td>14,2</td></tr>
+        <tr><td>R&D (ngoài lương)</td><td>0,6</td><td>1,4</td><td>3,2</td></tr>
+        <tr><td>G&A (pháp lý, kế toán, văn phòng)</td><td>0,9</td><td>1,8</td><td>3,4</td></tr>
+        <tr class="subtotal"><td>Tổng OpEx</td><td>8,7</td><td>20,2</td><td>47,2</td></tr>
+        <tr class="total"><td>EBITDA</td><td class="neg">−7,8</td><td class="neg">−9,0</td><td class="pos">19,9</td></tr>
+        <tr><td>Biên EBITDA %</td><td>−</td><td>−</td><td>23%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- CASH RUNWAY -->
+  <section class="fm-section">
+    <h2>5 · Dòng tiền & runway</h2>
+    <h3>Đường tiền mặt 18 tháng sau Pre-Seed</h3>
+    <p>Vốn 12 tỷ VNĐ tài trợ runway đến tháng 22, đủ thời gian đạt các milestone Series A: 100+ doanh nghiệp trả phí, 3+ tỷ ARR, 5 tổ chức chứng nhận đối tác và pilot xuất khẩu liên thông Indonesia.</p>
+
+    <div class="runway">
+      <div class="fm-chart-h">Số dư tiền mặt theo tháng · triệu VNĐ</div>
+      <svg class="runway-svg" viewBox="0 0 1200 280" preserveAspectRatio="none">
+        <!-- Grid -->
+        <line x1="60" y1="40" x2="1180" y2="40" stroke="rgba(10,31,68,0.1)" stroke-width="1"/>
+        <line x1="60" y1="100" x2="1180" y2="100" stroke="rgba(10,31,68,0.1)" stroke-width="1"/>
+        <line x1="60" y1="160" x2="1180" y2="160" stroke="rgba(10,31,68,0.1)" stroke-width="1"/>
+        <line x1="60" y1="220" x2="1180" y2="220" stroke="rgba(10,31,68,0.1)" stroke-width="1"/>
+        <!-- Y labels -->
+        <text x="50" y="44" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">12.000</text>
+        <text x="50" y="104" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">9.000</text>
+        <text x="50" y="164" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">6.000</text>
+        <text x="50" y="224" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">3.000</text>
+        <text x="50" y="260" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">0</text>
+        <!-- X labels -->
+        <text x="60" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M0</text>
+        <text x="240" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M3</text>
+        <text x="420" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M6</text>
+        <text x="600" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M9</text>
+        <text x="780" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M12</text>
+        <text x="960" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M15</text>
+        <text x="1140" y="278" font-family="JetBrains Mono, monospace" font-size="11" fill="#6E6E6E">M18</text>
+        <!-- Cash line: starts 12000 (y=40) → 0 around M22, but we'll show M0-M18 -->
+        <!-- Polyline: monthly burn ~700M month1, growing slightly, but revenue helps slow burn -->
+        <polyline points="60,40 120,52 180,68 240,86 300,104 360,122 420,138 480,150 540,160 600,170 660,178 720,184 780,190 840,196 900,200 960,206 1020,210 1080,215 1140,220"
+                  fill="none" stroke="#18386F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Series A milestone marker -->
+        <line x1="1080" y1="20" x2="1080" y2="240" stroke="#C9A24A" stroke-width="2" stroke-dasharray="6 6"/>
+        <text x="1075" y="18" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#A88224">SERIES A TARGET</text>
+        <!-- Cash points -->
+        <circle cx="60" cy="40" r="5" fill="#C9A24A"/>
+        <circle cx="1140" cy="220" r="5" fill="#18386F"/>
+        <text x="68" y="34" font-family="JetBrains Mono, monospace" font-size="11" fill="#0A1F44">12 tỷ · Pre-Seed</text>
+        <text x="1130" y="214" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="#0A1F44">~1,2 tỷ tại M18</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ASSUMPTIONS -->
+  <section class="fm-section">
+    <h2>6 · Giả định chính · Key assumptions</h2>
+    <h3>Cơ sở của mô hình</h3>
+    <div class="assump">
+      <div class="assump-card">
+        <h4>Doanh thu</h4>
+        <ul>
+          <li>ARPU SaaS năm 1<b>2,8 triệu / tháng</b></li>
+          <li>Mix Starter / Growth / Enterprise<b>50 / 40 / 10</b></li>
+          <li>Phí chứng nhận / hồ sơ trung bình<b>15 triệu</b></li>
+          <li>% chia sẻ doanh thu chứng nhận<b>12%</b></li>
+          <li>Phí marketplace<b>3,5% GMV</b></li>
+          <li>Net Revenue Retention<b>112%</b></li>
+        </ul>
+      </div>
+      <div class="assump-card">
+        <h4>Chi phí & nhân sự</h4>
+        <ul>
+          <li>Nhân sự cuối 2026 / 2027 / 2028<b>14 / 28 / 52</b></li>
+          <li>Lương trung bình kỹ sư<b>32 triệu / tháng</b></li>
+          <li>Chi phí cloud / KH / tháng<b>180 nghìn</b></li>
+          <li>Tỷ lệ S&M / Doanh thu năm 2<b>40%</b></li>
+          <li>Tỷ lệ S&M / Doanh thu năm 3<b>16%</b></li>
+          <li>Tỷ lệ rời mạng (annual churn)<b>8%</b></li>
+        </ul>
+      </div>
+      <div class="assump-card">
+        <h4>Thị trường</h4>
+        <ul>
+          <li>Số DN có nhu cầu Halal tại VN<b>~12.000</b></li>
+          <li>Tỷ lệ thâm nhập 2028<b>~8%</b></li>
+          <li>CAGR thị trường Halal toàn cầu<b>9,5%</b></li>
+          <li>Phần đóng góp xuất khẩu trong DN trả phí<b>~45%</b></li>
+        </ul>
+      </div>
+      <div class="assump-card">
+        <h4>Tài chính</h4>
+        <ul>
+          <li>Vốn Pre-Seed huy động<b>12 tỷ VNĐ</b></li>
+          <li>Tỷ giá quy đổi USD<b>24.000 VNĐ</b></li>
+          <li>Thuế TNDN ưu đãi (startup)<b>10%</b></li>
+          <li>Vốn lưu động tối thiểu<b>500 triệu</b></li>
+          <li>Series A mục tiêu<b>Q4 2027</b></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENARIOS -->
+  <section class="fm-section">
+    <h2>7 · Kịch bản · Scenarios</h2>
+    <h3>Conservative · Base · Aggressive</h3>
+    <table class="fm-table">
+      <thead>
+        <tr>
+          <th>Chỉ số 2028</th>
+          <th>Conservative</th>
+          <th>Base</th>
+          <th>Aggressive</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Doanh nghiệp trả phí</td><td>620</td><td>980</td><td>1.450</td></tr>
+        <tr><td>Tổng doanh thu (tỷ VNĐ)</td><td>52</td><td>86</td><td>132</td></tr>
+        <tr><td>Gross Margin</td><td>74%</td><td>78%</td><td>80%</td></tr>
+        <tr><td>EBITDA (tỷ VNĐ)</td><td class="pos">8</td><td class="pos">19,9</td><td class="pos">38</td></tr>
+        <tr class="highlight"><td>Định giá Series A ước tính</td><td>240 tỷ</td><td>420 tỷ</td><td>700 tỷ</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="fm-footer">
+    <span>AMINRA · Confidential · For investor use only</span>
+    <span>aminra.vn / investors</span>
+  </div>
+
+</div>
+</body>
+</html>

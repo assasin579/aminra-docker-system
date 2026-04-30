@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>AMINRA — Product Deck</title>
+<link rel="stylesheet" href="shared.css" />
+<script src="deck-stage.js"></script>
+<style>
+  .slide-title { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; line-height: 1.04; margin: 0; }
+  .section-tag { font-family: var(--font-mono); font-size: 20px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-600); margin-bottom: 32px; }
+  .slide.dark .section-tag { color: var(--gold-400); }
+  .num-marker { font-family: var(--font-mono); font-size: 22px; letter-spacing: 0.18em; color: var(--gold-500); margin-bottom: 28px; }
+
+  /* Cover for product deck — lighter, product-focused */
+  .pd-cover {
+    background:
+      linear-gradient(180deg, var(--cream-100) 0%, var(--cream-200) 100%);
+    color: var(--ink-900);
+  }
+  .pd-cover-frame { position: absolute; inset: 0; padding: 100px; display: flex; flex-direction: column; justify-content: space-between; }
+  .pd-cover-title { font-size: 200px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.92; color: var(--green-900); }
+  .pd-cover-tag { font-family: var(--font-display); font-size: 44px; line-height: 1.2; max-width: 1200px; color: var(--green-700); margin-top: 28px; }
+
+  /* Module overview grid */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 64px;
+  }
+  .module-card {
+    background: #fff;
+    border: 1px solid rgba(10,31,68,0.15);
+    padding: 40px 36px;
+    display: flex; flex-direction: column;
+    min-height: 260px;
+  }
+  .module-num {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    letter-spacing: 0.16em;
+    color: var(--gold-600);
+    margin-bottom: 24px;
+  }
+  .module-title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    line-height: 1.15;
+    margin: 0 0 14px;
+    font-weight: 500;
+  }
+  .module-body {
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--ink-700);
+    margin: 0;
+  }
+
+  /* Feature deep-dive — split layout */
+  .deep-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 80px;
+    flex: 1;
+    margin-top: 56px;
+  }
+  .deep-list { display: flex; flex-direction: column; gap: 32px; }
+  .deep-item {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 20px;
+  }
+  .deep-bullet {
+    width: 16px; height: 16px;
+    background: var(--gold-500);
+    margin-top: 14px;
+  }
+  .deep-item h4 {
+    font-family: var(--font-display);
+    font-size: 30px;
+    margin: 0 0 6px;
+    font-weight: 500;
+  }
+  .deep-item p {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-700);
+  }
+
+  /* Workflow visualization */
+  .wf {
+    margin-top: 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .wf-row {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 40px;
+    align-items: start;
+    padding: 28px 0;
+    border-bottom: 1px solid rgba(10,31,68,0.15);
+  }
+  .wf-row:last-child { border-bottom: none; }
+  .wf-actor {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    letter-spacing: 0.16em;
+    color: var(--gold-600);
+    text-transform: uppercase;
+    padding-top: 6px;
+  }
+  .wf-actor .step {
+    font-family: var(--font-display);
+    font-size: 36px;
+    color: var(--green-700);
+    display: block;
+    margin-top: 4px;
+    letter-spacing: -0.01em;
+  }
+  .wf-content h4 {
+    font-family: var(--font-display);
+    font-size: 36px;
+    margin: 0 0 8px;
+    font-weight: 500;
+  }
+  .wf-content p {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-700);
+    max-width: 1100px;
+  }
+
+  /* Big stat block */
+  .big-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 60px; margin-top: 80px; }
+  .big-stats > div { padding-top: 24px; border-top: 2px solid var(--gold-500); }
+  .bs-num { font-family: var(--font-display); font-size: 120px; line-height: 0.95; font-weight: 500; letter-spacing: -0.025em; color: var(--green-700); }
+  .slide.dark .bs-num { color: var(--gold-500); }
+  .bs-label { font-size: 22px; line-height: 1.4; opacity: 0.78; margin-top: 16px; }
+
+  /* Pricing table */
+  .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; flex: 1; }
+  .price-card {
+    background: #fff;
+    border: 1px solid rgba(10,31,68,0.15);
+    padding: 48px 40px;
+    display: flex; flex-direction: column;
+  }
+  .price-card.featured {
+    background: var(--green-900);
+    color: var(--cream-100);
+    border: none;
+  }
+  .price-tier {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold-600);
+    margin-bottom: 20px;
+  }
+  .price-card.featured .price-tier { color: var(--gold-400); }
+  .price-name {
+    font-family: var(--font-display);
+    font-size: 44px;
+    margin: 0 0 24px;
+    font-weight: 500;
+    line-height: 1.05;
+  }
+  .price-amount {
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .price-period {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    letter-spacing: 0.12em;
+    color: var(--ink-500);
+    margin-bottom: 36px;
+    text-transform: uppercase;
+  }
+  .price-card.featured .price-period { color: var(--gold-400); }
+  .price-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+  .price-features li { font-size: 20px; line-height: 1.4; padding-left: 28px; position: relative; }
+  .price-features li::before { content: "●"; position: absolute; left: 0; color: var(--gold-500); top: 0; }
+
+  /* Mock screen */
+  .mock {
+    background: #FFF;
+    border: 1px solid rgba(10,31,68,0.18);
+    border-radius: 6px;
+    box-shadow: 0 30px 60px rgba(10,31,68,0.18);
+    overflow: hidden;
+    width: 100%;
+  }
+  .mock-bar {
+    background: var(--cream-200);
+    border-bottom: 1px solid rgba(10,31,68,0.12);
+    padding: 14px 22px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .mock-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(0,0,0,0.18); }
+  .mock-bar .url { font-family: var(--font-mono); font-size: 13px; margin-left: 18px; opacity: 0.6; }
+  .mock-body {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 540px;
+  }
+  .mock-side {
+    background: var(--green-900);
+    color: var(--cream-100);
+    padding: 28px 22px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .mock-side .logo-mini {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    color: var(--gold-400);
+    margin-bottom: 12px;
+  }
+  .mock-side a {
+    font-size: 14px;
+    color: var(--cream-100);
+    opacity: 0.6;
+    text-decoration: none;
+    padding: 6px 0;
+  }
+  .mock-side a.active {
+    opacity: 1;
+    color: var(--gold-400);
+  }
+  .mock-main { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+  .mock-h { font-family: var(--font-display); font-size: 24px; margin: 0; font-weight: 500; }
+  .mock-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .mock-stat { background: var(--cream-100); padding: 16px 18px; border-left: 3px solid var(--gold-500); }
+  .mock-stat .n { font-family: var(--font-display); font-size: 28px; color: var(--green-700); font-weight: 500; }
+  .mock-stat .l { font-size: 11px; opacity: 0.65; }
+  .mock-table { background: var(--cream-100); padding: 18px; }
+  .mock-row { display: grid; grid-template-columns: 1fr 90px 90px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 12px; }
+  .mock-row:last-child { border-bottom: none; }
+  .mock-pill { background: var(--gold-500); color: var(--green-900); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-align: center; letter-spacing: 0.04em; }
+  .mock-pill.gray { background: rgba(0,0,0,0.1); color: var(--ink-700); }
+  .mock-pill.green { background: var(--green-700); color: var(--cream-100); }
+
+  /* Audience grid */
+  .audience-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 64px; }
+  .audience-card {
+    padding: 56px 48px;
+    background: #FFF;
+    border-top: 6px solid var(--gold-500);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .audience-card.green { border-top-color: var(--green-700); }
+  .audience-eye {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold-600);
+  }
+  .audience-card.green .audience-eye { color: var(--green-700); }
+  .audience-h {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1.1;
+    margin: 0;
+    font-weight: 500;
+  }
+  .audience-list { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 12px; }
+  .audience-list li { font-size: 22px; line-height: 1.4; padding-left: 28px; position: relative; color: var(--ink-700); }
+  .audience-list li::before { content: "→"; position: absolute; left: 0; color: var(--gold-500); }
+
+  /* Integration logos */
+  .int-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 56px; }
+  .int-cell {
+    height: 110px;
+    background: #fff;
+    border: 1px solid rgba(10,31,68,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: var(--ink-500);
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 12px;
+  }
+</style>
+</head>
+<body>
+<deck-stage width="1920" height="1080">
+
+  <!-- 1. COVER -->
+  <section data-label="01 Bìa" class="slide pd-cover">
+    <div class="pd-cover-frame">
+      <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-500);">
+        <span>Product Overview · 2026</span>
+        <span>For business customers</span>
+      </div>
+      <div>
+        <img src="assets/logo-mark-v2.png" alt="" style="height: 220px; width: auto; display: block; margin-bottom: 36px;"/>
+        <img src="assets/aminra-wordmark.png" alt="AMINRA" style="height: 170px; width: auto; display: block;"/>
+        <p class="pd-cover-tag">Nền tảng số hoá toàn bộ vòng đời chứng nhận Halal — từ hồ sơ đến xuất khẩu.</p>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-500);">
+        <span>aminra.vn</span>
+        <span>v1.0 · MVP</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. WHY HALAL — Why this matters to your business -->
+  <section data-label="02 Vì sao quan trọng" class="slide cream">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>01 — Bối cảnh</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 80px; max-width: 1500px;">
+        <div class="section-tag">Vì sao cần Halal?</div>
+        <h2 class="slide-title" style="font-size: 88px;">Halal là tấm vé đi vào thị trường tiêu dùng tăng trưởng nhanh nhất thế giới.</h2>
+      </div>
+      <div class="big-stats">
+        <div>
+          <div class="bs-num">2 tỷ</div>
+          <div class="bs-label">Người tiêu dùng Hồi giáo toàn cầu — chiếm hơn 25% dân số.</div>
+        </div>
+        <div>
+          <div class="bs-num">9,5%</div>
+          <div class="bs-label">Tăng trưởng hàng năm của thị trường thực phẩm Halal toàn cầu.</div>
+        </div>
+        <div>
+          <div class="bs-num">+38%</div>
+          <div class="bs-label">Mức premium giá bán cho sản phẩm Halal khi xuất khẩu sang GCC.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. PRODUCT VISION -->
+  <section data-label="03 Tầm nhìn sản phẩm" class="slide dark">
+    <div class="slide-frame">
+      <div class="slide-header"><span>02 — Tầm nhìn</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 80px; max-width: 1700px;">
+        <div class="section-tag">Một workspace, một quy trình</div>
+        <h2 class="slide-title" style="font-size: 96px; color: var(--cream-100);">AMINRA thay thế <em style="color: var(--gold-400); font-style: italic;">email · excel · giấy tờ</em> bằng một quy trình số duy nhất.</h2>
+      </div>
+      <div style="margin-top: auto; padding-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px;">
+        <div>
+          <div class="mono" style="color: var(--gold-400); margin-bottom: 16px; font-size: 18px; letter-spacing: 0.18em;">TRƯỚC AMINRA</div>
+          <p style="font-family: var(--font-display); font-size: 44px; line-height: 1.2; color: var(--cream-100); margin: 0; opacity: 0.6;">9 đầu mối liên lạc · 130+ trang giấy · 6–12 tháng chờ đợi · không truy xuất được lỗi.</p>
+        </div>
+        <div>
+          <div class="mono" style="color: var(--gold-400); margin-bottom: 16px; font-size: 18px; letter-spacing: 0.18em;">VỚI AMINRA</div>
+          <p style="font-family: var(--font-display); font-size: 44px; line-height: 1.2; color: var(--gold-400); margin: 0;">1 dashboard · 0 giấy tờ · 60–90 ngày · audit trail tự động cho mọi thao tác.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. WHO IT'S FOR -->
+  <section data-label="04 Dành cho ai" class="slide cream">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>03 — Dành cho ai</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 80px; max-width: 1500px;">
+        <div class="section-tag">Hai phía của thị trường</div>
+        <h2 class="slide-title" style="font-size: 80px;">Một nền tảng phục vụ cả doanh nghiệp và tổ chức chứng nhận.</h2>
+      </div>
+      <div class="audience-grid">
+        <div class="audience-card green">
+          <div class="audience-eye">Doanh nghiệp</div>
+          <h3 class="audience-h">Nhà sản xuất & xuất khẩu</h3>
+          <ul class="audience-list">
+            <li>Thực phẩm, đồ uống, gia vị, nông sản chế biến</li>
+            <li>Mỹ phẩm, dược phẩm, thực phẩm chức năng</li>
+            <li>Bao bì, phụ gia tiếp xúc thực phẩm</li>
+            <li>Doanh nghiệp xuất khẩu sang Indonesia, Malaysia, GCC</li>
+          </ul>
+        </div>
+        <div class="audience-card">
+          <div class="audience-eye">Tổ chức chứng nhận</div>
+          <h3 class="audience-h">Halal certification bodies</h3>
+          <ul class="audience-list">
+            <li>Tổ chức chứng nhận Halal được công nhận tại Việt Nam</li>
+            <li>Auditor và chuyên gia Halal độc lập</li>
+            <li>Cơ quan kiểm định và viện nghiên cứu</li>
+            <li>Phối hợp với hiệp hội Halal trong nước & quốc tế</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. MODULES OVERVIEW -->
+  <section data-label="05 6 module" class="slide white">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>04 — Sản phẩm</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 80px; max-width: 1500px;">
+        <div class="section-tag">6 module cốt lõi</div>
+        <h2 class="slide-title" style="font-size: 80px;">Mọi việc cần để được chứng nhận Halal — trong một sản phẩm.</h2>
+      </div>
+      <div class="module-grid">
+        <div class="module-card">
+          <div class="module-num">01 · DOSSIER</div>
+          <h4 class="module-title">Hồ sơ chứng nhận thông minh</h4>
+          <p class="module-body">Form chuẩn theo HCA, JAKIM, MUI. Tự động xuất tài liệu PDF song ngữ Việt–Anh.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-num">02 · INGREDIENTS</div>
+          <h4 class="module-title">Thư viện nguyên liệu Halal</h4>
+          <p class="module-body">12.000+ ingredient phân loại Halal/Haram/Mashbooh, tham chiếu tiêu chuẩn quốc tế.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-num">03 · SUPPLY CHAIN</div>
+          <h4 class="module-title">Truy xuất chuỗi cung ứng</h4>
+          <p class="module-body">Liên kết nhà cung cấp, theo dõi từng lô nguyên liệu bằng QR & blockchain.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-num">04 · AUDITOR</div>
+          <h4 class="module-title">Cổng dành cho auditor</h4>
+          <p class="module-body">Workload, lịch on-site, ghi chú thẩm định, ký số chứng chỉ.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-num">05 · AUDIT TRAIL</div>
+          <h4 class="module-title">Nhật ký bất biến</h4>
+          <p class="module-body">Mọi thao tác được ghi nhận và đóng dấu thời gian — đáp ứng ISO 17065.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-num">06 · MARKETPLACE</div>
+          <h4 class="module-title">Marketplace xuất khẩu</h4>
+          <p class="module-body">Doanh nghiệp đã chứng nhận hiển thị tới buyer Indonesia, Malaysia, GCC.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. DEEP DIVE: DOSSIER -->
+  <section data-label="06 Hồ sơ thông minh" class="slide cream">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>05 — Module 01</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 60px;">
+        <div class="section-tag">Dossier · Hồ sơ chứng nhận</div>
+        <h2 class="slide-title" style="font-size: 72px;">Từ form trống đến hồ sơ hoàn chỉnh trong một buổi.</h2>
+      </div>
+      <div class="deep-grid">
+        <div class="deep-list">
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>Form thông minh</h4>
+              <p>Câu hỏi chỉ hiện khi cần — bỏ qua các phần không liên quan đến ngành của bạn.</p>
+            </div>
+          </div>
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>Auto-fill từ hồ sơ doanh nghiệp</h4>
+              <p>Thông tin pháp lý, nhà máy, nhân sự được điền tự động — không nhập lại.</p>
+            </div>
+          </div>
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>Tài liệu PDF song ngữ</h4>
+              <p>Xuất file Việt–Anh đúng định dạng yêu cầu của tổ chức chứng nhận.</p>
+            </div>
+          </div>
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>AI rà soát thiếu sót</h4>
+              <p>Trợ lý AI cảnh báo các trường còn thiếu, các nguyên liệu cần khai báo thêm.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mock">
+          <div class="mock-bar">
+            <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+            <span class="url">app.aminra.vn/dossier/HC-2026-0184</span>
+          </div>
+          <div class="mock-body">
+            <div class="mock-side">
+              <div class="logo-mini">Aminra</div>
+              <a>Dashboard</a>
+              <a class="active">Hồ sơ chứng nhận</a>
+              <a>Nguyên liệu</a>
+              <a>Nhà cung cấp</a>
+              <a>Audit log</a>
+              <a>Cài đặt</a>
+            </div>
+            <div class="mock-main">
+              <h3 class="mock-h">Hồ sơ HC-2026-0184 · Nước mắm Phú Quốc</h3>
+              <div class="mock-stats">
+                <div class="mock-stat"><div class="n">82%</div><div class="l">Hoàn tất hồ sơ</div></div>
+                <div class="mock-stat"><div class="n">14</div><div class="l">Nguyên liệu khai báo</div></div>
+                <div class="mock-stat"><div class="n">3</div><div class="l">Cảnh báo cần xử lý</div></div>
+              </div>
+              <div class="mock-table">
+                <div class="mock-row"><span>1.1 Thông tin pháp nhân</span><span class="mock-pill green">XONG</span><span></span></div>
+                <div class="mock-row"><span>1.2 Cơ sở sản xuất & nhân sự</span><span class="mock-pill green">XONG</span><span></span></div>
+                <div class="mock-row"><span>2.1 Khai báo nguyên liệu</span><span class="mock-pill">14/16</span><span></span></div>
+                <div class="mock-row"><span>2.2 Quy trình sản xuất</span><span class="mock-pill green">XONG</span><span></span></div>
+                <div class="mock-row"><span>3.1 Vệ sinh & ngăn nhiễm chéo</span><span class="mock-pill">CẦN BỔ SUNG</span><span></span></div>
+                <div class="mock-row"><span>4.1 Cam kết Halal</span><span class="mock-pill gray">CHƯA</span><span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. DEEP DIVE: INGREDIENTS -->
+  <section data-label="07 Thư viện nguyên liệu" class="slide white">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>06 — Module 02</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 60px;">
+        <div class="section-tag">Ingredients · Thư viện nguyên liệu</div>
+        <h2 class="slide-title" style="font-size: 72px;">Thư viện 12.000+ nguyên liệu — phân loại theo chuẩn quốc tế.</h2>
+      </div>
+      <div class="deep-grid">
+        <div class="deep-list">
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>3 trạng thái rõ ràng</h4>
+              <p>Halal · Haram · Mashbooh (cần xác minh thêm). Mỗi mục có nguồn tham chiếu.</p>
+            </div>
+          </div>
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>Tìm kiếm thông minh</h4>
+              <p>Tìm theo E-code, tên Latin, tên Việt, ngành hàng. Có gợi ý nguyên liệu thay thế.</p>
+            </div>
+          </div>
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>Cập nhật liên tục</h4>
+              <p>Đội chuyên gia Halal cập nhật khi tiêu chuẩn quốc tế thay đổi — không bao giờ bị lỗi thời.</p>
+            </div>
+          </div>
+          <div class="deep-item">
+            <span class="deep-bullet"></span>
+            <div>
+              <h4>Cảnh báo nhiễm chéo</h4>
+              <p>Tự động phát hiện nguyên liệu có thể chứa cồn, gelatin động vật, enzyme không Halal.</p>
+            </div>
+          </div>
+        </div>
+        <div class="placeholder" style="min-height: 100%;">[ ẢNH MOCKUP THƯ VIỆN NGUYÊN LIỆU ]</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. WORKFLOW -->
+  <section data-label="08 Quy trình" class="slide cream">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>07 — Quy trình</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 60px; max-width: 1500px;">
+        <div class="section-tag">End-to-end workflow</div>
+        <h2 class="slide-title" style="font-size: 72px;">5 bước · 60–90 ngày · 1 nền tảng.</h2>
+      </div>
+      <div class="wf">
+        <div class="wf-row">
+          <div class="wf-actor">Doanh nghiệp <span class="step">01</span></div>
+          <div class="wf-content">
+            <h4>Đăng ký & khởi tạo hồ sơ</h4>
+            <p>Tạo tài khoản, chọn loại sản phẩm, nhập thông tin cơ bản. Form thông minh tự ẩn các phần không liên quan.</p>
+          </div>
+        </div>
+        <div class="wf-row">
+          <div class="wf-actor">Doanh nghiệp <span class="step">02</span></div>
+          <div class="wf-content">
+            <h4>Khai báo nguyên liệu & nhà cung cấp</h4>
+            <p>Quét theo thư viện 12.000 nguyên liệu, liên kết nhà cung cấp, đính kèm CoA và chứng từ Halal hiện có.</p>
+          </div>
+        </div>
+        <div class="wf-row">
+          <div class="wf-actor">Aminra AI <span class="step">03</span></div>
+          <div class="wf-content">
+            <h4>Rà soát & chuẩn hoá</h4>
+            <p>AI kiểm tra hồ sơ, gợi ý chỉnh sửa, tạo bản PDF song ngữ. Chỉ hồ sơ đạt chuẩn mới gửi tới auditor.</p>
+          </div>
+        </div>
+        <div class="wf-row">
+          <div class="wf-actor">Tổ chức CN <span class="step">04</span></div>
+          <div class="wf-content">
+            <h4>Thẩm định & on-site audit</h4>
+            <p>Auditor xem hồ sơ, đặt câu hỏi, lên lịch kiểm tra cơ sở. Mọi tương tác đều được ghi nhật ký bất biến.</p>
+          </div>
+        </div>
+        <div class="wf-row">
+          <div class="wf-actor">Aminra <span class="step">05</span></div>
+          <div class="wf-content">
+            <h4>Cấp chứng nhận số</h4>
+            <p>Chứng chỉ Halal điện tử có QR truy xuất công khai, kết nối tới marketplace, có giá trị pháp lý.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. RESULTS -->
+  <section data-label="09 Kết quả pilot" class="slide dark">
+    <div class="slide-frame">
+      <div class="slide-header"><span>08 — Kết quả</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 80px; max-width: 1500px;">
+        <div class="section-tag">Pilot · 12 tháng đầu</div>
+        <h2 class="slide-title" style="font-size: 88px; color: var(--cream-100);">Đã được kiểm chứng với <em style="color: var(--gold-400); font-style: italic;">14 doanh nghiệp pilot</em>.</h2>
+      </div>
+      <div class="big-stats">
+        <div>
+          <div class="bs-num">−68%</div>
+          <div class="bs-label" style="color: var(--cream-100);">Giảm thời gian trung bình từ nộp hồ sơ đến cấp chứng nhận.</div>
+        </div>
+        <div>
+          <div class="bs-num">−54%</div>
+          <div class="bs-label" style="color: var(--cream-100);">Giảm chi phí trực tiếp + gián tiếp cho mỗi hồ sơ chứng nhận.</div>
+        </div>
+        <div>
+          <div class="bs-num">9,2/10</div>
+          <div class="bs-label" style="color: var(--cream-100);">NPS từ doanh nghiệp pilot — mọi pilot đều cam kết tiếp tục.</div>
+        </div>
+      </div>
+      <div style="margin-top: auto; padding-top: 80px; padding-left: 0;">
+        <div style="font-family: var(--font-display); font-size: 44px; font-style: italic; color: var(--gold-400); line-height: 1.25; max-width: 1500px;">"Lần đầu tiên chúng tôi nhìn thấy toàn bộ quy trình chứng nhận Halal trên một màn hình. Tiết kiệm cho công ty chúng tôi 4 tháng và 180 triệu đồng."</div>
+        <div class="mono" style="color: var(--cream-100); margin-top: 28px; font-size: 18px; letter-spacing: 0.16em; opacity: 0.7;">— GIÁM ĐỐC XUẤT KHẨU · DOANH NGHIỆP PILOT</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. INTEGRATIONS -->
+  <section data-label="10 Tích hợp" class="slide cream">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>09 — Tích hợp</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 80px; max-width: 1500px;">
+        <div class="section-tag">Hệ sinh thái</div>
+        <h2 class="slide-title" style="font-size: 72px;">Kết nối mọi công cụ doanh nghiệp đang dùng.</h2>
+      </div>
+      <div class="int-grid">
+        <div class="int-cell">SAP</div>
+        <div class="int-cell">Odoo</div>
+        <div class="int-cell">MISA</div>
+        <div class="int-cell">FAST</div>
+        <div class="int-cell">Bravo</div>
+        <div class="int-cell">QuickBooks</div>
+        <div class="int-cell">Google Drive</div>
+        <div class="int-cell">Microsoft 365</div>
+        <div class="int-cell">VNPT eSign</div>
+        <div class="int-cell">Viettel CA</div>
+        <div class="int-cell">EVS Halal</div>
+        <div class="int-cell">JAKIM API</div>
+      </div>
+      <div style="margin-top: 64px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 60px;">
+        <div>
+          <div class="mono" style="color: var(--gold-600); font-size: 18px; letter-spacing: 0.16em; margin-bottom: 12px;">ERP & KẾ TOÁN</div>
+          <p style="font-size: 22px; line-height: 1.5; margin: 0; color: var(--ink-700);">Đồng bộ tự động danh mục nguyên liệu, lô sản xuất, công thức.</p>
+        </div>
+        <div>
+          <div class="mono" style="color: var(--gold-600); font-size: 18px; letter-spacing: 0.16em; margin-bottom: 12px;">CHỮ KÝ SỐ</div>
+          <p style="font-size: 22px; line-height: 1.5; margin: 0; color: var(--ink-700);">Ký chứng từ và cam kết Halal bằng VNPT, Viettel CA, FastCA.</p>
+        </div>
+        <div>
+          <div class="mono" style="color: var(--gold-600); font-size: 18px; letter-spacing: 0.16em; margin-bottom: 12px;">CHỨNG NHẬN QUỐC TẾ</div>
+          <p style="font-size: 22px; line-height: 1.5; margin: 0; color: var(--ink-700);">API kết nối tổ chức Halal tại Indonesia, Malaysia, GCC.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. PRICING -->
+  <section data-label="11 Bảng giá" class="slide white">
+    <div class="slide-frame">
+      <div class="slide-header" style="color: var(--ink-700);"><span>10 — Bảng giá</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 60px; max-width: 1500px;">
+        <div class="section-tag">3 gói linh hoạt</div>
+        <h2 class="slide-title" style="font-size: 72px;">Phù hợp từ SME đến tập đoàn xuất khẩu.</h2>
+      </div>
+      <div class="pricing">
+        <div class="price-card">
+          <div class="price-tier">Starter</div>
+          <h4 class="price-name">SME · 1 nhà máy</h4>
+          <div class="price-amount">3tr</div>
+          <div class="price-period">VNĐ / THÁNG</div>
+          <ul class="price-features">
+            <li>1 hồ sơ chứng nhận / năm</li>
+            <li>Thư viện nguyên liệu cơ bản</li>
+            <li>Hỗ trợ qua email</li>
+            <li>Báo cáo Excel xuất nhanh</li>
+            <li>1 user</li>
+          </ul>
+        </div>
+        <div class="price-card featured">
+          <div class="price-tier">Growth</div>
+          <h4 class="price-name">Doanh nghiệp · đa nhà máy</h4>
+          <div class="price-amount">9tr</div>
+          <div class="price-period">VNĐ / THÁNG</div>
+          <ul class="price-features">
+            <li>Hồ sơ không giới hạn</li>
+            <li>Toàn bộ thư viện 12.000 ingredient</li>
+            <li>Truy xuất chuỗi cung ứng</li>
+            <li>Tích hợp ERP & chữ ký số</li>
+            <li>10 user · hỗ trợ ưu tiên</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <div class="price-tier">Enterprise</div>
+          <h4 class="price-name">Tập đoàn xuất khẩu</h4>
+          <div class="price-amount">18tr+</div>
+          <div class="price-period">VNĐ / THÁNG · TUỲ CHỈNH</div>
+          <ul class="price-features">
+            <li>Tất cả tính năng Growth</li>
+            <li>Marketplace xuất khẩu ưu tiên</li>
+            <li>API riêng & SLA cam kết</li>
+            <li>Chuyên gia Halal đồng hành</li>
+            <li>User không giới hạn</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. CTA -->
+  <section data-label="12 Bắt đầu" class="slide dark">
+    <div class="slide-frame">
+      <div class="slide-header"><span>11 — Bắt đầu</span><img class="brand-mark-img" src="assets/logo-mark-v2.png" alt="AMINRA"/></div>
+      <div style="margin-top: 120px; max-width: 1700px;">
+        <div class="section-tag">Sẵn sàng?</div>
+        <h2 class="slide-title" style="font-size: 144px; color: var(--cream-100);">Số hoá hồ sơ Halal đầu tiên trong tuần này.</h2>
+      </div>
+      <div style="margin-top: 80px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;">
+        <div style="border-top: 2px solid var(--gold-500); padding-top: 24px;">
+          <div class="mono" style="color: var(--gold-400); font-size: 18px; letter-spacing: 0.18em; margin-bottom: 12px;">01 · DEMO 30 PHÚT</div>
+          <p style="font-family: var(--font-display); font-size: 32px; color: var(--cream-100); line-height: 1.25; margin: 0;">Đặt lịch để chuyên gia AMINRA chạy demo trên dữ liệu thật của bạn.</p>
+        </div>
+        <div style="border-top: 2px solid var(--gold-500); padding-top: 24px;">
+          <div class="mono" style="color: var(--gold-400); font-size: 18px; letter-spacing: 0.18em; margin-bottom: 12px;">02 · 14 NGÀY MIỄN PHÍ</div>
+          <p style="font-family: var(--font-display); font-size: 32px; color: var(--cream-100); line-height: 1.25; margin: 0;">Dùng thử full feature, không cần thẻ tín dụng, không ràng buộc.</p>
+        </div>
+        <div style="border-top: 2px solid var(--gold-500); padding-top: 24px;">
+          <div class="mono" style="color: var(--gold-400); font-size: 18px; letter-spacing: 0.18em; margin-bottom: 12px;">03 · ĐỒNG HÀNH</div>
+          <p style="font-family: var(--font-display); font-size: 32px; color: var(--cream-100); line-height: 1.25; margin: 0;">Chuyên gia Halal hỗ trợ trực tiếp xuyên suốt hồ sơ đầu tiên.</p>
+        </div>
+      </div>
+      <div style="margin-top: auto; padding-top: 80px; display: flex; justify-content: space-between; align-items: end;">
+        <div>
+          <div class="mono" style="color: var(--gold-400); margin-bottom: 8px; font-size: 18px; letter-spacing: 0.18em;">LIÊN HỆ</div>
+          <div style="font-family: var(--font-display); font-size: 44px; color: var(--cream-100);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7f171a1313103f1e1216110d1e510911">[email&#160;protected]</a></div>
+        </div>
+        <div style="text-align: right;">
+          <div class="mono" style="color: var(--gold-400); margin-bottom: 8px; font-size: 18px; letter-spacing: 0.18em;">DÙNG THỬ</div>
+          <div style="font-family: var(--font-display); font-size: 44px; color: var(--cream-100);">aminra.vn/start</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</deck-stage>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>
