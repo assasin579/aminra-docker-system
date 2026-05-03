@@ -484,7 +484,7 @@ export default function ProcessPage() {
             )}
             <button
               onClick={() => setShowCreate(true)}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-white"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-white btn-lift"
               style={{ background: "#0A1F44" }}
             >
               + Tạo mới

@@ -336,7 +336,7 @@ export default function BatchesPage() {
           </div>
           <button
             onClick={openCreate}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
             style={{ background: "#0A1F44" }}
           >
             + Tạo lô hàng
