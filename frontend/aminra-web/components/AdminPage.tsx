@@ -54,7 +54,7 @@ class AdminErrorBoundary extends Component<
               this.setState({ error: null });
               this.props.onReset?.();
             }}
-            className="text-xs px-3 py-1.5 rounded-lg"
+            className="text-xs px-3 py-1.5 rounded-lg btn-lift"
             style={{
               background: "rgba(239,68,68,0.15)",
               color: "#EF4444",

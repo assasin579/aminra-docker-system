@@ -610,7 +610,7 @@ export default function ProcessPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => addNode("main")}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow btn-lift"
                     style={{ background: "#0A1F44" }}
                   >
                     + Bước chính

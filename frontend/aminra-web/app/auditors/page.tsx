@@ -448,7 +448,7 @@ export default function AuditorsPage() {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
+                      className="px-4 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                       style={{ background: "#0A1F44" }}
                     >
                       {saving ? "Lưu..." : "Lưu"}

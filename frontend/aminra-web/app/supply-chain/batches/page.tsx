@@ -814,7 +814,7 @@ export default function BatchesPage() {
                           onClick={() =>
                             updateBatchStatus(detail.batch.id, "in_progress")
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                           style={{ background: "#B45309" }}
                         >
                           Bắt đầu SX
@@ -825,7 +825,7 @@ export default function BatchesPage() {
                           onClick={() =>
                             updateBatchStatus(detail.batch.id, "completed")
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                           style={{ background: "#102A5C" }}
                         >
                           Hoàn thành
@@ -851,7 +851,7 @@ export default function BatchesPage() {
                               openDetail(detail.batch.id);
                               fetchBatches();
                             }}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                             style={{ background: "#0A1F44" }}
                           >
                             Seal & Xác nhận
@@ -1257,7 +1257,7 @@ export default function BatchesPage() {
                                           status: "completed",
                                         })
                                       }
-                                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                                       style={{ background: "#0A1F44" }}
                                     >
                                       Hoàn thành bước

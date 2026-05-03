@@ -677,7 +677,7 @@ export default function MembersPage() {
                           <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
+                            className="px-4 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                             style={{ background: "#0A1F44" }}
                           >
                             {saving ? "Đang lưu..." : "Lưu"}
@@ -1421,7 +1421,7 @@ export default function MembersPage() {
                         navigator.clipboard.writeText(generatedLink);
                         alert("Đã copy!");
                       }}
-                      className="px-3 py-2 rounded-lg text-xs font-medium text-white flex-shrink-0"
+                      className="px-3 py-2 rounded-lg text-xs font-medium text-white flex-shrink-0 btn-lift"
                       style={{ background: "#0A1F44" }}
                     >
                       Copy

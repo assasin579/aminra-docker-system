@@ -165,7 +165,7 @@ export default function InviteAcceptPage({
           </p>
           <Link
             href="/business/login"
-            className="inline-block px-6 py-3 rounded-xl font-semibold text-white"
+            className="inline-block px-6 py-3 rounded-xl font-semibold text-white btn-lift"
             style={{ background: "#0A1F44" }}
           >
             Đăng nhập ngay

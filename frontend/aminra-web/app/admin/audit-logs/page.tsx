@@ -168,7 +168,7 @@ export default function AuditLogsPage() {
           <button
             type="button"
             onClick={onResetFilters}
-            className="px-4 py-2 rounded-lg text-sm font-medium"
+            className="px-4 py-2 rounded-lg text-sm font-medium btn-lift"
             style={{ background: "#F1F5F9", color: "#0A1F44" }}
           >
             Reset
@@ -176,7 +176,7 @@ export default function AuditLogsPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 rounded-lg text-sm font-medium"
+            className="px-4 py-2 rounded-lg text-sm font-medium btn-lift"
             style={{
               background: loading ? "#94A3B8" : "#0A1F44",
               color: "white",
@@ -376,7 +376,7 @@ export default function AuditLogsPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1 || loading}
-              className="px-4 py-2 rounded-lg text-sm font-medium"
+              className="px-4 py-2 rounded-lg text-sm font-medium btn-lift"
               style={{
                 background: page <= 1 ? "#F1F5F9" : "white",
                 border: "1px solid #E2E8F0",
@@ -389,7 +389,7 @@ export default function AuditLogsPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || loading}
-              className="px-4 py-2 rounded-lg text-sm font-medium"
+              className="px-4 py-2 rounded-lg text-sm font-medium btn-lift"
               style={{
                 background: page >= totalPages ? "#F1F5F9" : "white",
                 border: "1px solid #E2E8F0",
