@@ -1,205 +1,232 @@
-# CLAUDE.md — AMINRA Testing Guide
-
-> Bạn đang làm việc trong **AMINRA Halal Certification Platform**. File này là **operating instruction** cho Claude Code: mỗi session phải đọc + áp dụng trước khi viết bất cứ code nào.
-
+---
+last_reviewed: 2026-05-03
+review_cadence: 90d
 ---
 
-## 1. Role & Mission
+# AMINRA — project_memory
 
-Bạn là **QA Engineer** cho AMINRA platform — một SaaS chứng nhận Halal thật sự cho doanh nghiệp Việt Nam và quốc tế (JAKIM / BPJPH / HDC tuân thủ). Testing không phải optional:
+> **Note:** Section trống = unknown. Claude KHÔNG được suy đoán nội dung.
+> Nội dung gốc QA testing guide ở [`CLAUDE.testing-legacy.md`](./CLAUDE.testing-legacy.md).
 
-- Chứng chỉ sai → khách bị thu hồi giấy phép xuất khẩu → thiệt hại business thực
-- Auditor thấy hồ sơ không được ủy quyền → vi phạm compliance
-- RAG trả lời sai về Shariah → misleading người dùng, risk thương hiệu
+## context
 
-Nguyên tắc: **mỗi feature phải có test trước khi merge**. Không test = không merge.
+- **Tên:** AMINRA
+- **Sứ mệnh:** Nền tảng SaaS đa người thuê (multi-tenant) kết nối doanh nghiệp Việt Nam có nhu cầu chứng nhận Halal với các Tổ chức Chứng nhận (CB), được hỗ trợ bởi AI để sàng lọc và tự động hóa quy trình xin, cấp và quản lý vòng đời chứng nhận. Công nghệ blockchain hỗ trợ truy xuất nguồn gốc sản phẩm. Tầm nhìn: trở thành đối tác hạ tầng số của doanh nghiệp và cơ quan chứng nhận, phát triển công nghiệp Halal, hội nhập nền kinh tế Hồi giáo toàn cầu.
+- **Giai đoạn:** Đang hoàn thiện MVP để ra mắt nhà đầu tư.
+- **Nhà sáng lập:** Solo founder — nền tảng DevSecOps/IT, Chứng nhận Halal.
 
----
+### Mô hình kinh doanh
 
-## 2. Testing Philosophy
+- **Tier 1:** Nền tảng cấp/quản lý chứng nhận, quản lý auditor cho CB (HALCERT, HCA, ...) + Nền tảng chuẩn bị hồ sơ, internal audit cho doanh nghiệp.
+- **Tier 2:** Truy xuất nguồn gốc full blockchain, chấm điểm doanh nghiệp, kết nối sàn TMĐT để quảng bá sản phẩm đạt chuẩn.
+- **Tier 3:** Tích hợp các chứng nhận khác (HACCP, VietGAP, GlobalGAP, hữu cơ).
 
-1. **TDD khi có thể** — viết test trước, implement sau
-2. **Bug fix phải kèm regression test** — không có regression test, bug sẽ quay lại
-3. **Coverage tối thiểu 80% cho business logic** (auth, submission workflow, audit state machine, RAG pipeline)
-4. **Test edge cases, không chỉ happy path** — boundary values, empty input, concurrent requests, expired tokens
-5. **Integration > unit cho business logic** — ưu tiên test thật chạy qua router → service → DB thật, tránh mock quá mức khiến test không phản ánh production
+## architecture
 
----
+- **Pattern:** SaaS multi-tenant với 3 portal (Doanh nghiệp / Tổ chức Chứng nhận / AMINRA admin).
+- **Phong cách:** Modular monolith trước, chỉ tách microservice khi tải thực sự đòi hỏi (thiết kế để mở rộng dễ).
 
-## 3. Stack — Target vs Current state
+### Backend
+- **API:** FastAPI (Python 3.11+)
+- **Vector DB:** Qdrant (semantic search trên nguyên liệu, quy định, tài liệu chính thống)
+- **Relational DB:** PostgreSQL (multi-tenant qua **schema-per-tenant**)
+- **Cache:** Redis (session, rate limiting, job queue backing store)
+- **Task queue:** **arq** (xem `docker-compose.yml: arq-worker`, services tại `backend/services/jobs.py`)
+- **Migration:** Alembic (`backend/alembic/versions/`)
+- **CMS:** *Planned, chưa triển khai* — chưa có dependency Payload CMS hay folder `backend/cms` trong codebase. Decision pending.
 
-Cập nhật bảng này khi stack thay đổi. Khi user yêu cầu viết loại test mà stack "Current" chưa có, **chủ động đề xuất setup gap trước khi viết test**.
+### AI Layer
+- **LLM gateway:** **OpenRouter** (key qua Vault `secret/aminra/api-keys.openrouter_api_key`). DeepSeek được gọi qua OpenRouter (model `deepseek/deepseek-chat-v3`).
+- **Fallback:** DEEPSEEK_API_KEY (direct, hiện chưa active — vẫn `REPLACE_ME` trong Vault).
+- **Use cases:**
+  - Pipeline enrichment nội dung RSS (HDC, BPJPH, MUIS, JAKIM, HalalFocus)
+  - Quét tuân thủ nguyên liệu (upload công thức → flag rủi ro Halal)
+  - Crawl dữ liệu tin tức
+  - Phân tích gap tài liệu để đánh giá độ sẵn sàng chứng nhận, chấm điểm hồ sơ
+  - Dịch nội dung đa ngôn ngữ
 
-| Layer | Target stack | Current state | Gap / Action |
-|-------|-------------|---------------|--------------|
-| Backend unit / integration | `pytest` + `pytest-asyncio` + `httpx` + `respx` | ✅ Full stack (pytest 9, async auto-mode, respx, mocker) | OK — pattern ở `tests/test_example_new_stack.py` |
-| Frontend unit / component | `Vitest` + `React Testing Library` + `jest-dom` | ✅ Configured (vitest.config.mts, jsdom) | OK — example `__tests__/components/SimpleHeader.test.tsx` |
-| Frontend E2E | `Playwright` | ✅ 44 tests, 10 specs passing | OK — duy trì |
-| External API mocking | `respx` cho LLM calls | ✅ Installed | Dùng trong mọi RAG test (mock `/chat/completions`) |
-| Coverage tracking | `pytest-cov` + `@vitest/coverage-v8` + CI gate | ✅ Local commands ready | Add GitHub Actions gate ≥80% |
-| CMS | — (Aminra không dùng CMS) | N/A | N/A |
+### Frontend
+- **Framework:** Next.js 15 (App Router) + Turbopack dev mode
+- **Styling:** Tailwind v4
+- **i18n:** `i18next` + `react-i18next`, namespace tại `public/locales/{en,vi,ar}/` *(auto-discovered, please verify — chỉ thấy 3 lang folder, README đề cập 4 lang)*
 
----
+### Lưu trữ
+- **Object:** S3-compatible (Cloudflare R2)
+- **Database backup:** PostgreSQL → local + Backblaze B2 + Cloudflare R2 (xem `~/scripts/db_backup.sh`)
 
-## 4. Writing rules
+## security
 
-- **AAA pattern** — Arrange (setup data + mocks), Act (call function), Assert (verify result)
-- **1 test = 1 logical assertion** — nếu test fail, tên test phải chỉ rõ cái gì sai
-- **Descriptive names:**
-  - ✅ `test_halal_audit_rejects_expired_certificate`
-  - ✅ `test_submission_can_only_be_submitted_from_draft_status`
-  - ❌ `test_audit_1`, `test_submission_works`
-- **Ưu tiên integration > unit** cho business logic — mock chỉ bên ngoài system boundary (LLM API, S3, external webhook), không mock internal services
-- **Reuse fixtures** — đừng copy-paste setup code, dùng lại từ `conftest.py` / `fixtures.ts`
-- **Parametrize repeated tests** — dùng `pytest.mark.parametrize` cho boundary values thay vì viết 10 test gần giống
+### Mô hình đe dọa
+- **Tài sản quý:** Dữ liệu kinh doanh tenant, tài liệu chứng nhận, công thức nguyên liệu, báo cáo auditor.
+- **Đe dọa chính:**
+  - Rò rỉ dữ liệu xuyên tenant (rủi ro kinh điển của SaaS đa người thuê)
+  - Credential stuffing vào tài khoản auditor/CB
+  - Supply chain attack qua dependency npm/pip
+  - Prompt injection qua tài liệu được upload
 
----
+### Auth
+- **Provider:** *(decision pending — hiện tại self-hosted JWT)*
+- **MFA:** *(decision pending)*
+- **Session:** JWT HS256, 8h access token, 7d refresh (`docker-compose.yml: JWT_EXPIRE_HOURS=8, JWT_REFRESH_DAYS=7`)
+- **Secret rotation:** `bash vault/scripts/rotate-secrets.sh auth`
 
-## 5. Halal domain testing priorities
+### Authorization
+- RBAC scope theo tenant.
+- **Engine:** *(planned — Casbin hoặc oso, chưa triển khai. Hiện dùng Python check thủ công trong `backend/auth/jwt_utils.py: require_business_owner`, `require_provider_owner`, etc.)*
 
-Đây là **danh sách ưu tiên** — khi review PR, thứ tự kiểm này quan trọng nhất:
+### Bảo vệ dữ liệu
+- **At rest:** Mã hóa AES-256 cho tài liệu, transparent DB encryption.
+- **In transit:** TLS tối thiểu 1.2.
 
-### a) Certification workflow state machine
-Test mọi state transition + mọi transition bị cấm:
-- Submission: `draft → submitted → reviewing → approved | rejected | revision_required`
-- Audit visit: `scheduled → in_progress → completed → report_submitted`
-- NCR: `open → pending_verification → closed`
+### Quản lý secret
+- KHÔNG secret trong code/config commit lên GitHub.
+- Vault (HashiCorp) tại `vault/`. AppRole auth cho backend, vault-agent render env.sh.
 
-Reference: [`backend/alembic/versions/005_onsite_audits.py`](backend/alembic/versions/005_onsite_audits.py)
+### Tính toàn vẹn tài liệu
+- **Hashing:** SHA-256 mọi tài liệu upload, lưu khi submit.
+- **Audit trail:** Bảng `audit_logs` (PostgreSQL), endpoint `/auth/admin/audit-logs` (xem `backend/auth/audit_log_router.py`).
+- **QR registry:** Xác minh chứng nhận công khai qua QR → kiểm tra hash chống giả mạo.
 
-Test must-have: không thể jump state (VD `draft → approved` direct), không thể revert state (VD `approved → draft`), status change trigger đúng side effect (notification, audit log).
+### AI Security
+- **Prompt injection:** Sanitize và cô lập nội dung tài liệu không tin cậy khỏi system prompt.
+- **Cross-tenant leak:** Không truyền dữ liệu tenant A vào context prompt của tenant B.
+- **Validate output:** Mọi output LLM là untrusted; validate theo schema Pydantic.
 
-### b) Auditor permission boundaries (CB sub-roles)
-- Business **không thể** access `/api/audits/*` (chỉ provider role)
-- Auditor chỉ thấy audit visits được assign cho mình, không thấy của đồng nghiệp
-- Provider admin thấy tất cả audit của CB mình, không thấy của CB khác
+### Mục tiêu compliance
+- PDPL Việt Nam (current), GDPR-ready (cho buyer EU), SOC 2 Type I (sau Series A).
 
-Reference: [`backend/auth/permissions.py`](backend/auth/permissions.py)
+## testing
 
-### c) Multi-tenant data isolation
-Mọi query phải filter theo `tenant_id`. Test cross-tenant leakage là **critical bug** nếu xảy ra.
+### Test pyramid
+- **Unit:** Pytest cho Python, Vitest cho TypeScript — mục tiêu **80% coverage** trên business logic.
+- **Integration:** testcontainers cho Postgres/Redis/Qdrant; full API test trên stack ephemeral.
+- **E2E:** Playwright cho user journey (multi-browser: desktop chromium + mobile Pixel 5).
 
-Pattern: User A thuộc tenant A tạo submission → User B thuộc tenant B GỌI `GET /api/submissions/my-submissions` phải **không** thấy submission của A.
+### Stack hiện tại
+- Backend: pytest 9 + pytest-asyncio (mode=auto) + httpx + respx + pytest-mock + pytest-cov
+- Frontend: Vitest + React Testing Library + jest-dom (jsdom env)
+- E2E: Playwright (44 tests, 10 specs)
 
-Reference: [`backend/auth/models.py`](backend/auth/models.py) — `User.tenant_id`, `Submission.tenant_id`, etc.
-
-### d) RAG pipeline accuracy
-Test `HalalRAG` class với **known Q&A pairs** từ corpus `halal_kb`:
-- "Gelatin từ bò có halal không?" → expect câu trả lời reference JAKIM MS 1500
-- "Alcohol nấu ăn có được phép không?" → expect nuance (cooking vs drinking)
-
-Mock external LLM (OpenRouter/DeepSeek) với `respx` để:
-- Test không phụ thuộc network / API quota
-- Verify prompt construction đúng (context injection, topic filter)
-- Verify parsing response khi LLM trả format khác nhau
-
-Reference: [`backend/pipeline/query.py`](backend/pipeline/query.py) (`TOP_K=12`, `SCORE_THRESHOLD=0.08`, class `HalalRAG`)
-
-### e) Content pipeline idempotency
-`/ingest` chạy 2 lần cùng 1 document phải **không tạo duplicate vectors** trong Qdrant. Verify:
-- Số vectors trong collection `halal_kb` không tăng gấp đôi
-- Không throw error khi document đã ingest
-
----
-
-## 6. Quick reference — run tests
-
-### Backend (pytest)
-Tests không build vào image production → dùng helper script `backend/run_tests.sh` (copy tests vào container rồi chạy):
-
+### Run commands
 ```bash
-cd backend
+# Backend
+cd backend && ./run_tests.sh                # all
+cd backend && ./run_tests.sh --cov          # with coverage gate (≥80%)
 
-./run_tests.sh                               # Tất cả tests
-./run_tests.sh tests/test_auth.py            # 1 file
-./run_tests.sh tests/test_auth.py -k login   # Filter theo tên test
-./run_tests.sh --cov                         # Coverage, fail nếu < 80%
+# Frontend unit
+cd frontend/aminra-web && npm test
+
+# Frontend E2E
+cd frontend/aminra-web && npm run test:e2e          # desktop
+cd frontend/aminra-web && npm run test:e2e:mobile   # Pixel 5
 ```
 
-Stack đã cài trong container: `pytest 9`, `pytest-asyncio` (mode=auto), `respx`, `pytest-cov`, `pytest-mock`. Xem pattern đầy đủ tại `backend/tests/test_example_new_stack.py`.
+> **Halal domain testing priorities, fixtures, factories**: chi tiết đầy đủ ở [`CLAUDE.testing-legacy.md`](./CLAUDE.testing-legacy.md). Cần migrate những bullet quan trọng vào đây sau.
 
-### Frontend unit / component (Vitest + RTL)
+## code_quality
+
+<!-- TODO: ghi linter (ruff?), formatter, naming conventions, file/folder structure,
+     "do not" patterns. Hiện chưa có. -->
+
+*Auto-discovered facts (please verify):*
+- Backend: ruff + mypy (config tại `backend/ruff.toml`)
+- Frontend: prettier + ESLint (xem `frontend/aminra-web/.prettierrc`, `eslint.config.js` nếu có)
+- Pre-commit hooks: gitleaks, ruff format, prettier (xem `.pre-commit-config.yaml`)
+
+## api
+
+<!-- TODO: URL versioning, error response shape, rate limit policy, OpenAPI spec
+     source-of-truth. -->
+
+*Auto-discovered facts (please verify):*
+- Base URL: `/auth/*`, `/api/*`, `/admin/*` (xem `backend/app.py: include_router`)
+- Auth header: `Authorization: Bearer <jwt>`
+- Rate limiting: tồn tại nhưng chưa documented (`Depends(rate_limit_upload)` trong `/ingest`, `/evaluate`)
+- OpenAPI: FastAPI auto-generated tại `/docs`, `/openapi.json`
+
+## devsecops
+
+*Auto-discovered facts (please verify):*
+
+### CI/CD
+- GitHub Actions (`.github/workflows/`):
+  - `ci.yml` — lint + smoke
+  - `test.yml` — full pytest + vitest + Playwright
+  - `security-scan.yml` — bandit, pip-audit, npm audit, gitleaks, semgrep, trivy
+  - `build-push.yml` — Docker image build + push
+  - `deploy.yml` — deployment
+
+### Local dev
 ```bash
-cd frontend/aminra-web
+# Vault first
+docker compose -f vault/docker-compose.vault.yml up -d
+bash vault/scripts/init-vault.sh
 
-npm test                    # Run all unit tests (headless)
-npm run test:watch          # Watch mode — auto rerun on save
-npm run test:cov            # With coverage, fail nếu < 80% per vitest.config.mts
+# App stack
+docker compose up -d                                  # production-like
+docker compose --profile dev up -d aminra-frontend-dev   # FE hot-reload :3100
 ```
 
-Test location: `__tests__/**/*.test.tsx` hoặc colocated bên cạnh component (`components/Foo.test.tsx`). Pattern tham khảo: `__tests__/components/SimpleHeader.test.tsx` (mock `next/navigation`, render, assert text + href).
+### Backup / restore
+- Manual: `scripts/backup.sh` (PG dump + Qdrant snapshot + Docker volumes)
+- Cron: `scripts/backup-cron.sh`
+- Restore: `scripts/restore.sh <backup-dir>`
+- Cloud sync: `~/scripts/db_backup.sh` (R2 + B2)
 
-### Frontend E2E (Playwright)
-```bash
-cd frontend/aminra-web
+### Secret rotation
+- API keys: `bash vault/scripts/rotate-secrets.sh api-keys`
+- Database password: `bash vault/scripts/rotate-secrets.sh database`
+- JWT + admin: `bash vault/scripts/rotate-secrets.sh auth`
+- VAPID web push: `bash vault/scripts/rotate-secrets.sh web-push`
 
-npm run test:e2e            # Desktop Chromium, ~1 phút
-npm run test:e2e:mobile     # Pixel 5 viewport
-npm run test:e2e:all        # Tất cả projects
-npm run test:e2e:ui         # Interactive UI debug mode
-npm run test:e2e:report     # Open HTML report from last run
-```
+### Migration
+- Tool: Alembic. Wrapper: `scripts/db-migrate.sh {current|upgrade|downgrade|new|stamp}`
+- Convention: additive-only, `def downgrade()` mandatory, schema impact analysis bắt buộc cho mỗi feature mới (`docs/features/<feature>/schema.md`).
 
-### Smoke test nhanh (không phải pytest, dùng curl)
-```bash
-bash /tmp/aminra_smoke_test_v2.sh   # 50 case đã viết, < 30s
-```
+## observability
 
----
+*Auto-discovered facts (please verify):*
 
-## 7. Fixtures & patterns to reuse
+- **Frontend error tracking:** Sentry (`@sentry/nextjs ^10.50.0`)
+- **Backend error tracking:** Sentry SDK Python (env `SENTRY_DSN`, optional)
+- **Logging:** structlog (Python) — structured fields `event`, `request_id`, `level`, `timestamp`
+- **Metrics:** *(planned — Prometheus + Grafana đã đề cập trong `docs/dev-setup.md` URLs nhưng chưa thấy config)*
+- **Dashboards:**
+  - Grafana: http://localhost:3200 (planned)
+  - Prometheus: http://localhost:9090 (planned)
 
-### Backend — `backend/tests/conftest.py`
-- `client` — session-scoped HTTP client trỏ về `http://localhost:8100`
-- `admin_token` — session-scoped JWT của admin, lấy qua `/admin/login` 1 lần
-- **Pattern:** tests auth-dependent dùng `client.get("/api/x", headers={"Authorization": f"Bearer {admin_token}"})`
+## risks
 
-### Frontend E2E — `frontend/aminra-web/e2e/fixtures.ts`
-- `biz` — business user register + login tự động, trả `{email, password, token}`
-- `prov` — provider user register + admin-approve + login (auto-skip nếu approval fail)
-- `admin` — admin token từ `/admin/login`
-- `api` — `APIRequestContext` để gọi backend trực tiếp trong E2E
+*Snapshot 2026-05-03:*
 
-**Pattern:**
-```ts
-test("Business can list my submissions", async ({ api, biz }) => {
-  const r = await api.get("/api/submissions/my-submissions", {
-    headers: { Authorization: `Bearer ${biz.token}` },
-  });
-  expect(r.status()).toBe(200);
-});
-```
+### Critical bugs (Tier 1) — phải fix trước CB demo
+13 critical bugs đã document tại [`docs/bug-audit-2026-04-26.md`](docs/bug-audit-2026-04-26.md), bao gồm:
+- C1: `replace-document` works on approved submissions → cert covers doc CB never reviewed (compliance violation)
+- C5: `viewDoc` puts JWT in URL querystring → token leak via Referer/logs
+- C6: `documents/{id}/preview` cross-tenant access via OR clause
+- C7: `/ingest` no path-traversal sanitization → cross-tenant file overwrite
+- C12-C13: `/evaluate`, `/ingest`, `/rewrite` anonymous → unauth LLM cost burner
 
-### Playwright config — [`frontend/aminra-web/playwright.config.ts`](frontend/aminra-web/playwright.config.ts)
-- Desktop: `1440x900` Chromium
-- Mobile: Pixel 5
-- Failure artifacts: screenshot + video + trace on retry
-- Serial execution (`workers: 1`) để tránh race trong test tạo user
+### Tech debt
+- Vault setup vẫn manual init lần đầu (auto-init script chưa có)
+- `update_updated_at_column()` function phải tạo manual sau init (init.sql ordering bug)
+- Modal positioning đã fix triệt để (memory: `feedback_modal_containing_block.md`) — không nên regress
+- 264+ hardcoded hex colors trong frontend (CSS vars defined nhưng underutilized)
 
----
+### Operational
+- Cron daemon trên Qubes VM cần qubes-service `crond` enable từ dom0 (xem memory: `env_qubes.md`)
+- Cloudflare cache có thể serve stale JS chunks → dev nên dùng `localhost:3100` thay vì tunnel
+- Modal mới phải dùng `<Modal>` portal component (không tự `<div fixed inset-0>`)
 
-## 8. Checklist trước khi merge
+## definition_of_done
 
-Bắt buộc:
-- [ ] Test cho code mới (unit nếu pure function, integration nếu workflow)
-- [ ] Regression test nếu fix bug
-- [ ] Test pass local (`pytest` hoặc `npm run test:e2e`)
+PR chỉ được merge khi đủ:
+
+- [ ] Tests pass + coverage ≥ 80% trên business logic mới
+- [ ] Security scan clean (bandit, npm audit, gitleaks, semgrep, trivy — xem `.github/workflows/security-scan.yml`)
+- [ ] Schema migration kèm UP/DOWN nếu DB đổi; reviewed SQL diff
+- [ ] Docs updated nếu feature mới: `docs/features/<feature>/{spec,threat-model,schema,test-plan,test-report,runbook}.md`
+- [ ] Conventional commit message (`feat|fix|chore|docs|...(scope): subject`)
+- [ ] Manual QA trên feature/bug fix UI (test trên `localhost:3100` để bypass CF cache)
 - [ ] Không có `skip` / `xfail` / `.only()` / `.fixme()` lẫn trong commit
 - [ ] Không hardcode secret / credential / tenant_id trong test
-
-Nice-to-have:
-- [ ] Coverage không giảm so với baseline
-- [ ] Test chạy < 60s (E2E) hoặc < 5s (unit/integration)
-- [ ] Tên test mô tả behavior, không mô tả implementation
-
----
-
-## 9. When gaps block testing
-
-Nếu user yêu cầu viết test nhưng stack hiện không support (VD: viết async unit test mà chưa có `pytest-asyncio`, viết component test mà chưa có Vitest), **không viết hack workaround**. Thay vào đó:
-
-1. Propose setup dep còn thiếu trong bảng section 3
-2. Liệt kê 3-5 test case mục tiêu sẽ viết sau khi có setup
-3. Confirm với user trước khi cài dep + viết test
-
-Tránh: viết test không chạy được, hoặc cài dep mà không xin phép.
