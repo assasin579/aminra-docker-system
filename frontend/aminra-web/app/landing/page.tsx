@@ -515,41 +515,45 @@ function OrbitRings() {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const { t, i18n } = useTranslation();
   const [scrollY, setScrollY] = useState(0);
+
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Sync document direction for RTL languages (Arabic)
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = i18n.language ?? "vi";
+  }, [i18n.language]);
+
   const features = [
     {
       icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-      title: "AI đánh giá tuân thủ",
-      desc: "Phân tích theo JAKIM/HDC trong vài giây.",
+      title: t("landing.f1_title"), desc: t("landing.f1_desc"),
     },
     {
       icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-      title: "Tạo hồ sơ tự động",
-      desc: "Mẫu chuẩn, song ngữ Việt – Anh.",
+      title: t("landing.f2_title"), desc: t("landing.f2_desc"),
     },
     {
       icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-      title: "Cổng Halal toàn cầu",
-      desc: "Tiếp cận thị trường 7 nghìn tỷ USD.",
+      title: t("landing.f3_title"), desc: t("landing.f3_desc"),
     },
     {
       icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
-      title: "Bảo mật đa tổ chức",
-      desc: "Vault, JWT, dữ liệu cách ly tenant.",
+      title: t("landing.f4_title"), desc: t("landing.f4_desc"),
     },
   ];
 
   const stats = [
-    { value: 13, suffix: "", label: "Loại tài liệu" },
-    { value: 100, suffix: "%", label: "Phạm vi tiêu chuẩn" },
-    { value: 4, suffix: "", label: "Ngôn ngữ" },
-    { value: 7, suffix: "T$", label: "Thị trường Halal" },
+    { value: 13, suffix: "",   label: t("landing.stat_docs") },
+    { value: 100, suffix: "%", label: t("landing.stat_standards") },
+    { value: 4, suffix: "",    label: t("landing.stat_languages") },
+    { value: 7, suffix: "T$",  label: t("landing.stat_market") },
   ];
 
   return (
@@ -655,7 +659,7 @@ export default function LandingPage() {
                   className="text-xs font-medium"
                   style={{ color: "#A88224", letterSpacing: "0.18em" }}
                 >
-                  HALAL INTEGRITY · DIGITAL TRUST
+                  {t("landing.tagline")}
                 </span>
                 <span
                   className="block w-10 h-px"
@@ -671,10 +675,10 @@ export default function LandingPage() {
               className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight mb-8"
               style={{ color: "#0A1F44", lineHeight: 1.1 }}
             >
-              Chứng nhận Halal,
+              {t("landing.headline_1")}
               <br />
               <span style={{ color: "#102A5C" }}>
-                tự động{" "}
+                {t("landing.headline_auto")}{" "}
                 <span
                   style={{
                     background: "linear-gradient(135deg, #C9A24A, #A88224)",
@@ -684,7 +688,7 @@ export default function LandingPage() {
                 >
                   90%
                 </span>{" "}
-                quy trình.
+                {t("landing.headline_process")}
               </span>
             </h1>
           </FadeIn>
@@ -695,9 +699,9 @@ export default function LandingPage() {
               className="text-lg md:text-xl max-w-xl mx-auto mb-14 leading-relaxed"
               style={{ color: "#374151" }}
             >
-              AI soạn hồ sơ —{" "}
+              {t("landing.subslogan")}{" "}
               <span className="font-semibold" style={{ color: "#102A5C" }}>
-                doanh nghiệp chỉ cần ký duyệt.
+                {t("landing.subslogan_action")}
               </span>
             </p>
           </FadeIn>
@@ -713,7 +717,7 @@ export default function LandingPage() {
                   boxShadow: "0 8px 32px rgba(10,31,68,0.30)",
                 }}
               >
-                Bắt đầu miễn phí
+                {t("landing.cta_start")}
               </Link>
               <Link
                 href="/business/login"
@@ -724,7 +728,7 @@ export default function LandingPage() {
                   background: "#FFFFFF",
                 }}
               >
-                Đăng nhập
+                {t("landing.cta_login")}
               </Link>
             </div>
           </FadeIn>
@@ -744,7 +748,7 @@ export default function LandingPage() {
             className="text-[10px] font-medium uppercase tracking-[0.25em]"
             style={{ color: "#A88224" }}
           >
-            Khám phá
+            {t("landing.scroll_cue")}
           </span>
           <span className="text-2xl leading-none" style={{ color: "#C9A24A" }}>
             ⌄
@@ -800,10 +804,10 @@ export default function LandingPage() {
                 className="text-3xl md:text-4xl font-black mb-3"
                 style={{ color: "#0A1F44" }}
               >
-                Giải pháp toàn diện
+                {t("landing.features_title")}
               </h2>
               <p className="text-base" style={{ color: "#6B7280" }}>
-                Từ hồ sơ đến chứng nhận, trên một nền tảng.
+                {t("landing.features_sub")}
               </p>
             </div>
           </FadeIn>
@@ -871,40 +875,24 @@ export default function LandingPage() {
                 className="text-3xl md:text-4xl font-black mb-3"
                 style={{ color: "#0A1F44" }}
               >
-                Quy trình chứng nhận Halal
+                {t("landing.process_title")}
               </h2>
               <p className="text-base" style={{ color: "#6B7280" }}>
-                Từ hồ sơ đến chứng nhận — AMINRA đồng hành toàn bộ quy trình.
+                {t("landing.process_sub")}
               </p>
             </div>
           </FadeIn>
 
           {(() => {
             const steps = [
-              {
-                number: "01", color: "#102A5C", light: "#DCE3F0", tag: "AI",
-                title: "AI chuẩn bị hồ sơ",
-                desc: "AI phân tích nguyên liệu, tự động soạn toàn bộ hồ sơ theo chuẩn JAKIM/HDC — đúng mẫu, song ngữ, không cần soạn thủ công.",
-                Illust: IllustAI,
-              },
-              {
-                number: "02", color: "#92400E", light: "#FEF3C7", tag: "Doanh nghiệp",
-                title: "Doanh nghiệp ký duyệt",
-                desc: "Xem xét hồ sơ AI soạn và ký duyệt điện tử. Mọi thay đổi được ghi nhận tức thì — không cần soạn lại từ đầu.",
-                Illust: IllustSign,
-              },
-              {
-                number: "03", color: "#0F766E", light: "#CCFBF1", tag: "CB",
-                title: "Cơ quan đánh giá hồ sơ",
-                desc: "Tổ chức chứng nhận tiếp nhận và thẩm định hồ sơ trực tiếp trên nền tảng. Audit trail đầy đủ, minh bạch.",
-                Illust: IllustReview,
-              },
-              {
-                number: "04", color: "#15803D", light: "#DCFCE7", tag: "Halal",
-                title: "Chứng chỉ được cấp",
-                desc: "Chứng nhận Halal được cấp, đăng ký blockchain và tích hợp mã QR xác minh công khai toàn cầu.",
-                Illust: IllustCert,
-              },
+              { number: "01", color: "#102A5C", light: "#DCE3F0",
+                tag: t("landing.s1_tag"), title: t("landing.s1_title"), desc: t("landing.s1_desc"), Illust: IllustAI },
+              { number: "02", color: "#92400E", light: "#FEF3C7",
+                tag: t("landing.s2_tag"), title: t("landing.s2_title"), desc: t("landing.s2_desc"), Illust: IllustSign },
+              { number: "03", color: "#0F766E", light: "#CCFBF1",
+                tag: t("landing.s3_tag"), title: t("landing.s3_title"), desc: t("landing.s3_desc"), Illust: IllustReview },
+              { number: "04", color: "#15803D", light: "#DCFCE7",
+                tag: t("landing.s4_tag"), title: t("landing.s4_title"), desc: t("landing.s4_desc"), Illust: IllustCert },
             ];
 
             return (
@@ -1031,7 +1019,7 @@ export default function LandingPage() {
 
             <div className="relative">
               <h2 className="text-3xl md:text-4xl font-black text-white mb-6">
-                Sẵn sàng đạt chứng nhận Halal?
+                {t("landing.cta_title")}
               </h2>
               <Link
                 href="/business/register"
@@ -1042,7 +1030,7 @@ export default function LandingPage() {
                   boxShadow: "0 8px 32px rgba(201,162,74,0.50)",
                 }}
               >
-                Đăng ký miễn phí
+                {t("landing.cta_button")}
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -1091,7 +1079,7 @@ export default function LandingPage() {
                 className="text-[10px]"
                 style={{ color: "#C9A24A", letterSpacing: "0.1em" }}
               >
-                HALAL INTEGRITY · DIGITAL TRUST
+                {t("landing.tagline")}
               </span>
             </div>
           </div>
@@ -1101,28 +1089,28 @@ export default function LandingPage() {
               className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white"
               style={{ color: "#D9B96E" }}
             >
-              Đăng nhập Doanh nghiệp
+              {t("landing.footer_business")}
             </Link>
             <Link
               href="/provider/login"
               className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white"
               style={{ color: "#D9B96E" }}
             >
-              Đăng nhập Tổ chức
+              {t("landing.footer_provider")}
             </Link>
             <Link
               href="/privacy"
               className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white"
               style={{ color: "#D9B96E" }}
             >
-              Chính sách bảo mật
+              {t("landing.footer_privacy")}
             </Link>
             <Link
               href="/terms"
               className="inline-flex items-center min-h-[32px] text-xs transition-colors hover:text-white"
               style={{ color: "#D9B96E" }}
             >
-              Điều khoản
+              {t("landing.footer_terms")}
             </Link>
           </div>
           <p
