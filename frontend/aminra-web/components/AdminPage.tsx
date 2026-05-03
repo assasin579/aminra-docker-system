@@ -13,6 +13,7 @@ import { useUserAuth } from "@/components/UserAuthContext";
 import AdminLoginModal from "@/components/AdminLoginModal";
 import AdminUserManager from "@/components/AdminUserManager";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 const API = "/api";
 
@@ -2108,11 +2109,7 @@ function PlaceholderManager({ token }: { token: string }) {
 
       {/* Add modal */}
       {showForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setShowForm(false)}
-        >
+        <Modal onClose={() => setShowForm(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -2271,7 +2268,7 @@ function PlaceholderManager({ token }: { token: string }) {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

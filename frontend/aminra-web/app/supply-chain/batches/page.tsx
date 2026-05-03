@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
+import Modal from "@/components/Modal";
 
 interface Batch {
   id: string;
@@ -581,11 +582,7 @@ export default function BatchesPage() {
 
       {/* ── Create Modal ── */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowCreate(false)}
-        >
+        <Modal onClose={() => setShowCreate(false)}>
           <div
             className="w-full max-w-lg rounded-2xl p-6 animate-modal-content overflow-y-auto"
             style={{ ...cardStyle, maxHeight: "calc(100vh - 4rem)" }}
@@ -757,16 +754,12 @@ export default function BatchesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Detail Modal ── */}
       {(detail || detailLoading) && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setDetail(null)}
-        >
+        <Modal onClose={() => setDetail(null)}>
           <div
             className="w-full max-w-2xl rounded-2xl animate-modal-content overflow-hidden"
             style={{ ...cardStyle, maxHeight: "calc(100vh - 4rem)" }}
@@ -1344,7 +1337,7 @@ export default function BatchesPage() {
               )
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

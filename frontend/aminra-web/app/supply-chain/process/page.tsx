@@ -20,6 +20,7 @@ import {
   Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import Modal from "@/components/Modal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -759,11 +760,7 @@ export default function ProcessPage() {
 
       {/* Create dialog */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setShowCreate(false)}
-        >
+        <Modal onClose={() => setShowCreate(false)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -795,7 +792,7 @@ export default function ProcessPage() {
               Tạo
             </button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface Member {
   id: string;
@@ -861,13 +862,7 @@ export default function MembersPage() {
 
           {/* Invite modal */}
           {showInvite && (
-            <div
-              className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-              style={{
-                background: "rgba(0,0,0,0.75)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
+            <Modal>
               <div
                 className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
                 style={{
@@ -1043,7 +1038,7 @@ export default function MembersPage() {
                   </p>
                 </form>
               </div>
-            </div>
+            </Modal>
           )}
         </div>
       )}
@@ -1265,11 +1260,7 @@ export default function MembersPage() {
 
       {/* Permissions Modal */}
       {permModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setPermModal(null)}
-        >
+        <Modal onClose={() => setPermModal(null)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1378,16 +1369,12 @@ export default function MembersPage() {
               {permSaving ? "Đang lưu..." : "Lưu phân quyền"}
             </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Invite Link Modal */}
       {showInviteLink && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowInviteLink(false)}
-        >
+        <Modal onClose={() => setShowInviteLink(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1572,7 +1559,7 @@ export default function MembersPage() {
               </div>
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

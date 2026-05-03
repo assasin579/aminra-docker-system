@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface TemplateItem {
   id?: string;
@@ -771,14 +772,7 @@ export default function AuditTemplatesPage() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-          onClick={() => setShowModal(false)}
-        >
+        <Modal onClose={() => setShowModal(false)}>
           <div
             className="w-full max-w-2xl rounded-2xl animate-modal-content"
             style={{
@@ -1042,7 +1036,7 @@ export default function AuditTemplatesPage() {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

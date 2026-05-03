@@ -372,38 +372,33 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       className="w-64 min-h-screen flex flex-col overflow-hidden"
       style={{ background: "#0A1F44", borderRight: "1px solid #334155" }}
     >
-      {/* ── Top: AMINRA Logo (not logged in) OR Company Avatar (logged in) ── */}
-      {!isAuthenticated && (
-        <div
-          className="px-3 py-4"
-          style={{ borderBottom: "1px solid #334155" }}
-        >
-          <div className="flex items-center gap-3 px-2">
-            <div
-              className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
-              style={{
-                background: "#FFFFFF",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/aminra-mark.png"
-                alt=""
-                className="w-7 h-7 object-contain"
-              />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/aminra-wordmark-white.png"
-                alt="AMINRA"
-                className="h-4 object-contain self-start"
-              />
-            </div>
+      {/* ── Top: AMINRA brand (luôn hiện, nền trắng để nổi bật) ── */}
+      <div
+        className="px-3 py-4"
+        style={{ background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}
+      >
+        <div className="flex items-center gap-3 px-2">
+          <div
+            className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
+            style={{ background: "#FFFFFF" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/aminra-mark.png"
+              alt=""
+              className="w-9 h-9 object-contain"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/aminra-wordmark-navy.png"
+              alt="AMINRA"
+              className="h-5 object-contain self-start"
+            />
           </div>
         </div>
-      )}
+      </div>
 
       {isAuthenticated && user && (
         <div

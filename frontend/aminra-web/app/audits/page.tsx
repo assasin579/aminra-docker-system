@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { parseApiError } from "@/lib/apiError";
 import RevealOnScroll from "@/components/RevealOnScroll";
+import Modal from "@/components/Modal";
 
 interface AuditVisit {
   id: string;
@@ -478,13 +479,7 @@ export default function AuditsPage() {
 
       {/* Create visit modal */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <Modal>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -664,19 +659,12 @@ export default function AuditsPage() {
               </button>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Assign auditor modal */}
       {assignId && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-          onClick={() => {
-            setAssignId(null);
-            setSelectedAuditor("");
-          }}
-        >
+        <Modal onClose={() => setAssignId(null)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{
@@ -742,7 +730,7 @@ export default function AuditsPage() {
               </>
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

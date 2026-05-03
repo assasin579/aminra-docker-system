@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface Auditor {
   id: string;
@@ -591,13 +592,7 @@ export default function AuditorsPage() {
 
       {/* Invite modal */}
       {showInvite && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <Modal>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -731,16 +726,12 @@ export default function AuditorsPage() {
               </p>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Certificates modal */}
       {certsOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setCertsOpen(null)}
-        >
+        <Modal onClose={() => setCertsOpen(null)}>
           <div
             className="w-full max-w-lg rounded-2xl animate-modal-content"
             style={{
@@ -960,7 +951,7 @@ export default function AuditorsPage() {
               </p>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

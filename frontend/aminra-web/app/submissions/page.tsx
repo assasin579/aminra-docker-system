@@ -7,6 +7,7 @@ import RevisionPanel from "@/components/submissions/RevisionPanel";
 import SlaBadge from "@/components/submissions/SlaBadge";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface Submission {
   id: string;
@@ -1624,11 +1625,7 @@ export default function SubmissionsPage() {
 
       {/* Certificate modal */}
       {certModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setCertModal(null)}
-        >
+        <Modal onClose={() => setCertModal(null)}>
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 animate-modal-content"
             style={{ border: "1px solid #E2E8F0" }}
@@ -1764,16 +1761,12 @@ export default function SubmissionsPage() {
               </div>
             )}
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Deadline modal */}
       {deadlineModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setDeadlineModal(null)}
-        >
+        <Modal onClose={() => setDeadlineModal(null)}>
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 animate-modal-content"
             style={{ border: "1px solid #E2E8F0" }}
@@ -1814,15 +1807,11 @@ export default function SubmissionsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
       {/* Revision history modal */}
       {revisionDocType && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-          onClick={() => setRevisionDocType(null)}
-        >
+        <Modal onClose={() => setRevisionDocType(null)}>
           <div
             className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1983,7 +1972,7 @@ export default function SubmissionsPage() {
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

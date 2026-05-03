@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Modal from "@/components/Modal";
 import {
   type ApprovalBlock as ApprovalData,
   approveDocument,
@@ -215,11 +216,7 @@ function ApproveModal({ docId, token, onClose, onSuccess }: ModalCommon) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-      style={{ background: "rgba(0,0,0,0.5)" }}
-      onClick={onClose}
-    >
+    <Modal>
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
@@ -353,7 +350,7 @@ function ApproveModal({ docId, token, onClose, onSuccess }: ModalCommon) {
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }
 
@@ -388,11 +385,7 @@ function RejectModal({ docId, token, onClose, onSuccess }: ModalCommon) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-      style={{ background: "rgba(0,0,0,0.5)" }}
-      onClick={onClose}
-    >
+    <Modal>
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
@@ -484,6 +477,6 @@ function RejectModal({ docId, token, onClose, onSuccess }: ModalCommon) {
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

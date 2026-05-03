@@ -6,6 +6,7 @@ import { useUserAuth } from "@/components/UserAuthContext";
 import ExpiryUrgency from "@/components/certificates/ExpiryUrgency";
 import { openAuthed } from "@/lib/authedOpen";
 import RevealOnScroll from "@/components/RevealOnScroll";
+import Modal from "@/components/Modal";
 
 interface CertStats {
   active: number;
@@ -464,13 +465,7 @@ export default function CertificatesPage() {
 
       {/* Confirm dialog */}
       {confirmAction && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <Modal>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -553,7 +548,7 @@ export default function CertificatesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

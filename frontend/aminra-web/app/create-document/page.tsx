@@ -440,7 +440,7 @@ export default function CreateDocumentPage() {
                   Thông tin doanh nghiệp
                 </h3>
                 <Link
-                  href="/settings"
+                  href="/settings/company"
                   className="text-xs px-3 py-1 rounded-lg transition-colors hover:opacity-80"
                   style={{
                     background: "rgba(10,31,68,0.1)",
@@ -462,8 +462,8 @@ export default function CreateDocumentPage() {
                   }}
                 >
                   Thông tin chưa đầy đủ. Vui lòng vào{" "}
-                  <Link href="/settings" className="underline font-semibold">
-                    Cài đặt tài khoản
+                  <Link href="/settings/company" className="underline font-semibold">
+                    Thông tin doanh nghiệp
                   </Link>{" "}
                   để cập nhật trước khi tạo hồ sơ.
                 </div>

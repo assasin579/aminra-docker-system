@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { parseApiError, validatePassword } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 const API = "/api";
 
@@ -466,16 +467,7 @@ export default function AdminUserManager({ token }: { token: string }) {
 
       {/* Modal */}
       {modal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.55)",
-            backdropFilter: "blur(4px)",
-          }}
-          onClick={() => setModal(null)}
-        >
+        <Modal onClose={() => setModal(null)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -750,7 +742,7 @@ export default function AdminUserManager({ token }: { token: string }) {
               </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

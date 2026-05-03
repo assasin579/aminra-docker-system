@@ -72,6 +72,19 @@
   --duration-page: 0.5s; /* page enter */
   --duration-entry: 0.52s; /* hero blocks enter */
   --duration-hero: 0.72s; /* score dial, key reveal */
+
+  /* Z-index scale — dùng tokens thay magic numbers */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 30;
+  --z-sidebar: 40;
+  --z-dropdown: 50;
+  --z-overlay: 80;
+  --z-modal-backdrop: 100;
+  --z-modal: 110;
+  --z-toast: 130;
+  --z-tooltip: 150;
+  --z-nav-progress: 200;
 }
 
 @theme inline {
@@ -92,17 +105,25 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.text-xs {
-  font-size: 0.8rem !important;
-}
-.text-sm {
-  font-size: 0.9rem !important;
-}
+/* Note: .text-xs/.text-sm overrides removed — chúng đã break Tailwind defaults. */
 
 /* ── Global smooth rendering ── */
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── A11y: focus-visible ring (keyboard nav) ── */
+:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(201, 162, 74, 0.18);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -171,7 +192,7 @@ select:focus {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 main,
@@ -187,7 +208,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .animate-section {
@@ -225,7 +246,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .animate-list-item {
@@ -338,10 +359,19 @@ main,
     transform: scale(0.96) translateY(6px);
   }
 }
+/* Modal overlay self-contained primitive — đảm bảo backdrop có background +
+   z-index đúng dù JSX không set inline. Background đen (không navy) để contrast
+   trên cả vùng sidebar (dark) lẫn main content (light). */
 .animate-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  background: rgba(0, 0, 0, 0.55);
   animation: modalOverlayIn 0.28s var(--ease-decelerate) forwards;
 }
 .animate-modal-content {
+  position: relative;
+  z-index: var(--z-modal);
   animation: modalContentIn 0.42s var(--ease-bounce-soft) forwards;
 }
 
@@ -387,7 +417,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .animate-tab-content {
@@ -572,7 +602,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
 }
 .animate-nav-item {

@@ -9,6 +9,7 @@ import { openAuthed } from "@/lib/authedOpen";
 import { useFeature } from "@/lib/featureFlags";
 import ApprovalStatusBadge from "@/components/documents/ApprovalStatusBadge";
 import ApprovalActions from "@/components/documents/ApprovalActions";
+import Modal from "@/components/Modal";
 import type {
   ApprovalBlock as ApprovalData,
   ApprovalStatus,
@@ -1179,10 +1180,7 @@ export default function DocumentsPage() {
 
       {/* ── Evaluation Detail Modal ── */}
       {evalDetail && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-        >
+        <Modal>
           <div
             className="w-full max-w-[calc(100vw-2rem)] md:max-w-3xl rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1508,15 +1506,12 @@ export default function DocumentsPage() {
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── History Modal ── */}
       {historyData && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-        >
+        <Modal>
           <div
             className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1669,15 +1664,12 @@ export default function DocumentsPage() {
               })}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Submit Modal ── */}
       {showSubmit && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-        >
+        <Modal>
           <div
             className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1887,23 +1879,12 @@ export default function DocumentsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Upload Modal ── */}
       {showUpload && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowUpload(false);
-              setUploadDocType(null);
-              setUploadError("");
-              setSopExpanded(false);
-            }
-          }}
-        >
+        <Modal onClose={() => setShowUpload(false)}>
           <div
             className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl rounded-2xl animate-modal-content"
             style={{
@@ -2116,16 +2097,12 @@ export default function DocumentsPage() {
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Eval Language Modal ── */}
       {evalLangModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setEvalLangModal(null)}
-        >
+        <Modal onClose={() => setEvalLangModal(null)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{
@@ -2182,7 +2159,7 @@ export default function DocumentsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

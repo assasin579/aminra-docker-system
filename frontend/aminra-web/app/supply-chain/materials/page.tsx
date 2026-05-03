@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
+import Modal from "@/components/Modal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -888,11 +889,7 @@ export default function MaterialsPage() {
 
       {/* ── Material Form Modal ── */}
       {showMatForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowMatForm(false)}
-        >
+        <Modal onClose={() => setShowMatForm(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1071,16 +1068,12 @@ export default function MaterialsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Supplier Form Modal ── */}
       {showSupForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowSupForm(false)}
-        >
+        <Modal onClose={() => setShowSupForm(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1284,16 +1277,12 @@ export default function MaterialsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Certificates Modal ── */}
       {certsOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setCertsOpen(null)}
-        >
+        <Modal onClose={() => setCertsOpen(null)}>
           <div
             className="w-full max-w-lg rounded-2xl animate-modal-content"
             style={{
@@ -1461,7 +1450,7 @@ export default function MaterialsPage() {
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
