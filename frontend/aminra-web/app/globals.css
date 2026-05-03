@@ -92,6 +92,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Override Tailwind default transition (150ms → 220ms, ease-in-out → ease-out-quart).
+     Áp dụng cho toàn bộ transition-all, duration-* không explicit. */
+  --default-transition-duration: 220ms;
+  --default-transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 html {
@@ -130,19 +134,28 @@ a:focus-visible,
    1. INTERACTIVE ELEMENTS — buttons, inputs, cards
    ═══════════════════════════════════════════════════ */
 
-/* Buttons — universal spring feel */
+/* Buttons — smooth ease-out hover, spring only on press */
 button,
 a[class*="rounded"] {
   transition:
-    transform var(--duration-fast) var(--ease-spring),
-    box-shadow 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    opacity 0.2s ease;
+    transform 220ms cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 220ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
+  will-change: transform;
 }
-button:active:not(:disabled) {
+button:hover:not(:disabled),
+a[class*="rounded"]:hover {
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+}
+button:active:not(:disabled),
+a[class*="rounded"]:active {
   transform: scale(0.97);
+  transition-duration: 100ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Input fields — smooth focus glow */
@@ -871,21 +884,22 @@ main,
 
 .btn-lift {
   transition:
-    transform 0.2s var(--ease-spring),
-    box-shadow 0.25s ease,
-    background-color 0.2s ease,
-    opacity 0.2s ease;
+    transform 240ms cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 240ms cubic-bezier(0.25, 1, 0.5, 1),
+    background-color 180ms ease,
+    opacity 180ms ease;
   will-change: transform, box-shadow;
 }
 .btn-lift:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow:
-    0 6px 20px rgba(10, 31, 68, 0.18),
-    0 2px 6px rgba(10, 31, 68, 0.08);
+    0 8px 24px rgba(10, 31, 68, 0.20),
+    0 2px 8px rgba(10, 31, 68, 0.08);
 }
 .btn-lift:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 6px rgba(10, 31, 68, 0.12);
+  transition-duration: 100ms;
+  box-shadow: 0 2px 6px rgba(10, 31, 68, 0.10);
 }
 
 /* ═══════════════════════════════════════════════════
