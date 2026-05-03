@@ -134,28 +134,25 @@ a:focus-visible,
    1. INTERACTIVE ELEMENTS — buttons, inputs, cards
    ═══════════════════════════════════════════════════ */
 
-/* Buttons — smooth ease-out hover, spring only on press */
-button,
-a[class*="rounded"] {
-  transition:
-    transform 220ms cubic-bezier(0.25, 1, 0.5, 1),
-    box-shadow 220ms ease,
-    background-color 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    opacity 180ms ease;
+/* ─── Universal smooth interaction baseline ───────────────────────────────
+   Tailwind class specificity (0,1,0) beats element selectors (0,0,1), nên
+   transition-all (150ms ease-in-out) luôn thắng global rule bình thường.
+   Dùng !important để buộc easing + duration đúng cho mọi button/link.
+   - transition-timing-function: ease-out-quart (0.25,1,0.5,1) — mượt, không giật
+   - transition-duration: 200ms — đủ để nhận biết, không chậm
+   - active: 100ms — phản hồi press nhanh, satisfying
+   Escape hatch: thêm class .no-smooth để bypass nếu cần animation riêng. */
+:is(button, a, [role="button"]):not(.no-smooth) {
+  transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1) !important;
+  transition-duration: 200ms !important;
   will-change: transform;
 }
-button:hover:not(:disabled),
-a[class*="rounded"]:hover {
-  transition-duration: 220ms;
-  transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+:is(button, a, [role="button"]):not(.no-smooth):active:not(:disabled) {
+  transition-duration: 100ms !important;
 }
-button:active:not(:disabled),
-a[class*="rounded"]:active {
-  transform: scale(0.97);
-  transition-duration: 100ms;
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+:is(button, a, [role="button"]):disabled {
+  will-change: auto;
+  cursor: not-allowed;
 }
 
 /* Input fields — smooth focus glow */
