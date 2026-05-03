@@ -459,7 +459,7 @@ export default function MaterialsPage() {
           </div>
           <button
             onClick={activeTab === "materials" ? openMatCreate : openSupCreate}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
             style={{ background: "#0A1F44" }}
           >
             +{" "}
@@ -617,7 +617,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => openMatEdit(m)}
                         title="Sửa"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -641,7 +641,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => deleteMaterial(m.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",
@@ -754,7 +754,7 @@ export default function MaterialsPage() {
                         <button
                           onClick={() => verifySupplier(s.id)}
                           title="Xác minh NCC"
-                          className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                          className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                           style={{
                             background: "#DCE3F0",
                             border: "1px solid #D9B96E",
@@ -781,7 +781,7 @@ export default function MaterialsPage() {
                         onClick={() => sendInvite(s.id)}
                         title="Gửi yêu cầu hồ sơ"
                         disabled={inviteLoading === s.id}
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F5F3FF",
                           border: "1px solid #DDD6FE",
@@ -809,7 +809,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => openCerts(s.id)}
                         title="Chứng chỉ"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FFFBEB",
                           border: "1px solid #FDE68A",
@@ -833,7 +833,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => openSupEdit(s)}
                         title="Sửa"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -857,7 +857,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => deleteSupplier(s.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",
@@ -1393,7 +1393,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => viewCert(certsOpen!, c.id)}
                         title="Xem"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -1423,7 +1423,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => deleteCert(certsOpen!, c.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110 opacity-0 group-hover:opacity-100"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110 opacity-0 group-hover:opacity-100"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",

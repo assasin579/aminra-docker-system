@@ -1091,7 +1091,7 @@ export default function UploadPage() {
             });
             setActiveTab("overview");
           }}
-          className="grid items-center gap-2 text-sm px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95"
+          className="grid items-center gap-2 text-sm px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
           style={{
             gridTemplateColumns: "auto 1fr",
             background: "#0A1F44",
@@ -2522,7 +2522,7 @@ export default function UploadPage() {
             <button
               onClick={saveReview}
               disabled={!review.reviewer.trim()}
-              className="px-6 py-2.5 text-sm font-semibold rounded-xl transition-all hover:scale-105"
+              className="px-6 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ease-out hover:scale-105"
               style={{
                 background: review.reviewer.trim() ? "#0A1F44" : "#E2E8F0",
                 color: review.reviewer.trim() ? "white" : "#6B7280",

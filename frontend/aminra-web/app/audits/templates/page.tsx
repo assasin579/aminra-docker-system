@@ -528,7 +528,7 @@ export default function AuditTemplatesPage() {
           </div>
           <button
             onClick={openCreate}
-            className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+            className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "#0A1F44",
@@ -594,7 +594,7 @@ export default function AuditTemplatesPage() {
             <button
               onClick={handleSeedDefault}
               disabled={seeding}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
               style={{
                 background: seeding ? "#E2E8F0" : "#0A1F44",
                 color: seeding ? "#6B7280" : "white",
@@ -717,7 +717,7 @@ export default function AuditTemplatesPage() {
                     <button
                       onClick={() => openEdit(t)}
                       title="S\u1eeda"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(14,165,233,0.1)",
                         border: "1px solid rgba(14,165,233,0.2)",
@@ -741,7 +741,7 @@ export default function AuditTemplatesPage() {
                     <button
                       onClick={() => handleDelete(t.id)}
                       title="Xo\u00e1"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(239,68,68,0.08)",
                         border: "1px solid rgba(239,68,68,0.15)",
@@ -871,7 +871,7 @@ export default function AuditTemplatesPage() {
                     <button
                       type="button"
                       onClick={addItem}
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         background: "#DCE3F0",
                         color: "#0A1F44",
@@ -969,7 +969,7 @@ export default function AuditTemplatesPage() {
                             <button
                               type="button"
                               onClick={() => removeItem(idx)}
-                              className="w-7 h-7 rounded-lg grid place-items-center flex-shrink-0 mt-1 transition-all hover:scale-110"
+                              className="w-7 h-7 rounded-lg grid place-items-center flex-shrink-0 mt-1 transition-all duration-200 ease-out hover:scale-110"
                               style={{
                                 background: "rgba(239,68,68,0.08)",
                                 border: "1px solid rgba(239,68,68,0.15)",
@@ -1018,7 +1018,7 @@ export default function AuditTemplatesPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                   style={{
                     background: saving ? "#E2E8F0" : "#0A1F44",
                     color: saving ? "#6B7280" : "white",

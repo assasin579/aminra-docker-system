@@ -739,7 +739,7 @@ export default function SubmissionsPage() {
                                   setCertExpiryMonths(12);
                                 }
                               }}
-                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105"
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ease-out hover:scale-105"
                               style={{
                                 background: "#C9A24A",
                                 color: "#0A1F44",
@@ -945,7 +945,7 @@ export default function SubmissionsPage() {
                             e.stopPropagation();
                             setDeadlineModal(sub.id);
                           }}
-                          className="px-2 py-0.5 rounded-full text-xs font-medium transition-all hover:scale-105"
+                          className="px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(14,165,233,0.1)",
                             color: "#0EA5E9",
@@ -962,7 +962,7 @@ export default function SubmissionsPage() {
                           setDeadlineModal(sub.id);
                           setDeadlineValue(sub.deadline!.slice(0, 10));
                         }}
-                        className="px-2 py-0.5 rounded-full text-xs font-medium transition-all hover:scale-105"
+                        className="px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           background: "rgba(14,165,233,0.1)",
                           color: "#0EA5E9",
@@ -1078,7 +1078,7 @@ export default function SubmissionsPage() {
                                 if (sel) assignAuditor(sub.id, sel);
                               }}
                               disabled={assigningId === sub.id}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                               style={{
                                 background: "#0A1F44",
                                 whiteSpace: "nowrap",
@@ -1224,7 +1224,7 @@ export default function SubmissionsPage() {
                                   }}
                                   disabled={uploading}
                                   title="Upload phiên bản mới"
-                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                   style={{
                                     background: "rgba(245,158,11,0.1)",
                                     border: "1px solid rgba(245,158,11,0.2)",
@@ -1250,7 +1250,7 @@ export default function SubmissionsPage() {
                               <button
                                 onClick={() => viewDoc(doc.id)}
                                 title="Xem"
-                                className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                 style={{
                                   background: "rgba(14,165,233,0.1)",
                                   border: "1px solid rgba(14,165,233,0.2)",
@@ -1284,7 +1284,7 @@ export default function SubmissionsPage() {
                                     openRevisions(sub.id, doc.doc_type!)
                                   }
                                   title="Lịch sử phiên bản"
-                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                   style={{
                                     background: "rgba(162,28,175,0.08)",
                                     border: "1px solid rgba(162,28,175,0.2)",
@@ -1319,7 +1319,7 @@ export default function SubmissionsPage() {
                                   )
                                 }
                                 title="Tải xuống"
-                                className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                 style={{
                                   background: "rgba(10,31,68,0.1)",
                                   border: "1px solid rgba(10,31,68,0.2)",
@@ -1412,7 +1412,7 @@ export default function SubmissionsPage() {
                           <button
                             onClick={() => handleFinalize(sub.id)}
                             disabled={finalizing}
-                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97] flex-shrink-0"
                             style={{
                               background:
                                 "linear-gradient(135deg, #0A1F44, #0A1F44)",
@@ -1574,7 +1574,7 @@ export default function SubmissionsPage() {
                             <button
                               onClick={() => saveEvaluation(sub.id)}
                               disabled={savingEval}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                               style={{ background: "#0A1F44" }}
                             >
                               {savingEval ? "Đang lưu..." : "Lưu đánh giá"}
@@ -1598,7 +1598,7 @@ export default function SubmissionsPage() {
                                 <button
                                   onClick={() => approveFinal(sub.id)}
                                   disabled={approvingFinal}
-                                  className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                  className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
                                   style={{
                                     background:
                                       "linear-gradient(135deg, #0A1F44, #0A1F44)",
@@ -1668,7 +1668,7 @@ export default function SubmissionsPage() {
                       filename: `${certResult.cert_number}.pdf`,
                     })
                   }
-                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-105"
+                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ease-out hover:scale-105"
                   style={{
                     background: "#0A1F44",
                     color: "#C9A24A",
@@ -1752,7 +1752,7 @@ export default function SubmissionsPage() {
                   <button
                     onClick={() => issueCertificate(certModal)}
                     disabled={issuingCert}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
+                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                     style={{ background: "#0A1F44" }}
                   >
                     {issuingCert ? "Đang cấp..." : "Xác nhận cấp"}
@@ -1800,7 +1800,7 @@ export default function SubmissionsPage() {
               </button>
               <button
                 onClick={() => setDeadline(deadlineModal)}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{ background: "#0A1F44" }}
               >
                 Lưu
@@ -1922,7 +1922,7 @@ export default function SubmissionsPage() {
                         <button
                           onClick={() => viewDoc(rev.id)}
                           title="Xem"
-                          className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                          className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                           style={{
                             background: "rgba(14,165,233,0.1)",
                             border: "1px solid rgba(14,165,233,0.2)",
@@ -1959,7 +1959,7 @@ export default function SubmissionsPage() {
                                 selectRevision(expanded, currentDoc.id, rev.id);
                             }}
                             title="Sử dụng phiên bản này"
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                             style={{ background: "#0A1F44" }}
                           >
                             Chọn

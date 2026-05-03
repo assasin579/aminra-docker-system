@@ -295,7 +295,7 @@ export default function AuditsPage() {
                 setShowCreate(true);
                 fetchTemplates();
               }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
               style={{
                 background: "#0A1F44",
                 boxShadow: "0 4px 12px rgba(10,31,68,0.3)",
@@ -460,7 +460,7 @@ export default function AuditsPage() {
                         setAssignId(v.id);
                         fetchAuditors();
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         background: "rgba(14,165,233,0.1)",
                         color: "#0EA5E9",

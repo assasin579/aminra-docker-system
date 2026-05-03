@@ -348,7 +348,7 @@ export default function MembersPage() {
             <button
               onClick={handleExportIHC}
               disabled={exporting || members.length === 0}
-              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-105 disabled:opacity-40"
+              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 disabled:opacity-40"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(100,116,139,0.1)",
@@ -374,7 +374,7 @@ export default function MembersPage() {
             {members.length < MAX && (
               <button
                 onClick={() => setShowInvite(true)}
-                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "#0A1F44",
@@ -404,7 +404,7 @@ export default function MembersPage() {
                   setGeneratedLink("");
                   setInviteLink({ email: "", ihc_role: "", department: "" });
                 }}
-                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "#F5F3FF",
@@ -769,7 +769,7 @@ export default function MembersPage() {
                           <button
                             onClick={() => startEdit(m)}
                             title="Sửa"
-                            className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                            className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                             style={{
                               background: "rgba(100,116,139,0.08)",
                               border: "1px solid rgba(100,116,139,0.2)",
@@ -805,7 +805,7 @@ export default function MembersPage() {
                               }
                             }}
                             title="Phân quyền"
-                            className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                            className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                             style={{
                               background: "#F5F3FF",
                               border: "1px solid #DDD6FE",
@@ -830,7 +830,7 @@ export default function MembersPage() {
                             onClick={() => handleRemove(m.id)}
                             title="Xoá"
                             disabled={removeId === m.id}
-                            className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                            className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                             style={{
                               background: "rgba(239,68,68,0.08)",
                               border: "1px solid rgba(239,68,68,0.15)",
@@ -1071,7 +1071,7 @@ export default function MembersPage() {
               <button
                 onClick={() => minutesInputRef.current?.click()}
                 disabled={uploadingMinutes}
-                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "#0A1F44",
@@ -1197,7 +1197,7 @@ export default function MembersPage() {
                       <button
                         onClick={() => viewMinutes(m.id)}
                         title="Xem"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "rgba(100,116,139,0.08)",
                           border: "1px solid rgba(100,116,139,0.2)",
@@ -1228,7 +1228,7 @@ export default function MembersPage() {
                         onClick={() => deleteMinutes(m.id)}
                         title="Xoá"
                         disabled={deletingMinuteId === m.id}
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "rgba(239,68,68,0.08)",
                           border: "1px solid rgba(239,68,68,0.15)",

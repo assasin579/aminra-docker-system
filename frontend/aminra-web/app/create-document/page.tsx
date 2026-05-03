@@ -788,7 +788,7 @@ export default function CreateDocumentPage() {
               <button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="w-full py-3.5 rounded-xl font-semibold text-base transition-all hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ease-out hover:scale-[1.01] active:scale-[0.99]"
                 style={{
                   background: generating ? "#E2E8F0" : "#0A1F44",
                   color: "#fff",

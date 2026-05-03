@@ -291,7 +291,7 @@ export default function AuditorsPage() {
           </div>
           <button
             onClick={() => setShowInvite(true)}
-            className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+            className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "#0A1F44",
@@ -512,7 +512,7 @@ export default function AuditorsPage() {
                     <button
                       onClick={() => openCerts(a.id)}
                       title="Chứng chỉ"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FFFBEB",
                         border: "1px solid #FDE68A",
@@ -536,7 +536,7 @@ export default function AuditorsPage() {
                     <button
                       onClick={() => startEdit(a)}
                       title="Sửa"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(14,165,233,0.1)",
                         border: "1px solid rgba(14,165,233,0.2)",
@@ -561,7 +561,7 @@ export default function AuditorsPage() {
                       onClick={() => handleRemove(a.id)}
                       title="Xoá"
                       disabled={removeId === a.id}
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(239,68,68,0.08)",
                         border: "1px solid rgba(239,68,68,0.15)",
@@ -884,7 +884,7 @@ export default function AuditorsPage() {
                       <button
                         onClick={() => viewCert(certsOpen!, c.id)}
                         title="Xem"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -914,7 +914,7 @@ export default function AuditorsPage() {
                       <button
                         onClick={() => deleteCert(certsOpen!, c.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110 opacity-0 group-hover:opacity-100"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110 opacity-0 group-hover:opacity-100"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",

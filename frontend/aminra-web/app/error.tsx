@@ -37,7 +37,7 @@ export default function GlobalError({
       </p>
       <button
         onClick={reset}
-        className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+        className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
         style={{ background: "#16a34a" }}
       >
         Thử lại

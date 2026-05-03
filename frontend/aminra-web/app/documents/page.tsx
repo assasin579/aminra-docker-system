@@ -582,7 +582,7 @@ export default function DocumentsPage() {
             {docs.length > 0 && (
               <button
                 onClick={openSubmitModal}
-                className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all hover:scale-105"
+                className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "rgba(14,165,233,0.15)",
@@ -608,7 +608,7 @@ export default function DocumentsPage() {
             )}
             <Link
               href="/create-document"
-              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all hover:scale-105"
+              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out hover:scale-105"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(10,31,68,0.1)",
@@ -633,7 +633,7 @@ export default function DocumentsPage() {
             </Link>
             <button
               onClick={() => setShowUpload(true)}
-              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95"
+              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "linear-gradient(135deg, #0A1F44, #0A1F44)",
@@ -730,7 +730,7 @@ export default function DocumentsPage() {
             </p>
             <button
               onClick={() => setShowUpload(true)}
-              className="inline-grid items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+              className="inline-grid items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
               style={{ gridTemplateColumns: "auto 1fr", background: "#0A1F44" }}
             >
               <svg
@@ -855,7 +855,7 @@ export default function DocumentsPage() {
                       disabled={
                         evaluatingId === doc.id || doc.status === "evaluating"
                       }
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#F5F3FF",
                         border: "1px solid #DDD6FE",
@@ -904,7 +904,7 @@ export default function DocumentsPage() {
                       onClick={() => openEval(doc.id)}
                       title="Kết quả đánh giá"
                       disabled={loadingEval === doc.id}
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FFFBEB",
                         border: "1px solid #FDE68A",
@@ -951,7 +951,7 @@ export default function DocumentsPage() {
                     <button
                       onClick={() => openView(doc.id)}
                       title="Xem file gốc"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#F0F9FF",
                         border: "1px solid #BAE6FD",
@@ -988,7 +988,7 @@ export default function DocumentsPage() {
                         );
                       }}
                       title="Tải xuống"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(10,31,68,0.1)",
                         border: "1px solid rgba(10,31,68,0.2)",
@@ -1014,7 +1014,7 @@ export default function DocumentsPage() {
                         onClick={() => openHistory(doc.doc_type!)}
                         title="Lịch sử"
                         disabled={loadingHistory === doc.doc_type}
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FDF4FF",
                           border: "1px solid #F0ABFC",
@@ -1041,7 +1041,7 @@ export default function DocumentsPage() {
                         onClick={() => handleDelete(doc.id)}
                         title="Xoá"
                         disabled={removeId === doc.id}
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "rgba(239,68,68,0.08)",
                           border: "1px solid rgba(239,68,68,0.15)",
@@ -1150,7 +1150,7 @@ export default function DocumentsPage() {
           <button
             disabled={page === 1}
             onClick={() => fetchDocs(page - 1)}
-            className="px-4 py-2 rounded-xl text-sm transition-all hover:scale-105 disabled:opacity-30"
+            className="px-4 py-2 rounded-xl text-sm transition-all duration-200 ease-out hover:scale-105 disabled:opacity-30"
             style={{
               background: "#F5F1E8",
               border: "1px solid #E2E8F0",
@@ -1166,7 +1166,7 @@ export default function DocumentsPage() {
           <button
             disabled={page === totalPages}
             onClick={() => fetchDocs(page + 1)}
-            className="px-4 py-2 rounded-xl text-sm transition-all hover:scale-105 disabled:opacity-30"
+            className="px-4 py-2 rounded-xl text-sm transition-all duration-200 ease-out hover:scale-105 disabled:opacity-30"
             style={{
               background: "#F5F1E8",
               border: "1px solid #E2E8F0",
@@ -1248,7 +1248,7 @@ export default function DocumentsPage() {
                   </div>
                   <button
                     onClick={() => setEvalDetail(null)}
-                    className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                    className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                     style={{ background: "rgba(0,0,0,0.05)" }}
                   >
                     <span style={{ color: "#6B7280" }}>✕</span>
@@ -1546,7 +1546,7 @@ export default function DocumentsPage() {
                 </div>
                 <button
                   onClick={() => setHistoryData(null)}
-                  className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                  className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                   style={{ background: "rgba(0,0,0,0.05)" }}
                 >
                   <span style={{ color: "#6B7280" }}>✕</span>
@@ -1632,7 +1632,7 @@ export default function DocumentsPage() {
                       <div className="grid grid-flow-col gap-2">
                         <button
                           onClick={() => openView(rev.id)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(14,165,233,0.1)",
                             color: "#0EA5E9",
@@ -1647,7 +1647,7 @@ export default function DocumentsPage() {
                               handlePromote(rev.id, historyData.doc_type)
                             }
                             disabled={promotingId === rev.id}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                             style={{
                               background: "rgba(245,158,11,0.1)",
                               color: "#F59E0B",
@@ -2127,7 +2127,7 @@ export default function DocumentsPage() {
             >
               <button
                 onClick={() => handleEvaluate(evalLangModal, "vi")}
-                className="rounded-xl p-4 text-left transition-all hover:scale-[1.02]"
+                className="rounded-xl p-4 text-left transition-all duration-200 ease-out hover:scale-[1.02]"
                 style={{
                   background: "rgba(239,68,68,0.06)",
                   border: "2px solid rgba(239,68,68,0.2)",
@@ -2143,7 +2143,7 @@ export default function DocumentsPage() {
               </button>
               <button
                 onClick={() => handleEvaluate(evalLangModal, "en")}
-                className="rounded-xl p-4 text-left transition-all hover:scale-[1.02]"
+                className="rounded-xl p-4 text-left transition-all duration-200 ease-out hover:scale-[1.02]"
                 style={{
                   background: "rgba(14,165,233,0.06)",
                   border: "2px solid rgba(14,165,233,0.2)",

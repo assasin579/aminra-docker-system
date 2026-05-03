@@ -98,7 +98,7 @@ export default function PWAInstallPrompt() {
             {!iosVisible && (
               <button
                 onClick={install}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{ background: "#0A1F44" }}
               >
                 Cài đặt

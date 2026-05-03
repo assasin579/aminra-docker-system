@@ -305,7 +305,7 @@ function CriterionRow({
           />
           <button
             onClick={onDelete}
-            className="p-2 rounded-xl transition-all duration-200 hover:scale-110"
+            className="p-2 rounded-xl transition-all duration-200 ease-out hover:scale-110"
             style={{
               color: "#ef4444",
               background: "rgba(239,68,68,0.08)",
@@ -680,7 +680,7 @@ function TemplateEditor({
               <button
                 onClick={() => tplInputRef.current?.click()}
                 disabled={tplUploading !== null}
-                className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97] flex-shrink-0"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: tplUploading
@@ -834,7 +834,7 @@ function TemplateEditor({
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Mở file ở tab mới — verify nội dung trước khi business dùng"
-                        className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+                        className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           gridTemplateColumns: "auto auto",
                           color: "#0A1F44",
@@ -974,7 +974,7 @@ function TemplateEditor({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+            className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97] flex-shrink-0"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: uploading
@@ -1125,7 +1125,7 @@ function TemplateEditor({
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
                       title="Mở file ở tab mới"
-                      className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+                      className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         gridTemplateColumns: "auto auto",
                         color: "#0A1F44",
@@ -1306,7 +1306,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addCriterion}
-              className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+              className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(10,31,68,0.12)",
@@ -2382,7 +2382,7 @@ export default function AdminPageClient() {
           </p>
           <button
             onClick={() => setShowLogin(true)}
-            className="inline-grid items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 hover:scale-105 active:scale-95"
+            className="inline-grid items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "linear-gradient(135deg, #0A1F44, #0A1F44)",
@@ -2590,7 +2590,7 @@ export default function AdminPageClient() {
                           setActiveGroup(gi);
                           setActiveType(dt.id);
                         }}
-                        className="relative w-full text-left px-3.5 rounded-xl text-sm transition-all duration-200 hover:scale-[1.02] h-9 grid items-center"
+                        className="relative w-full text-left px-3.5 rounded-xl text-sm transition-all duration-200 ease-out hover:scale-[1.02] h-9 grid items-center"
                         style={{
                           background: isActive ? "#0A1F44" : "#FFFFFF",
                           color: isActive ? "#FFFFFF" : "#6B7280",

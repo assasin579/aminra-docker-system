@@ -497,7 +497,7 @@ export default function BatchesPage() {
                         exportPDF(b.id);
                       }}
                       title="Xuất PDF"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FFFBEB",
                         border: "1px solid #FDE68A",
@@ -524,7 +524,7 @@ export default function BatchesPage() {
                         downloadQR(b.id);
                       }}
                       title="Tải QR"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#F0F9FF",
                         border: "1px solid #BAE6FD",
@@ -551,7 +551,7 @@ export default function BatchesPage() {
                         deleteBatch(b.id);
                       }}
                       title="Xoá"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FEF2F2",
                         border: "1px solid #FECACA",
@@ -1124,7 +1124,7 @@ export default function BatchesPage() {
                                     }}
                                   />
                                   <label
-                                    className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all hover:scale-105"
+                                    className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all duration-200 ease-out hover:scale-105"
                                     style={{
                                       background: "#F0F9FF",
                                       color: "#0369A1",
@@ -1193,7 +1193,7 @@ export default function BatchesPage() {
                                         token || "",
                                       )
                                     }
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded transition-all hover:scale-105"
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded transition-all duration-200 ease-out hover:scale-105"
                                     style={{
                                       background: "#F0F9FF",
                                       color: "#0369A1",
