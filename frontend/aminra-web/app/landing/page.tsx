@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 
 // ── Floating particles ──────────────────────────────────────────────────────
 
@@ -180,6 +181,98 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
       {val}
       {suffix}
     </span>
+  );
+}
+
+// ── Language switcher ────────────────────────────────────────────────────────
+
+const LANGS = [
+  { code: "vi", label: "Tiếng Việt", flag: "🇻🇳" },
+  { code: "en", label: "English",    flag: "🇬🇧" },
+  { code: "ms", label: "Melayu",     flag: "🇲🇾" },
+  { code: "ar", label: "العربية",    flag: "🇸🇦" },
+];
+
+function LangSwitcher({ dark = false }: { dark?: boolean }) {
+  const { i18n } = useTranslation();
+  const [open, setOpen]       = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const current =
+    LANGS.find((l) => l.code === (mounted ? (i18n.language ?? "vi").slice(0, 2) : "vi")) ??
+    LANGS[0];
+
+  return (
+    <div ref={ref} style={{ position: "relative", zIndex: 200 }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          padding: "6px 12px", borderRadius: 10, cursor: "pointer",
+          border: dark
+            ? "1px solid rgba(255,255,255,0.18)"
+            : "1px solid rgba(10,31,68,0.14)",
+          background: dark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.88)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          color: dark ? "#FFFFFF" : "#0A1F44",
+          fontSize: 13, fontWeight: 600,
+        }}
+      >
+        <span style={{ fontSize: 15 }}>{current.flag}</span>
+        <span>{current.code.toUpperCase()}</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms" }}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0,
+          minWidth: 170, borderRadius: 12,
+          background: "#FFFFFF",
+          border: "1px solid rgba(10,31,68,0.09)",
+          boxShadow: "0 10px 36px rgba(10,31,68,0.13)",
+          overflow: "hidden",
+        }}>
+          {LANGS.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => { i18n.changeLanguage(lang.code); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", padding: "9px 14px", border: "none", cursor: "pointer",
+                background: lang.code === current.code ? "rgba(10,31,68,0.05)" : "transparent",
+                color: "#0A1F44",
+                fontSize: 13,
+                fontWeight: lang.code === current.code ? 600 : 400,
+                textAlign: "left",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{lang.flag}</span>
+              <span>{lang.label}</span>
+              {lang.code === current.code && (
+                <svg width="13" height="13" fill="none" stroke="#C9A24A" viewBox="0 0 24 24"
+                     style={{ marginLeft: "auto" }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -481,25 +574,31 @@ export default function LandingPage() {
         }}
       >
         <div
-          className="max-w-5xl mx-auto flex items-center justify-between pl-2 pr-6"
+          className="max-w-5xl mx-auto flex items-center justify-between pl-2 pr-4"
           style={{ height: 72 }}
         >
-          {/* Logo mark + brand name cạnh nhau, bên trái */}
+          {/* Logo mark + brand name */}
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/aminra-mark.png"
-              alt=""
-              className="h-10 w-10 object-contain"
-            />
+            <img src="/aminra-mark.png" alt="" className="h-10 w-10 object-contain" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/aminra-wordmark-navy.png"
-              alt="AMINRA"
-              className="h-5 object-contain"
-            />
+            <img src="/aminra-wordmark-navy.png" alt="AMINRA" className="h-5 object-contain" />
           </div>
+          {/* Language switcher — phải của sticky header */}
+          <LangSwitcher dark={false} />
         </div>
+      </div>
+
+      {/* Fixed lang switcher — hiện trước khi sticky header xuất hiện */}
+      <div
+        style={{
+          position: "fixed", top: 16, right: 16, zIndex: 99,
+          opacity: scrollY > 80 ? 0 : 1,
+          pointerEvents: scrollY > 80 ? "none" : "auto",
+          transition: "opacity 0.3s ease",
+        }}
+      >
+        <LangSwitcher dark={false} />
       </div>
 
       <Particles />

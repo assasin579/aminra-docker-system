@@ -14,7 +14,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const [clientReady, setClientReady] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
   const { isAdmin, logout: logoutAdmin } = useAdminAuth();
   const { user, isAuthenticated, logout: logoutUser, token } = useUserAuth();
   const [showLogin, setShowLogin] = useState(false);
@@ -35,17 +34,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "vi", name: "Tiếng Việt" },
-    { code: "ms", name: "Bahasa Malaysia" },
-    { code: "ar", name: "العربية" },
-  ];
-
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    setLangOpen(false);
-  };
 
   const dashboardHref =
     user?.role === "business"
@@ -718,50 +706,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       )}
 
-      {/* ── Language ── */}
-      <div
-        className="px-3 pb-2"
-        style={{ borderTop: "1px solid #334155", paddingTop: "10px" }}
-      >
-        <div className="relative">
-          <button
-            onClick={() => setLangOpen(!langOpen)}
-            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white transition-colors"
-            style={{ border: "1px solid #334155" }}
-          >
-            <span>{t("navbar.language")}</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${langOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-          {langOpen && (
-            <div
-              className="absolute bottom-full left-0 right-0 mb-1 rounded-lg shadow-lg z-50 animate-dropdown-up"
-              style={{ background: "#263548", border: "1px solid #334155" }}
-            >
-              {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => changeLanguage(lang.code)}
-                  className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
-                >
-                  {lang.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* ── Footer ── */}
       <div className="px-3 py-2" style={{ borderTop: "1px solid #334155" }}>
