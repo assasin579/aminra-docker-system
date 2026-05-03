@@ -134,20 +134,32 @@ a:focus-visible,
    1. INTERACTIVE ELEMENTS — buttons, inputs, cards
    ═══════════════════════════════════════════════════ */
 
-/* ─── Universal smooth interaction baseline ───────────────────────────────
-   Tailwind class specificity (0,1,0) beats element selectors (0,0,1), nên
-   transition-all (150ms ease-in-out) luôn thắng global rule bình thường.
-   Dùng !important để buộc easing + duration đúng cho mọi button/link.
-   - transition-timing-function: ease-out-quart (0.25,1,0.5,1) — mượt, không giật
-   - transition-duration: 200ms — đủ để nhận biết, không chậm
-   - active: 100ms — phản hồi press nhanh, satisfying
-   Escape hatch: thêm class .no-smooth để bypass nếu cần animation riêng. */
-:is(button, a, [role="button"]):not(.no-smooth) {
+/* ─── Convert hover:scale → translateY (GPU-only, zero layout repaint) ───
+   hover:scale-* gây repaint layout khi element size thay đổi → jerky.
+   translateY chạy hoàn toàn trên compositor thread → smooth 60fps.
+   Non-layered CSS wins over @layer utilities (Tailwind) cùng specificity.
+   Escape hatch: thêm class .keep-scale để giữ nguyên scale nếu cần. */
+.hover\:scale-105:not(.keep-scale):hover,
+.hover\:scale-\[1\.05\]:not(.keep-scale):hover {
+  transform: translateY(-2px) !important;
+}
+.hover\:scale-\[1\.02\]:not(.keep-scale):hover,
+.hover\:scale-\[1\.01\]:not(.keep-scale):hover {
+  transform: translateY(-1px) !important;
+}
+.hover\:scale-110:not(.keep-scale):hover {
+  transform: translateY(-2px) scale(1.02) !important;
+}
+
+/* ─── Universal transition baseline (duration + easing) ──────────────────
+   Ghi đè Tailwind default 150ms ease-in-out → 200ms ease-out-quart.
+   !important cần thiết vì Tailwind class (0,1,0) > element selector (0,0,1). */
+:is(button, a, [role="button"]) {
   transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1) !important;
   transition-duration: 200ms !important;
   will-change: transform;
 }
-:is(button, a, [role="button"]):not(.no-smooth):active:not(:disabled) {
+:is(button, a, [role="button"]):active:not(:disabled) {
   transition-duration: 100ms !important;
 }
 :is(button, a, [role="button"]):disabled {
