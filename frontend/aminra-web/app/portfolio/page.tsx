@@ -42,8 +42,8 @@ function daysUntil(iso: string | null) {
 
 function scoreColor(s: number | null) {
   if (s === null) return "#94A3B8";
-  if (s >= 80) return "#0A1F44";
-  if (s >= 60) return "#D97706";
+  if (s >= 75) return "#16A34A";
+  if (s >= 50) return "#D97706";
   return "#DC2626";
 }
 

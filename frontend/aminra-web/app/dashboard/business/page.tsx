@@ -56,9 +56,9 @@ const STATUS_STYLE = {
 
 function scoreColor(s: number | null) {
   if (s === null) return "#94A3B8";
-  if (s >= 75) return "#0A1F44";
-  if (s >= 50) return "#d97706";
-  return "#f87171";
+  if (s >= 75) return "#16A34A";
+  if (s >= 50) return "#D97706";
+  return "#DC2626";
 }
 
 function timeAgo(iso: string | null) {

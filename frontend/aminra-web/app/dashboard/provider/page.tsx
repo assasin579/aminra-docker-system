@@ -85,8 +85,8 @@ function timeAgo(iso: string) {
 }
 
 function scoreColor(v: number): string {
-  if (v >= 80) return "#0A1F44";
-  if (v >= 60) return "#D97706";
+  if (v >= 75) return "#16A34A";
+  if (v >= 50) return "#D97706";
   return "#DC2626";
 }
 
