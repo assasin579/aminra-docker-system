@@ -275,7 +275,7 @@ async def provider_stats(
     # Recent 5 submissions
     recent = await db.fetch(
         f"""
-        SELECT s.id, s.company_name, s.status, s.submitted_at,
+        SELECT s.id, s.business_tenant, s.company_name, s.status, s.submitted_at,
                array_length(s.document_ids, 1) AS doc_count, s.deadline
         FROM submissions s WHERE {where}
         ORDER BY s.submitted_at DESC LIMIT 5

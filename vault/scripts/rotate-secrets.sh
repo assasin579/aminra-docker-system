@@ -46,7 +46,7 @@ rotate_database() {
 
     # Update PostgreSQL directly
     echo "==> Updating PostgreSQL password ..."
-    docker exec -i postgres-db psql -U aminra_user -d aminra -c \
+    docker exec -i aminra-docker-system-postgres-db-1 psql -U aminra_user -d aminra -c \
         "ALTER USER aminra_user WITH PASSWORD '$NEW_DB_PASS';" 2>/dev/null \
     && echo "==> PostgreSQL password updated" \
     || echo "WARNING: Could not update PostgreSQL. Run manually:"

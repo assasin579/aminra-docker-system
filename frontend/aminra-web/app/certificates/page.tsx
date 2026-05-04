@@ -413,7 +413,7 @@ export default function CertificatesPage() {
                           },
                         );
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         background: "rgba(10,31,68,0.1)",
                         color: "#0A1F44",
@@ -431,7 +431,7 @@ export default function CertificatesPage() {
                               action: "suspended",
                             })
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(217,119,6,0.1)",
                             color: "#D97706",
@@ -444,7 +444,7 @@ export default function CertificatesPage() {
                           onClick={() =>
                             setConfirmAction({ id: cert.id, action: "revoked" })
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(220,38,38,0.1)",
                             color: "#DC2626",

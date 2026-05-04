@@ -527,7 +527,7 @@ export default function DocumentsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/create-document"
-              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out hover:scale-105"
+              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold btn-lift"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(10,31,68,0.1)",
@@ -552,10 +552,10 @@ export default function DocumentsPage() {
             </Link>
             <button
               onClick={() => setShowUpload(true)}
-              className="grid items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
+              className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{
                 gridTemplateColumns: "auto 1fr",
-                background: "linear-gradient(135deg, #0A1F44, #0A1F44)",
+                background: "#0A1F44",
                 boxShadow: "0 4px 15px rgba(10,31,68,0.3)",
               }}
             >
@@ -649,7 +649,7 @@ export default function DocumentsPage() {
             </p>
             <button
               onClick={() => setShowUpload(true)}
-              className="inline-grid items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
+              className="inline-grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{ gridTemplateColumns: "auto 1fr", background: "#0A1F44" }}
             >
               <svg
@@ -1551,7 +1551,7 @@ export default function DocumentsPage() {
                       <div className="grid grid-flow-col gap-2">
                         <button
                           onClick={() => openView(rev.id)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(14,165,233,0.1)",
                             color: "#0EA5E9",
@@ -1566,7 +1566,7 @@ export default function DocumentsPage() {
                               handlePromote(rev.id, historyData.doc_type)
                             }
                             disabled={promotingId === rev.id}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                             style={{
                               background: "rgba(245,158,11,0.1)",
                               color: "#F59E0B",

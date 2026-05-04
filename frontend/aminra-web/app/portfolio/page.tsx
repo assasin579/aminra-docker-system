@@ -424,14 +424,14 @@ export default function PortfolioPage() {
                     <div className="flex flex-wrap gap-2">
                       <Link
                         href={`/businesses/${biz.id}`}
-                        className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                         style={{ background: "#0A1F44" }}
                       >
                         Mở thư mục + chấm điểm
                       </Link>
                       <Link
                         href={`/submissions?company=${encodeURIComponent(biz.company_name)}`}
-                        className="px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           background: "rgba(10,31,68,0.1)",
                           color: "#0A1F44",
@@ -442,7 +442,7 @@ export default function PortfolioPage() {
                       </Link>
                       <Link
                         href={`/audits`}
-                        className="px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           background: "rgba(37,99,235,0.1)",
                           color: "#2563EB",
@@ -453,7 +453,7 @@ export default function PortfolioPage() {
                       </Link>
                       <Link
                         href="/certificates"
-                        className="px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           background: "rgba(124,58,237,0.1)",
                           color: "#7C3AED",

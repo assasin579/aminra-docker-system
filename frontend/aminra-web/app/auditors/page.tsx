@@ -448,14 +448,14 @@ export default function AuditorsPage() {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-4 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                       style={{ background: "#0A1F44" }}
                     >
                       {saving ? "Lưu..." : "Lưu"}
                     </button>
                     <button
                       onClick={() => setEditId(null)}
-                      className="px-4 py-1.5 rounded-lg text-xs"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
                       style={{ color: "#6B7280", border: "1px solid #E2E8F0" }}
                     >
                       Huỷ
@@ -713,7 +713,7 @@ export default function AuditorsPage() {
               <button
                 type="submit"
                 disabled={inviting}
-                className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold text-white btn-lift disabled:opacity-50"
                 style={{
                   background: inviting ? "#E2E8F0" : "#0A1F44",
                   color: inviting ? "#6B7280" : "white",
@@ -772,7 +772,7 @@ export default function AuditorsPage() {
                 <button
                   onClick={() => certInputRef.current?.click()}
                   disabled={certUploading}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                   style={{ background: "#0A1F44" }}
                 >
                   {certUploading ? "Đang upload..." : "Upload chứng chỉ"}

@@ -169,9 +169,10 @@ docker compose --profile dev up -d aminra-frontend-dev   # FE hot-reload :3100
 
 ### Backup / restore
 - Manual: `scripts/backup.sh` (PG dump + Qdrant snapshot + Docker volumes)
-- Cron: `scripts/backup-cron.sh`
+- Cron: `~/scripts/db_backup.sh setup-cron` (2×/ngày 00:00+15:00 qua crontab — KHÔNG dùng `scripts/backup-cron.sh`)
 - Restore: `scripts/restore.sh <backup-dir>`
-- Cloud sync: `~/scripts/db_backup.sh` (R2 + B2)
+- Cloud sync: `~/scripts/db_backup.sh cloud-sync` (rclone → R2 + B2, chạy tự động sau mỗi backup)
+- Verify: `~/scripts/backup_verify.sh` (weekly thứ Hai 04:00 — test-restore vào DB tạm, kiểm tra schema)
 
 ### Secret rotation
 - API keys: `bash vault/scripts/rotate-secrets.sh api-keys`

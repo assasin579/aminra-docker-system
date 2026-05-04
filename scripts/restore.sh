@@ -93,21 +93,42 @@ if $DO_DB; then
     else
         log "Restoring PostgreSQL database '${PG_DB}' from $(basename "$PG_DUMP_FILE")..."
 
-        # Drop and recreate the database, then restore
+        # Stop services that hold DB connections to prevent partial-restore race conditions.
+        # backend + arq-worker both maintain PG connection pools.
+        log "  -> Stopping backend services (backend, arq-worker)..."
+        docker compose -f "${PROJECT_DIR}/docker-compose.yml" stop backend arq-worker 2>/dev/null || true
+
+        # Terminate any remaining connections (pgAdmin, leftover workers, etc.)
+        docker exec "$PG_CONTAINER" psql -U "$PG_USER" -d postgres -c \
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+             WHERE datname = '$PG_DB' AND pid <> pg_backend_pid();" \
+            >/dev/null 2>&1 || true
+
+        # Drop + recreate for a clean slate (avoids --clean ordering issues with active objects)
+        docker exec "$PG_CONTAINER" dropdb -U "$PG_USER" --if-exists "$PG_DB"
+        docker exec "$PG_CONTAINER" createdb -U "$PG_USER" -O "$PG_USER" "$PG_DB"
+
+        PG_RESTORE_ERR="/tmp/pg_restore_err_$$.log"
         if docker exec -i "$PG_CONTAINER" \
-            pg_restore -U "$PG_USER" -d "$PG_DB" --clean --if-exists -Fc \
-            < "$PG_DUMP_FILE" 2>/dev/null; then
+            pg_restore -U "$PG_USER" -d "$PG_DB" \
+            --no-owner --no-acl \
+            < "$PG_DUMP_FILE" 2>"$PG_RESTORE_ERR"; then
             log "  -> PostgreSQL restore completed."
         else
-            # pg_restore returns non-zero on warnings (e.g. "does not exist" for --clean)
-            # which is usually harmless. Check if the DB is accessible.
-            if docker exec "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c "SELECT 1;" >/dev/null 2>&1; then
-                log "  -> PostgreSQL restore completed (with non-fatal warnings)."
-            else
-                log "  !! PostgreSQL restore FAILED."
+            ERROR_COUNT=$(grep -c "^pg_restore: error" "$PG_RESTORE_ERR" 2>/dev/null || echo 0)
+            if (( ERROR_COUNT > 0 )); then
+                log "  !! PostgreSQL restore FAILED ($ERROR_COUNT fatal errors):"
+                grep "^pg_restore: error" "$PG_RESTORE_ERR" | sed 's/^/     /' >&2
                 ERRORS=$((ERRORS + 1))
+            else
+                log "  -> PostgreSQL restore completed (with non-fatal warnings)."
             fi
         fi
+        rm -f "$PG_RESTORE_ERR"
+
+        # Restart services regardless of restore outcome so the app is not left stopped
+        log "  -> Restarting backend services..."
+        docker compose -f "${PROJECT_DIR}/docker-compose.yml" start backend arq-worker 2>/dev/null || true
     fi
 fi
 

@@ -700,12 +700,11 @@ export default function SubmissionsPage() {
           {isBusiness && (
             <button
               onClick={openSubmitModal}
-              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ease-out hover:scale-105 btn-lift"
+              className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{
                 gridTemplateColumns: "auto 1fr",
-                background: "rgba(14,165,233,0.15)",
-                color: "#0EA5E9",
-                border: "1px solid rgba(14,165,233,0.3)",
+                background: "#0A1F44",
+                boxShadow: "0 4px 12px rgba(10,31,68,0.3)",
               }}
             >
               <svg
@@ -1112,7 +1111,7 @@ export default function SubmissionsPage() {
                                 disabled={
                                   updatingId === sub.id || sub.status === s
                                 }
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                                 style={{
                                   background:
                                     sub.status === s
@@ -1182,7 +1181,7 @@ export default function SubmissionsPage() {
                                 if (sel) assignAuditor(sub.id, sel);
                               }}
                               disabled={assigningId === sub.id}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                               style={{
                                 background: "#0A1F44",
                                 whiteSpace: "nowrap",
@@ -1678,7 +1677,7 @@ export default function SubmissionsPage() {
                             <button
                               onClick={() => saveEvaluation(sub.id)}
                               disabled={savingEval}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                               style={{ background: "#0A1F44" }}
                             >
                               {savingEval ? "Đang lưu..." : "Lưu đánh giá"}
@@ -1702,10 +1701,9 @@ export default function SubmissionsPage() {
                                 <button
                                   onClick={() => approveFinal(sub.id)}
                                   disabled={approvingFinal}
-                                  className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
+                                  className="w-full px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
                                   style={{
-                                    background:
-                                      "linear-gradient(135deg, #0A1F44, #0A1F44)",
+                                    background: "#0A1F44",
                                     boxShadow: "0 4px 12px rgba(10,31,68,0.3)",
                                   }}
                                 >
@@ -1844,7 +1842,7 @@ export default function SubmissionsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCertModal(null)}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
                     style={{
                       background: "#F5F1E8",
                       color: "#6B7280",
@@ -1856,7 +1854,7 @@ export default function SubmissionsPage() {
                   <button
                     onClick={() => issueCertificate(certModal)}
                     disabled={issuingCert}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
                     style={{ background: "#0A1F44" }}
                   >
                     {issuingCert ? "Đang cấp..." : "Xác nhận cấp"}

@@ -348,7 +348,7 @@ export default function MembersPage() {
             <button
               onClick={handleExportIHC}
               disabled={exporting || members.length === 0}
-              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 disabled:opacity-40"
+              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold btn-lift disabled:opacity-40"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(100,116,139,0.1)",
@@ -677,14 +677,14 @@ export default function MembersPage() {
                           <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-4 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                             style={{ background: "#0A1F44" }}
                           >
                             {saving ? "Đang lưu..." : "Lưu"}
                           </button>
                           <button
                             onClick={() => setEditId(null)}
-                            className="px-4 py-1.5 rounded-lg text-xs"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
                             style={{
                               color: "#6B7280",
                               border: "1px solid #E2E8F0",

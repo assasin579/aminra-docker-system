@@ -753,19 +753,23 @@ def _convert_office_to_pdf_cached(src: Path) -> Optional[Path]:
     if cached.exists() and cached.stat().st_mtime >= src.stat().st_mtime:
         return cached
     try:
-        result = subprocess.run(
-            ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", str(_PDF_PREVIEW_CACHE_DIR), str(src)],
-            capture_output=True,
-            timeout=60,
-        )
-        if result.returncode != 0:
-            log.warning(f"[pdf_preview] libreoffice failed for {src}: {result.stderr.decode(errors='ignore')[:200]}")
-            return None
-        # LibreOffice writes <stem>.pdf — rename to our cache key
-        produced = _PDF_PREVIEW_CACHE_DIR / f"{src.stem}.pdf"
-        if not produced.exists():
-            return None
-        produced.rename(cached)
+        # Isolated tmpdir per conversion: two files with the same stem (e.g.
+        # halal_policy_vi.docx in different subdirs) would otherwise produce
+        # the same intermediate filename in the shared outdir, causing the
+        # second conversion to overwrite the first's output.
+        with _tempfile.TemporaryDirectory(dir=_PDF_PREVIEW_CACHE_DIR) as tmpdir:
+            result = subprocess.run(
+                ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", tmpdir, str(src)],
+                capture_output=True,
+                timeout=60,
+            )
+            if result.returncode != 0:
+                log.warning(f"[pdf_preview] libreoffice failed for {src}: {result.stderr.decode(errors='ignore')[:200]}")
+                return None
+            produced = Path(tmpdir) / f"{src.stem}.pdf"
+            if not produced.exists():
+                return None
+            produced.rename(cached)
         return cached
     except subprocess.TimeoutExpired:
         log.warning(f"[pdf_preview] timeout converting {src}")

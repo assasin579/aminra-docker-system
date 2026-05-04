@@ -463,7 +463,7 @@ export default function ProcessPage() {
               <>
                 <button
                   onClick={exportDocx}
-                  className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all btn-lift"
                   style={{
                     background: "#FFFBEB",
                     color: "#B45309",
@@ -475,7 +475,7 @@ export default function ProcessPage() {
                 <button
                   onClick={saveProcess}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift disabled:opacity-50"
                   style={{ background: saving ? "#E2E8F0" : "#0A1F44" }}
                 >
                   {saving ? "Đang lưu..." : saved ? "Đã lưu" : "Lưu quy trình"}
@@ -484,7 +484,7 @@ export default function ProcessPage() {
             )}
             <button
               onClick={() => setShowCreate(true)}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-white btn-lift"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{ background: "#0A1F44" }}
             >
               + Tạo mới
