@@ -8,6 +8,20 @@ review_cadence: 90d
 > **Note:** Section trống = unknown. Claude KHÔNG được suy đoán nội dung.
 > Nội dung gốc QA testing guide ở [`CLAUDE.testing-legacy.md`](./CLAUDE.testing-legacy.md).
 
+---
+
+## Brain (stateful, auto-loaded)
+
+@/home/user/Documents/all-docs/aminra/README.md
+
+> **Phân vai trò 2 file:**
+> - **CLAUDE.md (file này):** Static project memory — convention, persona, tech stack snapshot. Update thủ công khi có thay đổi cốt lõi (review cadence 90 ngày).
+> - **all-docs/aminra/README.md (brain):** **Dynamic state** — current status, active tasks, incidents, decisions, session notes. Claude PHẢI update sau mỗi session quan trọng (xem `all-docs/_protocols/session-end.md`).
+>
+> Trước khi trust nội dung brain → verify file/path/flag được nhắc còn tồn tại trong codebase này.
+
+---
+
 ## context
 
 - **Tên:** AMINRA
