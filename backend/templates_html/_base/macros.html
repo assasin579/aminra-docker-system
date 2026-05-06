@@ -83,12 +83,12 @@
    ────────────────────────────────────────────────────────────────────────── #}
 {% macro section_opener(num, eyebrow, title) %}
 <div class="section-opener">
-  <div class="section-opener__num">{{ "%02d"|format(num) }}</div>
-  <div class="section-opener__inner">
-    <div class="section-opener__eyebrow">{{ eyebrow }}</div>
-    <div class="section-opener__title">{{ title }}</div>
-    <div class="section-opener__rule"></div>
+  <div class="section-opener__head">
+    <span class="section-opener__num">{{ "%02d"|format(num) }}</span>
+    <span class="section-opener__eyebrow">{{ eyebrow }}</span>
   </div>
+  <h2 class="section-opener__title">{{ title }}</h2>
+  <div class="section-opener__rule"></div>
 </div>
 {% endmacro %}
 

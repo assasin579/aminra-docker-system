@@ -320,75 +320,91 @@ em { font-style: italic; }
   opacity: 0.85;
 }
 
-/* ─── SECTION OPENER — giant number watermark + title overlay ────────────── */
+/* ─── SECTION OPENER — compact inline format (was giant 110pt number) ─────
+ *
+ * Old design assumed each section gets its own page (giant "01" cream
+ * watermark filled the empty space). With auto-flow + max 2 sections per
+ * page (see .section nth-of-type rules below), the giant number became
+ * overpowering. New layout puts a small navy chip "01" + eyebrow on one
+ * line, title on the next — total height ~12mm vs old ~30mm.
+ */
 
 .section-opener {
-  position: relative;
-  margin: 0 0 var(--sp-5) 0;
-  padding: var(--sp-5) 0 var(--sp-4) 0;
-  /* Don't force a page break before — let content flow. But keep the
-   * title-with-content rule: if a section opener would orphan at the
-   * bottom of a page, push it to the next page along with its body. */
+  margin: 0 0 var(--sp-4) 0;
   page-break-after: avoid;
   break-after: avoid;
   page-break-inside: avoid;
   break-inside: avoid;
 }
 
-/* The cover ends with page-break-after; consecutive page-break-before on the
-   first section collapses into a single break (CSS3 spec) — no blank page. */
-
-.section-opener__num {
-  position: absolute;
-  top: -10mm; left: -2mm;
-  font-size: 110pt;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  color: var(--c-cream-dark);
-  z-index: 0;
-  user-select: none;
+.section-opener__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
 }
 
-.section-opener__inner {
-  position: relative; z-index: 1;
-  padding-left: 22mm;
+.section-opener__num {
+  display: inline-block;
+  background: var(--c-brand-primary);
+  color: var(--c-text-on-brand);
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  padding: 0.8mm 2.5mm;
+  border-radius: 1.5mm;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .section-opener__eyebrow {
   font-size: var(--fs-tiny);
-  font-weight: 700;
-  letter-spacing: 0.24em;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--c-emerald);
-  margin-bottom: var(--sp-2);
+  color: var(--c-brand-accent);
 }
 
 .section-opener__title {
-  font-size: 24pt;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: var(--lh-tight);
-  color: var(--c-navy);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  line-height: var(--lh-snug);
+  color: var(--c-brand-primary);
+  margin: 0;
 }
 
 .section-opener__rule {
-  height: 2pt;
-  width: 16mm;
-  background: var(--c-emerald);
-  margin-top: var(--sp-3);
+  height: 1pt;
+  width: 14mm;
+  background: var(--c-brand-accent);
+  margin-top: var(--sp-2);
 }
 
 /* ─── CONTENT BLOCKS ─────────────────────────────────────────────────────── */
 
 .section {
-  margin: 0 0 var(--sp-6) 0;
-  /* Auto-flow content. Browser breaks pages only when content overflows.
-   * Previously forced one-page-per-section produced a lot of whitespace
-   * (many pages were 30%+ blank). The section-opener still has its own
-   * `page-break-before: avoid + after: avoid` rule below to keep the
-   * giant number + title together with at least the first paragraph
-   * of body content. */
+  /* Generous breathing room between sections so two on the same page
+   * read as separate units, not a wall of text. sp-7 = 18mm. */
+  margin: 0 0 var(--sp-7) 0;
+  padding-top: var(--sp-5);     /* 8mm above section opener */
+}
+
+/* First content section after cover: cover already broke; no extra top
+ * padding (page starts clean). */
+.cover + .section {
+  padding-top: 0;
+}
+
+/* Max 2 sections per page — break before every NEXT pair start.
+ * <section> nth-of-type ordering counts cover (1) + body sections (2,3,...).
+ * Pairs: (cover) | (2,3) | (4,5) | (6,7)
+ * Break before sections at index 4, 6, 8, ... = even index excluding 2.
+ */
+.section:nth-of-type(even):not(:nth-of-type(2)) {
+  page-break-before: always;
+  break-before: page;
+  padding-top: 0;     /* fresh page — no extra padding above */
 }
 .section h2 { margin-bottom: var(--sp-3); }
 .section h3 { margin-top: var(--sp-4); margin-bottom: var(--sp-2); }
