@@ -202,6 +202,89 @@ PLACEHOLDER_DATA: dict[str, dict] = {
 PLACEHOLDER_DATA["halal_manual"] = PLACEHOLDER_DATA["has_manual"]
 
 
+# ── Group 3+4 templates ────────────────────────────────────────────────────
+
+PLACEHOLDER_DATA["internal_halal_committee"] = {
+    "committee_id": "IHC-001",
+    "version": "1.0",
+    "charter": (
+        "Ban Halal nội bộ (Internal Halal Committee — IHC) chịu trách nhiệm giám sát "
+        "thực thi Hệ thống Đảm bảo Halal tại doanh nghiệp, theo MS 1500:2019 §5.4 và "
+        "MPPHM 2020 §3. Báo cáo trực tiếp Tổng giám đốc, có quyền dừng dây chuyền khi "
+        "phát hiện vi phạm Halal nghiêm trọng."
+    ),
+    "scope_of_authority": (
+        "IHC có thẩm quyền phê duyệt nguyên liệu, audit nội bộ, xử lý không phù hợp, "
+        "cập nhật SOP và đại diện công ty làm việc với cơ quan chứng nhận."
+    ),
+    "members": [
+        {"role": "Chủ tịch IHC", "full_name": UNSET_TEXT, "department": "Đảm bảo chất lượng"},
+        {"role": "Thư ký IHC", "full_name": UNSET_TEXT, "department": "Halal Compliance"},
+        {"role": "Sharia Advisor", "full_name": UNSET_TEXT, "department": "Cố vấn độc lập"},
+    ],
+    "signatories": [
+        {"name": UNSET_TEXT, "title": "Tổng giám đốc"},
+        {"name": UNSET_TEXT, "title": "Chủ tịch IHC"},
+    ],
+}
+
+
+PLACEHOLDER_DATA["ingredient_raw_material"] = {
+    "document_id": "ING-MASTER-001",
+    "version": "1.0",
+    "purpose": (
+        "Sổ đăng ký toàn bộ nguyên liệu thô và vật tư bao bì sử dụng tại doanh nghiệp, "
+        "kèm chứng nhận Halal của từng mặt hàng. Phục vụ truy xuất nguồn gốc và audit."
+    ),
+    "scope": (
+        "Áp dụng cho 100% nguyên liệu thô, phụ gia, hóa chất Halal-approved và vật tư "
+        "bao bì tiếp xúc thực phẩm."
+    ),
+    "audit_schedule": (
+        "Audit nhà cung cấp định kỳ 12 tháng/lần cho NCC ổn định; 6 tháng/lần cho NCC "
+        "có lịch sử NCR; audit thực địa bắt buộc trước khi nhập hàng đối với NCC mới."
+    ),
+    "signatories": [
+        {"name": UNSET_TEXT, "title": "Trưởng phòng Mua hàng"},
+        {"name": UNSET_TEXT, "title": "Halal Lead"},
+    ],
+}
+
+
+PLACEHOLDER_DATA["process_flow_chart"] = {
+    "document_id": "PFC-001",
+    "version": "1.0",
+    "purpose": (
+        "Sơ đồ này mô tả toàn bộ quy trình sản xuất tại doanh nghiệp — từ tiếp nhận "
+        "nguyên liệu đến đóng gói thành phẩm — đánh dấu các điểm tới hạn (CCP) cần "
+        "kiểm soát Halal và an toàn thực phẩm."
+    ),
+    "scope": "Áp dụng cho dây chuyền chế biến chính tại cơ sở sản xuất.",
+    "overall_description": (
+        "Quy trình tích hợp HACCP plan và đáp ứng MS 1500:2019. Mỗi bước có Spec kỹ "
+        "thuật riêng + biểu mẫu ghi chép. Hệ thống tự động tạo Batch Production Record "
+        "cho mỗi lô, lưu vĩnh viễn không thể chỉnh sửa sau khi đóng lô."
+    ),
+    "signatories": [
+        {"name": UNSET_TEXT, "title": "Quản đốc xưởng"},
+        {"name": UNSET_TEXT, "title": "Halal Lead"},
+        {"name": UNSET_TEXT, "title": "Tổng giám đốc"},
+    ],
+}
+
+
+PLACEHOLDER_DATA["generic"] = {
+    "document_id": "GEN-001",
+    "document_subtitle": "AMINRA Halal Document",
+    "sections": [
+        {"title": "Nội dung chính", "content": "Nội dung chi tiết sẽ được cập nhật bởi người dùng."},
+    ],
+    "signatories": [
+        {"name": UNSET_TEXT, "title": "Tổng giám đốc"},
+    ],
+}
+
+
 # ── SOP variants — all share the structural fallback, content varies by purpose ─
 
 _SOP_COMMON_RESPONSIBILITIES = [

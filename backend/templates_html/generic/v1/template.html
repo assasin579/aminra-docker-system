@@ -1,0 +1,56 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, callout, lede, approval_block %}
+
+{% block content %}
+
+{{ doc_cover(
+    title=data.document_title,
+    eyebrow="AMINRA Document",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã văn bản", "value": data.get('document_id') or "—"},
+      {"label": "Phụ đề",     "value": data.get('document_subtitle') or "—"},
+      {"label": "Hiệu lực",   "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+{% if data.get('sections') %}
+{% for sec in data['sections'] %}
+<section class="section">
+  {{ section_opener(loop.index, "Section", sec.title) }}
+  {% for paragraph in sec.content.split('\n\n') %}
+    {% if paragraph.strip() %}
+      {% set stripped = paragraph.strip() %}
+      {% if stripped.startswith('- ') %}
+        <ul class="lst">
+        {% for line in stripped.split('\n') %}
+          {% set ln = line.strip() %}
+          {% if ln.startswith('- ') %}<li>{{ ln[2:] }}</li>{% endif %}
+        {% endfor %}
+        </ul>
+      {% else %}
+        <p>{{ stripped }}</p>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</section>
+{% endfor %}
+{% endif %}
+
+<section class="section">
+  {{ section_opener(99, "Approval", "Phê duyệt & rà soát") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",  "value": data.effective_date},
+    {"label": "Ngày phát hành", "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% if data.get('signatories') %}
+    {{ approval_block(signatories=data['signatories'], include_stamp=True) }}
+  {% endif %}
+
+  {% set fnote %}<strong>Tài liệu</strong>Phát hành bởi <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong> qua nền tảng AMINRA Halal.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

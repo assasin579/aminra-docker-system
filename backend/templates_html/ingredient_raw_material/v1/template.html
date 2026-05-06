@@ -1,0 +1,107 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, approval_block %}
+
+{% block content %}
+
+{{ doc_cover(
+    title="Danh mục nguyên liệu thô",
+    eyebrow="Ingredient & Raw Material Master",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã văn bản", "value": data.get('document_id') or "ING-001"},
+      {"label": "Phiên bản",  "value": data.get('version') or "1.0"},
+      {"label": "Hiệu lực",   "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+<section class="section">
+  {{ section_opener(1, "Purpose", "Mục đích") }}
+  {{ lede(data.get('purpose') or "Danh mục này thiết lập sổ đăng ký toàn bộ nguyên liệu thô và vật tư bao bì sử dụng tại " ~ data.business_name ~ ", kèm chứng nhận Halal của từng mặt hàng — phục vụ truy xuất nguồn gốc và audit Halal.") }}
+
+  {% if data.get('scope') %}
+    <h3>Phạm vi áp dụng</h3>
+    <p>{{ data['scope'] }}</p>
+  {% endif %}
+</section>
+
+{% if data.get('ingredients') %}
+<section class="section">
+  {{ section_opener(2, "Ingredients Master", "Danh mục nguyên liệu") }}
+  {% set ing_rows = [] %}
+  {% for i in data['ingredients'] %}
+    {% set _ = ing_rows.append([
+      i.ingredient_id,
+      i.name,
+      i.category,
+      i.supplier,
+      i.get('halal_cert_authority') or "—",
+      i.get('halal_cert_expiry') or "—",
+      i.status,
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Mã",         "width": "10%"},
+        {"label": "Tên nguyên liệu"},
+        {"label": "Loại",       "width": "12%"},
+        {"label": "Nhà cung cấp"},
+        {"label": "Cert auth",  "width": "11%"},
+        {"label": "Hết hạn",    "width": "11%"},
+        {"label": "Trạng thái", "width": "12%"},
+      ],
+      rows=ing_rows,
+  ) }}
+</section>
+{% endif %}
+
+{% if data.get('suppliers') %}
+<section class="section">
+  {{ section_opener(3, "Suppliers Directory", "Danh bạ nhà cung cấp") }}
+  {% set sup_rows = [] %}
+  {% for s in data['suppliers'] %}
+    {% set _ = sup_rows.append([
+      s.supplier_id,
+      s.name,
+      s.country,
+      s.get('halal_cert_authority') or "—",
+      s.get('last_audit_date') or "—",
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Mã NCC",       "width": "12%"},
+        {"label": "Tên nhà cung cấp"},
+        {"label": "Quốc gia",     "width": "16%"},
+        {"label": "Cert auth",    "width": "14%"},
+        {"label": "Audit gần nhất","width": "16%"},
+      ],
+      rows=sup_rows,
+  ) }}
+</section>
+{% endif %}
+
+{% if data.get('audit_schedule') %}
+<section class="section">
+  {{ section_opener(4, "Audit Schedule", "Lịch audit nhà cung cấp") }}
+  <p>{{ data['audit_schedule'] }}</p>
+</section>
+{% endif %}
+
+<section class="section">
+  {{ section_opener(5, "Approval", "Phê duyệt & rà soát") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",       "value": data.effective_date},
+    {"label": "Ngày rà soát kế tiếp", "value": data.get('review_date') or "—"},
+    {"label": "Ngày phát hành",      "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% if data.get('signatories') %}
+    {{ approval_block(signatories=data['signatories'], include_stamp=True) }}
+  {% endif %}
+
+  {% set fnote %}<strong>Tài liệu kiểm soát</strong>Danh mục nguyên liệu này được cập nhật quý bởi Bộ phận Mua hàng + Halal Lead tại <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong>. Mọi thay đổi nhà cung cấp phải được Halal Lead phê duyệt.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

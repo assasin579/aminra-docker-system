@@ -96,7 +96,7 @@ class TestValidationFilter:
     def test_unimplemented_doc_type_passes_through(self):
         # When schema is not registered (None), filter doesn't crash —
         # downstream router returns 501 with a clear message.
-        b = make_bundle(payload={"any": 1}, doc_type="ingredient_raw_material")  # Group 3 — not yet
+        b = make_bundle(payload={"any": 1}, doc_type="totally_made_up_doc")
         ctx = ValidationFilter().apply(b, empty_ctx(b))
         assert ctx.data == {"any": 1}
 

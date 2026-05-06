@@ -1,0 +1,124 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, approval_block %}
+
+{% block content %}
+
+{{ doc_cover(
+    title="Ban Halal nội bộ (IHC)",
+    eyebrow="Internal Halal Committee Charter",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã văn bản", "value": data.get('committee_id') or "IHC-001"},
+      {"label": "Phiên bản",  "value": data.get('version') or "1.0"},
+      {"label": "Hiệu lực",   "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+<section class="section">
+  {{ section_opener(1, "Charter", "Hiến chương Ban Halal nội bộ") }}
+  {% if data.get('charter') %}
+    {{ lede(data['charter']) }}
+  {% else %}
+    {{ lede("Ban Halal nội bộ (Internal Halal Committee — IHC) chịu trách nhiệm giám sát thực thi Hệ thống Đảm bảo Halal tại " ~ data.business_name ~ ", báo cáo trực tiếp Tổng giám đốc.") }}
+  {% endif %}
+
+  {% if data.get('scope_of_authority') %}
+    <h3>Phạm vi thẩm quyền</h3>
+    <p>{{ data['scope_of_authority'] }}</p>
+  {% endif %}
+</section>
+
+{% if data.get('members') %}
+<section class="section">
+  {{ section_opener(2, "Members", "Thành viên Ban Halal nội bộ") }}
+  {% set member_rows = [] %}
+  {% for m in data['members'] %}
+    {% set _ = member_rows.append([
+      m.role,
+      m.full_name,
+      m.get('department') or "—",
+      m.get('appointed_date') or "—",
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Vai trò",      "width": "26%"},
+        {"label": "Họ tên đầy đủ"},
+        {"label": "Phòng ban",    "width": "22%"},
+        {"label": "Ngày bổ nhiệm","width": "16%"},
+      ],
+      rows=member_rows,
+  ) }}
+</section>
+{% endif %}
+
+{% if data.get('meetings') %}
+<section class="section">
+  {{ section_opener(3, "Meetings", "Lịch sử họp Ban") }}
+  {% set meeting_rows = [] %}
+  {% for m in data['meetings'] %}
+    {% set _ = meeting_rows.append([
+      "%03d"|format(m.meeting_no),
+      m.meeting_date,
+      m.get('location') or "—",
+      m.attendees_count|string ~ " người",
+      "Đạt" if m.quorum_met else "Không đạt",
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Số phiên",    "width": "12%"},
+        {"label": "Ngày họp",    "width": "16%"},
+        {"label": "Địa điểm"},
+        {"label": "Số dự",       "width": "14%"},
+        {"label": "Túc số",      "width": "14%"},
+      ],
+      rows=meeting_rows,
+  ) }}
+</section>
+{% endif %}
+
+{% if data.get('decisions') %}
+<section class="section">
+  {{ section_opener(4, "Decisions Register", "Sổ đăng ký quyết định") }}
+  {% set decision_rows = [] %}
+  {% for d in data['decisions'] %}
+    {% set _ = decision_rows.append([
+      "%03d"|format(d.decision_no),
+      d.decision_date,
+      d.title,
+      d.voting_result,
+      d.status,
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Số QĐ",    "width": "10%"},
+        {"label": "Ngày",     "width": "14%"},
+        {"label": "Tiêu đề"},
+        {"label": "Biểu quyết","width": "18%"},
+        {"label": "Trạng thái","width": "14%"},
+      ],
+      rows=decision_rows,
+  ) }}
+</section>
+{% endif %}
+
+<section class="section">
+  {{ section_opener(5, "Approval", "Phê duyệt & rà soát") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",       "value": data.effective_date},
+    {"label": "Ngày rà soát kế tiếp", "value": data.get('review_date') or "—"},
+    {"label": "Ngày phát hành",      "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% if data.get('signatories') %}
+    {{ approval_block(signatories=data['signatories'], include_stamp=True) }}
+  {% endif %}
+
+  {% set fnote %}<strong>Tài liệu kiểm soát</strong>Hiến chương IHC này được kiểm soát theo quy trình quản lý tài liệu của <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong>.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

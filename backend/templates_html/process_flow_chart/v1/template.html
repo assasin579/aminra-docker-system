@@ -1,0 +1,109 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, approval_block %}
+
+{% block extra_css %}<link rel="stylesheet" href="{{ asset('process_flow_chart/v1/style.css') }}">{% endblock %}
+
+{% block content %}
+
+{{ doc_cover(
+    title="Sơ đồ quy trình sản xuất",
+    eyebrow="Process Flow Chart",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã văn bản", "value": data.get('document_id') or "PFC-001"},
+      {"label": "Phiên bản",  "value": data.get('version') or "1.0"},
+      {"label": "Hiệu lực",   "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+<section class="section">
+  {{ section_opener(1, "Purpose", "Mục đích") }}
+  {{ lede(data.get('purpose') or "Sơ đồ này mô tả toàn bộ quy trình sản xuất tại " ~ data.business_name ~ " — từ nguyên liệu đầu vào đến thành phẩm, đánh dấu các điểm tới hạn (CCP) cần kiểm soát Halal + an toàn thực phẩm.") }}
+
+  {% if data.get('scope') %}
+    <h3>Phạm vi áp dụng</h3>
+    <p>{{ data['scope'] }}</p>
+  {% endif %}
+</section>
+
+{% if data.get('overall_description') %}
+<section class="section">
+  {{ section_opener(2, "Overview", "Tổng quan quy trình") }}
+  {% for paragraph in data['overall_description'].split('\n\n') %}
+    {% if paragraph.strip() %}<p>{{ paragraph.strip() }}</p>{% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if data.get('steps') %}
+<section class="section">
+  {{ section_opener(3, "Flow Diagram", "Sơ đồ luồng quy trình") }}
+  <div class="flow-diagram">
+    {% for s in data['steps'] %}
+    <div class="flow-step{% if s.get('is_ccp') %} flow-step--ccp{% endif %}">
+      <div class="flow-step__num">{{ "%02d"|format(s.step_no) }}</div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">{{ s.title }}{% if s.get('is_ccp') %} <span class="ccp-badge">CCP</span>{% endif %}</div>
+        <div class="flow-step__desc">{{ s.description }}</div>
+        {% if s.get('inputs') or s.get('outputs') or s.get('duration') %}
+        <div class="flow-step__meta">
+          {% if s.get('inputs') %}<span><strong>Đầu vào:</strong> {{ s['inputs']|join(', ') }}</span>{% endif %}
+          {% if s.get('outputs') %}<span><strong>Đầu ra:</strong> {{ s['outputs']|join(', ') }}</span>{% endif %}
+          {% if s.get('duration') %}<span><strong>Thời gian:</strong> {{ s['duration'] }}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% if s.get('is_ccp') and s.get('ccp_criteria') %}
+        <div class="flow-step__ccp">
+          <strong>Tiêu chí CCP:</strong> {{ s['ccp_criteria'] }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% if not loop.last %}<div class="flow-arrow">↓</div>{% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+{% set ccp_steps = [] %}
+{% for s in data['steps'] %}{% if s.get('is_ccp') %}{% set _ = ccp_steps.append(s) %}{% endif %}{% endfor %}
+{% if ccp_steps %}
+<section class="section">
+  {{ section_opener(4, "CCP", "Tổng hợp các điểm tới hạn (Critical Control Points)") }}
+  {% set ccp_rows = [] %}
+  {% for s in ccp_steps %}
+    {% set _ = ccp_rows.append([
+      "%02d"|format(s.step_no),
+      s.title,
+      s.get('ccp_criteria') or "—",
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Bước",      "width": "12%"},
+        {"label": "Hoạt động", "width": "32%"},
+        {"label": "Tiêu chí kiểm soát"},
+      ],
+      rows=ccp_rows,
+  ) }}
+</section>
+{% endif %}
+{% endif %}
+
+<section class="section">
+  {{ section_opener(99, "Approval", "Phê duyệt & rà soát") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",       "value": data.effective_date},
+    {"label": "Ngày rà soát kế tiếp", "value": data.get('review_date') or "—"},
+    {"label": "Ngày phát hành",      "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% if data.get('signatories') %}
+    {{ approval_block(signatories=data['signatories'], include_stamp=True) }}
+  {% endif %}
+
+  {% set fnote %}<strong>Tài liệu kiểm soát</strong>Sơ đồ quy trình này phải đồng bộ với SOP-PRO-001 và toàn bộ HACCP plan của <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong>.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

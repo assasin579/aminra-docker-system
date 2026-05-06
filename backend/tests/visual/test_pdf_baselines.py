@@ -39,6 +39,11 @@ CASES = [
     # same template + same fixture → byte-identical, skipped to save baseline space)
     ("halal_policy",                  "halal_policy/sample.json"),
     ("has_manual",                    "has_manual/sample.json"),
+    # Group 3 + 4 (final batch of Phase 2)
+    ("internal_halal_committee",      "internal_halal_committee/sample.json"),
+    ("ingredient_raw_material",       "ingredient_raw_material/sample.json"),
+    ("process_flow_chart",            "process_flow_chart/sample.json"),
+    ("generic",                       "generic/sample.json"),
 ]
 
 

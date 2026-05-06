@@ -1,0 +1,45 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "committee_id": "IHC-001",
+  "version": "2.0",
+  "charter": "Ban Halal nội bộ (Internal Halal Committee — IHC) là cơ quan giám sát thực thi Hệ thống Đảm bảo Halal (HAS) tại Quế Thiên Lộc, được thiết lập theo MS 1500:2019 §5.4 và MPPHM 2020 §3. IHC báo cáo trực tiếp Tổng giám đốc, có quyền dừng dây chuyền sản xuất khi phát hiện vi phạm Halal nghiêm trọng, và chịu trách nhiệm trước Allah SWT, người tiêu dùng Hồi giáo và các Tổ chức Chứng nhận Halal về tính tuân thủ Sharia của mọi sản phẩm doanh nghiệp.",
+  "scope_of_authority": "IHC có thẩm quyền: (1) Phê duyệt nguyên liệu, hóa chất, nhà cung cấp Halal; (2) Audit nội bộ định kỳ 6 tháng/lần và đột xuất khi cần; (3) Quyết định phương án xử lý sản phẩm không phù hợp Halal; (4) Phê duyệt và sửa đổi mọi SOP liên quan Halal; (5) Đại diện công ty làm việc với cơ quan chứng nhận; (6) Bổ nhiệm và miễn nhiệm Halal Lead trong các phòng ban.",
+  "members": [
+    {"role": "Chủ tịch IHC", "full_name": "Trần Thị Bình", "department": "Đảm bảo chất lượng", "appointed_date": "2024-01-15", "qualifications": "Halal Executive Course (HCA-VN, 2023); 8 năm kinh nghiệm quản lý chất lượng thực phẩm", "contact_email": "binh.tt@quethienloc.vn"},
+    {"role": "Thư ký IHC", "full_name": "Nguyễn Hồng Quân", "department": "Halal Compliance", "appointed_date": "2024-01-15", "qualifications": "Cử nhân Công nghệ thực phẩm (HUFI 2018); Halal Awareness training", "contact_email": "quan.nh@quethienloc.vn"},
+    {"role": "Sharia Advisor", "full_name": "Mohammad Yusuf bin Abdullah", "department": "Cố vấn độc lập", "appointed_date": "2024-04-01", "qualifications": "Bằng Islamic Studies (UIN Jakarta); 12 năm tư vấn Halal cho doanh nghiệp Đông Nam Á"},
+    {"role": "Thành viên — Sản xuất", "full_name": "Lê Văn Hải", "department": "Sản xuất", "appointed_date": "2024-01-15", "qualifications": "10 năm vận hành dây chuyền chế biến quế"},
+    {"role": "Thành viên — Kho", "full_name": "Phạm Thị Lan", "department": "Logistics & Kho", "appointed_date": "2024-01-15", "qualifications": "ISO 22000:2018 Lead Auditor"},
+    {"role": "Thành viên — R&D", "full_name": "Hoàng Minh Đức", "department": "Nghiên cứu phát triển", "appointed_date": "2024-04-01", "qualifications": "Thạc sĩ Công nghệ thực phẩm; chuyên gia tinh dầu"},
+    {"role": "Thành viên — Mua hàng", "full_name": "Đỗ Thị Mai", "department": "Mua hàng", "appointed_date": "2025-07-01", "qualifications": "8 năm kinh nghiệm chuỗi cung ứng nguyên liệu Halal"}
+  ],
+  "meetings": [
+    {"meeting_no": 1,  "meeting_date": "2024-02-15", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 6, "quorum_met": true,  "key_topics": ["Phê duyệt SOP-RAW-001", "Bổ nhiệm Halal Lead", "Lịch audit Q1"]},
+    {"meeting_no": 2,  "meeting_date": "2024-05-12", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 7, "quorum_met": true,  "key_topics": ["Review kết quả audit Q1", "Xử lý NCR-001 nguyên liệu nghi vấn"]},
+    {"meeting_no": 3,  "meeting_date": "2024-08-20", "location": "Trực tuyến (Zoom)",            "attendees_count": 5, "quorum_met": true,  "key_topics": ["Phê duyệt nhà cung cấp mới (3 NCC)", "Kế hoạch đào tạo Halal Q3"]},
+    {"meeting_no": 4,  "meeting_date": "2024-11-08", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 7, "quorum_met": true,  "key_topics": ["Review HAS Manual v1.1 → v1.2", "Audit cuối năm", "Mock recall drill"]},
+    {"meeting_no": 5,  "meeting_date": "2025-02-21", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 6, "quorum_met": true,  "key_topics": ["Báo cáo HCA-VN audit kết quả", "Cập nhật Sertu protocol"]},
+    {"meeting_no": 6,  "meeting_date": "2025-05-30", "location": "Trực tuyến (Zoom)",            "attendees_count": 7, "quorum_met": true,  "key_topics": ["Phê duyệt tham gia Halal Expo Indonesia 2025"]},
+    {"meeting_no": 7,  "meeting_date": "2025-09-12", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 6, "quorum_met": true,  "key_topics": ["Bổ sung thành viên Mua hàng", "Review SOP-CLN-001"]},
+    {"meeting_no": 8,  "meeting_date": "2026-01-18", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 7, "quorum_met": true,  "key_topics": ["Kế hoạch năm 2026", "Ngân sách Halal 2026", "Mục tiêu xuất khẩu UAE"]},
+    {"meeting_no": 9,  "meeting_date": "2026-04-25", "location": "Phòng họp tầng 2, Cơ sở Vinh", "attendees_count": 7, "quorum_met": true,  "key_topics": ["HAS Manual v2.0 phê duyệt", "Audit nội bộ Q1"]}
+  ],
+  "decisions": [
+    {"decision_no": 1, "decision_date": "2024-02-15", "title": "Phê duyệt SOP-RAW-001 phiên bản đầu",                "summary": "Thông qua quy trình tiếp nhận nguyên liệu Halal phiên bản 1.0.",                                          "voting_result": "Đồng thuận 6/6", "status": "approved"},
+    {"decision_no": 2, "decision_date": "2024-05-12", "title": "Xử lý NCR-001",                                       "summary": "Lô nguyên liệu nghi nhiễm dầu mỡ động vật tại nhà cung cấp B — quyết định trả hàng + tạm ngưng quan hệ 6 tháng.", "voting_result": "Đồng thuận 7/7", "status": "approved"},
+    {"decision_no": 3, "decision_date": "2024-08-20", "title": "Phê duyệt 3 nhà cung cấp mới",                       "summary": "NCC-VN-005, NCC-VN-006, NCC-MY-001 đạt yêu cầu kiểm tra chứng nhận Halal + audit thực địa.",          "voting_result": "Đồng thuận 5/5", "status": "approved"},
+    {"decision_no": 4, "decision_date": "2024-11-08", "title": "Cập nhật HAS Manual v1.2",                           "summary": "Bổ sung Sharia Advisor vào IHC; điều chỉnh quy trình Sertu theo MPPHM 2020.",                         "voting_result": "Đồng thuận 7/7", "status": "approved"},
+    {"decision_no": 5, "decision_date": "2025-02-21", "title": "Triển khai Sertu protocol mới",                      "summary": "Áp dụng quy trình Sertu 7 lần với đất sạch theo MPPHM 2020 §7.2 thay quy trình cũ.",                  "voting_result": "Đồng thuận 6/6", "status": "approved"},
+    {"decision_no": 6, "decision_date": "2025-05-30", "title": "Tham gia Halal Expo Indonesia 2025",                 "summary": "Chi 200tr cho gian hàng và đoàn đi 5 người, mục tiêu mở rộng thị trường Indonesia.",                "voting_result": "Đa số 6/7",      "status": "approved"},
+    {"decision_no": 7, "decision_date": "2025-09-12", "title": "Bổ sung thành viên IHC — Đỗ Thị Mai (Mua hàng)",     "summary": "Tăng cường giám sát chuỗi cung ứng từ thượng nguồn.",                                              "voting_result": "Đồng thuận 6/6", "status": "approved"},
+    {"decision_no": 8, "decision_date": "2026-01-18", "title": "Ngân sách Halal 2026",                                "summary": "Tổng 1.2 tỷ VND cho đào tạo, audit, hóa chất Halal-approved, và phí gia hạn cert HCA-VN.",         "voting_result": "Đồng thuận 7/7", "status": "approved"},
+    {"decision_no": 9, "decision_date": "2026-04-25", "title": "HAS Manual v2.0",                                     "summary": "Refactor toàn bộ HAS theo TCVN 12944:2020; chuyển Document Control lên hệ thống AMINRA điện tử.",   "voting_result": "Đồng thuận 7/7", "status": "approved"}
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "signatories": [
+    {"name": "Nguyễn Văn Anh", "title": "Tổng giám đốc", "signature_date": "2026-03-25"},
+    {"name": "Trần Thị Bình", "title": "Chủ tịch IHC", "signature_date": "2026-03-26"}
+  ],
+  "issued_date": "2026-05-05"
+}

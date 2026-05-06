@@ -266,6 +266,168 @@ class HasManualData(BaseModel):
     issued_date: date
 
 
+# ── Internal Halal Committee — roster + meetings + decisions ───────────────
+
+
+class CommitteeMemberDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    full_name: str = Field(..., min_length=1, max_length=120)
+    role: str = Field(..., min_length=1, max_length=120)
+    department: Optional[str] = Field(None, max_length=120)
+    appointed_date: Optional[date] = None
+    term_end_date: Optional[date] = None
+    qualifications: Optional[str] = Field(None, max_length=400)
+    contact_email: Optional[EmailStr] = None
+
+
+class CommitteeMeeting(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    meeting_no: int = Field(..., ge=1, le=999)
+    meeting_date: date
+    location: Optional[str] = Field(None, max_length=200)
+    attendees_count: int = Field(..., ge=0, le=50)
+    quorum_met: bool = True
+    key_topics: List[str] = Field(default_factory=list, max_length=10)
+
+
+class CommitteeDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    decision_no: int = Field(..., ge=1, le=999)
+    decision_date: date
+    title: str = Field(..., min_length=1, max_length=200)
+    summary: str = Field(..., min_length=1, max_length=1000)
+    voting_result: str = Field(..., max_length=80)            # "Unanimous" / "5/7" etc.
+    status: str = Field("approved", max_length=20)            # approved/pending/rejected
+
+
+class InternalHalalCommitteeData(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    business_name: str = Field(..., min_length=1, max_length=200)
+    committee_id: Optional[str] = Field(None, max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    version: Optional[str] = Field(None, max_length=20)
+
+    charter: Optional[str] = Field(None, max_length=2500)
+    scope_of_authority: Optional[str] = Field(None, max_length=2000)
+
+    members: List[CommitteeMemberDetail] = Field(default_factory=list, max_length=20)
+    meetings: List[CommitteeMeeting] = Field(default_factory=list, max_length=24)
+    decisions: List[CommitteeDecision] = Field(default_factory=list, max_length=30)
+
+    effective_date: date
+    review_date: Optional[date] = None
+    signatories: List[Signatory] = Field(default_factory=list, max_length=5)
+    issued_date: date
+
+
+# ── Ingredient & Raw Material Master ────────────────────────────────────────
+
+
+class IngredientEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    ingredient_id: str = Field(..., max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    name: str = Field(..., min_length=1, max_length=200)
+    name_en: Optional[str] = Field(None, max_length=200)
+    category: str = Field(..., max_length=80)                  # Spice / Packaging / Additive
+    supplier: str = Field(..., max_length=200)
+    halal_cert_number: Optional[str] = Field(None, max_length=80)
+    halal_cert_authority: Optional[str] = Field(None, max_length=80)
+    halal_cert_expiry: Optional[date] = None
+    status: str = Field("approved", max_length=20)
+    notes: Optional[str] = Field(None, max_length=400)
+
+
+class SupplierEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    supplier_id: str = Field(..., max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    name: str = Field(..., min_length=1, max_length=200)
+    country: str = Field(..., max_length=80)
+    address: Optional[str] = Field(None, max_length=300)
+    contact_email: Optional[EmailStr] = None
+    halal_cert_number: Optional[str] = Field(None, max_length=80)
+    halal_cert_authority: Optional[str] = Field(None, max_length=80)
+    last_audit_date: Optional[date] = None
+
+
+class IngredientRawMaterialData(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    business_name: str = Field(..., min_length=1, max_length=200)
+    document_id: Optional[str] = Field(None, max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    version: Optional[str] = Field(None, max_length=20)
+
+    purpose: Optional[str] = Field(None, max_length=2000)
+    scope: Optional[str] = Field(None, max_length=2000)
+
+    ingredients: List[IngredientEntry] = Field(default_factory=list, max_length=80)
+    suppliers: List[SupplierEntry] = Field(default_factory=list, max_length=40)
+
+    audit_schedule: Optional[str] = Field(None, max_length=2000)
+
+    effective_date: date
+    review_date: Optional[date] = None
+    signatories: List[Signatory] = Field(default_factory=list, max_length=5)
+    issued_date: date
+
+
+# ── Process Flow Chart ──────────────────────────────────────────────────────
+
+
+class ProcessStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    step_no: int = Field(..., ge=1, le=99)
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=1, max_length=1000)
+    inputs: List[str] = Field(default_factory=list, max_length=10)
+    outputs: List[str] = Field(default_factory=list, max_length=10)
+    duration: Optional[str] = Field(None, max_length=80)
+    is_ccp: bool = False
+    ccp_criteria: Optional[str] = Field(None, max_length=400)
+
+
+class ProcessFlowChartData(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    business_name: str = Field(..., min_length=1, max_length=200)
+    document_id: Optional[str] = Field(None, max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    version: Optional[str] = Field(None, max_length=20)
+
+    purpose: Optional[str] = Field(None, max_length=2000)
+    scope: Optional[str] = Field(None, max_length=2000)
+
+    steps: List[ProcessStep] = Field(default_factory=list, max_length=30)
+    overall_description: Optional[str] = Field(None, max_length=3000)
+
+    effective_date: date
+    review_date: Optional[date] = None
+    signatories: List[Signatory] = Field(default_factory=list, max_length=5)
+    issued_date: date
+
+
+# ── Generic (catch-all fallback for doc_types without bespoke schema) ──────
+
+
+class GenericSection(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    title: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(..., min_length=1, max_length=4000)
+
+
+class GenericData(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    business_name: str = Field(..., min_length=1, max_length=200)
+    document_id: Optional[str] = Field(None, max_length=40)
+    document_title: str = Field(..., min_length=1, max_length=200)
+    document_subtitle: Optional[str] = Field(None, max_length=200)
+
+    sections: List[GenericSection] = Field(default_factory=list, max_length=20)
+
+    effective_date: date
+    issued_date: date
+    signatories: List[Signatory] = Field(default_factory=list, max_length=5)
+
+
 # ── Style guide (kitchen sink — internal) ───────────────────────────────────
 
 
@@ -298,10 +460,13 @@ SUPPORTED_DOC_TYPES = {
     "has_manual": HasManualData,
     "halal_manual": HasManualData,
 
-    # Phase 2 remaining (Group 3-5)
-    "internal_halal_committee": None,
-    "ingredient_raw_material": None,
-    "process_flow_chart": None,
+    # Group 3 — data-heavy templates
+    "internal_halal_committee": InternalHalalCommitteeData,
+    "ingredient_raw_material": IngredientRawMaterialData,
+    "process_flow_chart": ProcessFlowChartData,
+
+    # Group 4 — generic fallback
+    "generic": GenericData,
 }
 
 

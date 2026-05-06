@@ -107,10 +107,33 @@ _REGISTRY: dict[str, TemplateEntry] = {
         title_default="Sổ tay Halal",
     ),
 
-    # Phase 2 remaining — Groups 3-5 (placeholder until template ships)
-    "internal_halal_committee": None,
-    "ingredient_raw_material": None,
-    "process_flow_chart": None,
+    # ── Group 3 — data-heavy templates ──────────────────────────────────
+    "internal_halal_committee": TemplateEntry(
+        doc_type="internal_halal_committee",
+        template_relpath="internal_halal_committee/v1/template.html",
+        version="v1",
+        title_default="Ban Halal nội bộ",
+    ),
+    "ingredient_raw_material": TemplateEntry(
+        doc_type="ingredient_raw_material",
+        template_relpath="ingredient_raw_material/v1/template.html",
+        version="v1",
+        title_default="Danh mục nguyên liệu thô",
+    ),
+    "process_flow_chart": TemplateEntry(
+        doc_type="process_flow_chart",
+        template_relpath="process_flow_chart/v1/template.html",
+        version="v1",
+        title_default="Sơ đồ quy trình sản xuất",
+    ),
+
+    # ── Group 4 — generic fallback ──────────────────────────────────────
+    "generic": TemplateEntry(
+        doc_type="generic",
+        template_relpath="generic/v1/template.html",
+        version="v1",
+        title_default="Tài liệu",
+    ),
 }
 
 

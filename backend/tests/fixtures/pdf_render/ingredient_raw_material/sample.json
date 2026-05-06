@@ -1,0 +1,37 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "document_id": "ING-MASTER-001",
+  "version": "2.1",
+  "purpose": "Sổ đăng ký toàn bộ nguyên liệu thô và vật tư bao bì sử dụng tại Quế Thiên Lộc, kèm chứng nhận Halal của từng mặt hàng. Cập nhật quý bởi Bộ phận Mua hàng + Halal Lead, lưu trữ trong AMINRA Module Supply Chain. Phục vụ truy xuất nguồn gốc, audit cơ quan chứng nhận, và quyết định nhập hàng.",
+  "scope": "Áp dụng cho 100% nguyên liệu thô (quế khô, tinh dầu nguyên), phụ gia, hóa chất tẩy rửa Halal-approved, và vật tư bao bì tiếp xúc thực phẩm. Không áp dụng cho dụng cụ phòng thí nghiệm + văn phòng phẩm.",
+  "ingredients": [
+    {"ingredient_id": "ING-001", "name": "Quế thanh khô loại 1",     "name_en": "Cinnamon stick grade 1",  "category": "Nguyên liệu thô", "supplier": "HTX Quế Quỳ Châu",       "halal_cert_number": "HCA-VN-2024-0341", "halal_cert_authority": "HCA-VN",  "halal_cert_expiry": "2027-03-15", "status": "approved"},
+    {"ingredient_id": "ING-002", "name": "Quế thanh khô loại 2",     "name_en": "Cinnamon stick grade 2",  "category": "Nguyên liệu thô", "supplier": "HTX Quế Quỳ Châu",       "halal_cert_number": "HCA-VN-2024-0341", "halal_cert_authority": "HCA-VN",  "halal_cert_expiry": "2027-03-15", "status": "approved"},
+    {"ingredient_id": "ING-003", "name": "Bột quế tinh chế",         "name_en": "Refined cinnamon powder", "category": "Nguyên liệu thô", "supplier": "Công ty Quế Phương Bắc", "halal_cert_number": "HCA-VN-2024-0118", "halal_cert_authority": "HCA-VN",  "halal_cert_expiry": "2026-12-30", "status": "approved"},
+    {"ingredient_id": "ING-004", "name": "Túi PE thực phẩm 500g",    "name_en": "Food-grade PE bag 500g",  "category": "Bao bì",          "supplier": "Bao bì Tiến Phát",        "halal_cert_number": "JAKIM-2025-0892", "halal_cert_authority": "JAKIM",   "halal_cert_expiry": "2027-06-01", "status": "approved"},
+    {"ingredient_id": "ING-005", "name": "Túi giấy kraft 1kg",       "name_en": "Kraft paper bag 1kg",     "category": "Bao bì",          "supplier": "Giấy Việt Trì",           "halal_cert_number": "HCA-VN-2025-0211", "halal_cert_authority": "HCA-VN",  "halal_cert_expiry": "2027-09-12", "status": "approved"},
+    {"ingredient_id": "ING-006", "name": "Silica gel chống ẩm 5g",   "name_en": "Silica gel desiccant 5g", "category": "Phụ gia",         "supplier": "Hóa chất An Phú",         "halal_cert_number": "HCA-VN-2024-0287", "halal_cert_authority": "HCA-VN",  "halal_cert_expiry": "2026-08-20", "status": "approved"},
+    {"ingredient_id": "ING-007", "name": "Tinh dầu quế chiết xuất",  "name_en": "Cinnamon essential oil",  "category": "Nguyên liệu thô", "supplier": "Hóa chất Mekong",         "halal_cert_number": null,             "halal_cert_authority": null,        "halal_cert_expiry": null,           "status": "under_review", "notes": "Đang đợi xác minh chứng nhận Halal — tạm thời không sản xuất với nguyên liệu này."},
+    {"ingredient_id": "ING-008", "name": "Chất tẩy rửa CIP",          "name_en": "CIP cleaner",             "category": "Hóa chất",         "supplier": "Diversey Vietnam",        "halal_cert_number": "JAKIM-2024-1102", "halal_cert_authority": "JAKIM",   "halal_cert_expiry": "2027-02-28", "status": "approved", "notes": "Đã xác nhận không chứa enzyme từ heo."},
+    {"ingredient_id": "ING-009", "name": "Cồn isopropyl 70%",         "name_en": "Isopropyl alcohol 70%",   "category": "Hóa chất",         "supplier": "Hóa chất An Phú",         "halal_cert_number": "HCA-VN-2025-0089", "halal_cert_authority": "HCA-VN",  "halal_cert_expiry": "2026-11-05", "status": "approved", "notes": "Sử dụng vệ sinh dụng cụ phòng thí nghiệm; tách biệt khỏi sản phẩm thực phẩm."},
+    {"ingredient_id": "ING-010", "name": "Đất sertu (tanah samak)",   "name_en": "Sertu clay",              "category": "Vệ sinh",          "supplier": "Halal Trading SDN",       "halal_cert_number": "JAKIM-2025-0445", "halal_cert_authority": "JAKIM",   "halal_cert_expiry": "2028-01-15", "status": "approved", "notes": "Dùng cho quy trình Sertu khi tiếp xúc Najis Mughallazah."},
+    {"ingredient_id": "ING-011", "name": "Nhãn dán mã QR (1500/cuộn)", "name_en": "QR label sticker",       "category": "Bao bì",          "supplier": "In Lộc Phát",             "halal_cert_number": null,             "halal_cert_authority": null,        "halal_cert_expiry": null,           "status": "approved", "notes": "Vật tư phụ trợ — không tiếp xúc trực tiếp thực phẩm, không cần chứng nhận Halal."}
+  ],
+  "suppliers": [
+    {"supplier_id": "NCC-VN-001", "name": "HTX Quế Quỳ Châu",       "country": "Việt Nam",  "address": "Bản Tà Lứm, xã Châu Tiến, huyện Quỳ Châu, Nghệ An", "contact_email": "htx.quechau@gmail.com",     "halal_cert_number": "HCA-VN-2024-0341", "halal_cert_authority": "HCA-VN", "last_audit_date": "2025-11-20"},
+    {"supplier_id": "NCC-VN-002", "name": "Công ty Quế Phương Bắc",  "country": "Việt Nam",  "address": "Số 88, đường Hồng Bàng, Hà Nội",                  "contact_email": "info@quephuongbac.vn",      "halal_cert_number": "HCA-VN-2024-0118", "halal_cert_authority": "HCA-VN", "last_audit_date": "2026-01-15"},
+    {"supplier_id": "NCC-VN-003", "name": "Bao bì Tiến Phát",        "country": "Việt Nam",  "address": "KCN Sóng Thần, Bình Dương",                       "contact_email": "sales@tienphatpkg.vn",       "halal_cert_number": "JAKIM-2025-0892",  "halal_cert_authority": "JAKIM",  "last_audit_date": "2025-09-08"},
+    {"supplier_id": "NCC-VN-004", "name": "Giấy Việt Trì",           "country": "Việt Nam",  "address": "TP. Việt Trì, Phú Thọ",                            "contact_email": "kdpt@giayvtri.vn",            "halal_cert_number": "HCA-VN-2025-0211", "halal_cert_authority": "HCA-VN", "last_audit_date": "2025-12-03"},
+    {"supplier_id": "NCC-VN-005", "name": "Hóa chất An Phú",         "country": "Việt Nam",  "address": "TP. Hồ Chí Minh",                                  "contact_email": "anphu.kdvn@gmail.com",       "halal_cert_number": "HCA-VN-2024-0287", "halal_cert_authority": "HCA-VN", "last_audit_date": "2026-02-10"},
+    {"supplier_id": "NCC-VN-006", "name": "Diversey Vietnam",         "country": "Việt Nam",  "address": "Tầng 5, Khu công nghiệp Bình Dương",               "contact_email": "vn.sales@diversey.com",     "halal_cert_number": "JAKIM-2024-1102",  "halal_cert_authority": "JAKIM",  "last_audit_date": "2025-08-22"},
+    {"supplier_id": "NCC-MY-001", "name": "Halal Trading SDN BHD",   "country": "Malaysia",  "address": "Petaling Jaya, Selangor",                          "contact_email": "sales@halaltrading.my",     "halal_cert_number": "JAKIM-2025-0445",  "halal_cert_authority": "JAKIM",  "last_audit_date": "2025-10-30"}
+  ],
+  "audit_schedule": "Audit nhà cung cấp được lên lịch theo tiêu chí: (1) NCC mới — audit thực địa trước khi nhập hàng + sau 3 tháng theo dõi; (2) NCC hiện hữu — audit định kỳ 12 tháng/lần; (3) NCC có lịch sử NCR — audit 6 tháng/lần cho đến khi clean 12 tháng. Lịch chi tiết Q2-Q4 2026: tháng 5 — Hóa chất An Phú; tháng 7 — HTX Quế Quỳ Châu; tháng 9 — Halal Trading SDN; tháng 11 — toàn bộ NCC sản xuất bao bì.",
+  "effective_date": "2026-04-01",
+  "review_date": "2026-07-01",
+  "signatories": [
+    {"name": "Đỗ Thị Mai", "title": "Trưởng phòng Mua hàng", "signature_date": "2026-03-26"},
+    {"name": "Trần Thị Bình", "title": "Halal Lead", "signature_date": "2026-03-26"}
+  ],
+  "issued_date": "2026-05-05"
+}

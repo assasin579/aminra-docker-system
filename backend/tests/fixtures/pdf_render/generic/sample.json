@@ -1,0 +1,19 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "document_id": "GEN-2026-001",
+  "document_title": "Báo cáo tổng kết audit Halal năm 2025",
+  "document_subtitle": "Halal Annual Audit Summary",
+  "sections": [
+    {"title": "Tóm tắt điều hành", "content": "Năm 2025 đánh dấu mốc 2 năm Quế Thiên Lộc duy trì chứng nhận Halal HCA-VN không gián đoạn. Tổng cộng 8 audit nội bộ + 2 audit cơ quan đã được thực hiện, phát hiện 12 NCR (0 Critical, 4 Major, 8 Minor) — toàn bộ đã đóng trước cuối năm. Mock recall định kỳ đạt thời gian truy xuất trung bình 2 giờ 18 phút (mục tiêu ≤ 4h).\n\nDoanh nghiệp tiếp tục đầu tư vào đào tạo Halal: 142 nhân viên hoàn thành đào tạo lại 4h/năm, 5 nhân sự mới được cấp thẻ Halal Operator. Sharia Advisor Mohammad Yusuf bin Abdullah đã thực hiện 6 chuyến thăm thực địa và 12 buổi tư vấn online."},
+    {"title": "Kết quả audit cơ quan chứng nhận", "content": "HCA-VN tiến hành audit gia hạn cert vào tháng 9/2025, thời gian 2 ngày tại Cơ sở Yên Bái. Kết quả:\n\n- 0 phát hiện Major\n- 3 phát hiện Minor: (a) cập nhật biển báo phân khu kho cũ; (b) bổ sung cột 'last reviewed' trong Approved Supplier List; (c) tăng tần suất ATP test khu đóng gói.\n- 5 quan sát Observation: cải tiến process flow chart bằng visual diagram, đào tạo R&D về sertu, v.v.\n\nTất cả 3 Minor đã đóng trong 30 ngày bằng CAR. 5 Observation được đưa vào kế hoạch cải tiến năm 2026."},
+    {"title": "KPI Halal đã đạt", "content": "- Tỷ lệ lô đạt Halal 100%: 99.7% (mục tiêu ≥ 99.5%) ✓\n- Số NCR Critical: 0 (mục tiêu = 0) ✓\n- Thời gian truy xuất trung bình: 2h 18p (mục tiêu ≤ 2h) — chưa đạt, sát mục tiêu\n- Tỷ lệ nhân sự đạt thẻ Halal: 100% (mục tiêu 100%) ✓\n- Số lần Sertu thực hiện: 0 (mục tiêu giảm — không có najis Mughallazah trong cơ sở) ✓\n- Phản hồi tiêu cực từ khách hàng Halal: 1 trường hợp (đóng gói lệch nhãn — đã xử lý qua SOP-RCL-001 Class III)"},
+    {"title": "Kế hoạch cải tiến năm 2026", "content": "- Q1: Refactor toàn bộ HAS Manual lên v2.0; chuyển Document Control sang nền tảng AMINRA điện tử\n- Q2: Triển khai PDF render tự động cho 13 doc_type (Halal Policy, HAS Manual, 6 SOP, IHC charter, v.v.) — đáp ứng audit JAKIM nếu mở rộng cert sang Malaysia\n- Q3: Audit nhà cung cấp cấp 2 (sub-supplier audit) — đặc biệt cho ngành bao bì\n- Q4: Đăng ký mở rộng cert sang JAKIM Malaysia + MUI Indonesia\n\nNgân sách tổng: 1.2 tỷ VND, đã được Hội đồng quản trị phê duyệt tại cuộc họp tháng 1/2026."},
+    {"title": "Lời cảm ơn", "content": "Ban lãnh đạo cảm ơn toàn thể nhân viên + Ban Halal nội bộ + Sharia Advisor + đối tác chuỗi cung ứng đã nỗ lực duy trì cam kết Halal trong năm 2025. Sự tin cậy của khách hàng Hồi giáo là tài sản quý nhất của doanh nghiệp — chúng ta sẽ tiếp tục bảo vệ và phát huy."}
+  ],
+  "effective_date": "2026-04-01",
+  "issued_date": "2026-05-05",
+  "signatories": [
+    {"name": "Nguyễn Văn Anh", "title": "Tổng giám đốc", "signature_date": "2026-03-30"},
+    {"name": "Trần Thị Bình", "title": "Halal Lead — Chủ tịch IHC", "signature_date": "2026-03-30"}
+  ]
+}
