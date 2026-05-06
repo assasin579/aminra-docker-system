@@ -1,0 +1,26 @@
+/* Print-only rules. Loaded via <link media="print"> or merged at render time. */
+
+@page {
+  size: A4 portrait;
+  margin: 18mm 15mm 22mm 15mm;
+}
+
+@page :first {
+  /* Cover page — hide running header on first page (Chromium ignores @top, but kept for printing fidelity) */
+  margin-top: 15mm;
+}
+
+/* Avoid breaking inside critical blocks */
+h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+table, .callout, .cover__approval { page-break-inside: avoid; break-inside: avoid; }
+tr           { page-break-inside: avoid; break-inside: avoid; }
+.section     { page-break-inside: auto; }
+.section h2  { page-break-before: auto; break-before: auto; }
+
+/* Force page break helpers (use sparingly in templates) */
+.page-break-before { page-break-before: always; break-before: page; }
+.page-break-after  { page-break-after:  always; break-after:  page; }
+.no-break          { page-break-inside: avoid;   break-inside: avoid; }
+
+/* Hide UI-only elements when printing (defense in depth — templates SHOULD NOT include any) */
+.no-print, button, nav, [data-no-print] { display: none !important; }

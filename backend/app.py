@@ -63,9 +63,22 @@ if SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from services.pdf_renderer import PDFRenderer
+
     await init_pool()
-    yield
-    await close_pool()
+    app.state.pdf_renderer = PDFRenderer()
+    try:
+        await app.state.pdf_renderer.startup()
+    except Exception:
+        log.exception("[lifespan] PDF renderer startup failed; routes will return 503")
+    try:
+        yield
+    finally:
+        try:
+            await app.state.pdf_renderer.shutdown()
+        except Exception:
+            log.exception("[lifespan] PDF renderer shutdown error (ignored)")
+        await close_pool()
 
 
 _is_prod = os.getenv("ENVIRONMENT", "").lower() == "production"
@@ -108,6 +121,7 @@ from auth.password_reset_router import router as password_reset_router
 from auth.admin_analytics_router import router as admin_analytics_router
 from auth.gdpr_router import router as gdpr_router
 from auth.feature_flags_router import router as feature_flags_router, admin_router as feature_flags_admin_router
+from auth.pdf_render_router import router as pdf_render_router
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
@@ -117,6 +131,7 @@ app.include_router(admin_analytics_router, prefix="/auth", tags=["admin-analytic
 app.include_router(feature_flags_admin_router, prefix="/auth/admin", tags=["admin-feature-flags"])
 app.include_router(gdpr_router, prefix="/api/users", tags=["data-rights"])
 app.include_router(feature_flags_router, prefix="/api/feature-flags", tags=["feature-flags"])
+app.include_router(pdf_render_router, prefix="/api/templates", tags=["pdf-render"])
 app.include_router(document_router, prefix="/api", tags=["documents"])
 app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])
 app.include_router(certificate_router, prefix="/api/submissions", tags=["certificates"])

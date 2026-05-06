@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUserAuth } from "@/components/UserAuthContext";
+import { useFeature } from "@/lib/featureFlags";
+import { downloadPdfHtml, RenderPdfError } from "@/lib/renderPdfHtml";
 import Link from "next/link";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -38,6 +40,10 @@ export default function CreateDocumentPage() {
   const [generated, setGenerated] = useState(false);
   const [error, setError] = useState("");
   const [lang, setLang] = useState<"vi" | "en">("vi");
+  const [outputFormat, setOutputFormat] = useState<"docx" | "pdf">("docx");
+  const pdfCompanyProfileEnabled = useFeature(
+    "pdf_html_renderer_v1.company_profile",
+  );
   const [allPlaceholders, setAllPlaceholders] = useState<
     Array<{
       key: string;
@@ -248,13 +254,75 @@ export default function CreateDocumentPage() {
     [token, profile, lang, allPlaceholders],
   );
 
+  // ── Map frontend CompanyProfile → backend CompanyProfileData payload ───
+  // Sparse-by-design: only fields the frontend captures today are sent;
+  // backend schema accepts the rest as optional.
+  const buildPdfData = useCallback(
+    (docType: string): Record<string, unknown> | null => {
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      if (docType === "company_profile") {
+        return {
+          business_name: profile?.company_name || "",
+          address: profile?.address || undefined,
+          representative: profile?.representative_name || undefined,
+          phone: profile?.phone || undefined,
+          email: profile?.email || undefined,
+          issued_date: today,
+        };
+      }
+      // Other doc_types: PDF renderer not yet wired (Phase 2). Caller falls back to DOCX.
+      return null;
+    },
+    [profile],
+  );
+
+  const generatePdfFallbackDocx = useCallback(
+    async (docType: string) => {
+      const data = buildPdfData(docType);
+      if (!data || !token) {
+        await generateDocx(docType);
+        return;
+      }
+      const safeName = (profile?.company_name || "company").replace(/\s+/g, "_");
+      try {
+        await downloadPdfHtml({
+          docType,
+          data,
+          title: profile?.company_name
+            ? `${profile.company_name} — Hồ sơ doanh nghiệp`
+            : undefined,
+          isDraft: true,
+          lang,
+          token,
+          filename: `${docType}_${safeName}.pdf`,
+        });
+      } catch (err) {
+        // 404 (flag off / template not implemented) or 501 → silent fallback
+        // to DOCX so the user always gets a file. Other errors propagate.
+        if (
+          err instanceof RenderPdfError &&
+          (err.status === 404 || err.status === 501)
+        ) {
+          await generateDocx(docType);
+          return;
+        }
+        throw err;
+      }
+    },
+    [buildPdfData, generateDocx, profile, lang, token],
+  );
+
   const handleGenerate = async () => {
     setGenerating(true);
     setError("");
     setGenerated(false);
     try {
       for (const docType of selectedTypes) {
-        await generateDocx(docType);
+        if (outputFormat === "pdf") {
+          await generatePdfFallbackDocx(docType);
+        } else {
+          await generateDocx(docType);
+        }
       }
       setGenerated(true);
     } catch (err: unknown) {
@@ -693,6 +761,79 @@ export default function CreateDocumentPage() {
               </div>
             </div>
 
+            {/* Output format selection — show only when PDF route is available
+                for at least one selected doc_type (Phase 1: company_profile only). */}
+            {pdfCompanyProfileEnabled &&
+              selectedTypes.includes("company_profile") && (
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
+                  }}
+                >
+                  <h3
+                    className="text-xs font-medium mb-3"
+                    style={{ color: "#6B7280" }}
+                  >
+                    Định dạng tài liệu
+                  </h3>
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                    {(
+                      [
+                        {
+                          id: "docx" as const,
+                          label: "DOCX",
+                          desc: "Mở bằng Word, có thể chỉnh sửa",
+                        },
+                        {
+                          id: "pdf" as const,
+                          label: "PDF (đẹp)",
+                          desc: "Layout chuyên nghiệp, font Inter, sẵn sàng in",
+                        },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setOutputFormat(opt.id)}
+                        className="rounded-xl p-4 text-left transition-all"
+                        style={{
+                          background:
+                            outputFormat === opt.id
+                              ? "rgba(10,31,68,0.06)"
+                              : "#FFFFFF",
+                          border: `2px solid ${outputFormat === opt.id ? "#0A1F44" : "#E2E8F0"}`,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div
+                          className="text-sm font-semibold"
+                          style={{ color: "#0A1F44" }}
+                        >
+                          {opt.label}
+                        </div>
+                        <div
+                          className="text-xs mt-1"
+                          style={{ color: "#6B7280" }}
+                        >
+                          {opt.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {outputFormat === "pdf" &&
+                    selectedTypes.some((dt) => dt !== "company_profile") && (
+                      <div
+                        className="text-xs mt-3"
+                        style={{ color: "#d97706" }}
+                      >
+                        Lưu ý: PDF mới hiện chỉ hỗ trợ Company Profile. Các
+                        loại tài liệu khác sẽ tự động tạo bản DOCX.
+                      </div>
+                    )}
+                </div>
+              )}
+
             {/* Summary */}
             <div
               className="rounded-2xl p-5"
@@ -764,7 +905,8 @@ export default function CreateDocumentPage() {
                   color: "#0A1F44",
                 }}
               >
-                Tạo thành công {selectedTypes.length} file DOCX! Kiểm tra thư
+                Tạo thành công {selectedTypes.length} file{" "}
+                {outputFormat === "pdf" ? "PDF" : "DOCX"}! Kiểm tra thư
                 mục Downloads.
               </div>
             )}
@@ -804,7 +946,7 @@ export default function CreateDocumentPage() {
                     Đang tạo...
                   </span>
                 ) : (
-                  `Tạo ${selectedTypes.length} file DOCX`
+                  `Tạo ${selectedTypes.length} file ${outputFormat === "pdf" ? "PDF" : "DOCX"}`
                 )}
               </button>
             </div>

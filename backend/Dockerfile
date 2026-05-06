@@ -23,11 +23,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN python -c "from sentence_transformers import SentenceTransformer; \
     SentenceTransformer('intfloat/multilingual-e5-base')"
 
+# Install Playwright Chromium + system deps (fonts, libs for headless rendering)
+# `--with-deps` pulls fontconfig, libnss3, libxkbcommon0, libgbm1, etc.
+RUN playwright install --with-deps chromium
+
 # Copy source
 COPY pipeline/ ./pipeline/
 COPY auth/ ./auth/
 COPY services/ ./services/
 COPY templates_docx/ ./templates_docx/
+COPY templates_html/ ./templates_html/
 COPY supply_chain/ ./supply_chain/
 COPY alembic.ini .
 COPY alembic/ ./alembic/

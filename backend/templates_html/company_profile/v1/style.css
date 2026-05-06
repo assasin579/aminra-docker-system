@@ -1,0 +1,16 @@
+/* Doc-specific overrides for company_profile v1 (Direction C — Modern Editorial). */
+
+/* Cover title slightly larger for the marquee document */
+.cover__title {
+  font-size: 70pt;
+}
+
+/* Ensure stats grid stays on one row even with long Vietnamese labels */
+.stat__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tighten spacing on the dl when there are many rows */
+.section dl.kv { margin-top: var(--sp-2); }

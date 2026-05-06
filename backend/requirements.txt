@@ -61,6 +61,10 @@ structlog>=24.1.0            # structured JSON logging with bound context
 qrcode[pil]
 reportlab
 
+# PDF render via HTML+CSS (Playwright Chromium)
+playwright>=1.59.0           # async browser automation for HTML→PDF
+pikepdf>=8.0.0               # PDF metadata strip → deterministic output bytes
+
 # ── Testing ──────────────────────────────────────────────────────────
 pytest>=8.0.0
 pytest-asyncio>=0.23.0       # async test support for FastAPI routes

@@ -71,6 +71,27 @@ async def rate_limit_upload(request: Request):
     _limiter.check(f"upload:{key}", UPLOAD_RATE_LIMIT, UPLOAD_RATE_WINDOW)
 
 
+async def rate_limit_pdf_render(request: Request):
+    """Throttle for /api/templates/{doc_type}/render-pdf — protects browser pool.
+
+    Defaults: 10 renders per minute per user. Tunable via env.
+    See threat-model R5.
+    """
+    limit = int(os.getenv("PDF_RENDER_LIMIT", "10"))
+    window = int(os.getenv("PDF_RENDER_WINDOW", "60"))
+    user = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        try:
+            from .jwt_utils import decode_token
+
+            user = decode_token(auth[7:])
+        except Exception:
+            pass
+    key = _get_client_key(request, user)
+    _limiter.check(f"pdf_render:{key}", limit, window)
+
+
 async def rate_limit_data_export(request: Request):
     """Heavily-throttled limit for GDPR/PDPL data exports.
 

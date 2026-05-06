@@ -1,0 +1,517 @@
+/* ─── Inter font (bundled local, weights 400/500/600/700/900 + italic) ─── */
+
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Regular.woff2') format('woff2');  font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Italic.woff2') format('woff2');   font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Medium.woff2') format('woff2');   font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Bold.woff2') format('woff2');     font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Black.woff2') format('woff2');    font-weight: 900; font-style: normal; font-display: block; }
+
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
+
+:root {
+  /* Brand */
+  --c-navy:        #0a1f44;       /* primary deep navy */
+  --c-navy-700:    #0f2a5c;
+  --c-navy-500:    #1f3d80;
+  --c-emerald:     #16a34a;       /* halal green */
+  --c-emerald-700: #128039;
+  --c-emerald-300: #4ade80;
+  --c-amber:       #d97706;
+  --c-rose:        #dc2626;
+  --c-cream:       #faf7f2;       /* paper bg */
+  --c-cream-dark:  #f0ebe0;
+
+  /* Neutrals */
+  --c-ink:         #0b1220;
+  --c-text:        #12203d;
+  --c-text-muted:  #475569;
+  --c-text-soft:   #94a3b8;
+  --c-border:      #e2e8f0;
+  --c-border-soft: #f1f5f9;
+
+  /* Gradients */
+  --grad-hero:     linear-gradient(135deg, #0a1f44 0%, #143063 35%, #16a34a 100%);
+  --grad-strip:    linear-gradient(90deg,  #0a1f44 0%, #16a34a 100%);
+  --grad-accent:   linear-gradient(180deg, #16a34a 0%, #128039 100%);
+
+  /* Type scale */
+  --font-sans:  'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-display: 64pt;
+  --fs-h1:      28pt;
+  --fs-h2:      18pt;
+  --fs-h3:      13pt;
+  --fs-body:    11pt;
+  --fs-small:   9.5pt;
+  --fs-tiny:    8pt;
+  --lh-tight:   1.05;
+  --lh-snug:    1.25;
+  --lh-base:    1.55;
+
+  /* Spacing scale (mm) */
+  --sp-1: 1mm;
+  --sp-2: 2mm;
+  --sp-3: 3mm;
+  --sp-4: 5mm;
+  --sp-5: 8mm;
+  --sp-6: 12mm;
+  --sp-7: 18mm;
+  --sp-8: 24mm;
+
+  /* Radii */
+  --r-sm: 1.5mm;
+  --r-md: 3mm;
+  --r-lg: 6mm;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+img, svg { max-width: 100%; height: auto; display: block; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-base);
+  color: var(--c-text);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  font-feature-settings: "ss01", "cv11", "tnum";
+}
+
+/* ─── Typography utilities ───────────────────────────────────────────────── */
+
+h1, h2, h3, h4 { margin: 0; line-height: var(--lh-snug); color: var(--c-navy); }
+h1 { font-size: var(--fs-h1); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: var(--fs-h3); font-weight: 600; }
+p  { margin: 0 0 var(--sp-3) 0; }
+strong { font-weight: 600; color: var(--c-ink); }
+em { font-style: italic; }
+
+.eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-emerald);
+}
+
+.dim { color: var(--c-text-muted); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ─── COVER PAGE — full-bleed gradient hero with geometric overlays ──────── */
+
+.cover {
+  position: relative;
+  page-break-after: always;
+  break-after: page;
+  width: 210mm;
+  height: 297mm;
+  margin: -18mm -15mm 0 -15mm;          /* cancel @page margins for full bleed */
+  background: var(--grad-hero);
+  color: #fff;
+  overflow: hidden;
+  padding: 22mm 18mm 18mm 18mm;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Geometric layered SVG painted as background — dot grid + circles */
+.cover::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 88% 18%, rgba(74,222,128,0.20) 0, rgba(74,222,128,0) 38%),
+    radial-gradient(circle at 12% 92%, rgba(255,255,255,0.12) 0, rgba(255,255,255,0) 28%);
+  pointer-events: none;
+}
+
+.cover::after {
+  /* dot grid pattern over hero */
+  content: "";
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.10) 0.6pt, transparent 0.7pt);
+  background-size: 4mm 4mm;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.0) 30%, rgba(0,0,0,1) 100%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.0) 30%, rgba(0,0,0,1) 100%);
+  pointer-events: none;
+}
+
+.cover__head {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-start; gap: var(--sp-5);
+}
+.cover__logo {
+  width: 52mm; height: auto;
+  filter: brightness(0) invert(1);       /* flatten to white on the gradient */
+}
+.cover__year {
+  margin-left: auto;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: rgba(255,255,255,0.7);
+  border: 0.5pt solid rgba(255,255,255,0.35);
+  border-radius: 100px;
+  padding: 1.3mm 4mm;
+}
+
+.cover__core {
+  position: relative; z-index: 2;
+  margin-top: var(--sp-7);
+}
+.cover__eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--c-emerald-300);
+  margin-bottom: var(--sp-4);
+}
+.cover__title {
+  font-size: var(--fs-display);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: var(--lh-tight);
+  color: #fff;
+  max-width: 165mm;
+}
+.cover__sub {
+  margin-top: var(--sp-4);
+  font-size: 13pt;
+  font-weight: 400;
+  color: rgba(255,255,255,0.78);
+  max-width: 150mm;
+  line-height: 1.45;
+}
+
+.cover__rule {
+  position: relative; z-index: 2;
+  height: 1pt; width: 60mm;
+  background: var(--c-emerald-300);
+  margin: var(--sp-6) 0 var(--sp-5) 0;
+}
+
+.cover__meta {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+  margin-top: auto;            /* push to bottom */
+  border-top: 0.5pt solid rgba(255,255,255,0.18);
+  padding-top: var(--sp-5);
+}
+.cover__meta-cell { font-size: var(--fs-small); }
+.cover__meta-cell-label {
+  font-size: var(--fs-tiny);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: var(--sp-1);
+}
+.cover__meta-cell-value {
+  font-weight: 600;
+  color: #fff;
+  font-size: 11.5pt;
+  line-height: 1.3;
+}
+
+/* Vertical strip on right edge of cover */
+.cover__strip {
+  position: absolute; top: 0; right: 0;
+  width: 9mm; height: 100%;
+  background: var(--grad-accent);
+  z-index: 1;
+}
+
+/* Optional decorative geometric mark bottom-right */
+.cover__mark {
+  position: absolute; right: 22mm; bottom: 36mm; z-index: 2;
+  width: 36mm; height: 36mm;
+  opacity: 0.85;
+}
+
+/* ─── SECTION OPENER — giant number watermark + title overlay ────────────── */
+
+.section-opener {
+  position: relative;
+  margin: 0 0 var(--sp-5) 0;
+  padding: var(--sp-6) 0 var(--sp-4) 0;
+  page-break-before: always;
+  break-before: page;
+  page-break-after: avoid;
+  break-after: avoid;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* The cover ends with page-break-after; consecutive page-break-before on the
+   first section collapses into a single break (CSS3 spec) — no blank page. */
+
+.section-opener__num {
+  position: absolute;
+  top: -10mm; left: -2mm;
+  font-size: 110pt;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--c-cream-dark);
+  z-index: 0;
+  user-select: none;
+}
+
+.section-opener__inner {
+  position: relative; z-index: 1;
+  padding-left: 22mm;
+}
+
+.section-opener__eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--c-emerald);
+  margin-bottom: var(--sp-2);
+}
+
+.section-opener__title {
+  font-size: 24pt;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: var(--lh-tight);
+  color: var(--c-navy);
+}
+
+.section-opener__rule {
+  height: 2pt;
+  width: 16mm;
+  background: var(--c-emerald);
+  margin-top: var(--sp-3);
+}
+
+/* ─── CONTENT BLOCKS ─────────────────────────────────────────────────────── */
+
+.section {
+  margin: 0 0 var(--sp-6) 0;
+  page-break-before: always;
+  break-before: page;
+}
+/* First section after cover: cover already breaks; collapse double-break */
+.cover + .section { page-break-before: auto; break-before: auto; }
+.section h2 { margin-bottom: var(--sp-3); }
+.section h3 { margin-top: var(--sp-4); margin-bottom: var(--sp-2); }
+
+.lede {
+  font-size: 13pt;
+  line-height: 1.55;
+  color: var(--c-text);
+  font-weight: 500;
+  margin: 0 0 var(--sp-5) 0;
+}
+
+/* Stat cards grid */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0 var(--sp-5) 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+
+.stat {
+  position: relative;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 1.5mm);
+  background: var(--c-cream);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.stat::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 1mm; background: var(--grad-accent);
+}
+.stat__num {
+  font-size: 28pt;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--c-navy);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat__unit {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  margin-left: 1.5mm;
+}
+.stat__label {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+.stat__hint {
+  margin-top: 1mm;
+  font-size: var(--fs-small);
+  color: var(--c-text);
+  line-height: 1.35;
+}
+
+/* Definition list (key/value), used in cover meta + section info */
+dl.kv {
+  display: grid;
+  grid-template-columns: minmax(34mm, max-content) 1fr;
+  column-gap: var(--sp-5);
+  row-gap: 1.6mm;
+  font-size: var(--fs-body);
+  margin: 0 0 var(--sp-3) 0;
+}
+dl.kv dt {
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+dl.kv dd {
+  color: var(--c-ink);
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Tables */
+table.data {
+  font-size: var(--fs-small);
+  border: none;
+  margin: var(--sp-3) 0 var(--sp-4) 0;
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+table.data thead th {
+  background: var(--c-navy);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: var(--fs-tiny);
+  padding: 2.4mm 3.4mm;
+  text-align: left;
+  border: none;
+}
+table.data tbody td {
+  padding: 2.6mm 3.4mm;
+  border: none;
+  border-bottom: 0.5pt solid var(--c-border);
+  vertical-align: top;
+}
+table.data tbody tr:nth-child(odd) td { background: var(--c-cream); }
+table.data tbody tr:last-child td { border-bottom: none; }
+
+/* Pull-quote */
+blockquote.pull {
+  position: relative;
+  margin: var(--sp-5) 0;
+  padding: var(--sp-3) 0 var(--sp-3) var(--sp-5);
+  border-left: 3pt solid var(--c-emerald);
+  font-family: var(--font-sans);
+  font-size: 16pt;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--c-navy);
+  page-break-inside: avoid; break-inside: avoid;
+}
+blockquote.pull::before {
+  content: "“";
+  position: absolute; left: var(--sp-3); top: -3mm;
+  font-size: 36pt;
+  font-weight: 900;
+  color: var(--c-emerald);
+  line-height: 1;
+}
+blockquote.pull cite {
+  display: block;
+  margin-top: var(--sp-3);
+  font-style: normal;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  letter-spacing: 0.04em;
+}
+blockquote.pull cite::before { content: "— "; }
+
+/* Callout */
+.callout {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-4);
+  background: var(--c-cream);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  margin: var(--sp-4) 0;
+  font-size: var(--fs-small);
+  page-break-inside: avoid; break-inside: avoid;
+}
+.callout__badge {
+  align-self: flex-start;
+  background: var(--c-emerald);
+  color: #fff;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 1.2mm 3mm;
+  border-radius: 100px;
+}
+.callout__body strong { display: block; color: var(--c-navy); margin-bottom: 1mm; }
+
+/* Bullet list */
+ul.lst { list-style: none; padding: 0; margin: 0 0 var(--sp-3) 0; }
+ul.lst li {
+  position: relative;
+  padding-left: 6mm;
+  margin-bottom: 1.6mm;
+  line-height: 1.45;
+}
+ul.lst li::before {
+  content: "";
+  position: absolute; left: 0; top: 1.6mm;
+  width: 2.6mm; height: 2.6mm;
+  border-radius: 100px;
+  background: var(--c-emerald);
+  opacity: 0.85;
+}
+
+/* Approval block on cover */
+.approval-grid {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: repeat(3,1fr); gap: var(--sp-5);
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 0.5pt solid rgba(255,255,255,0.18);
+}
+.approval-cell { font-size: var(--fs-tiny); color: rgba(255,255,255,0.7); }
+.approval-cell strong { color: #fff; display: block; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.approval-line { height: 12mm; border-bottom: 0.5pt solid rgba(255,255,255,0.4); margin-bottom: 1mm; }
+
+/* DRAFT watermark — only when body.is-draft */
+body.is-draft .section,
+body.is-draft .section-opener {
+  position: relative;
+}
+body.is-draft .section::after {
+  content: "DRAFT";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-22deg);
+  font-size: 100pt;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: rgba(220, 38, 38, 0.05);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
+body.is-draft .section > * { position: relative; z-index: 1; }

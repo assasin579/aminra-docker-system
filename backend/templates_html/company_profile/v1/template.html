@@ -1,0 +1,239 @@
+{% extends "_base/base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="{{ asset('company_profile/v1/style.css') }}">{% endblock %}
+
+{% block content %}
+{# ───────────── COVER (full-bleed gradient hero) ───────────── #}
+<section class="cover">
+  <div class="cover__strip"></div>
+
+  <header class="cover__head">
+    <img class="cover__logo" src="{{ asset('_shared/logo-aminra.svg') }}" alt="AMINRA">
+    <div class="cover__year">{{ data.issued_date[:4] if data.issued_date else "" }}</div>
+  </header>
+
+  <div class="cover__core">
+    <div class="cover__eyebrow">{{ cfg.doc_type_label or "Hồ sơ doanh nghiệp" }}</div>
+    <h1 class="cover__title">{{ data.business_name }}</h1>
+    {% if data.business_name_en %}
+    <div class="cover__sub">{{ data.business_name_en }}</div>
+    {% endif %}
+    <div class="cover__rule"></div>
+  </div>
+
+  <img class="cover__mark" src="{{ asset('_shared/cover-mark.svg') }}" alt="">
+
+  <div class="cover__meta">
+    <div class="cover__meta-cell">
+      <div class="cover__meta-cell-label">Mã số thuế</div>
+      <div class="cover__meta-cell-value">{{ data.tax_code or "—" }}</div>
+    </div>
+    <div class="cover__meta-cell">
+      <div class="cover__meta-cell-label">Người đại diện</div>
+      <div class="cover__meta-cell-value">{{ data.representative or "—" }}</div>
+    </div>
+    <div class="cover__meta-cell">
+      <div class="cover__meta-cell-label">Ngày phát hành</div>
+      <div class="cover__meta-cell-value">{{ data.issued_date }}</div>
+    </div>
+  </div>
+
+  {% if cfg.show_approval_block %}
+  <div class="approval-grid">
+    <div class="approval-cell"><strong>Soạn thảo</strong><div class="approval-line"></div>Họ tên / Chức vụ</div>
+    <div class="approval-cell"><strong>Kiểm tra</strong><div class="approval-line"></div>Họ tên / Chức vụ</div>
+    <div class="approval-cell"><strong>Phê duyệt</strong><div class="approval-line"></div>Họ tên / Chức vụ</div>
+  </div>
+  {% endif %}
+</section>
+
+{# ───────────── PAGE 2 — STATS HERO + GENERAL INFO ───────────── #}
+<section class="section">
+  <div class="section-opener">
+    <div class="section-opener__num">01</div>
+    <div class="section-opener__inner">
+      <div class="section-opener__eyebrow">Tổng quan</div>
+      <div class="section-opener__title">Thông tin chung doanh nghiệp</div>
+      <div class="section-opener__rule"></div>
+    </div>
+  </div>
+
+  <p class="lede">
+    {{ data.business_name }}
+    {%- if data.founded_year %} thành lập năm {{ data.founded_year }}
+    {%- endif %}, hoạt động trong lĩnh vực sản xuất – kinh doanh các sản phẩm
+    đáp ứng tiêu chuẩn Halal, hướng tới thị trường trong nước và xuất khẩu.
+  </p>
+
+  {# Stat cards — display key numerical facts at a glance #}
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="stat__num">{{ data.founded_year or "—" }}</div>
+      <div class="stat__label">Năm thành lập</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">{{ data.employee_count or "—" }}<span class="stat__unit">người</span></div>
+      <div class="stat__label">Quy mô lao động</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">{{ data.products|length if data.products else 0 }}</div>
+      <div class="stat__label">Sản phẩm chính</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">{{ data.business_activities|length if data.business_activities else 0 }}</div>
+      <div class="stat__label">Lĩnh vực hoạt động</div>
+    </div>
+  </div>
+
+  <h3>Thông tin chi tiết</h3>
+  <dl class="kv">
+    <dt>Tên doanh nghiệp</dt>      <dd>{{ data.business_name }}</dd>
+    {% if data.business_name_en %}
+    <dt>Tên giao dịch quốc tế</dt> <dd>{{ data.business_name_en }}</dd>
+    {% endif %}
+    <dt>Mã số thuế</dt>            <dd>{{ data.tax_code or "—" }}</dd>
+    <dt>Vốn điều lệ</dt>           <dd>{{ data.charter_capital or "—" }}</dd>
+    <dt>Địa chỉ trụ sở</dt>        <dd>{{ data.address or "—" }}</dd>
+    {% if data.factory_address and data.factory_address != data.address %}
+    <dt>Địa chỉ nhà xưởng</dt>     <dd>{{ data.factory_address }}</dd>
+    {% endif %}
+    <dt>Điện thoại</dt>            <dd>{{ data.phone or "—" }}</dd>
+    <dt>Email</dt>                 <dd>{{ data.email or "—" }}</dd>
+    {% if data.website %}
+    <dt>Website</dt>               <dd>{{ data.website }}</dd>
+    {% endif %}
+  </dl>
+</section>
+
+{# ───────────── PAGE 3 — BUSINESS ACTIVITIES + PRODUCTS ───────────── #}
+{% if data.business_activities or data.products %}
+<section class="section">
+  <div class="section-opener">
+    <div class="section-opener__num">02</div>
+    <div class="section-opener__inner">
+      <div class="section-opener__eyebrow">Hoạt động kinh doanh</div>
+      <div class="section-opener__title">Lĩnh vực &amp; Sản phẩm chính</div>
+      <div class="section-opener__rule"></div>
+    </div>
+  </div>
+
+  {% if data.business_activities %}
+  <h3>Lĩnh vực hoạt động</h3>
+  <ul class="lst">
+    {% for activity in data.business_activities %}
+    <li>{{ activity }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if data.products %}
+  <h3>Danh mục sản phẩm</h3>
+  <table class="data">
+    <thead>
+      <tr>
+        <th style="width: 30%;">Sản phẩm</th>
+        <th>Mô tả</th>
+        <th style="width: 22%; text-align: right;">Sản lượng / năm</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in data.products %}
+      <tr>
+        <td><strong>{{ p.name }}</strong></td>
+        <td>{{ p.description or "—" }}</td>
+        <td class="tnum" style="text-align: right;">{{ p.annual_output or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endif %}
+
+{# ───────────── PAGE 4 — HALAL COMMITMENT (pull-quote + callout) ───────────── #}
+<section class="section">
+  <div class="section-opener">
+    <div class="section-opener__num">03</div>
+    <div class="section-opener__inner">
+      <div class="section-opener__eyebrow">Cam kết tuân thủ</div>
+      <div class="section-opener__title">Cam kết Halal &amp; Trách nhiệm</div>
+      <div class="section-opener__rule"></div>
+    </div>
+  </div>
+
+  {% if data.halal_commitment %}
+  <blockquote class="pull">
+    {{ data.halal_commitment }}
+    <cite>{{ data.business_name }}</cite>
+  </blockquote>
+  {% else %}
+  <p class="lede">
+    Doanh nghiệp cam kết tuân thủ đầy đủ tiêu chuẩn Halal trong toàn bộ chu trình
+    sản xuất — từ lựa chọn nguồn nguyên liệu, quy trình chế biến, lưu kho, đóng gói
+    đến phân phối thành phẩm cuối cùng.
+  </p>
+  {% endif %}
+
+  {% if data.halal_responsible_person %}
+  <div class="callout">
+    <div class="callout__badge">Halal Lead</div>
+    <div class="callout__body">
+      <strong>{{ data.halal_responsible_person.name }}</strong>
+      {{ data.halal_responsible_person.title or "Chuyên viên phụ trách Halal" }}
+      {% if data.halal_responsible_person.email %}
+      <br><span class="dim">{{ data.halal_responsible_person.email }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+{# ───────────── Custom sections from cfg ───────────── #}
+{% set _custom = cfg.custom_sections or [] %}
+{% if _custom %}
+<section class="section">
+  <div class="section-opener">
+    <div class="section-opener__num">04</div>
+    <div class="section-opener__inner">
+      <div class="section-opener__eyebrow">Bổ sung</div>
+      <div class="section-opener__title">Nội dung tuỳ chỉnh</div>
+      <div class="section-opener__rule"></div>
+    </div>
+  </div>
+  {% for sec in _custom %}
+    {% if sec.title %}<h3>{{ sec.title }}</h3>{% endif %}
+    {% if sec.content %}
+      {% for line in sec.content.split('\n') %}
+        {% set stripped = line.strip() %}
+        {% if stripped.startswith('- ') %}
+          <ul class="lst"><li>{{ stripped[2:] }}</li></ul>
+        {% elif stripped %}
+          <p>{{ stripped }}</p>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{# ───────────── Free-form content ───────────── #}
+{% if content %}
+<section class="section">
+  {% for paragraph in content.split('\n\n') %}
+    {% if paragraph.strip() %}<p>{{ paragraph.strip() }}</p>{% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{# ───────────── Footer note ───────────── #}
+<section class="section">
+  <div class="callout">
+    <div class="callout__badge" style="background: var(--c-navy);">Lưu ý</div>
+    <div class="callout__body">
+      <strong>Tài liệu tự động</strong>
+      Tài liệu này được tạo bởi nền tảng AMINRA Halal vào ngày {{ data.issued_date }}.
+      Mọi thông tin được kê khai bởi <strong style="color:var(--c-emerald);">{{ data.business_name }}</strong>
+      và là cơ sở cho hồ sơ chứng nhận Halal.
+    </div>
+  </div>
+</section>
+{% endblock %}

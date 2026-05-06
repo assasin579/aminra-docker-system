@@ -1,0 +1,43 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "business_name_en": "Thien Loc Cinnamon Co., Ltd.",
+  "tax_code": "0123456789",
+  "address": "Số 12, đường Lê Lợi, phường Quang Trung, TP. Vinh, Nghệ An",
+  "factory_address": "Lô A3, KCN Bắc Vinh, TP. Vinh, Nghệ An",
+  "representative": "Nguyễn Văn Anh",
+  "founded_year": 2018,
+  "employee_count": 142,
+  "charter_capital": "12.000.000.000 VND",
+  "phone": "+84 238 1234 567",
+  "email": "info@quethienloc.vn",
+  "website": "quethienloc.vn",
+  "halal_commitment": "Chúng tôi cam kết toàn bộ quy trình thu mua, sơ chế, đóng gói quế xuất khẩu tuân thủ tiêu chuẩn Halal MS 1500:2019 — không sử dụng nguyên liệu Haram, có khu vực sản xuất tách biệt và đội ngũ nhân sự được đào tạo Halal định kỳ.",
+  "halal_responsible_person": {
+    "name": "Trần Thị Bình",
+    "title": "Giám đốc Đảm bảo Chất lượng",
+    "email": "qa@quethienloc.vn"
+  },
+  "business_activities": [
+    "Trồng và thu mua quế hữu cơ tại vùng nguyên liệu Quỳ Châu, Nghệ An",
+    "Sơ chế, sấy khô, phân loại quế thanh và quế bột",
+    "Đóng gói và xuất khẩu sang thị trường Trung Đông, Nam Á"
+  ],
+  "products": [
+    {
+      "name": "Quế thanh xuất khẩu loại 1",
+      "description": "Vỏ quế nguyên dài 25-40cm, độ dày 1.5-2mm, hàm lượng tinh dầu ≥ 2.5%",
+      "annual_output": "180 tấn"
+    },
+    {
+      "name": "Bột quế tinh chế",
+      "description": "Bột quế xay mịn, đóng gói 500g/túi PE thực phẩm, đạt HACCP",
+      "annual_output": "60 tấn"
+    },
+    {
+      "name": "Tinh dầu quế",
+      "description": "Chiết xuất hơi nước, độ tinh khiết ≥ 75%, đóng chai thuỷ tinh tối màu",
+      "annual_output": "1.2 tấn"
+    }
+  ],
+  "issued_date": "2026-05-05"
+}
