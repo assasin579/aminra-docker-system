@@ -28,6 +28,7 @@ from services.pdf_data_aggregator import (
 from services.pdf_filter_pipeline import (
     FilterPipeline,
     FormatFilter,
+    PlaceholderFillerFilter,
     RenderContext,
     SourceMergeFilter,
     TruncationFilter,
@@ -95,7 +96,7 @@ class TestValidationFilter:
     def test_unimplemented_doc_type_passes_through(self):
         # When schema is not registered (None), filter doesn't crash —
         # downstream router returns 501 with a clear message.
-        b = make_bundle(payload={"any": 1}, doc_type="halal_policy")  # no schema yet
+        b = make_bundle(payload={"any": 1}, doc_type="ingredient_raw_material")  # Group 3 — not yet
         ctx = ValidationFilter().apply(b, empty_ctx(b))
         assert ctx.data == {"any": 1}
 
@@ -281,6 +282,93 @@ class TestTruncationFilter:
         assert out.data["address"] is None
 
 
+# ── PlaceholderFillerFilter ────────────────────────────────────────────────
+
+
+class TestPlaceholderFillerFilter:
+    def test_fills_empty_fields_from_curated_data(self):
+        b = make_bundle(doc_type="company_profile")
+        ctx = empty_ctx(b)
+        ctx.data = {"business_name": "Verify"}     # only required field
+        out = PlaceholderFillerFilter().apply(b, ctx)
+        # Address / phone / etc. were missing → filled with placeholder
+        assert out.data["address"]
+        assert out.data["phone"]
+        assert "halal_commitment" in out.data
+        # business_name is PROTECTED — stays as user data
+        assert out.data["business_name"] == "Verify"
+
+    def test_real_data_wins_over_placeholder(self):
+        b = make_bundle(doc_type="company_profile")
+        ctx = empty_ctx(b)
+        ctx.data = {
+            "business_name": "Verify",
+            "address": "Số 99 Real Street",          # real
+            "phone": "0987654321",                    # real
+        }
+        out = PlaceholderFillerFilter().apply(b, ctx)
+        assert out.data["address"] == "Số 99 Real Street"     # NOT overridden
+        assert out.data["phone"] == "0987654321"               # NOT overridden
+
+    def test_protected_keys_never_replaced(self):
+        """business_name, *_date are NEVER touched even if empty."""
+        b = make_bundle(doc_type="company_profile")
+        ctx = empty_ctx(b)
+        ctx.data = {"business_name": ""}             # empty string — still protected
+        out = PlaceholderFillerFilter().apply(b, ctx)
+        assert out.data["business_name"] == ""        # untouched
+
+    def test_disable_via_cfg_flag(self):
+        b = make_bundle(doc_type="company_profile")
+        ctx = empty_ctx(b)
+        ctx.cfg["disable_placeholder_filler"] = True
+        ctx.data = {"business_name": "X"}
+        out = PlaceholderFillerFilter().apply(b, ctx)
+        assert "address" not in out.data              # nothing filled
+
+    def test_unknown_doc_type_no_op(self):
+        b = make_bundle(doc_type="totally_made_up")
+        ctx = empty_ctx(b)
+        ctx.data = {"business_name": "X"}
+        out = PlaceholderFillerFilter().apply(b, ctx)
+        assert out.data == {"business_name": "X"}      # no fallback exists
+
+    def test_filled_fields_telemetry(self):
+        b = make_bundle(doc_type="company_profile")
+        ctx = empty_ctx(b)
+        ctx.data = {"business_name": "Verify"}
+        out = PlaceholderFillerFilter().apply(b, ctx)
+        filled = out.cfg.get("_placeholder_filled_fields") or []
+        assert isinstance(filled, list)
+        assert len(filled) > 0
+        assert "business_name" not in filled            # protected, not in list
+
+    def test_sop_variants_use_per_type_purpose(self):
+        """Different SOPs get different purpose text from placeholder data."""
+        ctx_a = empty_ctx(make_bundle(doc_type="sop_raw_material_receiving"))
+        ctx_a.data = {"business_name": "X"}
+        out_a = PlaceholderFillerFilter().apply(
+            make_bundle(doc_type="sop_raw_material_receiving"), ctx_a,
+        )
+        ctx_b = empty_ctx(make_bundle(doc_type="sop_complaint_recall"))
+        ctx_b.data = {"business_name": "X"}
+        out_b = PlaceholderFillerFilter().apply(
+            make_bundle(doc_type="sop_complaint_recall"), ctx_b,
+        )
+        assert out_a.data["purpose"] != out_b.data["purpose"]
+        assert "nguyên liệu" in out_a.data["purpose"].lower()
+        assert "khiếu nại" in out_b.data["purpose"].lower() or "thu hồi" in out_b.data["purpose"].lower()
+
+    def test_halal_manual_aliases_has_manual(self):
+        for dt in ("has_manual", "halal_manual"):
+            b = make_bundle(doc_type=dt)
+            ctx = empty_ctx(b)
+            ctx.data = {"business_name": "X"}
+            out = PlaceholderFillerFilter().apply(b, ctx)
+            assert out.data["introduction"]
+            assert out.data["chapters"]
+
+
 # ── WatermarkFilter ────────────────────────────────────────────────────────
 
 
@@ -312,9 +400,10 @@ class TestPipeline:
         })
         pipeline = FilterPipeline()
         ctx = pipeline.run(b, title="My Doc", title_default="default")
-        # All 5 default filters applied in declared order
+        # All 6 default filters applied in declared order
         assert ctx.filters_applied == [
-            "validation", "source_merge", "format", "truncation", "watermark",
+            "validation", "source_merge", "placeholder_filler",
+            "format", "truncation", "watermark",
         ]
 
     def test_telemetry_durations_recorded(self):

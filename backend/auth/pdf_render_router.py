@@ -271,6 +271,9 @@ async def render_pdf(
             "filters_applied": ctx.filters_applied,
             "filter_durations_ms": ctx.filter_durations_ms,
             "sources_versions": bundle.sources_versions,
+            # Surfaces gaps in tenant data — operators monitor this metric
+            # to nudge incomplete profiles toward completion.
+            "placeholder_filled_fields": ctx.cfg.get("_placeholder_filled_fields", []),
         }, request=request,
     )
 

@@ -27,6 +27,7 @@ from typing import Any, Literal, Optional, Protocol
 from pydantic import ValidationError
 
 from services.pdf_data_aggregator import RawDataBundle
+from services.pdf_placeholder_data import get_for as get_placeholder_for
 from services.pdf_render_schemas import get_schema
 
 log = logging.getLogger("aminra.pdf_filters")
@@ -159,6 +160,70 @@ class SourceMergeFilter:
         return ctx
 
 
+class PlaceholderFillerFilter:
+    """Fill missing/empty fields with curated Halal-domain placeholder content.
+
+    Order of precedence (real data ALWAYS wins):
+        admin_cfg defaults < tenant DB < submission < request payload < THIS FILTER
+
+    Wait — actually this filter runs AFTER SourceMergeFilter. So all real
+    sources have had their chance. We only fill keys whose value is None,
+    empty string, or empty list / dict — the gaps that would otherwise
+    render as "—" all over the page.
+
+    Identity fields (business_name, *_date) are NEVER touched: they must
+    always come from the actual user. Likewise, the filter is bypassed
+    entirely when `cfg.disable_placeholder_filler = True` (used by
+    issuance-grade certificates that must reflect only verified data).
+
+    Placeholder source: services.pdf_placeholder_data (curated, decoupled
+    from tests/fixtures so visual regression baselines can evolve
+    independently from production fallback content).
+    """
+    name = "placeholder_filler"
+
+    # Keys that must NEVER be replaced — even if user data is somehow empty,
+    # we'd rather fail loudly than fake an identity.
+    PROTECTED_KEYS = frozenset({
+        "business_name",
+        "business_name_en",
+        "issued_date",
+        "effective_date",
+        "review_date",
+        "tenant_id",
+    })
+
+    def apply(self, bundle: RawDataBundle, ctx: RenderContext) -> RenderContext:
+        if ctx.cfg.get("disable_placeholder_filler"):
+            return ctx
+
+        fallback = get_placeholder_for(bundle.doc_type)
+        if not fallback:
+            return ctx
+
+        filled: list[str] = []
+        for key, fb_value in fallback.items():
+            if key in self.PROTECTED_KEYS:
+                continue
+            current = ctx.data.get(key)
+            # Real data of any non-empty form wins
+            if current not in (None, "", [], {}):
+                continue
+            ctx.data[key] = fb_value
+            filled.append(key)
+
+        if filled:
+            log.info(
+                "[filter:placeholder_filler] doc_type=%s filled=%d %s",
+                bundle.doc_type, len(filled), filled,
+            )
+            # Stash for audit_log — surfaced via router metadata so
+            # operators can spot tenants whose profiles need attention.
+            ctx.cfg["_placeholder_filled_fields"] = filled
+
+        return ctx
+
+
 class FormatFilter:
     """Locale-aware string transforms — vi-VN date/currency/phone/address.
 
@@ -283,6 +348,7 @@ class WatermarkFilter:
 DEFAULT_PIPELINE: list[DesignFilter] = [
     ValidationFilter(),
     SourceMergeFilter(),
+    PlaceholderFillerFilter(),    # fills gaps left by real sources
     FormatFilter(),
     TruncationFilter(),
     WatermarkFilter(),
