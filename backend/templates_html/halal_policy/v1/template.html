@@ -1,0 +1,138 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, pull_quote %}
+
+{% block extra_css %}<link rel="stylesheet" href="{{ asset('halal_policy/v1/style.css') }}">{% endblock %}
+
+{% block content %}
+
+{# ────────── COVER ────────── #}
+{{ doc_cover(
+    title="Chính sách Halal",
+    eyebrow="Halal Policy Statement",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã chính sách", "value": data.get('policy_id') or "POL-HAL-001"},
+      {"label": "Phiên bản",     "value": data.get('version') or "1.0"},
+      {"label": "Hiệu lực",      "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+{# ────────── 01 · Sứ mệnh & Tầm nhìn ────────── #}
+{% if data.get('mission_statement') or data.get('vision_statement') %}
+<section class="section">
+  {{ section_opener(1, "Mission & Vision", "Sứ mệnh và Tầm nhìn") }}
+  {% if data.get('mission_statement') %}
+    <h3>Sứ mệnh</h3>
+    {{ lede(data['mission_statement']) }}
+  {% endif %}
+  {% if data.get('vision_statement') %}
+    <h3>Tầm nhìn</h3>
+    {{ lede(data['vision_statement']) }}
+  {% endif %}
+</section>
+{% endif %}
+
+{# ────────── 02 · Cam kết Halal (pull-quote) ────────── #}
+<section class="section">
+  {{ section_opener(2, "Halal Commitment", "Tuyên bố cam kết Halal") }}
+  {{ pull_quote(data.halal_commitment, cite=data.business_name ~ " — Ban lãnh đạo") }}
+</section>
+
+{# ────────── 03 · Phạm vi áp dụng ────────── #}
+{% if data.get('scope_of_application') %}
+<section class="section">
+  {{ section_opener(3, "Scope", "Phạm vi áp dụng") }}
+  <p>{{ data['scope_of_application'] }}</p>
+</section>
+{% endif %}
+
+{# ────────── 04 · Các điều khoản cam kết ────────── #}
+{% if data.get('commitment_clauses') %}
+<section class="section">
+  {{ section_opener(4, "Commitment Clauses", "Các điều khoản cam kết") }}
+  {{ lede("Để hiện thực hóa cam kết Halal, ban lãnh đạo " ~ data.business_name ~ " tuyên bố và cam kết tuân thủ các điều khoản sau đây trong mọi hoạt động của doanh nghiệp:") }}
+
+  {% for c in data['commitment_clauses'] %}
+  <div class="clause">
+    <div class="clause__num">Điều {{ "%02d"|format(c.clause_no) }}</div>
+    <div class="clause__body">
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.content }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{# ────────── 05 · Ban Halal nội bộ ────────── #}
+{% if data.get('halal_committee') %}
+<section class="section">
+  {{ section_opener(5, "Halal Committee", "Ban Halal nội bộ (Internal Halal Committee)") }}
+  {{ lede("Ban Halal nội bộ chịu trách nhiệm giám sát việc thực thi chính sách Halal trong toàn bộ doanh nghiệp. Thành viên ban được Tổng giám đốc bổ nhiệm và báo cáo trực tiếp cho ban lãnh đạo.") }}
+
+  {% set committee_rows = [] %}
+  {% for m in data['halal_committee'] %}
+    {% set _ = committee_rows.append([m.role, m.name, m.get('department') or "—", m.get('appointed_date') or "—"]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Vai trò",      "width": "26%"},
+        {"label": "Họ tên"},
+        {"label": "Phòng ban",    "width": "22%"},
+        {"label": "Ngày bổ nhiệm","width": "16%"},
+      ],
+      rows=committee_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── 06 · Tài liệu tham khảo ────────── #}
+{% if data.get('references') %}
+<section class="section">
+  {{ section_opener(6, "References", "Tài liệu tham khảo và tiêu chuẩn áp dụng") }}
+  {{ bullet_list(data['references']) }}
+</section>
+{% endif %}
+
+{# ────────── 07 · Cam kết cải tiến liên tục ────────── #}
+<section class="section">
+  {{ section_opener(7, "Continuous Improvement", "Cam kết cải tiến liên tục") }}
+  <p>Chúng tôi cam kết duy trì và cải tiến liên tục Hệ thống Đảm bảo Halal (Halal Assurance System — HAS) thông qua:</p>
+  {{ bullet_list([
+    "Đánh giá nội bộ định kỳ tối thiểu 06 tháng/lần để xác định cơ hội cải tiến.",
+    "Đào tạo và nâng cao năng lực Halal cho toàn bộ nhân sự liên quan ít nhất 04 giờ/năm.",
+    "Cập nhật quy trình và tài liệu khi có thay đổi tiêu chuẩn của tổ chức chứng nhận hoặc cơ quan quản lý.",
+    "Lắng nghe và phản hồi mọi góp ý từ khách hàng, đối tác và cơ quan kiểm tra.",
+    "Đầu tư công nghệ và cơ sở vật chất để giảm thiểu rủi ro tạp nhiễm Haram.",
+  ]) }}
+</section>
+
+{# ────────── 08 · Phê duyệt và chữ ký ────────── #}
+<section class="section">
+  {{ section_opener(8, "Approval & Signatures", "Phê duyệt và chữ ký") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",         "value": data.effective_date},
+    {"label": "Ngày rà soát kế tiếp",  "value": data.get('review_date') or "—"},
+    {"label": "Ngày phát hành",        "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% if data.get('signatories') %}
+  <h3>Người ký xác nhận</h3>
+  <div class="signature-grid">
+    {% for s in data['signatories'] %}
+    <div class="signature-cell">
+      <div class="signature-line"></div>
+      <div class="signature-name">{{ s.name }}</div>
+      <div class="signature-title">{{ s.title }}</div>
+      {% if s.get('signature_date') %}<div class="signature-date">Ngày ký: {{ s['signature_date'] }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% set fnote %}<strong>Tài liệu chính thức</strong>Chính sách này được ban lãnh đạo <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong> phê duyệt và có hiệu lực kể từ ngày ghi trên. Mọi sửa đổi phải được Ban Halal nội bộ và Tổng giám đốc đồng phê duyệt.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

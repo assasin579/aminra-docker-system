@@ -1,0 +1,165 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, pull_quote %}
+
+{% block extra_css %}<link rel="stylesheet" href="{{ asset('has_manual/v1/style.css') }}">{% endblock %}
+
+{% block content %}
+
+{# ────────── COVER ────────── #}
+{{ doc_cover(
+    title="Sổ tay Hệ thống Đảm bảo Halal",
+    eyebrow="Halal Assurance System Manual",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã sổ tay",  "value": data.get('manual_id') or "MAN-HAS-001"},
+      {"label": "Phiên bản",  "value": data.get('version') or "1.0"},
+      {"label": "Hiệu lực",   "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+{# ────────── 01 · Giới thiệu ────────── #}
+<section class="section">
+  {{ section_opener(1, "Introduction", "Giới thiệu") }}
+  {% if data.get('introduction') %}
+    {{ lede(data['introduction']) }}
+  {% else %}
+    {{ lede("Sổ tay này mô tả Hệ thống Đảm bảo Halal (Halal Assurance System — HAS) tại " ~ data.business_name ~ ", thiết lập theo MS 1500:2019 và MPPHM 2020. Tài liệu là cấu trúc cốt lõi cho hệ thống quản lý Halal, làm khung tham chiếu cho các SOP và biểu mẫu vận hành.") }}
+  {% endif %}
+</section>
+
+{# ────────── 02 · Bảng từ viết tắt ────────── #}
+{% if data.get('abbreviations') %}
+<section class="section">
+  {{ section_opener(2, "Abbreviations", "Bảng từ viết tắt") }}
+  {% set abbr_rows = [] %}
+  {% for a in data['abbreviations'] %}
+    {% set _ = abbr_rows.append([a.abbr, a.meaning]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Viết tắt", "width": "20%"},
+        {"label": "Ý nghĩa"},
+      ],
+      rows=abbr_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── 03 · Tóm tắt Chính sách Halal ────────── #}
+{% if data.get('halal_policy_summary') %}
+<section class="section">
+  {{ section_opener(3, "Halal Policy", "Chính sách Halal (tóm tắt)") }}
+  {{ pull_quote(data['halal_policy_summary'], cite=data.business_name ~ " — Ban lãnh đạo") }}
+  <p class="dim">Chi tiết đầy đủ: xem tài liệu Chính sách Halal (POL-HAL-001) — ban hành cùng sổ tay này.</p>
+</section>
+{% endif %}
+
+{# ────────── 04 · Ban Halal nội bộ ────────── #}
+{% if data.get('halal_committee') %}
+<section class="section">
+  {{ section_opener(4, "Halal Committee", "Ban Halal nội bộ") }}
+  {{ lede("Ban Halal nội bộ (Internal Halal Committee — IHC) là cơ quan giám sát thực thi HAS. Báo cáo trực tiếp cho Tổng giám đốc, họp định kỳ ít nhất 1 lần/quý.") }}
+
+  {% set committee_rows = [] %}
+  {% for m in data['halal_committee'] %}
+    {% set _ = committee_rows.append([m.role, m.name, m.get('department') or "—", m.get('appointed_date') or "—"]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Vai trò",       "width": "26%"},
+        {"label": "Họ tên"},
+        {"label": "Phòng ban",     "width": "22%"},
+        {"label": "Ngày bổ nhiệm", "width": "16%"},
+      ],
+      rows=committee_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── 05+ · Chương nội dung HAS ────────── #}
+{% if data.get('chapters') %}
+{% for ch in data['chapters'] %}
+<section class="section">
+  {{ section_opener(4 + ch.chapter_no, "Chapter " ~ ch.chapter_no, ch.title) }}
+  {% for paragraph in ch.content.split('\n\n') %}
+    {% if paragraph.strip() %}<p>{{ paragraph.strip() }}</p>{% endif %}
+  {% endfor %}
+
+  {% if ch.get('cross_refs') %}
+  <div class="cross-refs">
+    <div class="cross-refs__label">Tham chiếu chéo (Cross-references):</div>
+    <div class="cross-refs__list">
+      {% for ref in ch['cross_refs'] %}<span class="cross-refs__item">{{ ref }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+{% endif %}
+
+{# ────────── Tài liệu pháp quy + SOP tham chiếu ────────── #}
+{% if data.get('governing_documents') or data.get('referenced_sops') %}
+<section class="section">
+  {{ section_opener(99, "Governing Documents", "Tài liệu pháp quy và SOP tham chiếu") }}
+
+  {% if data.get('governing_documents') %}
+  <h3>Tài liệu pháp quy chi phối</h3>
+  {{ bullet_list(data['governing_documents']) }}
+  {% endif %}
+
+  {% if data.get('referenced_sops') %}
+  <h3>SOP và biểu mẫu liên quan</h3>
+  {{ bullet_list(data['referenced_sops']) }}
+  {% endif %}
+</section>
+{% endif %}
+
+{# ────────── Lịch sử sửa đổi ────────── #}
+{% if data.get('revision_history') %}
+<section class="section">
+  {{ section_opener(100, "Revision History", "Lịch sử sửa đổi tài liệu") }}
+  {% set rev_rows = [] %}
+  {% for r in data['revision_history'] %}
+    {% set _ = rev_rows.append([r.version, r.revision_date, r.change_summary, r.approver]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Phiên bản",      "width": "12%"},
+        {"label": "Ngày sửa",       "width": "16%"},
+        {"label": "Nội dung sửa đổi"},
+        {"label": "Người phê duyệt","width": "22%"},
+      ],
+      rows=rev_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── Phê duyệt và chữ ký ────────── #}
+<section class="section">
+  {{ section_opener(101, "Approval", "Phê duyệt và chữ ký") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",         "value": data.effective_date},
+    {"label": "Ngày rà soát kế tiếp",  "value": data.get('review_date') or "—"},
+    {"label": "Ngày phát hành",        "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% if data.get('signatories') %}
+  <h3>Người ký xác nhận</h3>
+  <div class="signature-grid">
+    {% for s in data['signatories'] %}
+    <div class="signature-cell">
+      <div class="signature-line"></div>
+      <div class="signature-name">{{ s.name }}</div>
+      <div class="signature-title">{{ s.title }}</div>
+      {% if s.get('signature_date') %}<div class="signature-date">Ngày ký: {{ s['signature_date'] }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% set fnote %}<strong>Tài liệu kiểm soát</strong>Sổ tay này là tài liệu kiểm soát của <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong>. Mọi bản sao không được kiểm soát bị coi là tham khảo và không có giá trị thực thi. Phiên bản hiệu lực được duy trì tại nền tảng AMINRA Halal.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

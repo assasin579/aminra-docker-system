@@ -85,10 +85,29 @@ _REGISTRY: dict[str, TemplateEntry] = {
         title_default="SOP — Khiếu nại và thu hồi",
     ),
 
-    # Phase 2 remaining — Groups 2-5 (placeholder until template ships)
-    "halal_policy": None,
-    "has_manual": None,
-    "halal_manual": None,
+    # ── Group 2 — Halal Policy + HAS Manual ─────────────────────────────
+    "halal_policy": TemplateEntry(
+        doc_type="halal_policy",
+        template_relpath="halal_policy/v1/template.html",
+        version="v1",
+        title_default="Chính sách Halal",
+    ),
+    # has_manual + halal_manual share the same template (HAS = Halal
+    # Assurance System; the two slugs are JAKIM/MUI naming variants).
+    "has_manual": TemplateEntry(
+        doc_type="has_manual",
+        template_relpath="has_manual/v1/template.html",
+        version="v1",
+        title_default="Sổ tay Hệ thống Đảm bảo Halal (HAS Manual)",
+    ),
+    "halal_manual": TemplateEntry(
+        doc_type="halal_manual",
+        template_relpath="has_manual/v1/template.html",
+        version="v1",
+        title_default="Sổ tay Halal",
+    ),
+
+    # Phase 2 remaining — Groups 3-5 (placeholder until template ships)
     "internal_halal_committee": None,
     "ingredient_raw_material": None,
     "process_flow_chart": None,

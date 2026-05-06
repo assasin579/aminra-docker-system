@@ -156,6 +156,116 @@ class SopData(BaseModel):
     issued_date: date
 
 
+# ── Halal Policy + HAS Manual (Group 2 — share committee + signatory shapes) ─
+
+
+class HalalCommitteeMember(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    name: str = Field(..., min_length=1, max_length=120)
+    role: str = Field(..., min_length=1, max_length=120)              # Chairperson, Secretary, Member
+    department: Optional[str] = Field(None, max_length=120)
+    appointed_date: Optional[date] = None
+
+
+class Signatory(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    name: str = Field(..., min_length=1, max_length=120)
+    title: str = Field(..., min_length=1, max_length=120)
+    signature_date: Optional[date] = None
+
+
+class CommitmentClause(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    clause_no: int = Field(..., ge=1, le=30)
+    title: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
+class HalalPolicyData(BaseModel):
+    """Halal Policy Statement — official commitment from leadership.
+
+    Distinct from SopData by intent: this is the company-level pledge,
+    not an operational procedure. Renders as a cover + numbered clauses
+    + signatory block — feels like an internal regulation.
+    """
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    business_name: str = Field(..., min_length=1, max_length=200)
+    policy_id: Optional[str] = Field(None, max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    version: Optional[str] = Field(None, max_length=20)
+
+    mission_statement: Optional[str] = Field(None, max_length=1500)
+    vision_statement: Optional[str] = Field(None, max_length=1500)
+
+    halal_commitment: str = Field(..., min_length=1, max_length=2500)         # marquee pull-quote
+    scope_of_application: Optional[str] = Field(None, max_length=2000)
+
+    commitment_clauses: List[CommitmentClause] = Field(default_factory=list, max_length=30)
+    halal_committee: List[HalalCommitteeMember] = Field(default_factory=list, max_length=20)
+    references: List[str] = Field(default_factory=list, max_length=30)
+
+    effective_date: date
+    review_date: Optional[date] = None
+    signatories: List[Signatory] = Field(default_factory=list, max_length=5)
+
+    issued_date: date
+
+
+class HasChapter(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    chapter_no: int = Field(..., ge=1, le=30)
+    title: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(..., min_length=1, max_length=4000)
+    cross_refs: List[str] = Field(default_factory=list, max_length=20)        # SOP-XYZ-NNN
+
+
+class AbbreviationEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    abbr: str = Field(..., min_length=1, max_length=20)
+    meaning: str = Field(..., min_length=1, max_length=300)
+
+
+class RevisionHistoryEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    version: str = Field(..., max_length=20)
+    revision_date: date
+    change_summary: str = Field(..., min_length=1, max_length=600)
+    approver: str = Field(..., min_length=1, max_length=120)
+
+
+class HasManualData(BaseModel):
+    """HAS (Halal Assurance System) Manual — top-level operating manual.
+
+    Aliased by both `has_manual` and `halal_manual` doc_types. Structured
+    by chapters; each chapter cross-references the SOPs that implement it
+    so a JAKIM auditor can navigate the document tree top-down.
+    """
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    business_name: str = Field(..., min_length=1, max_length=200)
+    manual_id: Optional[str] = Field(None, max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    version: Optional[str] = Field(None, max_length=20)
+
+    introduction: Optional[str] = Field(None, max_length=2500)
+    abbreviations: List[AbbreviationEntry] = Field(default_factory=list, max_length=40)
+
+    halal_policy_summary: Optional[str] = Field(None, max_length=2500)
+    halal_committee: List[HalalCommitteeMember] = Field(default_factory=list, max_length=20)
+
+    chapters: List[HasChapter] = Field(default_factory=list, max_length=30)
+
+    governing_documents: List[str] = Field(default_factory=list, max_length=30)
+    referenced_sops: List[str] = Field(default_factory=list, max_length=30)
+
+    revision_history: List[RevisionHistoryEntry] = Field(default_factory=list, max_length=20)
+
+    effective_date: date
+    review_date: Optional[date] = None
+    signatories: List[Signatory] = Field(default_factory=list, max_length=5)
+
+    issued_date: date
+
+
 # ── Style guide (kitchen sink — internal) ───────────────────────────────────
 
 
@@ -183,10 +293,12 @@ SUPPORTED_DOC_TYPES = {
     "sop_handling_nonconformances": SopData,
     "sop_complaint_recall": SopData,
 
-    # Phase 2 remaining (Group 2-5)
-    "halal_policy": None,
-    "has_manual": None,
-    "halal_manual": None,
+    # Group 2 — Halal Policy + HAS Manual (halal_manual aliases has_manual)
+    "halal_policy": HalalPolicyData,
+    "has_manual": HasManualData,
+    "halal_manual": HasManualData,
+
+    # Phase 2 remaining (Group 3-5)
     "internal_halal_committee": None,
     "ingredient_raw_material": None,
     "process_flow_chart": None,

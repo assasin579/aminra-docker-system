@@ -1,0 +1,75 @@
+/* Doc-specific overrides for halal_policy v1.
+ * Linter: only L3 token tweaks + layout rules. No raw hex / font-* allowed.
+ */
+
+:root {
+  --cover-title-size: 64pt;
+}
+
+/* ─── Numbered clause block (Article-style layout) ────────────────────── */
+
+.clause {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-4);
+  margin: var(--sp-3) 0;
+  padding: var(--sp-3) 0;
+  border-top: 0.5pt solid var(--c-border);
+  page-break-inside: avoid; break-inside: avoid;
+}
+.clause:first-of-type { border-top: 1pt solid var(--c-brand-accent); }
+
+.clause__num {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-brand-accent);
+  width: 22mm;
+  padding-top: 1mm;
+}
+
+.clause__body h3 {
+  margin: 0 0 var(--sp-2) 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  color: var(--c-brand-primary);
+}
+.clause__body p {
+  margin: 0;
+  line-height: var(--lh-base);
+}
+
+/* ─── Signature block (3-column grid, 60mm height each) ───────────────── */
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-5);
+  margin-top: var(--sp-4);
+  page-break-inside: avoid; break-inside: avoid;
+}
+.signature-cell {
+  text-align: center;
+  padding: var(--sp-3);
+}
+.signature-line {
+  height: 18mm;
+  border-bottom: 0.5pt solid var(--c-border);
+  margin-bottom: var(--sp-2);
+}
+.signature-name {
+  font-weight: var(--fw-bold);
+  color: var(--c-brand-primary);
+  font-size: var(--fs-body);
+}
+.signature-title {
+  font-size: var(--fs-small);
+  color: var(--c-text-muted);
+  margin-top: 1mm;
+}
+.signature-date {
+  font-size: var(--fs-tiny);
+  color: var(--c-text-soft);
+  margin-top: 1mm;
+}

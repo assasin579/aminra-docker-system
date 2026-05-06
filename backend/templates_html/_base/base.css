@@ -86,6 +86,12 @@
   --lh-tight:         1.05;
   --lh-snug:          1.25;
   --lh-base:          1.55;
+  /* Font weights — use these tokens instead of raw numbers in doc-specific CSS. */
+  --fw-regular:       400;
+  --fw-medium:        500;
+  --fw-semibold:      600;
+  --fw-bold:          700;
+  --fw-black:         900;
 
   /* Spacing scale (mm — print-native) */
   --sp-1: 1mm;  --sp-2: 2mm;  --sp-3: 3mm;  --sp-4: 5mm;

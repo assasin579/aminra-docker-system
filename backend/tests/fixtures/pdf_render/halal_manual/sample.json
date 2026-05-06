@@ -1,0 +1,123 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "manual_id": "MAN-HAS-001",
+  "version": "2.0",
+  "introduction": "Sổ tay này mô tả Hệ thống Đảm bảo Halal (Halal Assurance System — HAS) tại Công ty TNHH Quế Thiên Lộc, được thiết lập theo MS 1500:2019, MPPHM 2020 và TCVN 12944:2020. Tài liệu là cấu trúc cốt lõi cho hệ thống quản lý Halal — định nghĩa chính sách, vai trò, quy trình kiểm soát, và cơ chế cải tiến liên tục.\n\nHAS bao gồm: (1) Chính sách Halal được Ban lãnh đạo phê duyệt và cam kết; (2) Cơ cấu Ban Halal nội bộ (IHC); (3) Bộ SOP và biểu mẫu vận hành; (4) Hồ sơ lưu trữ và truy xuất nguồn gốc; (5) Quy trình audit nội bộ và rà soát của lãnh đạo; (6) Quản lý đào tạo và năng lực Halal; (7) Cơ chế xử lý không phù hợp và thu hồi.\n\nSổ tay áp dụng cho 100% nhân sự, nhà thầu phụ và đối tác chuỗi cung ứng có ký NDA Halal. Mọi sửa đổi phải được IHC + Tổng giám đốc đồng phê duyệt và cập nhật vào module Document Control của hệ thống AMINRA.",
+  "abbreviations": [
+    {"abbr": "HAS", "meaning": "Halal Assurance System — Hệ thống Đảm bảo Halal"},
+    {"abbr": "IHC", "meaning": "Internal Halal Committee — Ban Halal nội bộ"},
+    {"abbr": "SOP", "meaning": "Standard Operating Procedure — Quy trình vận hành chuẩn"},
+    {"abbr": "CCP", "meaning": "Critical Control Point — Điểm tới hạn (HACCP)"},
+    {"abbr": "NCR", "meaning": "Non-Conformance Report — Phiếu báo cáo không phù hợp"},
+    {"abbr": "CAR", "meaning": "Corrective Action Request — Yêu cầu hành động khắc phục"},
+    {"abbr": "PAR", "meaning": "Preventive Action Request — Yêu cầu hành động phòng ngừa"},
+    {"abbr": "ASL", "meaning": "Approved Supplier List — Danh sách nhà cung cấp đã duyệt"},
+    {"abbr": "BPR", "meaning": "Batch Production Record — Hồ sơ sản xuất lô"},
+    {"abbr": "FEFO", "meaning": "First Expired First Out — Hết hạn sớm xuất trước"},
+    {"abbr": "JAKIM", "meaning": "Department of Islamic Development Malaysia"},
+    {"abbr": "HCA-VN", "meaning": "Halal Certification Authority Vietnam — Tổ chức Chứng nhận Halal Việt Nam"},
+    {"abbr": "MUI", "meaning": "Majelis Ulama Indonesia — Hội đồng Ulama Indonesia"},
+    {"abbr": "MS", "meaning": "Malaysian Standard — Tiêu chuẩn Malaysia"},
+    {"abbr": "TCVN", "meaning": "Tiêu chuẩn quốc gia Việt Nam"},
+    {"abbr": "MPPHM", "meaning": "Manual Prosedur Pensijilan Halal Malaysia (JAKIM 2020)"},
+    {"abbr": "Najis", "meaning": "Vật ô uế theo Sharia (3 cấp: Mughallazah, Mutawassitah, Mukhaffafah)"},
+    {"abbr": "Sertu", "meaning": "Quy trình tẩy uế đặc biệt theo Sharia (rửa 7 lần với 1 lần dùng đất sạch)"},
+    {"abbr": "ATP", "meaning": "Adenosine Triphosphate test — đo hiệu quả vệ sinh (đơn vị RLU)"},
+    {"abbr": "QC / QA", "meaning": "Quality Control / Quality Assurance — Kiểm soát / Đảm bảo chất lượng"}
+  ],
+  "halal_policy_summary": "Chúng tôi cam kết trước Allah SWT, người tiêu dùng Hồi giáo và các Tổ chức Chứng nhận Halal rằng mọi sản phẩm mang thương hiệu Thiên Lộc tuyệt đối tuân thủ luật Sharia về Halal — không Haram, không Najis, được chế biến trong cơ sở phân tách đúng MPPHM 2020.",
+  "halal_committee": [
+    {"role": "Chủ tịch Ban (Chairperson)", "name": "Trần Thị Bình", "department": "Đảm bảo chất lượng", "appointed_date": "2024-01-15"},
+    {"role": "Thư ký Ban (Secretary)", "name": "Nguyễn Hồng Quân", "department": "Halal Compliance", "appointed_date": "2024-01-15"},
+    {"role": "Thành viên — Sản xuất", "name": "Lê Văn Hải", "department": "Sản xuất", "appointed_date": "2024-01-15"},
+    {"role": "Thành viên — Kho & Logistics", "name": "Phạm Thị Lan", "department": "Logistics & Kho", "appointed_date": "2024-01-15"},
+    {"role": "Thành viên — R&D", "name": "Hoàng Minh Đức", "department": "Nghiên cứu phát triển", "appointed_date": "2024-04-01"},
+    {"role": "Sharia Advisor (Hồi giáo)", "name": "Mohammad Yusuf bin Abdullah", "department": "Cố vấn độc lập", "appointed_date": "2024-04-01"},
+    {"role": "Thành viên — Mua hàng", "name": "Đỗ Thị Mai", "department": "Mua hàng", "appointed_date": "2025-07-01"}
+  ],
+  "chapters": [
+    {
+      "chapter_no": 1,
+      "title": "Phạm vi và mục đích Hệ thống Đảm bảo Halal",
+      "content": "Hệ thống Đảm bảo Halal (HAS) tại Quế Thiên Lộc bao quát toàn bộ chu trình từ thu mua nguyên liệu đến giao hàng sản phẩm cuối — đảm bảo mọi sản phẩm mang thương hiệu Thiên Lộc đạt tiêu chuẩn Halal MS 1500:2019.\n\nMục đích cốt lõi của HAS: (1) Ngăn chặn tạp nhiễm Haram và Najis trong toàn bộ chuỗi cung ứng; (2) Đảm bảo truy xuất nguồn gốc 100% cho mọi lô sản phẩm; (3) Tạo niềm tin với người tiêu dùng Hồi giáo và Tổ chức Chứng nhận; (4) Đáp ứng yêu cầu pháp lý tại các thị trường xuất khẩu (UAE, Saudi Arabia, Indonesia, Malaysia).\n\nHAS không chỉ là tài liệu — đó là cam kết hành động được phản ánh trong văn hóa doanh nghiệp, KPI, và hệ thống kỷ luật nội bộ.",
+      "cross_refs": ["POL-HAL-001", "MS 1500:2019 §4"]
+    },
+    {
+      "chapter_no": 2,
+      "title": "Thông tin doanh nghiệp",
+      "content": "Công ty TNHH Quế Thiên Lộc được thành lập năm 2018, có trụ sở tại Số 12, đường Lê Lợi, phường Quang Trung, TP. Vinh, Nghệ An. Nhà máy chính tại Lô A3, KCN Bắc Vinh với diện tích 8.500m² — bao gồm khu chế biến, kho nguyên liệu, kho thành phẩm, văn phòng, và phòng thí nghiệm QC.\n\nQuy mô lao động: 142 nhân viên (95 trực tiếp sản xuất, 47 gián tiếp). Sản phẩm chính: quế thanh xuất khẩu loại 1 (180 tấn/năm), bột quế tinh chế (60 tấn/năm), tinh dầu quế (1.2 tấn/năm). Thị trường chính: UAE, Saudi Arabia, Indonesia, Malaysia, Thái Lan.\n\nGiấy phép kinh doanh số 0123456789. Chứng nhận Halal HCA-VN cấp lần đầu 2020, gia hạn 2023, hiện hiệu lực đến 2027.",
+      "cross_refs": ["company_profile/v1"]
+    },
+    {
+      "chapter_no": 3,
+      "title": "Cấu trúc tổ chức Halal và phân quyền",
+      "content": "Tổ chức Halal tại Quế Thiên Lộc được thiết kế theo nguyên tắc tách bạch quyền lực — Halal Lead báo cáo trực tiếp Tổng giám đốc, không trực thuộc bất kỳ phòng ban vận hành nào, đảm bảo độc lập trong quyết định.\n\nBan Halal nội bộ (IHC) có 7 thành viên với đa dạng chuyên môn — bao gồm 1 Sharia Advisor là người Hồi giáo có hiểu biết luật Sharia. IHC họp định kỳ 1 lần/quý + họp khẩn khi có sự cố Critical. Quyết định của IHC được lưu trong AMINRA, báo cáo Tổng giám đốc và Hội đồng cố vấn Halal.\n\nQuyền hạn quan trọng của Halal Lead: (a) Dừng dây chuyền nếu phát hiện vi phạm Halal Critical; (b) Phê duyệt/từ chối nguyên liệu, hóa chất; (c) Đại diện công ty làm việc với cơ quan chứng nhận; (d) Phê duyệt mọi thay đổi SOP liên quan Halal.",
+      "cross_refs": ["POL-HAL-001 §6"]
+    },
+    {
+      "chapter_no": 4,
+      "title": "Quy trình kiểm soát Halal — kiến trúc tổng thể",
+      "content": "HAS triển khai 6 quy trình SOP cốt lõi vận hành đồng bộ:\n\n1. SOP-RAW-001 — Tiếp nhận nguyên liệu Halal: kiểm soát đầu vào, xác minh chứng nhận nhà cung cấp, lấy mẫu lưu, phân loại lô.\n\n2. SOP-STO-001 — Lưu trữ và phân tách: phân khu kho Halal/non-Halal/Cách ly, kiểm tra phân tách hàng tuần, swab test môi trường tháng.\n\n3. SOP-PRO-001 — Vận hành sản xuất: HACCP CCP1 (sấy ≥60°C × 30min) + CCP2 (đóng gói leak test), Batch Production Record điện tử trong AMINRA.\n\n4. SOP-CLN-001 — Vệ sinh và Sertu: vệ sinh ngày/tuần/tháng, Sertu 7 lần khi tiếp xúc Najis Mughallazah, ATP <100 RLU (<50 sau Sertu).\n\n5. SOP-NCR-001 — Xử lý không phù hợp: 5-Why root cause, Critical/Major/Minor matrix, CAR + PAR cross-functional.\n\n6. SOP-RCL-001 — Khiếu nại và thu hồi: Class I/II/III recall, mock recall mỗi 6 tháng (≤4h trace), trace-forward + trace-back.\n\nMỗi SOP có owner, deadline rà soát, và biểu mẫu lưu trữ tương ứng. Tổng cộng 18 biểu mẫu (BM) chuẩn được kiểm soát trong Document Control.",
+      "cross_refs": ["SOP-RAW-001", "SOP-STO-001", "SOP-PRO-001", "SOP-CLN-001", "SOP-NCR-001", "SOP-RCL-001"]
+    },
+    {
+      "chapter_no": 5,
+      "title": "Audit nội bộ và rà soát của lãnh đạo",
+      "content": "Audit nội bộ được thực hiện 6 tháng/lần bởi đội audit gồm 2-3 thành viên IHC + 1 chuyên gia ngoài (luân phiên giữa các IHC khu vực). Phạm vi audit: 6 SOP cốt lõi + Document Control + Training + Records Management.\n\nQuy trình audit theo ISO 19011: lập kế hoạch → thông báo → audit hiện trường → báo cáo → theo dõi hành động khắc phục. Phát hiện được phân loại Major/Minor/Observation. Mọi Major phải có CAR đóng trong 30 ngày.\n\nRà soát của lãnh đạo (Management Review) tổ chức 12 tháng/lần — tham gia bởi Tổng GĐ, Halal Lead, đại diện các phòng ban liên quan. Đầu vào: kết quả audit nội bộ, NCR & CAR, KPI Halal, phản hồi khách hàng, thay đổi tiêu chuẩn cơ quan. Đầu ra: kế hoạch cải tiến năm tới, ngân sách Halal, KPI mới.",
+      "cross_refs": ["BM-AUD-01", "BM-AUD-02", "BM-AUD-03"]
+    },
+    {
+      "chapter_no": 6,
+      "title": "Quản lý tài liệu (Document Control)",
+      "content": "Mọi tài liệu HAS được kiểm soát tập trung trong module Document Control của hệ thống AMINRA. Mỗi tài liệu có: mã định danh, phiên bản, ngày hiệu lực, ngày rà soát kế tiếp, owner, người phê duyệt.\n\nQuy trình thay đổi tài liệu: (1) Đề xuất thay đổi → (2) IHC đánh giá tác động → (3) Phê duyệt bởi Halal Lead (thay đổi nhỏ) hoặc Tổng GĐ (thay đổi lớn) → (4) Cập nhật trong AMINRA → (5) Đào tạo lại nhân sự liên quan → (6) Phiên bản cũ chuyển sang Archive (giữ tham chiếu).\n\nMọi bản in cứng đều có dấu 'CONTROLLED COPY' với số sê-ri. Bản không có dấu là tham khảo, không có hiệu lực thực thi.",
+      "cross_refs": ["REG-AMI-2024-03"]
+    },
+    {
+      "chapter_no": 7,
+      "title": "Đào tạo và quản lý năng lực",
+      "content": "Mọi nhân sự liên quan trực tiếp Halal phải hoàn thành đào tạo bắt buộc trước khi bắt đầu công việc:\n\n- Nhân sự sản xuất, kho, vệ sinh: 8 giờ — Halal Awareness + SOP cụ thể.\n- Halal Lead: chứng chỉ Halal Executive Course (HCA-VN hoặc Salam Standards).\n- Sharia Advisor: tốt nghiệp Islamic Studies hoặc fatwa cố vấn độc lập.\n- Tổng GĐ + Quản đốc: 4 giờ — Halal Leadership.\n\nĐào tạo lại 4 giờ/năm cho tất cả; cập nhật ngay khi SOP thay đổi. Hồ sơ đào tạo lưu trong AMINRA module HR Training.\n\nĐánh giá năng lực: kiểm tra lý thuyết + thực hành đạt 80% mới được cấp thẻ Halal Operator. Thẻ tái đánh giá 2 năm/lần.",
+      "cross_refs": ["BM-HR-02"]
+    },
+    {
+      "chapter_no": 8,
+      "title": "Cải tiến liên tục và KPI Halal",
+      "content": "HAS được rà soát toàn diện 12 tháng/lần. KPI Halal báo cáo Hội đồng quản trị mỗi quý:\n\n- Tỷ lệ lô đạt Halal 100%: mục tiêu ≥ 99.5%.\n- Số NCR Critical/quý: mục tiêu = 0.\n- Thời gian truy xuất trung bình: mục tiêu ≤ 2 giờ.\n- Tỷ lệ nhân sự đạt thẻ Halal: mục tiêu 100%.\n- Kết quả audit cơ quan chứng nhận: 0 phát hiện Major.\n- Số lần Sertu thực hiện: theo dõi xu hướng (mục tiêu giảm qua đào tạo).\n\nMọi gap so với KPI được giải trình trong Management Review và đưa vào kế hoạch hành động năm tới.",
+      "cross_refs": ["BM-KPI-01"]
+    }
+  ],
+  "governing_documents": [
+    "MS 1500:2019 — Halal Food: General Requirements",
+    "MS 2424:2012 — Halal Pharmaceuticals: General Guidelines",
+    "TCVN 12944:2020 — Thực phẩm Halal — Yêu cầu chung",
+    "JAKIM Manual Prosedur Pensijilan Halal Malaysia (MPPHM 2020)",
+    "HCA-VN — Quy định cấp giấy chứng nhận Halal Việt Nam (2024)",
+    "Codex Alimentarius CAC/GL 24-1997",
+    "ISO 22000:2018 — Food Safety Management Systems",
+    "ISO 19011:2018 — Guidelines for Auditing Management Systems",
+    "Luật An toàn Thực phẩm Việt Nam 55/2010/QH12"
+  ],
+  "referenced_sops": [
+    "SOP-RAW-001 — Tiếp nhận và kiểm tra nguyên liệu Halal",
+    "SOP-STO-001 — Lưu trữ và phân tách Halal",
+    "SOP-PRO-001 — Vận hành dây chuyền sản xuất Halal",
+    "SOP-CLN-001 — Vệ sinh, làm sạch và Sertu theo chuẩn Halal",
+    "SOP-NCR-001 — Xử lý không phù hợp",
+    "SOP-RCL-001 — Tiếp nhận khiếu nại và thu hồi sản phẩm",
+    "POL-HAL-001 — Chính sách Halal (Halal Policy Statement)",
+    "BM-RAW-01 đến BM-RCL-09 — 18 biểu mẫu chuẩn"
+  ],
+  "revision_history": [
+    {"version": "1.0", "revision_date": "2024-01-15", "change_summary": "Phiên bản đầu tiên — thiết lập HAS theo MS 1500:2019.", "approver": "Nguyễn Văn Anh — Tổng GĐ"},
+    {"version": "1.1", "revision_date": "2024-07-01", "change_summary": "Bổ sung Sharia Advisor vào IHC; cập nhật Sertu protocol theo MPPHM 2020.", "approver": "Trần Thị Bình — Halal Lead"},
+    {"version": "1.2", "revision_date": "2025-01-15", "change_summary": "Thêm SOP-RCL-001; tích hợp mock recall định kỳ 6 tháng.", "approver": "Nguyễn Văn Anh — Tổng GĐ"},
+    {"version": "1.3", "revision_date": "2025-07-01", "change_summary": "Cập nhật CCP1 theo HACCP audit của HCA-VN; bổ sung KPI Halal quarterly report.", "approver": "Trần Thị Bình — Halal Lead"},
+    {"version": "2.0", "revision_date": "2026-04-01", "change_summary": "Phiên bản lớn — refactor toàn bộ theo TCVN 12944:2020; thêm Document Control điện tử trong AMINRA; cập nhật cấu trúc IHC.", "approver": "Nguyễn Văn Anh — Tổng GĐ"}
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "signatories": [
+    {"name": "Nguyễn Văn Anh", "title": "Tổng giám đốc", "signature_date": "2026-03-25"},
+    {"name": "Trần Thị Bình", "title": "Halal Lead — Chủ tịch IHC", "signature_date": "2026-03-26"}
+  ],
+  "issued_date": "2026-05-05"
+}

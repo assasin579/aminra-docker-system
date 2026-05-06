@@ -1,0 +1,77 @@
+/* Doc-specific overrides for has_manual v1.
+ * Linter: only L3 token tweaks + layout rules. No raw hex / font-* allowed.
+ */
+
+:root {
+  /* HAS Manual title is long → smaller cover title */
+  --cover-title-size: 50pt;
+}
+
+/* ─── Cross-reference block (chips of related SOP IDs) ───────────────── */
+
+.cross-refs {
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--c-paper);
+  border-radius: var(--r-sm);
+  border-left: 2pt solid var(--c-brand-accent);
+  page-break-inside: avoid; break-inside: avoid;
+}
+.cross-refs__label {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+  margin-bottom: 1.2mm;
+}
+.cross-refs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5mm;
+}
+.cross-refs__item {
+  display: inline-block;
+  padding: 0.5mm 2mm;
+  background: var(--c-surface);
+  border: 0.5pt solid var(--c-border);
+  border-radius: 100px;
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-semibold);
+  color: var(--c-brand-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Signature block (reused from halal_policy) ─────────────────────── */
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-5);
+  margin-top: var(--sp-4);
+  page-break-inside: avoid; break-inside: avoid;
+}
+.signature-cell {
+  text-align: center;
+  padding: var(--sp-3);
+}
+.signature-line {
+  height: 18mm;
+  border-bottom: 0.5pt solid var(--c-border);
+  margin-bottom: var(--sp-2);
+}
+.signature-name {
+  font-weight: var(--fw-bold);
+  color: var(--c-brand-primary);
+  font-size: var(--fs-body);
+}
+.signature-title {
+  font-size: var(--fs-small);
+  color: var(--c-text-muted);
+  margin-top: 1mm;
+}
+.signature-date {
+  font-size: var(--fs-tiny);
+  color: var(--c-text-soft);
+  margin-top: 1mm;
+}

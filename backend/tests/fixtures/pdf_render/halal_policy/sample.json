@@ -1,0 +1,49 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "policy_id": "POL-HAL-001",
+  "version": "2.0",
+  "mission_statement": "Trở thành nhà cung cấp sản phẩm quế Halal hàng đầu khu vực Đông Nam Á — kết nối nông dân Quỳ Châu với người tiêu dùng Hồi giáo toàn cầu thông qua chuỗi cung ứng minh bạch, có truy xuất nguồn gốc blockchain và tuân thủ tuyệt đối tiêu chuẩn Halal MS 1500:2019.",
+  "vision_statement": "Đến năm 2030, sản phẩm Quế Thiên Lộc xuất hiện trong 80% siêu thị Halal tại UAE, Saudi Arabia và Indonesia — đồng thời trở thành đối tác đào tạo Halal cho các hộ nông dân trồng quế tại 5 tỉnh miền núi Việt Nam.",
+  "halal_commitment": "Chúng tôi — Ban lãnh đạo Công ty TNHH Quế Thiên Lộc — cam kết trước Allah SWT, người tiêu dùng Hồi giáo và các Tổ chức Chứng nhận Halal rằng mọi sản phẩm mang thương hiệu Thiên Lộc sẽ tuyệt đối tuân thủ luật Sharia về Halal — không chứa nguyên liệu Haram, không tiếp xúc với Najis, được chế biến trong cơ sở đã được vệ sinh và phân tách Halal đúng quy định MPPHM 2020. Cam kết này không thể thương lượng, không có ngoại lệ, và là nền tảng đạo đức của doanh nghiệp.",
+  "scope_of_application": "Chính sách này áp dụng cho 100% sản phẩm mang thương hiệu Quế Thiên Lộc — bao gồm quế thanh xuất khẩu (loại 1, 2, 3), bột quế tinh chế đóng gói retail, tinh dầu quế chiết xuất hơi nước. Áp dụng tại tất cả cơ sở: nhà máy chế biến chính tại Yên Bái, kho thành phẩm tại Hà Nội, văn phòng đại diện tại TP. HCM. Áp dụng cho 100% nhân sự — bao gồm nhân viên trực tiếp sản xuất, gián tiếp (CSKH, kế toán, marketing), nhà thầu phụ và đối tác chuỗi cung ứng đã ký NDA Halal.",
+  "commitment_clauses": [
+    {"clause_no": 1, "title": "Nguyên liệu đầu vào chỉ Halal", "content": "Toàn bộ nguyên liệu thô, phụ gia, bao bì tiếp xúc thực phẩm phải có chứng nhận Halal còn hiệu lực từ tổ chức được công nhận (JAKIM, MUI, HCA-VN, HALCERT). Nhà cung cấp phải nằm trong Approved Supplier List (ASL) cập nhật quý. Mọi lô nhập về phải qua kiểm tra theo SOP-RAW-001."},
+    {"clause_no": 2, "title": "Phân tách vật lý hoàn toàn", "content": "Cơ sở sản xuất duy trì phân tách vật lý 100% — không sản xuất sản phẩm non-Halal hay chứa nguyên liệu Haram trong cùng nhà máy. Khu kho được phân chia bằng vách ngăn cố định và biển báo rõ ràng theo SOP-STO-001."},
+    {"clause_no": 3, "title": "Vệ sinh và Sertu đúng Sharia", "content": "Mọi thiết bị, dụng cụ, bề mặt sản xuất được vệ sinh theo SOP-CLN-001. Trong trường hợp phát hiện tiếp xúc Najis Mughallazah, áp dụng quy trình Sertu 7 lần (1 lần với nước pha đất sạch) theo MPPHM 2020 §7.2 — có sự giám sát trực tiếp của Halal Lead."},
+    {"clause_no": 4, "title": "Truy xuất nguồn gốc đầy đủ", "content": "Mọi lô sản phẩm xuất xưởng phải có Batch ID duy nhất, lưu vĩnh viễn trong hệ thống AMINRA. Truy xuất xuôi (forward) và ngược (back-trace) phải hoàn thành trong ≤ 4 giờ — kiểm tra qua diễn tập thu hồi mỗi 6 tháng."},
+    {"clause_no": 5, "title": "Đào tạo và năng lực Halal", "content": "100% nhân sự liên quan trực tiếp Halal (sản xuất, kho, QC, vệ sinh) phải hoàn thành đào tạo bắt buộc 8 giờ trước khi bắt đầu công việc; đào tạo lại 4 giờ/năm. Halal Lead có chứng chỉ Halal Executive Course từ HCA-VN hoặc tương đương."},
+    {"clause_no": 6, "title": "Halal Committee giám sát độc lập", "content": "Ban Halal nội bộ (IHC) có ít nhất 5 thành viên, bao gồm 1 thành viên là người Hồi giáo có hiểu biết Sharia. IHC họp định kỳ 1 lần/quý, audit nội bộ 1 lần/6 tháng, và có quyền dừng dây chuyền nếu phát hiện vi phạm Halal nghiêm trọng."},
+    {"clause_no": 7, "title": "Khiếu nại và minh bạch", "content": "Mọi khiếu nại liên quan Halal được tiếp nhận 24/7 qua hotline, email, social media. Quy trình thu hồi (recall) phân Class I/II/III được kích hoạt theo SOP-RCL-001 — Class I thu hồi trong 24h, có công bố thông tin. Báo cáo cơ quan chứng nhận khi có vi phạm Critical."},
+    {"clause_no": 8, "title": "Cải tiến liên tục", "content": "Hệ thống Đảm bảo Halal (HAS) được rà soát mỗi 12 tháng. KPI Halal được báo cáo Hội đồng quản trị mỗi quý: số lô đạt 100%, số NCR Critical, thời gian truy xuất trung bình, kết quả audit cơ quan. Mọi điểm yếu phát hiện được khắc phục theo CAR/PAR tích hợp SOP-NCR-001."},
+    {"clause_no": 9, "title": "Cộng đồng và giáo dục", "content": "Doanh nghiệp tổ chức ít nhất 2 buổi đào tạo Halal/năm cho nông dân vùng nguyên liệu — phổ biến tiêu chuẩn từ thượng nguồn. Tài liệu đào tạo công bố công khai miễn phí tại quethienloc.vn/halal-academy."},
+    {"clause_no": 10, "title": "Trách nhiệm pháp lý cá nhân", "content": "Tổng giám đốc và Halal Lead chịu trách nhiệm cá nhân về việc thực thi chính sách. Mọi vi phạm cố ý hoặc che giấu bị xử lý kỷ luật, đồng thời báo cáo cơ quan chứng nhận để rút giấy phép Halal nếu cần."}
+  ],
+  "halal_committee": [
+    {"role": "Chủ tịch Ban (Chairperson)", "name": "Trần Thị Bình", "department": "Đảm bảo chất lượng", "appointed_date": "2024-01-15"},
+    {"role": "Thư ký Ban (Secretary)", "name": "Nguyễn Hồng Quân", "department": "Halal Compliance", "appointed_date": "2024-01-15"},
+    {"role": "Thành viên — đại diện sản xuất", "name": "Lê Văn Hải", "department": "Sản xuất", "appointed_date": "2024-01-15"},
+    {"role": "Thành viên — đại diện kho", "name": "Phạm Thị Lan", "department": "Logistics & Kho", "appointed_date": "2024-01-15"},
+    {"role": "Thành viên — đại diện R&D", "name": "Hoàng Minh Đức", "department": "Nghiên cứu phát triển", "appointed_date": "2024-04-01"},
+    {"role": "Thành viên Hồi giáo (Sharia Advisor)", "name": "Mohammad Yusuf bin Abdullah", "department": "Cố vấn độc lập", "appointed_date": "2024-04-01"},
+    {"role": "Thành viên — đại diện Mua hàng", "name": "Đỗ Thị Mai", "department": "Mua hàng", "appointed_date": "2025-07-01"}
+  ],
+  "references": [
+    "MS 1500:2019 — Halal Food: General Requirements (Department of Standards Malaysia)",
+    "MS 2424:2012 — Halal Pharmaceuticals: General Guidelines",
+    "TCVN 12944:2020 — Thực phẩm Halal — Yêu cầu chung (Bộ KHCN Việt Nam)",
+    "JAKIM Manual Prosedur Pensijilan Halal Malaysia (MPPHM 2020)",
+    "HCA-VN — Quy định cấp giấy chứng nhận Halal Việt Nam phiên bản 2024",
+    "Codex Alimentarius CAC/GL 24-1997 — General Guidelines for Use of the Term 'Halal'",
+    "ISO 22000:2018 — Food Safety Management Systems",
+    "Quy định nội bộ AMINRA về truy xuất nguồn gốc blockchain (REG-AMI-2024-03)",
+    "Luật An toàn Thực phẩm Việt Nam 55/2010/QH12",
+    "Luật Bảo vệ Quyền lợi Người tiêu dùng 2010"
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "signatories": [
+    {"name": "Nguyễn Văn Anh", "title": "Tổng giám đốc", "signature_date": "2026-03-25"},
+    {"name": "Trần Thị Bình", "title": "Halal Lead — Chủ tịch IHC", "signature_date": "2026-03-26"}
+  ],
+  "issued_date": "2026-05-05"
+}

@@ -35,6 +35,10 @@ CASES = [
     ("sop_cleaning_sanitation",       "sop_cleaning_sanitation/sample.json"),
     ("sop_handling_nonconformances",  "sop_handling_nonconformances/sample.json"),
     ("sop_complaint_recall",          "sop_complaint_recall/sample.json"),
+    # Group 2 — policy + HAS Manual (halal_manual alias of has_manual,
+    # same template + same fixture → byte-identical, skipped to save baseline space)
+    ("halal_policy",                  "halal_policy/sample.json"),
+    ("has_manual",                    "has_manual/sample.json"),
 ]
 
 
