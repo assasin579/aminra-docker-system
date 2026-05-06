@@ -77,6 +77,17 @@ repos:
   # Promote to default stage AFTER fixing baseline errors.
   - repo: local
     hooks:
+      # Tier 2: pdf template token + structure rules. Fast (<1s), runs on every
+      # commit that touches templates_html/. Blocks raw hex / font-size /
+      # external <link> / <script> / inline event handlers from drifting in.
+      # See scripts/lint-templates.sh + docs/features/pdf-html-renderer/threat-model.md.
+      - id: lint-templates
+        name: lint pdf templates (token + structure)
+        entry: bash scripts/lint-templates.sh
+        language: system
+        files: ^backend/templates_html/
+        pass_filenames: false
+
       - id: mypy-fast
         name: mypy (manual — backend services + auth only)
         entry: bash -c 'docker run --rm -v "$PWD/backend:/src:ro" python:3.11-slim sh -c "pip install --quiet mypy 2>/dev/null && mypy /src/services /src/auth --ignore-missing-imports --no-strict-optional --follow-imports=silent"'

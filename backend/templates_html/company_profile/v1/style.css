@@ -1,8 +1,15 @@
-/* Doc-specific overrides for company_profile v1 (Direction C — Modern Editorial). */
+/* Doc-specific overrides for company_profile v1 (Direction C — Modern Editorial).
+ *
+ * RULES (enforced by scripts/lint-templates.sh):
+ *   - No raw hex (#abc / #aabbcc / #aabbccdd) — only var(--c-*).
+ *   - No raw font-size/family/weight — only var(--fs-*) / var(--font-sans).
+ *   - To customise size, add a new L3 token in _base/base.css :root, then
+ *     override here via the L3 token name.
+ */
 
-/* Cover title slightly larger for the marquee document */
-.cover__title {
-  font-size: 70pt;
+:root {
+  /* Slightly larger marquee title for this document type. */
+  --cover-title-size: 70pt;
 }
 
 /* Ensure stats grid stays on one row even with long Vietnamese labels */

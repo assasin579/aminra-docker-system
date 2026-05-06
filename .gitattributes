@@ -1,0 +1,15 @@
+# Force text mode for shell + python (cross-platform line endings)
+*.sh   text eol=lf
+*.py   text eol=lf
+
+# ── Git LFS (DEFERRED) ───────────────────────────────────────────────────────
+# Visual regression baselines are committed as raw PNGs for now (1.8MB for 2
+# templates). When the suite reaches ≥10 templates (~10MB+), migrate to LFS:
+#
+#   1. apt install git-lfs && git lfs install
+#   2. uncomment the rules below
+#   3. git lfs migrate import --include="backend/tests/visual/baselines/**/*.png"
+#
+# backend/tests/visual/baselines/**/*.png filter=lfs diff=lfs merge=lfs -text
+# *.psd  filter=lfs diff=lfs merge=lfs -text
+# *.ai   filter=lfs diff=lfs merge=lfs -text

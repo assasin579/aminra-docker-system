@@ -32,6 +32,12 @@ class TemplateEntry(NamedTuple):
 # ── Registry: 13 doc_types (mirrors templates_docx/_registry.py keys) ──────
 
 _REGISTRY: dict[str, TemplateEntry] = {
+    "_style_guide": TemplateEntry(
+        doc_type="_style_guide",
+        template_relpath="_style_guide/v1/template.html",
+        version="v1",
+        title_default="AMINRA Design System",
+    ),
     "company_profile": TemplateEntry(
         doc_type="company_profile",
         template_relpath="company_profile/v1/template.html",

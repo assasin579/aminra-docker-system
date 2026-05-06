@@ -1,0 +1,217 @@
+{# ──────────────────────────────────────────────────────────────────────────
+   AMINRA design system — reusable Jinja macros for all PDF doc_types.
+
+   Usage in a template:
+       {% from "_base/macros.html" import doc_cover, section_opener, stat_grid %}
+       {{ section_opener(1, "Tổng quan", "Thông tin chung") }}
+
+   Discipline:
+   - Templates SHOULD compose pages from these macros, not raw HTML, so the
+     same design system applies everywhere with one place to maintain.
+   - Add a new macro here ONLY if the pattern repeats in ≥2 doc_types.
+     One-off layout goes in the doc-specific template.html.
+   - Each macro signature is intentionally stable — bump the macro name
+     (e.g. `stat_grid` → `stat_grid_v2`) before changing args, so old
+     templates keep rendering during migration.
+   ────────────────────────────────────────────────────────────────────────── #}
+
+
+{# ─── doc_cover ────────────────────────────────────────────────────────────
+   Full-bleed gradient hero. Cover dominates page 1; meta sits at bottom.
+
+   Args:
+     title          (str)  — main marquee title (50–80pt rendered)
+     eyebrow        (str)  — small uppercase label above title (eg. doc type)
+     subtitle       (str)  — optional second line under title
+     year           (str)  — pill in top-right (eg. "2026")
+     logo_path      (str)  — relative path; default _shared/logo-aminra.svg
+     mark_path      (str)  — decorative SVG; default _shared/cover-mark.svg
+     meta           (list) — list of {"label": str, "value": str} (3 items ideal)
+     approval_block (bool) — show the 3-cell signature row at bottom
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro doc_cover(title, eyebrow=None, subtitle=None, year=None,
+                   logo_path="_shared/logo-aminra.svg",
+                   mark_path="_shared/cover-mark.svg",
+                   meta=None, approval_block=True) %}
+<section class="cover">
+  <div class="cover__strip"></div>
+
+  <header class="cover__head">
+    <img class="cover__logo" src="{{ asset(logo_path) }}" alt="AMINRA">
+    {% if year %}<div class="cover__year">{{ year }}</div>{% endif %}
+  </header>
+
+  <div class="cover__core">
+    {% if eyebrow %}<div class="cover__eyebrow">{{ eyebrow }}</div>{% endif %}
+    <h1 class="cover__title">{{ title }}</h1>
+    {% if subtitle %}<div class="cover__sub">{{ subtitle }}</div>{% endif %}
+    <div class="cover__rule"></div>
+  </div>
+
+  {% if mark_path %}<img class="cover__mark" src="{{ asset(mark_path) }}" alt="">{% endif %}
+
+  {% if meta %}
+  <div class="cover__meta">
+    {% for m in meta %}
+    <div class="cover__meta-cell">
+      <div class="cover__meta-cell-label">{{ m.get("label", "") }}</div>
+      <div class="cover__meta-cell-value">{{ m.get("value") or "—" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if approval_block %}
+  <div class="approval-grid">
+    <div class="approval-cell"><strong>Soạn thảo</strong><div class="approval-line"></div>Họ tên / Chức vụ</div>
+    <div class="approval-cell"><strong>Kiểm tra</strong><div class="approval-line"></div>Họ tên / Chức vụ</div>
+    <div class="approval-cell"><strong>Phê duyệt</strong><div class="approval-line"></div>Họ tên / Chức vụ</div>
+  </div>
+  {% endif %}
+</section>
+{% endmacro %}
+
+
+{# ─── section_opener ──────────────────────────────────────────────────────
+   Page-break + giant section number + eyebrow + title + accent rule.
+   Use this at the START of every content section for visual rhythm.
+
+   Args:
+     num     (int)  — section number (rendered "01", "02", … via "%02d"|format)
+     eyebrow (str)  — small uppercase label (eg. "Tổng quan")
+     title   (str)  — section title (≤ 60 chars ideal)
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro section_opener(num, eyebrow, title) %}
+<div class="section-opener">
+  <div class="section-opener__num">{{ "%02d"|format(num) }}</div>
+  <div class="section-opener__inner">
+    <div class="section-opener__eyebrow">{{ eyebrow }}</div>
+    <div class="section-opener__title">{{ title }}</div>
+    <div class="section-opener__rule"></div>
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ─── stat_grid ───────────────────────────────────────────────────────────
+   Grid of key numbers (4 columns default, falls back to fewer if items < 4).
+
+   Args:
+     items   (list) — list of {value, label, unit?, hint?}
+     columns (int)  — 2/3/4/6 columns
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro stat_grid(items, columns=4) %}
+<div class="stat-grid stat-grid--{{ columns }}">
+  {% for s in items %}
+  <div class="stat">
+    <div class="stat__num">{{ s.get("value") or "—" }}{% if s.get("unit") %}<span class="stat__unit">{{ s["unit"] }}</span>{% endif %}</div>
+    <div class="stat__label">{{ s.get("label", "") }}</div>
+    {% if s.get("hint") %}<div class="stat__hint">{{ s["hint"] }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+
+{# ─── kv_block ────────────────────────────────────────────────────────────
+   Definition list (key/value rows). Skips rows where value is falsy unless
+   `keep_empty=True`. Used for "thông tin chi tiết" type sections.
+
+   Args:
+     rows       (list) — list of {label, value}
+     keep_empty (bool) — render "—" for empty values
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro kv_block(rows, keep_empty=False) %}
+<dl class="kv">
+  {% for r in rows %}
+    {% if r.get("value") or keep_empty %}
+    <dt>{{ r.get("label", "") }}</dt><dd>{{ r.get("value") or "—" }}</dd>
+    {% endif %}
+  {% endfor %}
+</dl>
+{% endmacro %}
+
+
+{# ─── data_table ──────────────────────────────────────────────────────────
+   Tabular data with brand-styled header. Each `column` may include
+   width / align hints; each `row` is a list matching column count.
+
+   Args:
+     columns (list) — list of {label, width?, align?}
+     rows    (list) — list of [cell, cell, ...] OR {cells: [...]}
+     numeric_last (bool) — right-align last column (default off)
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro data_table(columns, rows, numeric_last=False) %}
+<table class="data">
+  <thead>
+    <tr>
+      {% for c in columns %}
+      {% set _w = c.get("width") %}{% set _a = c.get("align") %}
+      <th{% if _w or _a %} style="{% if _w %}width: {{ _w }};{% endif %}{% if _a %}text-align: {{ _a }};{% endif %}"{% endif %}>{{ c.get("label", "") }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      {% for cell in r %}
+        {% set is_last = loop.last %}
+        <td{% if numeric_last and is_last %} class="tnum" style="text-align: right;"{% endif %}>{{ cell }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+
+{# ─── pull_quote ──────────────────────────────────────────────────────────
+   Italic emphasised quote with green vertical bar + opening quote glyph.
+
+   Args:
+     text (str) — quote body (1–4 lines ideal)
+     cite (str) — attribution (optional; renders "— X" below)
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro pull_quote(text, cite=None) %}
+<blockquote class="pull">
+  {{ text }}
+  {% if cite %}<cite>{{ cite }}</cite>{% endif %}
+</blockquote>
+{% endmacro %}
+
+
+{# ─── callout ─────────────────────────────────────────────────────────────
+   Boxed notice with badge label + body text. Variants control badge colour.
+
+   Args:
+     label   (str) — badge text (uppercase)
+     body    (str|safe) — HTML-safe body content
+     variant (str) — info | success | warning | danger | brand (default info)
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro callout(label, body, variant="info") %}
+<div class="callout callout--{{ variant }}">
+  <div class="callout__badge">{{ label }}</div>
+  <div class="callout__body">{{ body|safe }}</div>
+</div>
+{% endmacro %}
+
+
+{# ─── bullet_list ─────────────────────────────────────────────────────────
+   Custom bullet list with brand-coloured pill markers.
+
+   Args:
+     items (list) — list of strings (or HTML-safe markup)
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro bullet_list(items) %}
+<ul class="lst">
+  {% for item in items %}<li>{{ item }}</li>{% endfor %}
+</ul>
+{% endmacro %}
+
+
+{# ─── lede ────────────────────────────────────────────────────────────────
+   Larger first paragraph that opens a section. Wraps content in <p class="lede">.
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro lede(text) %}
+<p class="lede">{{ text }}</p>
+{% endmacro %}

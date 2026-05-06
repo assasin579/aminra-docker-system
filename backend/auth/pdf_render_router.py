@@ -140,7 +140,7 @@ async def registry(user: dict = Depends(get_current_user)) -> list[dict]:
 async def render_pdf(
     request: Request,
     body: RenderPDFBody,
-    doc_type: str = Path(..., pattern=r"^[a-z][a-z0-9_]{1,40}$"),
+    doc_type: str = Path(..., pattern=r"^[a-z_][a-z0-9_]{1,40}$"),
     user: dict = Depends(get_current_user),
     db=Depends(get_db),
     _rl: None = Depends(rate_limit_pdf_render),
@@ -153,8 +153,8 @@ async def render_pdf(
     if body.cfg_override is not None and not _is_platform_admin(user):
         await log_audit(
             db, action="document.pdf_render_denied", entity_type="pdf_template",
-            user=user, entity_id=doc_type,
-            metadata={"reason": "cfg_override_non_admin"}, request=request,
+            user=user, entity_id=None,
+            metadata={"doc_type": doc_type, "reason": "cfg_override_non_admin"}, request=request,
         )
         raise HTTPException(status_code=403, detail="cfg_override is admin-only")
 
@@ -185,8 +185,8 @@ async def render_pdf(
     except ValidationError as exc:
         await log_audit(
             db, action="document.pdf_render_invalid", entity_type="pdf_template",
-            user=user, entity_id=doc_type,
-            metadata={"errors_count": len(exc.errors())}, request=request,
+            user=user, entity_id=None,
+            metadata={"doc_type": doc_type, "errors_count": len(exc.errors())}, request=request,
         )
         raise HTTPException(status_code=400, detail=exc.errors())
 
@@ -226,7 +226,7 @@ async def render_pdf(
     except RenderTimeoutError as exc:
         await log_audit(
             db, action="document.pdf_render_timeout", entity_type="pdf_template",
-            user=user, entity_id=doc_type,
+            user=user, entity_id=None,
             metadata={"doc_type": doc_type}, request=request,
         )
         raise HTTPException(status_code=408, detail=str(exc))
@@ -237,8 +237,8 @@ async def render_pdf(
         log.exception("[pdf_render] unexpected failure for %s", doc_type)
         await log_audit(
             db, action="document.pdf_render_failed", entity_type="pdf_template",
-            user=user, entity_id=doc_type,
-            metadata={"error": str(exc)[:200]}, request=request,
+            user=user, entity_id=None,
+            metadata={"doc_type": doc_type, "error": str(exc)[:200]}, request=request,
         )
         raise HTTPException(status_code=500, detail="internal renderer error")
 
@@ -246,8 +246,9 @@ async def render_pdf(
 
     await log_audit(
         db, action="document.pdf_rendered", entity_type="pdf_template",
-        user=user, entity_id=doc_type,
+        user=user, entity_id=None,
         metadata={
+            "doc_type": doc_type,
             "byte_size": len(pdf_bytes),
             "duration_ms": duration_ms,
             "template_version": entry.version,

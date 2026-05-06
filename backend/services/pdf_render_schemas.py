@@ -99,7 +99,19 @@ class CompanyProfileData(BaseModel):
 # ── Registry of supported doc_types (Phase 1: only company_profile) ────────
 
 
+class StyleGuideData(BaseModel):
+    """Trivial schema for the kitchen-sink style guide template.
+
+    The style guide doesn't accept user input — it renders fixture data
+    only — but having a model lets it pass through the standard router
+    validation pipeline without a special-case branch.
+    """
+    model_config = ConfigDict(extra="allow")
+    last_updated: Optional[str] = Field(None, max_length=20)
+
+
 SUPPORTED_DOC_TYPES = {
+    "_style_guide": StyleGuideData,
     "company_profile": CompanyProfileData,
     # Phase 2 — add stubs that point to NotImplementedError until schema is
     # finalised so the registry endpoint can advertise the full list while

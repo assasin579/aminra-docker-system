@@ -1,0 +1,206 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, stat_grid, kv_block, data_table, pull_quote, callout, bullet_list, lede %}
+
+{% block content %}
+
+{# ─────── COVER ─────── #}
+{{ doc_cover(
+    title="Design System",
+    eyebrow="AMINRA · Style Guide",
+    subtitle="Kitchen sink — every component the platform offers in one place",
+    year="2026",
+    meta=[
+      {"label": "Phiên bản",       "value": "v1.0"},
+      {"label": "Phạm vi áp dụng", "value": "13 doc_types"},
+      {"label": "Cập nhật lần cuối", "value": data.last_updated},
+    ],
+    approval_block=False,
+) }}
+
+{# ─────── 01 · Color tokens ─────── #}
+<section class="section">
+  {{ section_opener(1, "Tokens", "Color palette & gradients") }}
+  {{ lede("Mọi color trong hệ thống đều thuộc 3 layer: raw primitives (L1), semantic (L2 — what templates use), component overrides (L3). Bất kỳ raw hex nào ngoài _base/base.css → linter fail.") }}
+
+  <h3>Brand</h3>
+  <div class="swatch-row">
+    <div class="swatch" style="background: var(--c-brand-primary);"><span>brand-primary</span></div>
+    <div class="swatch" style="background: var(--c-brand-primary-700);"><span>primary-700</span></div>
+    <div class="swatch" style="background: var(--c-brand-primary-500);"><span>primary-500</span></div>
+    <div class="swatch" style="background: var(--c-brand-accent);"><span>brand-accent</span></div>
+    <div class="swatch" style="background: var(--c-brand-accent-700);"><span>accent-700</span></div>
+    <div class="swatch" style="background: var(--c-brand-accent-300);"><span>accent-300</span></div>
+    <div class="swatch" style="background: var(--c-brand-warn); color: var(--c-text-on-brand);"><span>brand-warn</span></div>
+    <div class="swatch" style="background: var(--c-brand-danger); color: var(--c-text-on-brand);"><span>brand-danger</span></div>
+  </div>
+
+  <h3>Surfaces &amp; text</h3>
+  <div class="swatch-row">
+    <div class="swatch" style="background: var(--c-paper); color: var(--c-text);"><span>paper</span></div>
+    <div class="swatch" style="background: var(--c-paper-dark); color: var(--c-text);"><span>paper-dark</span></div>
+    <div class="swatch" style="background: var(--c-surface); color: var(--c-text); border: 0.5pt solid var(--c-border);"><span>surface</span></div>
+    <div class="swatch" style="background: var(--c-text); "><span>text</span></div>
+    <div class="swatch" style="background: var(--c-text-muted); "><span>text-muted</span></div>
+    <div class="swatch" style="background: var(--c-text-soft); color: var(--c-text);"><span>text-soft</span></div>
+  </div>
+
+  <h3>Gradients</h3>
+  <div class="swatch-row">
+    <div class="swatch" style="background: var(--grad-hero);"><span>grad-hero</span></div>
+    <div class="swatch" style="background: var(--grad-strip);"><span>grad-strip</span></div>
+    <div class="swatch" style="background: var(--grad-accent);"><span>grad-accent</span></div>
+  </div>
+</section>
+
+{# ─────── 02 · Typography scale ─────── #}
+<section class="section">
+  {{ section_opener(2, "Tokens", "Typography scale") }}
+  {{ lede("Inter family ở 5 weights (400/500/600/700/900) + italic. Mọi font-size phải qua var(--fs-*).") }}
+
+  <table class="data">
+    <thead>
+      <tr><th style="width:24%;">Token</th><th style="width:14%;">Size</th><th>Sample</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>--fs-display</code></td><td>64pt</td><td><span style="font-size: var(--fs-display); font-weight: 900; color: var(--c-brand-primary); letter-spacing: -0.03em;">Aa</span></td></tr>
+      <tr><td><code>--fs-h1</code></td><td>28pt</td><td><span style="font-size: var(--fs-h1); font-weight: 800; color: var(--c-brand-primary);">Heading 1</span></td></tr>
+      <tr><td><code>--fs-h2</code></td><td>18pt</td><td><span style="font-size: var(--fs-h2); font-weight: 700; color: var(--c-brand-primary);">Heading 2</span></td></tr>
+      <tr><td><code>--fs-h3</code></td><td>13pt</td><td><span style="font-size: var(--fs-h3); font-weight: 600; color: var(--c-brand-primary);">Heading 3</span></td></tr>
+      <tr><td><code>--fs-body</code></td><td>11pt</td><td>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</td></tr>
+      <tr><td><code>--fs-small</code></td><td>9.5pt</td><td><span style="font-size: var(--fs-small);">Lorem ipsum dolor sit amet (small).</span></td></tr>
+      <tr><td><code>--fs-tiny</code></td><td>8pt</td><td><span style="font-size: var(--fs-tiny); letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-brand-accent); font-weight: 700;">Eyebrow tiny</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+{# ─────── 03 · Stat grid variants ─────── #}
+<section class="section">
+  {{ section_opener(3, "Components", "Stat grid (2 / 3 / 4 / 6 columns)") }}
+  {{ lede("Hiển thị key numbers. Default 4 columns; 2/3/6 cho variants nếu data ít hoặc nhiều.") }}
+
+  <h3>4 columns (default)</h3>
+  {{ stat_grid([
+    {"value": "2018", "label": "Năm thành lập"},
+    {"value": "142",  "unit": "người", "label": "Quy mô"},
+    {"value": "3",    "label": "Sản phẩm chính"},
+    {"value": "12",   "label": "Quốc gia xuất khẩu"},
+  ], columns=4) }}
+
+  <h3>2 columns</h3>
+  {{ stat_grid([
+    {"value": "₫12B", "label": "Vốn điều lệ", "hint": "đăng ký ngày 2018-04-12"},
+    {"value": "180",  "unit": "tấn/năm", "label": "Sản lượng quế"},
+  ], columns=2) }}
+
+  <h3>6 columns</h3>
+  {{ stat_grid([
+    {"value": "01", "label": "Q1"},
+    {"value": "02", "label": "Q2"},
+    {"value": "03", "label": "Q3"},
+    {"value": "04", "label": "Q4"},
+    {"value": "05", "label": "Q5"},
+    {"value": "06", "label": "Q6"},
+  ], columns=6) }}
+</section>
+
+{# ─────── 04 · KV block ─────── #}
+<section class="section">
+  {{ section_opener(4, "Components", "Key-value block") }}
+  {{ lede("Definition list cho thông tin chi tiết, tự động skip rows trống nếu keep_empty=False.") }}
+
+  {{ kv_block([
+    {"label": "Doanh nghiệp",     "value": "Công ty TNHH Quế Thiên Lộc"},
+    {"label": "Mã số thuế",       "value": "0123456789"},
+    {"label": "Năm thành lập",    "value": "2018"},
+    {"label": "Vốn điều lệ",      "value": "12.000.000.000 VND"},
+    {"label": "Địa chỉ trụ sở",   "value": "Số 12, đường Lê Lợi, TP. Vinh, Nghệ An"},
+    {"label": "Người đại diện",   "value": "Nguyễn Văn Anh"},
+  ]) }}
+</section>
+
+{# ─────── 05 · Data table ─────── #}
+<section class="section">
+  {{ section_opener(5, "Components", "Data table") }}
+  {{ lede("Brand-styled header (navy + white), zebra rows on cream, first column auto-bold. Right-align numeric_last cho cột số.") }}
+
+  {{ data_table(
+    columns=[
+      {"label": "Sản phẩm",       "width": "30%"},
+      {"label": "Mô tả"},
+      {"label": "Sản lượng / năm","width": "22%", "align": "right"},
+    ],
+    rows=[
+      ["Quế thanh xuất khẩu loại 1", "Vỏ quế nguyên dài 25–40cm", "180 tấn"],
+      ["Bột quế tinh chế",           "Bột mịn, đóng gói 500g/túi PE",  "60 tấn"],
+      ["Tinh dầu quế",               "Chiết xuất hơi nước, ≥75% tinh khiết", "1.2 tấn"],
+    ],
+    numeric_last=True,
+  ) }}
+</section>
+
+{# ─────── 06 · Pull quote ─────── #}
+<section class="section">
+  {{ section_opener(6, "Components", "Pull-quote") }}
+  {{ lede("Italic emphasized quote với green vertical bar + giant opening quote glyph. Dùng cho commitment, mission statement, key insight.") }}
+
+  {{ pull_quote(
+    "Chúng tôi cam kết toàn bộ quy trình thu mua, sơ chế, đóng gói quế xuất khẩu tuân thủ tiêu chuẩn Halal MS 1500:2019 — không sử dụng nguyên liệu Haram, có khu vực sản xuất tách biệt và đội ngũ nhân sự được đào tạo Halal định kỳ.",
+    cite="Công ty TNHH Quế Thiên Lộc"
+  ) }}
+</section>
+
+{# ─────── 07 · Callout variants ─────── #}
+<section class="section">
+  {{ section_opener(7, "Components", "Callout (5 variants)") }}
+  {{ lede("Boxed notice với badge label + body text. 5 variants: info (default) · success · warning · danger · brand.") }}
+
+  {{ callout("Info",    "Default callout — thông báo chung, neutral tone.", variant="info") }}
+  {{ callout("Success", "Trạng thái OK — đã hoàn tất, ready, approved.", variant="success") }}
+  {{ callout("Warning", "Cảnh báo — cần review trước khi tiến hành.", variant="warning") }}
+  {{ callout("Danger",  "Lỗi nghiêm trọng — yêu cầu hành động ngay.", variant="danger") }}
+  {{ callout("Brand",   "Branded callout — dùng cho footer note hoặc thông tin platform-level.", variant="brand") }}
+</section>
+
+{# ─────── 08 · Bullet list ─────── #}
+<section class="section">
+  {{ section_opener(8, "Components", "Bullet list") }}
+  {{ lede("Custom bullet với pill-shaped marker xanh halal. KHÔNG dùng default <ul> — luôn class .lst hoặc macro bullet_list().") }}
+
+  {{ bullet_list([
+    "Trồng và thu mua quế hữu cơ tại vùng nguyên liệu Quỳ Châu, Nghệ An.",
+    "Sơ chế, sấy khô, phân loại quế thanh và quế bột theo chuẩn HACCP.",
+    "Đóng gói và xuất khẩu sang thị trường Trung Đông, Nam Á (UAE, Saudi Arabia, Indonesia, Malaysia).",
+    "Hợp tác chuỗi truy xuất nguồn gốc blockchain với tổ chức chứng nhận Halal quốc tế.",
+  ]) }}
+</section>
+
+{# ─────── 09 · Spacing scale ─────── #}
+<section class="section">
+  {{ section_opener(9, "Tokens", "Spacing scale") }}
+  {{ lede("8 levels theo mm để align print-native. var(--sp-1) = 1mm, đến var(--sp-8) = 24mm.") }}
+
+  <table class="data">
+    <thead>
+      <tr><th style="width:18%;">Token</th><th style="width:14%;">Value</th><th>Visual ruler</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>--sp-1</code></td><td>1mm</td><td><span class="sp-bar" style="width: 1mm;"></span></td></tr>
+      <tr><td><code>--sp-2</code></td><td>2mm</td><td><span class="sp-bar" style="width: 2mm;"></span></td></tr>
+      <tr><td><code>--sp-3</code></td><td>3mm</td><td><span class="sp-bar" style="width: 3mm;"></span></td></tr>
+      <tr><td><code>--sp-4</code></td><td>5mm</td><td><span class="sp-bar" style="width: 5mm;"></span></td></tr>
+      <tr><td><code>--sp-5</code></td><td>8mm</td><td><span class="sp-bar" style="width: 8mm;"></span></td></tr>
+      <tr><td><code>--sp-6</code></td><td>12mm</td><td><span class="sp-bar" style="width: 12mm;"></span></td></tr>
+      <tr><td><code>--sp-7</code></td><td>18mm</td><td><span class="sp-bar" style="width: 18mm;"></span></td></tr>
+      <tr><td><code>--sp-8</code></td><td>24mm</td><td><span class="sp-bar" style="width: 24mm;"></span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+{# ─────── 10 · Section opener (recursive demo) ─────── #}
+<section class="section">
+  {{ section_opener(10, "Composition", "Section opener — page rhythm") }}
+  {{ lede("Mỗi section bắt đầu bằng macro section_opener(num, eyebrow, title) — giant 2-digit number + eyebrow + title + accent rule. Tự động force page-break-before để mỗi section có page riêng.") }}
+
+  {{ callout("Khuyến nghị", "Dùng section_opener cho TẤT CẢ section. Đừng tự viết &lt;h2&gt; raw — sẽ mất giant number + eyebrow rhythm.", variant="brand") }}
+</section>
+{% endblock %}
