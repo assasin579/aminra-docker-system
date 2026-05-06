@@ -64,8 +64,13 @@ if SENTRY_DSN:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from services.pdf_renderer import PDFRenderer
+    from services.pdf_data_aggregator import PDFDataAggregator
+    from services.pdf_filter_pipeline import FilterPipeline
 
     await init_pool()
+    # 3-stage pipeline: aggregator (Stage 1) → filter pipeline (Stage 2) → renderer (Stage 3)
+    app.state.pdf_aggregator = PDFDataAggregator()
+    app.state.pdf_filter_pipeline = FilterPipeline()
     app.state.pdf_renderer = PDFRenderer()
     try:
         await app.state.pdf_renderer.startup()

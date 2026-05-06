@@ -26,6 +26,8 @@ from auth.jwt_utils import get_current_user
 from auth.rate_limit import rate_limit_pdf_render
 from services import feature_flags
 from services.audit_log import log_audit
+from services.pdf_data_aggregator import PDFDataAggregator
+from services.pdf_filter_pipeline import FilterPipeline
 from services.pdf_render_schemas import get_schema
 from services.pdf_renderer import (
     RenderConcurrencyError,
@@ -38,6 +40,7 @@ from services.pdf_renderer import (
 from templates_html._registry import get_entry, list_supported
 
 from auth.db import get_db
+from pydantic import ValidationError as _PydValidationError
 
 log = logging.getLogger("aminra.pdf_render_router")
 
@@ -179,10 +182,25 @@ async def render_pdf(
     if schema is None:
         raise HTTPException(status_code=501, detail=f"{doc_type} schema not implemented")
 
-    # ── 4. Validate data ───────────────────────────────────────────────────
+    title = body.title or entry.title_default
+
+    # ── 4. Stage 1 — aggregate raw data (DB + admin files + payload) ──────
+    aggregator: PDFDataAggregator = request.app.state.pdf_aggregator
+    bundle = await aggregator.fetch(
+        db=db,
+        doc_type=doc_type,
+        tenant_id=str(tenant_id) if tenant_id else "",
+        actor=user,
+        request_payload=dict(body.data),
+        request_lang=body.lang,
+        is_draft=body.is_draft,
+    )
+
+    # ── 5. Stage 2 — filter pipeline (validate + merge + format + truncate) ─
+    filter_pipeline: FilterPipeline = request.app.state.pdf_filter_pipeline
     try:
-        validated = schema.model_validate(body.data)
-    except ValidationError as exc:
+        ctx = filter_pipeline.run(bundle, title=title, title_default=entry.title_default)
+    except _PydValidationError as exc:
         await log_audit(
             db, action="document.pdf_render_invalid", entity_type="pdf_template",
             user=user, entity_id=None,
@@ -190,32 +208,29 @@ async def render_pdf(
         )
         raise HTTPException(status_code=400, detail=exc.errors())
 
-    # ── 5. Compose cfg ─────────────────────────────────────────────────────
-    cfg = await _load_cfg(db, doc_type)
-    if body.cfg_override:
-        cfg = {**cfg, **body.cfg_override}
+    # cfg_override merge (admin-only) — applied AFTER filters so admin
+    # truly overrides the merged context (defence in depth).
+    if body.cfg_override and _is_platform_admin(user):
+        ctx.cfg = {**ctx.cfg, **body.cfg_override}
 
-    title = body.title or entry.title_default
-
-    # ── 6. Render ──────────────────────────────────────────────────────────
-    renderer = request.app.state.pdf_renderer
-    data_dict = validated.model_dump(mode="json")
-    canonical = _canonical_json(data_dict)
+    # ── 6. ETag from filtered context (deterministic per input) ────────────
+    canonical = _canonical_json(ctx.data)
     etag = etag_for(entry.version, canonical)
 
-    # If-None-Match short-circuit (cache friendly for clients that hash data)
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"ETag": etag})
 
+    # ── 7. Stage 3 — render (Playwright unchanged) ─────────────────────────
+    renderer = request.app.state.pdf_renderer
     try:
         pdf_bytes = await renderer.render(
             doc_type=doc_type,
-            data=data_dict,
-            cfg=cfg,
-            title=title,
-            is_draft=body.is_draft,
+            data=ctx.data,
+            cfg=ctx.cfg,
+            title=ctx.title,
+            is_draft=ctx.is_draft,
             content="",
-            lang=body.lang,
+            lang=ctx.lang,
         )
     except TemplateNotFoundError:
         raise HTTPException(status_code=404, detail=f"unknown doc_type: {doc_type}")
@@ -253,6 +268,9 @@ async def render_pdf(
             "duration_ms": duration_ms,
             "template_version": entry.version,
             "is_draft": body.is_draft,
+            "filters_applied": ctx.filters_applied,
+            "filter_durations_ms": ctx.filter_durations_ms,
+            "sources_versions": bundle.sources_versions,
         }, request=request,
     )
 
