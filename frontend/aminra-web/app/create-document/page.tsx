@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUserAuth } from "@/components/UserAuthContext";
-import { useFeature } from "@/lib/featureFlags";
+import { useFeatureFlags } from "@/lib/featureFlags";
 import { downloadPdfHtml, RenderPdfError } from "@/lib/renderPdfHtml";
 import Link from "next/link";
 
@@ -41,8 +41,15 @@ export default function CreateDocumentPage() {
   const [error, setError] = useState("");
   const [lang, setLang] = useState<"vi" | "en">("vi");
   const [outputFormat, setOutputFormat] = useState<"docx" | "pdf">("docx");
-  const pdfCompanyProfileEnabled = useFeature(
-    "pdf_html_renderer_v1.company_profile",
+
+  // Multi-doc_type PDF flag check via the FeatureFlagProvider context map.
+  // We avoid one useFeature() per doc_type (hook order would explode as
+  // more templates ship in Phase 2+).
+  const { flags: featureFlags } = useFeatureFlags();
+  const isPdfEnabledFor = useCallback(
+    (docType: string) =>
+      featureFlags[`pdf_html_renderer_v1.${docType}`] === true,
+    [featureFlags],
   );
   const [allPlaceholders, setAllPlaceholders] = useState<
     Array<{
@@ -254,15 +261,26 @@ export default function CreateDocumentPage() {
     [token, profile, lang, allPlaceholders],
   );
 
-  // ── Map frontend CompanyProfile → backend CompanyProfileData payload ───
-  // Sparse-by-design: only fields the frontend captures today are sent;
-  // backend schema accepts the rest as optional.
+  // ── Build minimal payload per doc_type ─────────────────────────────────
+  //
+  // Every Pydantic schema requires at minimum {business_name, issued_date}
+  // (+ effective_date for SOPs / halal_policy / has_manual). The 3-stage
+  // backend pipeline (aggregator + filter) merges company DB data and
+  // admin_templates JSON cfg on top, so the frontend only needs to send
+  // what it has. Rich free-form fields (clauses, chapters, procedure
+  // steps) come from admin-uploaded DOCX content via the aggregator —
+  // not from the frontend.
   const buildPdfData = useCallback(
     (docType: string): Record<string, unknown> | null => {
-      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const today = new Date().toISOString().slice(0, 10);
+      const businessName = profile?.company_name?.trim();
+      if (!businessName) return null;
+
+      // company_profile passes through extra fields that the frontend
+      // does collect (address, phone, email, representative).
       if (docType === "company_profile") {
         return {
-          business_name: profile?.company_name || "",
+          business_name: businessName,
           address: profile?.address || undefined,
           representative: profile?.representative_name || undefined,
           phone: profile?.phone || undefined,
@@ -270,7 +288,40 @@ export default function CreateDocumentPage() {
           issued_date: today,
         };
       }
-      // Other doc_types: PDF renderer not yet wired (Phase 2). Caller falls back to DOCX.
+
+      // 6× SOP variants — same SopData schema; admin cfg fills the rest.
+      if (docType.startsWith("sop_")) {
+        return {
+          business_name: businessName,
+          effective_date: today,
+          issued_date: today,
+        };
+      }
+
+      // halal_policy: halal_commitment is a required non-empty string —
+      // we provide a generic boilerplate that admin can override via
+      // admin_templates/halal_policy.json (cfg.defaults.halal_commitment)
+      // if they want their own wording.
+      if (docType === "halal_policy") {
+        return {
+          business_name: businessName,
+          halal_commitment:
+            `Chúng tôi — Ban lãnh đạo ${businessName} — cam kết tuyệt đối tuân thủ tiêu chuẩn Halal MS 1500:2019 trong mọi sản phẩm và hoạt động sản xuất, từ nguyên liệu đầu vào đến sản phẩm cuối tới tay người tiêu dùng.`,
+          effective_date: today,
+          issued_date: today,
+        };
+      }
+
+      // has_manual + halal_manual share schema (HasManualData).
+      if (docType === "has_manual" || docType === "halal_manual") {
+        return {
+          business_name: businessName,
+          effective_date: today,
+          issued_date: today,
+        };
+      }
+
+      // Doc type not yet wired to HTML renderer → caller falls back to DOCX.
       return null;
     },
     [profile],
@@ -761,78 +812,88 @@ export default function CreateDocumentPage() {
               </div>
             </div>
 
-            {/* Output format selection — show only when PDF route is available
-                for at least one selected doc_type (Phase 1: company_profile only). */}
-            {pdfCompanyProfileEnabled &&
-              selectedTypes.includes("company_profile") && (
-                <div
-                  className="rounded-2xl p-5"
-                  style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #E2E8F0",
-                  }}
+            {/* Output format selection — show when ANY selected doc_type has its
+                pdf_html_renderer_v1.* flag on. Per-doc fallback to DOCX is
+                handled silently in handleGenerate. */}
+            {selectedTypes.some((dt) => isPdfEnabledFor(dt)) && (
+              <div
+                className="rounded-2xl p-5"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                }}
+              >
+                <h3
+                  className="text-xs font-medium mb-3"
+                  style={{ color: "#6B7280" }}
                 >
-                  <h3
-                    className="text-xs font-medium mb-3"
-                    style={{ color: "#6B7280" }}
-                  >
-                    Định dạng tài liệu
-                  </h3>
-                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                    {(
-                      [
-                        {
-                          id: "docx" as const,
-                          label: "DOCX",
-                          desc: "Mở bằng Word, có thể chỉnh sửa",
-                        },
-                        {
-                          id: "pdf" as const,
-                          label: "PDF (đẹp)",
-                          desc: "Layout chuyên nghiệp, font Inter, sẵn sàng in",
-                        },
-                      ] as const
-                    ).map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setOutputFormat(opt.id)}
-                        className="rounded-xl p-4 text-left transition-all"
-                        style={{
-                          background:
-                            outputFormat === opt.id
-                              ? "rgba(10,31,68,0.06)"
-                              : "#FFFFFF",
-                          border: `2px solid ${outputFormat === opt.id ? "#0A1F44" : "#E2E8F0"}`,
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div
-                          className="text-sm font-semibold"
-                          style={{ color: "#0A1F44" }}
-                        >
-                          {opt.label}
-                        </div>
-                        <div
-                          className="text-xs mt-1"
-                          style={{ color: "#6B7280" }}
-                        >
-                          {opt.desc}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  {outputFormat === "pdf" &&
-                    selectedTypes.some((dt) => dt !== "company_profile") && (
+                  Định dạng tài liệu
+                </h3>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        id: "docx" as const,
+                        label: "DOCX",
+                        desc: "Mở bằng Word, có thể chỉnh sửa",
+                      },
+                      {
+                        id: "pdf" as const,
+                        label: "PDF (đẹp)",
+                        desc: "Layout chuyên nghiệp, font Inter, sẵn sàng in",
+                      },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setOutputFormat(opt.id)}
+                      className="rounded-xl p-4 text-left transition-all"
+                      style={{
+                        background:
+                          outputFormat === opt.id
+                            ? "rgba(10,31,68,0.06)"
+                            : "#FFFFFF",
+                        border: `2px solid ${outputFormat === opt.id ? "#0A1F44" : "#E2E8F0"}`,
+                        cursor: "pointer",
+                      }}
+                    >
                       <div
-                        className="text-xs mt-3"
-                        style={{ color: "#d97706" }}
+                        className="text-sm font-semibold"
+                        style={{ color: "#0A1F44" }}
                       >
-                        Lưu ý: PDF mới hiện chỉ hỗ trợ Company Profile. Các
-                        loại tài liệu khác sẽ tự động tạo bản DOCX.
+                        {opt.label}
                       </div>
-                    )}
+                      <div
+                        className="text-xs mt-1"
+                        style={{ color: "#6B7280" }}
+                      >
+                        {opt.desc}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              )}
+                {outputFormat === "pdf" &&
+                  selectedTypes.some((dt) => !isPdfEnabledFor(dt)) && (
+                    <div
+                      className="text-xs mt-3"
+                      style={{ color: "#d97706" }}
+                    >
+                      Lưu ý: PDF chuyên nghiệp đang hỗ trợ:{" "}
+                      <strong>
+                        {selectedTypes
+                          .filter(isPdfEnabledFor)
+                          .map(
+                            (dt) =>
+                              templates.find((t) => t.doc_type === dt)?.label ||
+                              dt,
+                          )
+                          .join(", ")}
+                      </strong>
+                      . Các tài liệu còn lại sẽ tự động tạo bản DOCX.
+                    </div>
+                  )}
+              </div>
+            )}
 
             {/* Summary */}
             <div
