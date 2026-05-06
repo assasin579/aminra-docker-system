@@ -1,34 +1,62 @@
 {
   "business_name": "Công ty TNHH Quế Thiên Lộc",
   "sop_id": "SOP-CLN-001",
-  "title": "Vệ sinh và làm sạch theo chuẩn Halal",
-  "version": "1.1",
-  "purpose": "Đảm bảo thiết bị, dụng cụ, mặt bằng sản xuất được vệ sinh đúng cách (sertu nếu cần) khi chuyển đổi giữa nguyên liệu Halal và non-Halal hoặc theo lịch định kỳ.",
-  "scope": "Áp dụng cho toàn bộ thiết bị tiếp xúc thực phẩm, bề mặt thao tác, dụng cụ vệ sinh — bao gồm cả khu vực kho, sản xuất, đóng gói.",
+  "title": "Quy trình vệ sinh, làm sạch và Sertu theo chuẩn Halal",
+  "version": "2.3",
+  "purpose": "Đảm bảo thiết bị, dụng cụ, mặt bằng sản xuất và kho được vệ sinh đúng cách (bao gồm Sertu khi cần) khi: (a) chuyển đổi giữa nguyên liệu Halal và non-Halal; (b) phát hiện tiếp xúc với Najis Mughallazah; (c) theo lịch định kỳ ngày/tuần/tháng. SOP này thực hiện điều khoản §5 của MS 1500:2019 ('Hygiene, Sanitation and Food Safety') và §7 của MPPHM 2020 về quy trình sertu chính xác theo Sharia.",
+  "scope": "Áp dụng cho: (1) toàn bộ thiết bị tiếp xúc thực phẩm (máy sấy, băng tải, máy nghiền, máy đóng gói); (2) bề mặt thao tác (bàn QC, bàn cân, kệ kho); (3) dụng cụ (xe nâng, pallet, thùng chứa, dao, rây); (4) khu vực sản xuất, kho, đóng gói, văn phòng QC. Áp dụng cho mọi nhân sự thực hiện vệ sinh + nhân sự kiểm tra hiệu quả vệ sinh.",
   "responsibilities": [
-    {"role": "Quản đốc xưởng", "duties": "Lập lịch vệ sinh, giám sát thực hiện."},
-    {"role": "Vận hành viên", "duties": "Thực hiện vệ sinh đúng quy trình, ghi chép."},
-    {"role": "QC", "duties": "Kiểm tra hiệu quả vệ sinh bằng test ATP hoặc cảm quan."},
-    {"role": "Halal Lead", "duties": "Phê duyệt hóa chất sử dụng, hướng dẫn sertu khi cần."}
+    {"role": "Quản đốc xưởng", "duties": "Lập lịch vệ sinh ngày/tuần/tháng; phê duyệt sửa đổi quy trình; báo cáo Halal Lead khi có sự cố vệ sinh."},
+    {"role": "Tổ trưởng vệ sinh", "duties": "Phân công nhân sự; kiểm tra dụng cụ trước ca; ghi chép biên bản; báo cáo bất thường (vd dụng cụ hư, hóa chất hết) cho Quản đốc."},
+    {"role": "Nhân viên vệ sinh", "duties": "Thực hiện vệ sinh đúng quy trình; ghi chép thời gian, hóa chất sử dụng; bàn giao xác nhận cho QC."},
+    {"role": "QC ca", "duties": "Test ATP sau vệ sinh; kiểm tra cảm quan; ký xác nhận hiệu quả vệ sinh trước khi cho phép sản xuất."},
+    {"role": "Halal Lead / IHC Officer", "duties": "Phê duyệt hóa chất sử dụng (Halal-compatible); chỉ đạo Sertu khi phát hiện tiếp xúc Najis Mughallazah; lưu trữ hồ sơ Sertu vĩnh viễn."},
+    {"role": "Bộ phận Mua hàng", "duties": "Đảm bảo hóa chất nhập đúng theo danh sách đã duyệt; có chứng nhận Halal hoặc xác nhận không chứa thành phần Haram."}
   ],
   "definitions": [
-    {"term": "Sertu", "definition": "Quy trình vệ sinh đặc biệt theo Sharia — rửa 7 lần (1 lần với nước pha đất sạch) — áp dụng khi tiếp xúc với najis (vd thịt heo)."},
-    {"term": "Najis", "definition": "Vật ô uế theo Sharia — bao gồm thịt heo, chó, máu, xác động vật chết tự nhiên..."}
+    {"term": "Sertu", "definition": "Quy trình vệ sinh tẩy uế theo Sharia khi vật/bề mặt tiếp xúc Najis Mughallazah (najis nặng — chủ yếu thịt heo/chó). Yêu cầu rửa 7 lần liên tiếp, trong đó 1 lần (ưu tiên lần đầu) phải dùng nước pha đất sạch (tanah samak). Áp dụng theo MPPHM 2020 §7.2."},
+    {"term": "Najis Mughallazah", "definition": "Najis nặng — bao gồm thịt heo, lông heo, máu heo, thịt chó, nước miếng chó. Yêu cầu Sertu để tẩy."},
+    {"term": "Najis Mutawassitah", "definition": "Najis trung bình — phân, máu (không phải máu heo), nước tiểu người lớn. Tẩy bằng nước sạch chảy qua đến khi không còn dấu vết."},
+    {"term": "Najis Mukhaffafah", "definition": "Najis nhẹ — nước tiểu trẻ sơ sinh nam dưới 2 tuổi chỉ uống sữa mẹ. Tẩy bằng cách rưới nước sạch."},
+    {"term": "Tanah Samak / Đất sertu", "definition": "Đất sạch (clay) — chưa pha tạp với chất khác, có thể là đất tự nhiên hoặc bột bentonite thực phẩm. Pha với nước sạch theo tỷ lệ 1:7 cho lần rửa thứ nhất của sertu."},
+    {"term": "ATP test (Adenosine Triphosphate)", "definition": "Test hiệu quả vệ sinh — đo lượng ATP còn lại trên bề mặt sau vệ sinh. Đơn vị RLU (Relative Light Unit). Giá trị < 100 RLU là đạt cho khu vực thực phẩm."},
+    {"term": "Hóa chất Halal-approved", "definition": "Hóa chất tẩy rửa đã được Halal Lead phê duyệt — không chứa cồn ≥ 0.5%, không chứa enzyme từ heo, không chứa axit béo từ động vật chưa rõ nguồn gốc."}
   ],
   "procedure_steps": [
-    {"step_no": 1, "action": "Vệ sinh thường ngày — quét, rửa nước, lau khô. Áp dụng cho tất cả khu vực không tiếp xúc najis.", "responsible_role": "Vận hành viên", "records": "Lịch vệ sinh BM-CLN-01"},
-    {"step_no": 2, "action": "Vệ sinh kỹ tuần — tháo rời thiết bị, ngâm chất tẩy ≥ 30 phút, kiểm tra ngóc ngách.", "responsible_role": "Vận hành viên + Tổ vệ sinh", "records": "Checklist BM-CLN-02"},
-    {"step_no": 3, "action": "Sertu (nếu phát hiện tiếp xúc najis) — Halal Lead chỉ đạo, thực hiện 7 lần rửa, lần 1 với nước+đất sạch.", "responsible_role": "Halal Lead + Tổ vệ sinh", "records": "Biên bản sertu BM-CLN-03"},
-    {"step_no": 4, "action": "Test ATP sau vệ sinh — giá trị < 100 RLU mới đạt.", "responsible_role": "QC", "criteria": "ATP < 100 RLU"},
-    {"step_no": 5, "action": "Niêm phong khu vực đã vệ sinh — chờ đến ca tiếp theo.", "responsible_role": "QC + Quản đốc"}
+    {"step_no": 1, "action": "Vệ sinh thường ngày (cuối mỗi ca) — quét bụi → xịt nước sạch → bôi dung dịch tẩy rửa (Halal-approved) ngâm 5 phút → rửa lại nước sạch → lau khô bằng khăn mới. Áp dụng cho khu vực không tiếp xúc Najis.", "responsible_role": "Nhân viên vệ sinh", "records": "Lịch vệ sinh ngày BM-CLN-01", "criteria": "Hoàn thành trong 60 phút; không dấu hiệu cặn bẩn cảm quan"},
+    {"step_no": 2, "action": "Vệ sinh tuần (Chủ nhật hoặc ngày dừng máy) — tháo rời thiết bị (băng tải, ống dẫn); ngâm chất tẩy ≥ 30 phút; chà ngóc ngách bằng bàn chải; rửa kỹ; sấy khô bằng khí nén. Sử dụng Checklist BM-CLN-02 với 24 mục kiểm tra.", "responsible_role": "Nhân viên vệ sinh + Quản đốc", "records": "Checklist BM-CLN-02", "criteria": "100% mục đạt; ATP < 100 RLU trên 5 điểm test"},
+    {"step_no": 3, "action": "SERTU (chỉ khi phát hiện tiếp xúc Najis Mughallazah, vd phát hiện thịt heo trong khu Halal): (a) Halal Lead xác nhận trường hợp Mughallazah; (b) Cách ly khu vực; (c) Chuẩn bị nước pha đất sertu (1 phần đất : 7 phần nước sạch).", "responsible_role": "Halal Lead", "records": "Biên bản phát hiện Najis BM-CLN-03"},
+    {"step_no": 4, "action": "SERTU — Bước 1: Rửa bằng nước pha đất sertu, kỳ cọ kỹ toàn bộ bề mặt tiếp xúc Najis. Bước 2-7: Rửa 6 lần tiếp theo bằng nước sạch (rửa chảy, không rửa ngâm), mỗi lần đổ nước mới. Tổng 7 lần liên tiếp, không gián đoạn quá 30 phút.", "responsible_role": "Halal Lead + Nhân viên vệ sinh", "records": "Biên bản Sertu BM-CLN-04 (lưu vĩnh viễn)", "criteria": "Đủ 7 lần rửa, lần 1 với nước+đất, không gián đoạn"},
+    {"step_no": 5, "action": "SERTU — Sau 7 lần rửa: lau khô; kiểm tra cảm quan không còn dấu vết Najis (mùi, màu, vị); QC test ATP; Halal Lead ký xác nhận biên bản Sertu.", "responsible_role": "Halal Lead + QC", "records": "Biên bản Sertu BM-CLN-04 + Test ATP BM-LAB-03", "criteria": "Cảm quan sạch hoàn toàn; ATP < 50 RLU (chuẩn cao hơn vệ sinh thường)"},
+    {"step_no": 6, "action": "Vệ sinh tháng (cuối tháng) — tổng vệ sinh toàn bộ cơ sở: tháo trần che, vệ sinh cao trần, kiểm tra ổ khóa kho, hệ thống thoát nước. Bảo trì kèm vệ sinh.", "responsible_role": "Nhân viên vệ sinh + Bộ phận Bảo trì", "records": "Báo cáo tổng vệ sinh BM-CLN-05", "criteria": "Hoàn thành trong 1 ngày; không gián đoạn sản xuất ngày tiếp theo"},
+    {"step_no": 7, "action": "Test ATP sau mọi đợt vệ sinh — QC dùng máy đo ATP cầm tay (Hygiena SystemSURE Plus hoặc tương đương), test 5 điểm: bề mặt thiết bị tiếp xúc, dao cắt, bàn QC, sàn khu sản xuất, dụng cụ vệ sinh.", "responsible_role": "QC", "records": "Báo cáo ATP BM-LAB-03 (lưu 1 năm)", "criteria": "Vệ sinh thường: < 100 RLU; sau Sertu: < 50 RLU"},
+    {"step_no": 8, "action": "Niêm phong khu vực đã vệ sinh — Quản đốc + QC ký niêm phong giấy ghi 'Vệ sinh hoàn tất — Ngày/giờ/Người ký' lên cửa thiết bị/khu vực; chờ đến ca tiếp theo.", "responsible_role": "Quản đốc + QC", "records": "Niêm phong giấy lưu cùng BPR ca tiếp theo"},
+    {"step_no": 9, "action": "Kiểm soát hóa chất — danh sách hóa chất Halal-approved cập nhật quý bởi Halal Lead. Mỗi lô hóa chất nhập kèm CoA + chứng nhận không chứa thành phần Haram. Lưu trong kho hóa chất riêng có khoá.", "responsible_role": "Halal Lead + Bộ phận Mua hàng", "records": "Danh sách hóa chất BM-CLN-06 (cập nhật quý)"},
+    {"step_no": 10, "action": "Quản lý dụng cụ vệ sinh theo color coding: XANH = khu Halal, ĐỎ = khu non-Halal, VÀNG = khu Cách ly, TRẮNG = khu chung (lối đi, văn phòng). Dụng cụ không được trộn lẫn giữa khu.", "responsible_role": "Tổ trưởng vệ sinh", "criteria": "Kiểm tra ngẫu nhiên hàng tuần — bất kỳ dụng cụ trộn lẫn → cảnh báo"},
+    {"step_no": 11, "action": "Đào tạo nhân sự vệ sinh — đào tạo bắt buộc 8h cho nhân sự mới (gồm 2h thực hành Sertu); đào tạo lại 4h/năm; kiểm tra lý thuyết + thực hành đạt 80% mới được cấp thẻ vệ sinh Halal.", "responsible_role": "Halal Lead + HR", "records": "Hồ sơ đào tạo BM-HR-02 + Thẻ vệ sinh"},
+    {"step_no": 12, "action": "Audit hiệu quả vệ sinh — Halal Lead audit ngẫu nhiên 1 lần/tháng: quan sát thực tế quy trình, phỏng vấn nhân sự, kiểm tra hồ sơ. Báo cáo Tổng GĐ.", "responsible_role": "Halal Lead", "records": "Báo cáo audit BM-AUD-03"}
   ],
   "records": [
-    "Lịch vệ sinh ngày/tuần/tháng BM-CLN-01 — lưu 3 năm",
-    "Checklist vệ sinh kỹ BM-CLN-02 — lưu 3 năm",
-    "Biên bản sertu (khi áp dụng) BM-CLN-03 — lưu vĩnh viễn"
+    "BM-CLN-01 — Lịch vệ sinh ngày/tuần/tháng (lưu 3 năm)",
+    "BM-CLN-02 — Checklist vệ sinh kỹ tuần (lưu 3 năm)",
+    "BM-CLN-03 — Biên bản phát hiện Najis (lưu 7 năm)",
+    "BM-CLN-04 — Biên bản Sertu (lưu VĨNH VIỄN — bằng chứng tuân thủ Sharia)",
+    "BM-CLN-05 — Báo cáo tổng vệ sinh tháng (lưu 3 năm)",
+    "BM-CLN-06 — Danh sách hóa chất Halal-approved (cập nhật quý, lưu version 5 năm)",
+    "BM-LAB-03 — Báo cáo ATP test (lưu 1 năm)",
+    "BM-AUD-03 — Báo cáo audit vệ sinh hàng tháng (lưu 7 năm)",
+    "BM-HR-02 — Hồ sơ đào tạo và thẻ vệ sinh Halal (lưu suốt thời gian làm việc + 3 năm)"
+  ],
+  "appendices": [
+    "Phụ lục A — Quy trình Sertu chi tiết với hình ảnh từng bước (Sertu Step-by-Step)",
+    "Phụ lục B — Danh sách hóa chất Halal-approved hiện hành (cập nhật 2026-Q2)",
+    "Phụ lục C — Sơ đồ color-coding dụng cụ vệ sinh",
+    "Phụ lục D — Bảng tỷ lệ pha hóa chất theo loại vệ sinh",
+    "Phụ lục E — Hướng dẫn sử dụng máy đo ATP Hygiena SystemSURE",
+    "Phụ lục F — Form Biên bản Sertu (BM-CLN-04, 2 trang A4)"
   ],
   "effective_date": "2026-04-01",
   "review_date": "2027-04-01",
-  "approved_by": "Trần Thị Bình, Halal Lead",
+  "approved_by": "Trần Thị Bình — Halal Lead, ký ngày 2026-03-26",
   "issued_date": "2026-05-05"
 }

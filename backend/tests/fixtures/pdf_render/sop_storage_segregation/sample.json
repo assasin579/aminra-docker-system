@@ -1,33 +1,61 @@
 {
   "business_name": "Công ty TNHH Quế Thiên Lộc",
   "sop_id": "SOP-STO-001",
-  "title": "Lưu trữ và phân tách Halal",
-  "version": "1.0",
-  "purpose": "Đảm bảo nguyên liệu, bán thành phẩm và thành phẩm Halal được lưu trữ tách biệt vật lý hoặc theo thời gian với các vật phẩm non-Halal, ngăn ngừa nhiễm chéo.",
-  "scope": "Áp dụng tại tất cả khu vực kho, container vận chuyển và thiết bị lưu trữ tạm trong cơ sở sản xuất.",
+  "title": "Quy trình lưu trữ và phân tách nguyên liệu Halal",
+  "version": "2.0",
+  "purpose": "Đảm bảo nguyên liệu, bán thành phẩm và thành phẩm Halal được lưu trữ tách biệt — vật lý hoặc theo thời gian — với mọi vật phẩm non-Halal, Najis hoặc Mashbooh. SOP này thực hiện điều khoản §4.5 của MS 1500:2019 và §6.2 của MPPHM 2020 về 'Hand'ling and Storage', ngăn ngừa nhiễm chéo (cross-contamination) trong toàn bộ chu trình lưu kho.",
+  "scope": "Áp dụng tại tất cả khu vực: (1) kho nguyên liệu thô (Warehouse A); (2) kho bán thành phẩm (Warehouse B); (3) kho thành phẩm chờ xuất (Warehouse C); (4) container vận chuyển nội bộ; (5) thiết bị lưu trữ tạm trong xưởng (pallet, thùng, bao tải); (6) khu vực Cách ly chờ xử lý. Áp dụng cho mọi nhân sự có quyền truy cập kho.",
   "responsibilities": [
-    {"role": "Trưởng kho", "duties": "Quản lý phân khu Halal/non-Halal, định kỳ kiểm tra niêm phong và biển báo."},
-    {"role": "Halal Lead", "duties": "Phê duyệt sơ đồ phân tách, đào tạo nhân sự, xử lý sự cố nhiễm chéo."},
-    {"role": "Nhân viên kho", "duties": "Tuân thủ sơ đồ phân tách khi xếp hàng, vệ sinh giữa các lô."}
+    {"role": "Trưởng kho", "duties": "Quản lý sơ đồ phân tách Halal/non-Halal/Cách ly; định kỳ kiểm tra niêm phong, biển báo và sự sạch sẽ giữa các khu; quản lý chìa khoá khu Cách ly."},
+    {"role": "Halal Lead / IHC Officer", "duties": "Phê duyệt sơ đồ phân tách và mọi thay đổi layout; đào tạo nhân sự; xử lý sự cố nhiễm chéo; chủ trì audit phân tách hàng tuần."},
+    {"role": "Nhân viên kho", "duties": "Tuân thủ sơ đồ phân tách khi xếp/dỡ hàng; vệ sinh khu vực giữa các lô; ghi chép thẻ kho đầy đủ."},
+    {"role": "Nhân viên QC", "duties": "Lấy mẫu môi trường (swab test) hàng tháng tại bề mặt tiếp xúc; báo cáo bất thường cho Halal Lead trong 4h."},
+    {"role": "Tổ vệ sinh", "duties": "Vệ sinh hàng ngày khu Halal trước, khu non-Halal sau, không đảo ngược thứ tự; sử dụng dụng cụ vệ sinh riêng cho mỗi khu."},
+    {"role": "Bảo vệ ca đêm", "duties": "Tuần tra kho 2h/lần; ghi nhận bất thường (mùi lạ, dấu hiệu chuột, thấm nước) trong sổ trực ca."}
   ],
   "definitions": [
-    {"term": "Phân tách vật lý", "definition": "Tách bằng tường, vách ngăn, hoặc khoảng cách ≥ 2m giữa khu Halal và non-Halal."},
-    {"term": "Phân tách thời gian", "definition": "Sản xuất Halal trước, vệ sinh đầy đủ, sau đó mới sản xuất non-Halal (hoặc ngược lại)."}
+    {"term": "Phân tách vật lý (Physical segregation)", "definition": "Tách bằng tường, vách ngăn cố định, hoặc khoảng cách an toàn ≥ 2m giữa khu Halal và non-Halal/Cách ly. Yêu cầu cao nhất theo MPPHM 2020 §6.2.1."},
+    {"term": "Phân tách thời gian (Temporal segregation)", "definition": "Sản xuất Halal trước, vệ sinh đầy đủ (theo SOP-CLN-001), sau đó mới sản xuất non-Halal — hoặc ngược lại. Áp dụng khi không thể phân tách vật lý hoàn toàn."},
+    {"term": "Khu Halal (Halal Zone)", "definition": "Khu vực dành riêng cho nguyên liệu/sản phẩm đã được xác nhận Halal — biển báo màu xanh, không cho phép đặt vật phẩm Mashbooh hoặc non-Halal."},
+    {"term": "Khu Cách ly (Quarantine Zone)", "definition": "Khu vực có khoá riêng, dành cho nguyên liệu Mashbooh chờ điều tra hoặc lô không phù hợp chờ xử lý. Chỉ Halal Lead có chìa khoá."},
+    {"term": "Cross-contamination", "definition": "Nhiễm chéo — sự dịch chuyển không mong muốn của vật chất Najis/Haram sang vật phẩm Halal qua tiếp xúc trực tiếp, dụng cụ chung, không khí, hoặc côn trùng."},
+    {"term": "Pallet kế thừa (Inheritable pallet)", "definition": "Pallet đã sử dụng cho non-Halal — không được dùng cho Halal trừ khi đã sertu hoặc thay mới."},
+    {"term": "FEFO (First Expired First Out)", "definition": "Nguyên tắc xuất kho — lô có ngày hết hạn sớm nhất xuất trước, đảm bảo không có lô quá hạn lưu trong kho."}
   ],
   "procedure_steps": [
-    {"step_no": 1, "action": "Phân chia kho thành 3 khu — Halal, Non-Halal (nếu có), Cách ly chờ xử lý.", "responsible_role": "Trưởng kho", "records": "Sơ đồ kho BM-STO-01"},
-    {"step_no": 2, "action": "Gắn biển báo rõ ràng tại từng khu — chữ + ký hiệu màu xanh (Halal) / đỏ (Non-Halal).", "responsible_role": "Trưởng kho"},
-    {"step_no": 3, "action": "Khi nhập hàng, kiểm tra mã lô, chuyển vào đúng khu phân tách.", "responsible_role": "Nhân viên kho", "criteria": "Không đặt 2 lô khác trạng thái trên cùng pallet"},
-    {"step_no": 4, "action": "Định kỳ tuần kiểm tra niêm phong + sạch sẽ giữa các khu — báo cáo Halal Lead.", "responsible_role": "Halal Lead", "records": "Checklist BM-STO-02"},
-    {"step_no": 5, "action": "Khi phát hiện nhiễm chéo — cách ly ngay, lập biên bản, theo SOP-NCR-001.", "responsible_role": "Halal Lead + QC"}
+    {"step_no": 1, "action": "Phân chia kho thành tối thiểu 4 khu vực bằng vách ngăn hoặc kẻ vạch sàn: (a) Halal — kệ A1-A20; (b) Non-Halal (nếu có) — kệ B1-B5; (c) Cách ly — phòng có khoá; (d) Khu vệ sinh dụng cụ.", "responsible_role": "Trưởng kho + Halal Lead", "records": "Sơ đồ kho BM-STO-01 (cập nhật khi có thay đổi layout)"},
+    {"step_no": 2, "action": "Gắn biển báo rõ ràng tại từng khu — chữ Việt + Anh + Ả Rập, ký hiệu màu (xanh = Halal, đỏ = non-Halal/Cách ly, vàng = đang vệ sinh). Kích thước biển ≥ A4, treo cao 1.5m.", "responsible_role": "Trưởng kho", "criteria": "Biển báo nhìn rõ từ lối vào, không bị che khuất"},
+    {"step_no": 3, "action": "Khi nhập hàng (theo SOP-RAW-001): kiểm tra mã lô từ AMINRA, xác định trạng thái (Halal/Mashbooh/Reject), chuyển vào khu phân tách tương ứng. KHÔNG đặt 2 lô khác trạng thái trên cùng pallet.", "responsible_role": "Nhân viên kho", "records": "Thẻ kho BM-STO-04", "criteria": "Mã lô khớp 100% giữa hệ thống AMINRA và thẻ kho vật lý"},
+    {"step_no": 4, "action": "Quy tắc xếp chồng — pallet Halal trên pallet Halal; tuyệt đối không đặt pallet non-Halal phía trên pallet Halal (rủi ro thấm nhiễm xuống dưới). Khoảng cách giữa kệ Halal và non-Halal ≥ 2m.", "responsible_role": "Nhân viên kho", "criteria": "Khoảng cách đo bằng thước, ghi nhận trong checklist tuần"},
+    {"step_no": 5, "action": "Áp dụng FEFO khi xuất kho — kiểm tra hạn sử dụng trên mã lô, xuất lô có hạn sớm nhất trước. Hệ thống AMINRA tự gợi ý lô khi tạo phiếu xuất.", "responsible_role": "Nhân viên kho", "records": "Phiếu xuất kho BM-STO-05"},
+    {"step_no": 6, "action": "Vệ sinh giữa các khu — Tổ vệ sinh sử dụng dụng cụ RIÊNG cho khu Halal (mã ký hiệu màu xanh trên cán chổi/giẻ). Quy trình: làm sạch khu Halal trước, sau đó mới khu non-Halal.", "responsible_role": "Tổ vệ sinh", "records": "Lịch vệ sinh BM-CLN-01", "criteria": "Không trộn lẫn dụng cụ giữa các khu — kiểm tra ngẫu nhiên hàng tuần"},
+    {"step_no": 7, "action": "Kiểm tra phân tách hàng tuần — Halal Lead chủ trì, kèm Trưởng kho + 1 QC. Sử dụng Checklist BM-STO-02 với 18 mục: niêm phong, biển báo, khoảng cách kệ, dụng cụ vệ sinh, sổ ghi chép, thẻ kho khớp hệ thống.", "responsible_role": "Halal Lead", "records": "Checklist BM-STO-02 (lưu 3 năm)", "criteria": "≥ 95% mục đạt; nếu < 95% → kế hoạch hành động trong 7 ngày"},
+    {"step_no": 8, "action": "Lấy mẫu môi trường hàng tháng — QC swab test 5 điểm: bề mặt kệ A1, B1, sàn khu Cách ly, lối đi chính, khu vệ sinh dụng cụ. Kiểm tra TPC, Coliform.", "responsible_role": "Nhân viên QC", "records": "Báo cáo môi trường BM-LAB-02 (lưu 2 năm)", "criteria": "TPC ≤ 10⁴ CFU/cm² trên kệ Halal"},
+    {"step_no": 9, "action": "Khi phát hiện nhiễm chéo (vd phát hiện thịt heo trong khu Halal, hoặc swab test dương tính bất thường): (a) Cách ly ngay khu vực ảnh hưởng; (b) Lập biên bản trong 1h; (c) Kích hoạt SOP-NCR-001 và SOP-CLN-001 (sertu nếu cần).", "responsible_role": "Halal Lead + QC", "records": "Biên bản nhiễm chéo BM-STO-06 (lưu 7 năm)"},
+    {"step_no": 10, "action": "Xác định ranh giới nhiễm — đánh giá lô nào trong khu vực bị ảnh hưởng có khả năng nhiễm chéo; thực hiện kiểm nghiệm bổ sung; quyết định: rework / hủy / chuyển non-Halal.", "responsible_role": "Halal Lead + Tổng GĐ", "criteria": "Quyết định trong 48h kể từ phát hiện"},
+    {"step_no": 11, "action": "Quản lý pallet và bao bì tái sử dụng — pallet đã dùng cho non-Halal phải có nhãn rõ và lưu khu riêng. KHÔNG dùng cho Halal trừ khi đã sertu (xem SOP-CLN-001 §3) hoặc thay mới.", "responsible_role": "Nhân viên kho"},
+    {"step_no": 12, "action": "Báo cáo hàng tháng cho Halal Lead — tổng hợp số liệu: số lô nhập/xuất từng khu, số lần phát hiện không phù hợp, kết quả audit tuần, hành động khắc phục.", "responsible_role": "Trưởng kho", "records": "Báo cáo tháng BM-STO-07"},
+    {"step_no": 13, "action": "Đào tạo lại nhân sự khi: (a) Tuyển mới; (b) SOP sửa đổi; (c) Phát hiện vi phạm trong audit. Đào tạo bao gồm thực hành tại kho + kiểm tra lý thuyết.", "responsible_role": "Halal Lead + HR", "records": "Hồ sơ đào tạo BM-HR-02"}
   ],
   "records": [
-    "Sơ đồ phân tách kho BM-STO-01 — cập nhật khi có thay đổi layout",
-    "Checklist tuần kiểm tra phân tách BM-STO-02 — lưu 3 năm",
-    "Biên bản nhiễm chéo (nếu có) — lưu 7 năm"
+    "BM-STO-01 — Sơ đồ phân tách kho (cập nhật khi thay đổi, lưu version cũ 5 năm)",
+    "BM-STO-02 — Checklist tuần kiểm tra phân tách (lưu 3 năm)",
+    "BM-STO-04 — Thẻ kho Halal/non-Halal/Cách ly (lưu 5 năm)",
+    "BM-STO-05 — Phiếu xuất kho theo FEFO (lưu 5 năm)",
+    "BM-STO-06 — Biên bản nhiễm chéo (lưu 7 năm — bằng chứng audit JAKIM)",
+    "BM-STO-07 — Báo cáo phân tách hàng tháng (lưu 3 năm)",
+    "BM-CLN-01 — Lịch vệ sinh kho (lưu 3 năm)",
+    "BM-LAB-02 — Báo cáo swab test môi trường (lưu 2 năm)"
+  ],
+  "appendices": [
+    "Phụ lục A — Sơ đồ kho 3D với phân khu màu (BM-STO-01)",
+    "Phụ lục B — Mẫu Checklist phân tách hàng tuần (BM-STO-02)",
+    "Phụ lục C — Hướng dẫn quản lý dụng cụ vệ sinh theo khu (Color Coding)",
+    "Phụ lục D — Quy trình xử lý khi phát hiện chuột/côn trùng trong kho",
+    "Phụ lục E — Danh sách kệ và mã định danh khu Halal (HALAL-A1 đến HALAL-A20)"
   ],
   "effective_date": "2026-04-01",
   "review_date": "2027-04-01",
-  "approved_by": "Trần Thị Bình, Halal Lead",
+  "approved_by": "Trần Thị Bình — Halal Lead, ký ngày 2026-03-26",
   "issued_date": "2026-05-05"
 }

@@ -1,32 +1,66 @@
 {
   "business_name": "Công ty TNHH Quế Thiên Lộc",
   "sop_id": "SOP-NCR-001",
-  "title": "Xử lý không phù hợp",
-  "version": "1.0",
-  "purpose": "Quy định cách phát hiện, ghi nhận, cách ly, điều tra nguyên nhân gốc và xử lý sản phẩm/quy trình không phù hợp tiêu chuẩn Halal hoặc tiêu chí chất lượng nội bộ.",
-  "scope": "Áp dụng cho mọi sản phẩm bị nghi ngờ nhiễm Haram, vi phạm thông số kỹ thuật, sự cố vệ sinh, khiếu nại nội bộ.",
+  "title": "Quy trình xử lý không phù hợp (Non-Conformance Report)",
+  "version": "2.0",
+  "purpose": "Quy định cách phát hiện, ghi nhận, cách ly, điều tra nguyên nhân gốc (root cause analysis) và xử lý mọi sản phẩm hoặc quy trình không phù hợp với tiêu chuẩn Halal MS 1500:2019, tiêu chí chất lượng nội bộ, hoặc yêu cầu khách hàng. SOP này tích hợp phương pháp 5-Why và 8D Problem Solving — đảm bảo không chỉ khắc phục triệu chứng mà còn loại bỏ nguyên nhân hệ thống.",
+  "scope": "Áp dụng cho mọi: (1) sản phẩm bị nghi ngờ nhiễm Haram/Najis; (2) vi phạm CCP1/CCP2 trong sản xuất; (3) lệch thông số kỹ thuật ngoài dung sai; (4) sự cố vệ sinh phát hiện sau ca; (5) khiếu nại nội bộ từ nhân sự QC/Halal Lead; (6) phản hồi tiêu cực từ audit nội bộ hoặc bên thứ 3. KHÔNG áp dụng cho khiếu nại từ khách hàng (xem SOP-RCL-001) và lỗi đánh máy/format trong tài liệu.",
   "responsibilities": [
-    {"role": "Bất kỳ nhân viên nào phát hiện", "duties": "Báo cáo ngay cho QC trực ca; tạm dừng sử dụng/giao hàng sản phẩm liên quan."},
-    {"role": "QC", "duties": "Cách ly lô, gắn nhãn 'CHỜ XỬ LÝ', mở phiếu NCR."},
-    {"role": "Halal Lead", "duties": "Điều tra nguyên nhân gốc (5-Why), quyết định: rework / hủy / chuyển non-Halal."},
-    {"role": "Quản đốc xưởng", "duties": "Áp dụng hành động khắc phục, cập nhật SOP nếu cần."}
+    {"role": "Bất kỳ nhân viên nào phát hiện", "duties": "Báo cáo ngay cho QC trực ca trong vòng 30 phút; tạm dừng sử dụng/giao hàng sản phẩm liên quan; KHÔNG tự ý xử lý hoặc che giấu."},
+    {"role": "QC ca", "duties": "Tiếp nhận báo cáo; cách ly lô; gắn nhãn 'CHỜ XỬ LÝ — DO NOT USE'; mở Phiếu NCR trong AMINRA; thông báo Halal Lead trong 1h."},
+    {"role": "Halal Lead", "duties": "Chủ trì điều tra nguyên nhân gốc bằng 5-Why; phân loại mức độ nghiêm trọng (Critical/Major/Minor); quyết định xử lý lô; phê duyệt CAR (Corrective Action Request)."},
+    {"role": "Quản đốc xưởng", "duties": "Áp dụng hành động khắc phục tại dây chuyền; cập nhật SOP nếu cần; đào tạo lại nhân sự liên quan."},
+    {"role": "Tổng giám đốc", "duties": "Phê duyệt quyết định hủy lô lớn (≥ 1 tấn) hoặc chuyển non-Halal; báo cáo Hội đồng quản trị; quyết định vấn đề leo thang khi cấp dưới không thống nhất."},
+    {"role": "Bộ phận R&D", "duties": "Hỗ trợ điều tra khi nguyên nhân liên quan công thức hoặc nguyên liệu mới; đề xuất sửa Spec nếu cần."},
+    {"role": "HR", "duties": "Phối hợp khi NCR liên quan vi phạm kỷ luật của nhân sự; cập nhật hồ sơ đào tạo lại."}
+  ],
+  "definitions": [
+    {"term": "Non-Conformance (NC)", "definition": "Sự không phù hợp — sản phẩm, quá trình hoặc hệ thống không đáp ứng yêu cầu đã quy định (Halal, ATTP, Spec kỹ thuật, yêu cầu khách hàng)."},
+    {"term": "NCR (Non-Conformance Report)", "definition": "Phiếu báo cáo không phù hợp — bản ghi chính thức trong hệ thống AMINRA, bắt đầu khi phát hiện và đóng khi xác nhận hành động khắc phục hiệu quả."},
+    {"term": "5-Why Analysis", "definition": "Phương pháp truy tìm nguyên nhân gốc — đặt câu hỏi 'Tại sao?' liên tiếp 5 lần (hoặc nhiều hơn) đến khi đạt nguyên nhân hệ thống có thể can thiệp được. KHÔNG dừng ở câu trả lời 'do người vận hành sai' — phải đào sâu đến quy trình/đào tạo/thiết bị."},
+    {"term": "8D Problem Solving", "definition": "Phương pháp 8 bước (Discipline) của Ford — D1 lập team → D2 mô tả vấn đề → D3 hành động ngăn chặn tạm thời → D4 root cause → D5 hành động khắc phục → D6 áp dụng → D7 ngăn ngừa tái diễn → D8 ghi nhận team."},
+    {"term": "CAR (Corrective Action Request)", "definition": "Yêu cầu hành động khắc phục — kế hoạch chi tiết loại bỏ nguyên nhân gốc, có owner và deadline. Được Halal Lead phê duyệt."},
+    {"term": "PAR (Preventive Action Request)", "definition": "Yêu cầu hành động phòng ngừa — kế hoạch ngăn chặn vấn đề tương tự xảy ra ở quy trình khác (cross-functional)."},
+    {"term": "Phân loại NC", "definition": "Critical: nhiễm Haram/Najis, ảnh hưởng ATTP nghiêm trọng → xử lý 24h. Major: vi phạm CCP, lệch Spec quan trọng → 7 ngày. Minor: lệch Spec không ảnh hưởng Halal/ATTP → 30 ngày."}
   ],
   "procedure_steps": [
-    {"step_no": 1, "action": "Phát hiện không phù hợp → báo cáo trong vòng 30 phút.", "responsible_role": "Tất cả nhân sự", "records": "Phiếu NCR BM-NCR-01"},
-    {"step_no": 2, "action": "QC cách ly lô — gắn nhãn đỏ, di chuyển vào khu Cách ly.", "responsible_role": "QC", "criteria": "Hoàn thành trong 1 giờ kể từ khi phát hiện"},
-    {"step_no": 3, "action": "Mở phiếu NCR — điền thông tin lô, mô tả vấn đề, ảnh minh họa.", "responsible_role": "QC", "records": "Phiếu NCR có ảnh"},
-    {"step_no": 4, "action": "Halal Lead điều tra — phỏng vấn nhân sự, kiểm tra nhật ký, áp dụng 5-Why.", "responsible_role": "Halal Lead", "records": "Báo cáo điều tra BM-NCR-02"},
-    {"step_no": 5, "action": "Quyết định xử lý: (a) Rework nếu sửa được — (b) Hủy — (c) Chuyển non-Halal nếu khách hàng chấp nhận.", "responsible_role": "Halal Lead + Tổng GĐ"},
-    {"step_no": 6, "action": "Áp dụng hành động khắc phục — cập nhật SOP, đào tạo lại nhân sự, sửa thiết bị.", "responsible_role": "Quản đốc + Halal Lead", "records": "Báo cáo CAR BM-NCR-03"},
-    {"step_no": 7, "action": "Đóng phiếu NCR khi xác nhận hành động hiệu quả — Halal Lead ký.", "responsible_role": "Halal Lead", "criteria": "Không tái diễn trong 90 ngày"}
+    {"step_no": 1, "action": "Phát hiện không phù hợp — bất kỳ nhân sự nào báo cáo trong vòng 30 phút qua: (a) Báo trực tiếp cho QC trực ca; (b) Hotline nội bộ ext.119; (c) App AMINRA Mobile (ưu tiên — auto timestamp + GPS).", "responsible_role": "Tất cả nhân sự", "records": "Phiếu NCR BM-NCR-01 (mở trong AMINRA)"},
+    {"step_no": 2, "action": "QC tiếp nhận trong 1h — thực hiện ngay: (a) Đến hiện trường; (b) Cách ly lô bằng nhãn đỏ 'CHỜ XỬ LÝ — DO NOT USE' kèm số NCR; (c) Di chuyển lô vào Khu Cách ly có khoá; (d) Chụp ảnh hiện trạng đính kèm phiếu NCR.", "responsible_role": "QC ca", "criteria": "Hoàn thành trong 1h kể từ khi tiếp nhận"},
+    {"step_no": 3, "action": "Thông báo Halal Lead trong 1h tiếp theo — qua điện thoại + email + thông báo trong AMINRA. Halal Lead xác nhận nhận thông tin.", "responsible_role": "QC + Halal Lead"},
+    {"step_no": 4, "action": "Phân loại sơ bộ (trong 4h kể từ phát hiện): (a) Critical → leo thang Tổng GĐ ngay; (b) Major → Halal Lead chủ trì điều tra; (c) Minor → Quản đốc + QC tự xử lý có giám sát.", "responsible_role": "Halal Lead", "records": "Phân loại trên Phiếu NCR"},
+    {"step_no": 5, "action": "Hành động ngăn chặn tạm thời (Containment Action) trong 8h — ngăn không cho lô bị ảnh hưởng đi tiếp xuống chuỗi: (a) Dừng dây chuyền nếu cần; (b) Niêm phong kho liên quan; (c) Tạm khoá xuất kho thành phẩm cùng lô; (d) Thông báo Logistics nếu lô đã xuất.", "responsible_role": "Halal Lead + Quản đốc", "records": "Báo cáo Containment BM-NCR-02"},
+    {"step_no": 6, "action": "Điều tra root cause bằng 5-Why — Halal Lead chủ trì cuộc họp với: nhân sự phát hiện, Vận hành viên ca xảy ra, Trưởng kho, R&D nếu cần. Đặt 5 câu 'Tại sao?' liên tiếp, ghi vào sơ đồ 5-Why.", "responsible_role": "Halal Lead", "records": "Sơ đồ 5-Why BM-NCR-03 (lưu 7 năm)", "criteria": "Đạt nguyên nhân hệ thống — KHÔNG dừng ở 'người vận hành sai'"},
+    {"step_no": 7, "action": "Quyết định xử lý lô — Halal Lead trình Tổng GĐ 1 trong 4 phương án: (a) REWORK — sửa và sản xuất lại nếu nguyên nhân không liên quan Halal; (b) HỦY — tiêu hủy có chứng kiến nếu Critical; (c) CHUYỂN NON-HALAL — bán cho thị trường non-Halal nếu sản phẩm vẫn an toàn; (d) TRẢ NHÀ CUNG CẤP — nếu lỗi đầu vào.", "responsible_role": "Halal Lead + Tổng GĐ", "records": "Quyết định xử lý lô BM-NCR-04", "criteria": "Quyết định trong 24h cho Critical, 7 ngày cho Major, 30 ngày cho Minor"},
+    {"step_no": 8, "action": "Lập kế hoạch CAR (Corrective Action Request) — bao gồm: (a) Hành động cụ thể loại bỏ nguyên nhân gốc; (b) Owner; (c) Deadline; (d) Tiêu chí xác nhận hiệu quả; (e) Nguồn lực cần. Halal Lead phê duyệt.", "responsible_role": "Halal Lead + Quản đốc", "records": "Phiếu CAR BM-NCR-05"},
+    {"step_no": 9, "action": "Áp dụng CAR — Quản đốc thực hiện: (a) Cập nhật SOP nếu cần (qua Document Control); (b) Đào tạo lại nhân sự (8h cho liên quan trực tiếp, 2h cho cross-team); (c) Sửa thiết bị nếu nguyên nhân kỹ thuật; (d) Cập nhật Spec nếu nguyên nhân R&D.", "responsible_role": "Quản đốc + Halal Lead + HR", "records": "Bằng chứng đào tạo + sửa SOP + biên bản sửa thiết bị"},
+    {"step_no": 10, "action": "Lập PAR (Preventive Action Request) cho quy trình tương tự — Halal Lead đánh giá: vấn đề này có thể xảy ra ở quy trình/dây chuyền khác? Nếu có → mở PAR áp dụng cross-functional.", "responsible_role": "Halal Lead", "records": "Phiếu PAR BM-NCR-06 (nếu có)"},
+    {"step_no": 11, "action": "Theo dõi hiệu quả CAR — sau 30 ngày, Halal Lead audit lại quy trình + lô sản xuất tương tự, xác nhận: (a) CAR đã áp dụng đầy đủ; (b) Không tái diễn; (c) Tiêu chí xác nhận đạt.", "responsible_role": "Halal Lead", "criteria": "Không tái diễn trong 90 ngày → đóng NCR"},
+    {"step_no": 12, "action": "Đóng NCR — Halal Lead ký xác nhận trong AMINRA; hệ thống lưu vĩnh viễn. Báo cáo tổng hợp NCR hàng tháng cho Tổng GĐ và Hội đồng cố vấn Halal.", "responsible_role": "Halal Lead", "records": "NCR đóng trong AMINRA + Báo cáo tháng BM-NCR-07"},
+    {"step_no": 13, "action": "Phân tích xu hướng (Trend Analysis) hàng quý — Halal Lead tổng hợp: số NCR theo loại, top 3 nguyên nhân gốc, hiệu quả CAR. Đề xuất cải tiến hệ thống cho Tổng GĐ.", "responsible_role": "Halal Lead", "records": "Báo cáo phân tích xu hướng BM-NCR-08 (lưu 5 năm)"},
+    {"step_no": 14, "action": "Báo cáo cơ quan chứng nhận khi NCR Critical liên quan vi phạm Halal — gửi báo cáo HALCERT/HCA-VN trong 7 ngày, nội dung: phát hiện, hành động khắc phục, ngăn ngừa tái diễn.", "responsible_role": "Tổng GĐ + Halal Lead", "records": "Công văn báo cáo BM-NCR-09 (lưu vĩnh viễn)"}
   ],
   "records": [
-    "Phiếu NCR BM-NCR-01 — lưu 7 năm",
-    "Báo cáo điều tra BM-NCR-02 — lưu 7 năm",
-    "Báo cáo CAR (Corrective Action Request) BM-NCR-03 — lưu 7 năm"
+    "BM-NCR-01 — Phiếu NCR (lưu 7 năm — bằng chứng audit)",
+    "BM-NCR-02 — Báo cáo Containment Action (lưu 7 năm)",
+    "BM-NCR-03 — Sơ đồ 5-Why Analysis (lưu 7 năm)",
+    "BM-NCR-04 — Quyết định xử lý lô (lưu 10 năm — quan trọng cho audit cơ quan)",
+    "BM-NCR-05 — Phiếu CAR (lưu 7 năm)",
+    "BM-NCR-06 — Phiếu PAR cross-functional (lưu 5 năm)",
+    "BM-NCR-07 — Báo cáo tháng NCR cho Tổng GĐ (lưu 5 năm)",
+    "BM-NCR-08 — Báo cáo phân tích xu hướng quý (lưu 5 năm)",
+    "BM-NCR-09 — Công văn báo cáo cơ quan chứng nhận (lưu vĩnh viễn)",
+    "Ảnh hiện trạng + video (nếu có) — lưu cùng phiếu NCR trong AMINRA"
+  ],
+  "appendices": [
+    "Phụ lục A — Mẫu Phiếu NCR (BM-NCR-01, 2 trang)",
+    "Phụ lục B — Hướng dẫn 5-Why Analysis với 3 ví dụ thực tế",
+    "Phụ lục C — Decision Tree cho quyết định xử lý lô (Rework/Hủy/Non-Halal/Trả NCC)",
+    "Phụ lục D — Ma trận phân loại NC: Critical / Major / Minor + ngưỡng escalation",
+    "Phụ lục E — Hướng dẫn 8D Problem Solving — áp dụng cho NCR Major+",
+    "Phụ lục F — Sơ đồ flow xử lý NCR từ phát hiện đến đóng (visual flowchart)"
   ],
   "effective_date": "2026-04-01",
   "review_date": "2027-04-01",
-  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "approved_by": "Nguyễn Văn Anh — Tổng giám đốc, ký ngày 2026-03-25",
   "issued_date": "2026-05-05"
 }

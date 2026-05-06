@@ -1,40 +1,68 @@
 {
   "business_name": "Công ty TNHH Quế Thiên Lộc",
   "sop_id": "SOP-RCL-001",
-  "title": "Khiếu nại khách hàng và thu hồi sản phẩm",
-  "version": "1.1",
-  "purpose": "Đảm bảo tiếp nhận, xử lý khiếu nại từ khách hàng kịp thời và thực hiện thu hồi sản phẩm khi phát hiện rủi ro Halal/an toàn — bảo vệ niềm tin người tiêu dùng và tuân thủ quy định.",
-  "scope": "Áp dụng cho mọi khiếu nại về chất lượng/Halal từ khách hàng B2B, người tiêu dùng cuối, cơ quan chứng nhận hoặc cơ quan quản lý.",
+  "title": "Quy trình tiếp nhận khiếu nại khách hàng và thu hồi sản phẩm",
+  "version": "2.1",
+  "purpose": "Đảm bảo tiếp nhận, ghi nhận, điều tra và xử lý kịp thời mọi khiếu nại liên quan chất lượng/Halal/an toàn từ khách hàng, đồng thời thực hiện thu hồi sản phẩm khi phát hiện rủi ro Halal/sức khỏe — bảo vệ niềm tin người tiêu dùng, tuân thủ Luật Bảo vệ Quyền lợi Người tiêu dùng 2010 và quy định của tổ chức chứng nhận Halal. Mock recall định kỳ 6 tháng/lần đảm bảo năng lực thu hồi luôn sẵn sàng.",
+  "scope": "Áp dụng cho mọi khiếu nại về Halal hoặc chất lượng sản phẩm từ: (1) khách hàng B2B (nhà phân phối, supermarket); (2) người tiêu dùng cuối qua hotline/email/social; (3) cơ quan chứng nhận Halal (HCA-VN, JAKIM); (4) cơ quan quản lý nhà nước (Cục An toàn Thực phẩm, Quản lý thị trường); (5) phát hiện nội bộ sau khi sản phẩm đã xuất xưởng. Áp dụng cho mọi sản phẩm đang trong thị trường — kể cả lô đã bán hết nhưng còn trong tay người tiêu dùng.",
   "responsibilities": [
-    {"role": "Bộ phận CSKH", "duties": "Tiếp nhận khiếu nại, ghi nhận đầy đủ thông tin, chuyển QC trong 4h."},
-    {"role": "QC + Halal Lead", "duties": "Điều tra, đánh giá mức độ rủi ro (Class I/II/III)."},
-    {"role": "Tổng giám đốc", "duties": "Quyết định thu hồi, ký công văn gửi khách hàng + cơ quan chức năng."},
-    {"role": "Bộ phận logistics", "duties": "Thực hiện thu hồi vật lý, theo dõi đến khi hoàn tất."}
+    {"role": "Bộ phận CSKH (Customer Service)", "duties": "Tiếp nhận khiếu nại 24/7 qua hotline 1900-XXXX, email complaints@quethienloc.vn, fanpage; ghi nhận đầy đủ trong vòng 1h; phân loại sơ bộ; chuyển QC + Halal Lead trong 4h."},
+    {"role": "QC + Halal Lead", "duties": "Điều tra khiếu nại — truy xuất lô, kiểm tra hồ sơ sản xuất, mẫu lưu phòng thí nghiệm; đánh giá mức độ rủi ro và phân Class I/II/III."},
+    {"role": "Tổng giám đốc", "duties": "Quyết định thu hồi cho mọi Class I (rủi ro cao) trong 24h; ký công văn gửi khách hàng + cơ quan chức năng; chịu trách nhiệm pháp lý."},
+    {"role": "Bộ phận Logistics", "duties": "Thực hiện thu hồi vật lý — liên hệ nhà phân phối, supermarket, người tiêu dùng; theo dõi hoàn tất 100% lô bị ảnh hưởng; phối hợp xử lý sản phẩm thu hồi."},
+    {"role": "Bộ phận Truyền thông", "duties": "Soạn thông cáo báo chí và thông báo trên fanpage trong vòng 48h cho Class I; phối hợp với Halal Lead và pháp chế đảm bảo nội dung chính xác."},
+    {"role": "Phòng Pháp chế", "duties": "Tư vấn pháp lý; soạn công văn báo cáo cơ quan; xử lý các vụ kiện hoặc yêu cầu bồi thường."},
+    {"role": "Bộ phận Tài chính", "duties": "Trích lập dự phòng chi phí thu hồi; xử lý hoàn tiền hoặc đổi sản phẩm cho khách hàng."}
   ],
   "definitions": [
-    {"term": "Class I", "definition": "Rủi ro nghiêm trọng — sản phẩm chứa Haram hoặc gây hại sức khỏe → thu hồi ngay trong 24h."},
-    {"term": "Class II", "definition": "Rủi ro tiềm tàng — vi phạm tiêu chuẩn nhưng chưa nguy hại → thu hồi trong 7 ngày."},
-    {"term": "Class III", "definition": "Vi phạm nhỏ, không nguy hại — xử lý qua chính sách đổi trả."}
+    {"term": "Class I (Recall nghiêm trọng)", "definition": "Rủi ro nghiêm trọng — sản phẩm chứa Haram (vd nhiễm thịt heo), Najis Mughallazah, hoặc gây hại sức khỏe nghiêm trọng (vd dị vật kim loại, nhiễm khuẩn cao). Thu hồi NGAY trong 24h kể từ quyết định, kể cả nửa đêm."},
+    {"term": "Class II (Recall trung bình)", "definition": "Rủi ro tiềm tàng — vi phạm tiêu chuẩn nhưng chưa gây hại trực tiếp (vd lệch độ ẩm, tạp chất phi-Halal nhỏ, sai nhãn ghi nguồn gốc). Thu hồi trong 7 ngày."},
+    {"term": "Class III (Recall nhẹ)", "definition": "Vi phạm nhỏ không nguy hại — vd lỗi in nhãn không liên quan Halal, sai trọng lượng < 5%. Xử lý qua chính sách đổi/trả thông thường, không thu hồi đại trà."},
+    {"term": "Mock recall (Diễn tập thu hồi)", "definition": "Bài tập mô phỏng — chọn ngẫu nhiên 1 lô đã sản xuất, thực hiện toàn bộ quy trình thu hồi (chỉ truy xuất, không thực sự thu lại) — đo thời gian truy xuất ≤ 4h và độ chính xác > 95% lô."},
+    {"term": "Truy xuất ngược (Trace-back)", "definition": "Từ sản phẩm trong tay khách hàng → truy ngược chuỗi: phân phối → kho thành phẩm → ca sản xuất → nguyên liệu đầu vào → nhà cung cấp."},
+    {"term": "Truy xuất xuôi (Trace-forward)", "definition": "Từ 1 lô nguyên liệu đầu vào → tất cả sản phẩm và khách hàng đã nhận lô đó. Quan trọng để xác định phạm vi thu hồi."},
+    {"term": "Hold-Release (Tạm giữ-Xả)", "definition": "Quy trình tạm giữ lô trong kho thành phẩm chờ xác nhận đạt trước khi xuất bán. Hold ≥ 24h cho đến khi tất cả test vi sinh hoàn thành."}
   ],
   "procedure_steps": [
-    {"step_no": 1, "action": "CSKH tiếp nhận khiếu nại qua hotline / email / web — ghi vào sổ trong vòng 1h.", "responsible_role": "CSKH", "records": "Sổ khiếu nại BM-RCL-01"},
-    {"step_no": 2, "action": "Phân loại sơ bộ — chuyển QC + Halal Lead trong 4h kể từ khi tiếp nhận.", "responsible_role": "CSKH"},
-    {"step_no": 3, "action": "Điều tra — truy xuất lô bằng mã sản phẩm, kiểm tra hồ sơ sản xuất.", "responsible_role": "QC", "records": "Báo cáo điều tra BM-RCL-02"},
-    {"step_no": 4, "action": "Đánh giá rủi ro — phân loại Class I/II/III, báo cáo Tổng GĐ.", "responsible_role": "Halal Lead", "criteria": "Hoàn thành trong 24h cho Class I"},
-    {"step_no": 5, "action": "Tổng GĐ quyết định thu hồi → công văn gửi khách hàng + báo cơ quan chứng nhận trong 48h.", "responsible_role": "Tổng GĐ", "records": "Công văn thu hồi BM-RCL-03"},
-    {"step_no": 6, "action": "Logistics thực hiện thu hồi vật lý — theo dõi đến khi đạt 100% lô bị ảnh hưởng.", "responsible_role": "Logistics", "records": "Báo cáo thu hồi BM-RCL-04"},
-    {"step_no": 7, "action": "Mock recall (diễn tập) — định kỳ 6 tháng/lần, đo thời gian truy xuất ≤ 4h.", "responsible_role": "Halal Lead", "criteria": "Truy xuất 100% lô ≤ 4h"},
-    {"step_no": 8, "action": "Hành động khắc phục — phối hợp SOP-NCR-001, cập nhật SOP, đào tạo lại.", "responsible_role": "Halal Lead + Quản đốc"}
+    {"step_no": 1, "action": "Tiếp nhận khiếu nại — CSKH ghi đầy đủ trong vòng 1h: (a) Tên/SĐT khách hàng; (b) Mã sản phẩm + số lô (yêu cầu chụp ảnh); (c) Mô tả vấn đề; (d) Nơi mua + ngày mua; (e) Tình trạng sản phẩm hiện tại (còn nguyên / đã sử dụng).", "responsible_role": "CSKH", "records": "Sổ khiếu nại điện tử BM-RCL-01 (trong AMINRA Module Complaints)"},
+    {"step_no": 2, "action": "Phân loại sơ bộ trong 2h — CSKH đánh dấu nghi ngờ Halal/an toàn (Y/N); chuyển QC + Halal Lead nếu Y; chuyển Quality Lead nếu N (chỉ chất lượng).", "responsible_role": "CSKH", "criteria": "Mọi khiếu nại Halal-related → Halal Lead trong 4h"},
+    {"step_no": 3, "action": "Điều tra ban đầu — QC truy xuất lô bằng mã sản phẩm trên hệ thống AMINRA Trace; xem BPR ca sản xuất, hồ sơ nguyên liệu, kết quả CCP, mẫu lưu phòng thí nghiệm.", "responsible_role": "QC + Halal Lead", "records": "Báo cáo điều tra ban đầu BM-RCL-02"},
+    {"step_no": 4, "action": "Test mẫu lưu — phòng thí nghiệm chạy test ngay với mẫu đối chứng đã lưu (theo SOP-RAW-001 step 6) hoặc mẫu khách hàng gửi về: vi sinh, hóa lý, PCR pork DNA nếu nghi nhiễm thịt heo.", "responsible_role": "Nhân viên phòng thí nghiệm", "records": "Báo cáo test BM-LAB-04", "criteria": "Kết quả trong 24h cho test nhanh, 72h cho PCR pork"},
+    {"step_no": 5, "action": "Đánh giá rủi ro — Halal Lead chủ trì, đánh giá: (a) Bằng chứng vi phạm Halal/ATTP; (b) Phạm vi lô bị ảnh hưởng (truy xuất xuôi); (c) Số khách hàng/sản phẩm; (d) Class I/II/III. Báo cáo Tổng GĐ trong 24h cho Class I, 48h cho Class II.", "responsible_role": "Halal Lead", "records": "Báo cáo đánh giá rủi ro BM-RCL-03", "criteria": "Class I quyết định ≤ 24h"},
+    {"step_no": 6, "action": "Quyết định thu hồi — Tổng GĐ ký quyết định gồm: (a) Phạm vi (mã lô, số lượng); (b) Class; (c) Owner thu hồi; (d) Deadline 24h/7 ngày/30 ngày; (e) Phương án xử lý sản phẩm thu hồi.", "responsible_role": "Tổng GĐ + Halal Lead", "records": "Quyết định thu hồi BM-RCL-04 (lưu vĩnh viễn)"},
+    {"step_no": 7, "action": "Thông báo các bên liên quan trong 48h: (a) Nhà phân phối + supermarket (qua email + điện thoại); (b) Cơ quan chứng nhận Halal HCA-VN/HALCERT (công văn chính thức); (c) Cục An toàn Thực phẩm (nếu liên quan ATTP); (d) Người tiêu dùng (qua website + fanpage + thông cáo báo chí cho Class I).", "responsible_role": "Tổng GĐ + Truyền thông + Pháp chế", "records": "Công văn thu hồi BM-RCL-05 (lưu vĩnh viễn)"},
+    {"step_no": 8, "action": "Thực hiện thu hồi vật lý — Logistics điều phối: (a) Liên hệ từng nhà phân phối, lập danh sách lô tồn kho; (b) Cử xe đi thu hồi từ supermarket; (c) Tiếp nhận từ người tiêu dùng tại điểm thu (hoặc đổi tại supermarket); (d) Cập nhật tiến độ trong AMINRA mỗi 4h.", "responsible_role": "Logistics + Bộ phận Bán hàng", "records": "Báo cáo thu hồi vật lý BM-RCL-06 (cập nhật real-time trong AMINRA)"},
+    {"step_no": 9, "action": "Xử lý sản phẩm thu hồi — tùy Class: (a) Class I → tiêu hủy có chứng kiến, lập biên bản tiêu hủy, thông báo cơ quan; (b) Class II → đánh giá rework hoặc chuyển non-Halal; (c) Class III → đổi hàng và xử lý theo NCR.", "responsible_role": "Halal Lead + Tổng GĐ", "records": "Biên bản tiêu hủy hoặc rework BM-RCL-07"},
+    {"step_no": 10, "action": "Hoàn tất thu hồi — xác nhận đạt 100% lô bị ảnh hưởng (hoặc ≥ 95% nếu một phần đã tiêu thụ); báo cáo cuối Tổng GĐ + cơ quan chức năng.", "responsible_role": "Logistics + Halal Lead", "criteria": "≥ 95% lô được thu hồi hoặc chứng minh đã tiêu thụ"},
+    {"step_no": 11, "action": "Điều tra root cause — kích hoạt SOP-NCR-001 song song với thu hồi; Halal Lead chủ trì 5-Why; xác định nguyên nhân hệ thống.", "responsible_role": "Halal Lead", "records": "Sơ đồ 5-Why kèm hồ sơ thu hồi"},
+    {"step_no": 12, "action": "Hành động khắc phục + ngăn ngừa tái diễn — cập nhật SOP, đào tạo lại, sửa thiết bị, audit cross-functional. Theo dõi 90 ngày không tái diễn → đóng vụ việc.", "responsible_role": "Halal Lead + Quản đốc", "records": "Phiếu CAR + PAR (theo SOP-NCR-001)"},
+    {"step_no": 13, "action": "Mock recall định kỳ — Halal Lead chủ trì 6 tháng/lần (vào tháng 4 và tháng 10): chọn ngẫu nhiên 1 lô đã sản xuất ≥ 30 ngày trước; thực hiện toàn bộ quy trình truy xuất và mô phỏng thu hồi (không thực sự thu lại); đo thời gian + độ chính xác.", "responsible_role": "Halal Lead", "records": "Báo cáo mock recall BM-RCL-08", "criteria": "Truy xuất 100% lô ≤ 4h; độ chính xác ≥ 95%"},
+    {"step_no": 14, "action": "Báo cáo cơ quan chứng nhận sau mock recall — gửi HCA-VN/HALCERT báo cáo định kỳ 6 tháng — thể hiện năng lực thu hồi của doanh nghiệp.", "responsible_role": "Halal Lead", "records": "Báo cáo định kỳ gửi cơ quan chứng nhận"},
+    {"step_no": 15, "action": "Phân tích xu hướng khiếu nại — hàng quý, CSKH + Halal Lead tổng hợp: top 5 loại khiếu nại, kênh tiếp nhận chủ yếu, thời gian xử lý trung bình. Đề xuất cải tiến cho Tổng GĐ.", "responsible_role": "CSKH + Halal Lead", "records": "Báo cáo xu hướng khiếu nại quý BM-RCL-09"}
   ],
   "records": [
-    "Sổ khiếu nại BM-RCL-01 — lưu 7 năm",
-    "Báo cáo điều tra khiếu nại BM-RCL-02 — lưu 7 năm",
-    "Công văn thu hồi BM-RCL-03 — lưu vĩnh viễn",
-    "Báo cáo thu hồi vật lý BM-RCL-04 — lưu 10 năm",
-    "Báo cáo mock recall định kỳ — lưu 5 năm"
+    "BM-RCL-01 — Sổ khiếu nại điện tử (lưu 7 năm)",
+    "BM-RCL-02 — Báo cáo điều tra ban đầu (lưu 7 năm)",
+    "BM-RCL-03 — Báo cáo đánh giá rủi ro (lưu 7 năm)",
+    "BM-RCL-04 — Quyết định thu hồi (lưu VĨNH VIỄN)",
+    "BM-RCL-05 — Công văn thu hồi gửi các bên (lưu VĨNH VIỄN)",
+    "BM-RCL-06 — Báo cáo thu hồi vật lý (lưu 10 năm)",
+    "BM-RCL-07 — Biên bản tiêu hủy/rework (lưu 10 năm)",
+    "BM-RCL-08 — Báo cáo mock recall định kỳ (lưu 5 năm)",
+    "BM-RCL-09 — Báo cáo xu hướng khiếu nại quý (lưu 5 năm)",
+    "BM-LAB-04 — Báo cáo test mẫu lưu (lưu 7 năm)"
+  ],
+  "appendices": [
+    "Phụ lục A — Ma trận phân Class I/II/III + ngưỡng escalation",
+    "Phụ lục B — Mẫu công văn thu hồi gửi nhà phân phối (BM-RCL-05a)",
+    "Phụ lục C — Mẫu thông cáo báo chí cho Class I (BM-RCL-05b)",
+    "Phụ lục D — Mẫu công văn báo cáo HCA-VN (BM-RCL-05c)",
+    "Phụ lục E — Quy trình mock recall chi tiết (BM-RCL-08-Detail)",
+    "Phụ lục F — Decision tree xử lý sản phẩm thu hồi (Tiêu hủy/Rework/Non-Halal)",
+    "Phụ lục G — Danh sách số liên lạc khẩn cấp 24/7: cơ quan + ban lãnh đạo + nhà phân phối lớn"
   ],
   "effective_date": "2026-04-01",
   "review_date": "2027-04-01",
-  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "approved_by": "Nguyễn Văn Anh — Tổng giám đốc, ký ngày 2026-03-25",
   "issued_date": "2026-05-05"
 }

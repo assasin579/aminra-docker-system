@@ -1,47 +1,78 @@
 {
   "business_name": "Công ty TNHH Quế Thiên Lộc",
   "sop_id": "SOP-RAW-001",
-  "title": "Tiếp nhận nguyên liệu Halal",
-  "version": "1.2",
-  "purpose": "Quy định trình tự kiểm tra, tiếp nhận và lưu kho nguyên liệu thô đảm bảo tuân thủ tiêu chuẩn Halal MS 1500:2019, ngăn ngừa tạp nhiễm Haram trong toàn bộ chuỗi cung ứng.",
-  "scope": "Áp dụng cho mọi lô nguyên liệu nhập về cơ sở sản xuất, bao gồm quế khô, bao bì PE, vật tư đóng gói. Không áp dụng cho mẫu phòng thí nghiệm dưới 5kg.",
+  "title": "Quy trình tiếp nhận và kiểm tra nguyên liệu Halal",
+  "version": "2.1",
+  "purpose": "Quy định trình tự kiểm tra, tiếp nhận, lấy mẫu và lưu kho nguyên liệu thô — đảm bảo mọi nguyên liệu đầu vào tuân thủ tiêu chuẩn Halal MS 1500:2019, MS 2424:2012 và TCVN 12944:2020. SOP này là tuyến phòng thủ đầu tiên ngăn chặn tạp nhiễm Haram, Najis hoặc nguyên liệu Mashbooh trong toàn bộ chuỗi cung ứng — từ nhà cung cấp về tới kho lưu trữ Halal nội bộ.",
+  "scope": "Áp dụng cho 100% lô nguyên liệu thô và vật tư bao bì nhập về cơ sở sản xuất, bao gồm: (1) quế khô nguyên vỏ và quế đã sơ chế từ vùng nguyên liệu Quỳ Châu, Yên Bái; (2) tinh dầu thực vật bổ sung; (3) bao bì PE thực phẩm và túi giấy kraft; (4) phụ gia chống ẩm và silica gel. KHÔNG áp dụng cho mẫu phòng thí nghiệm dưới 5kg, mẫu trưng bày và nguyên liệu trả về từ khách hàng (xem SOP-NCR-001).",
   "responsibilities": [
-    {"role": "Trưởng kho", "duties": "Phê duyệt lô nguyên liệu nhập, kiểm soát hồ sơ chứng nhận Halal của nhà cung cấp."},
-    {"role": "Nhân viên kiểm tra QC", "duties": "Kiểm tra cảm quan, niêm phong và đối chiếu với phiếu giao hàng + chứng nhận Halal."},
-    {"role": "Nhân viên kho", "duties": "Tiếp nhận, ghi nhận và sắp xếp vào khu vực Halal đã phân tách rõ ràng."},
-    {"role": "Halal Lead", "duties": "Phối hợp xử lý nguyên liệu nghi vấn, không phù hợp; lưu trữ hồ sơ đào tạo nhân sự."}
+    {"role": "Trưởng kho nguyên liệu", "duties": "Phê duyệt cuối cùng cho lô nguyên liệu nhập kho; kiểm soát hồ sơ chứng nhận Halal của nhà cung cấp; chịu trách nhiệm trước Halal Lead về việc tuân thủ SOP."},
+    {"role": "Nhân viên kiểm tra QC", "duties": "Kiểm tra cảm quan (màu, mùi, độ ẩm); đối chiếu phiếu giao hàng với phiếu yêu cầu nhập; lấy mẫu lưu phòng thí nghiệm 200g/lô; ký xác nhận trên Phiếu nhập kho BM-RAW-01."},
+    {"role": "Nhân viên kho", "duties": "Tiếp nhận vật lý lô hàng; cập nhật mã lô vào hệ thống AMINRA; sắp xếp vào khu vực Halal đã phân tách rõ ràng theo sơ đồ kho BM-STO-01."},
+    {"role": "Halal Lead / IHC Officer", "duties": "Phối hợp xử lý nguyên liệu nghi vấn (Mashbooh) hoặc không phù hợp; lưu trữ hồ sơ đào tạo nhân sự liên quan SOP; audit định kỳ hàng quý việc tuân thủ."},
+    {"role": "Bộ phận Mua hàng", "duties": "Cập nhật danh sách nhà cung cấp Halal được phê duyệt (Approved Supplier List); đảm bảo mọi đơn hàng kèm yêu cầu chứng nhận Halal hợp lệ."},
+    {"role": "Bảo vệ cổng kho", "duties": "Kiểm tra niêm phong container; ghi nhận biển số xe, thời gian giao hàng; thông báo Trưởng kho trước khi xe vào khu vực giao."},
+    {"role": "Tổng giám đốc", "duties": "Phê duyệt SOP và mọi sửa đổi; giải quyết các vấn đề leo thang vượt thẩm quyền của Halal Lead."}
   ],
   "references": [
-    "MS 1500:2019 Halal Food — General Requirements",
-    "TCVN 12944:2020 — Thực phẩm Halal",
-    "Quy định nội bộ AMINRA về truy xuất nguồn gốc"
+    "MS 1500:2019 — Halal Food: General Requirements (Department of Standards Malaysia)",
+    "MS 2424:2012 — Halal Pharmaceuticals: General Guidelines",
+    "TCVN 12944:2020 — Thực phẩm Halal — Yêu cầu chung (Bộ KHCN Việt Nam)",
+    "JAKIM Halal Quality Assurance Manual Procedure — Manual Prosedur Pensijilan Halal Malaysia (MPPHM 2020)",
+    "HCA-VN: Quy định cấp giấy chứng nhận Halal — Hiệp hội Halal Việt Nam",
+    "Codex Alimentarius CAC/GL 24-1997 — General Guidelines for Use of the Term 'Halal'",
+    "ISO 22000:2018 — Food Safety Management Systems",
+    "Quy định nội bộ AMINRA về truy xuất nguồn gốc và quản lý nhà cung cấp (REG-AMI-2024-03)",
+    "SOP-STO-001 — Lưu trữ và phân tách Halal (tham chiếu chéo)",
+    "SOP-NCR-001 — Xử lý không phù hợp (khi phát hiện lỗi tại tiếp nhận)"
   ],
   "definitions": [
-    {"term": "Halal", "definition": "Cho phép theo luật Hồi giáo (Sharia)."},
-    {"term": "Haram", "definition": "Bị cấm theo luật Hồi giáo (vd thịt heo, rượu, máu)."},
-    {"term": "Mashbooh", "definition": "Nghi vấn, cần kiểm tra thêm trước khi quyết định Halal/Haram."},
-    {"term": "Phân tách Halal", "definition": "Tách biệt vật lý hoặc thời gian giữa nguyên liệu Halal và non-Halal trong cùng cơ sở."}
+    {"term": "Halal", "definition": "Cho phép, được chấp thuận theo luật Hồi giáo (Sharia). Áp dụng cho thực phẩm, đồ uống, dược phẩm, mỹ phẩm và mọi vật phẩm tiêu dùng tuân thủ quy định Sharia về nguồn gốc, chế biến và xử lý."},
+    {"term": "Haram", "definition": "Bị cấm tuyệt đối theo luật Hồi giáo. Bao gồm thịt heo và sản phẩm dẫn xuất; rượu và đồ uống có cồn ≥ 0.5%; máu và sản phẩm máu; xác động vật chết tự nhiên; thịt động vật ăn thịt và động vật săn mồi."},
+    {"term": "Mashbooh", "definition": "Nghi vấn — không thể xác định rõ ràng là Halal hay Haram tại thời điểm kiểm tra. Phải tiến hành điều tra thêm (kiểm nghiệm phòng thí nghiệm, xác minh nguồn gốc, xin fatwa) trước khi quyết định."},
+    {"term": "Najis", "definition": "Vật ô uế theo Sharia. Phân loại 3 cấp: Mughallazah (nặng — vd thịt heo, chó); Mutawassitah (trung — vd phân, máu); Mukhaffafah (nhẹ — vd nước tiểu trẻ sơ sinh nam < 2 tuổi)."},
+    {"term": "Sertu", "definition": "Quy trình vệ sinh tẩy uế theo Sharia khi vật/bề mặt tiếp xúc Najis Mughallazah. Yêu cầu rửa 7 lần, trong đó 1 lần với nước pha đất sạch (tanah/sertu clay)."},
+    {"term": "Mã lô (Batch ID)", "definition": "Mã định danh duy nhất do hệ thống AMINRA tạo tự động khi nhập kho. Format: AMI-{tenant_code}-{YYYYMMDD}-{seq_no}. Theo dõi nguyên liệu xuyên suốt chuỗi cung ứng."},
+    {"term": "Approved Supplier List (ASL)", "definition": "Danh sách nhà cung cấp đã được kiểm tra và phê duyệt cung cấp nguyên liệu Halal. Cập nhật quý bởi Bộ phận Mua hàng + Halal Lead."},
+    {"term": "Niêm phong (Tamper-evident seal)", "definition": "Dấu niêm phong vật lý gắn tại nhà máy nhà cung cấp, không thể tháo lắp lại mà không để dấu vết. Bắt buộc còn nguyên khi xe đến cơ sở Quế Thiên Lộc."}
   ],
   "procedure_steps": [
-    {"step_no": 1, "action": "Tiếp nhận xe giao hàng tại cổng kho — kiểm tra niêm phong container, đối chiếu phiếu xuất kho.", "responsible_role": "Bảo vệ + Trưởng kho", "records": "Phiếu nhập kho mẫu BM-RAW-01"},
-    {"step_no": 2, "action": "Yêu cầu nhà cung cấp xuất trình chứng nhận Halal còn hiệu lực; xác minh số chứng nhận trên cổng JAKIM/HALCERT.", "responsible_role": "Trưởng kho", "records": "Bản sao chứng nhận Halal", "criteria": "Còn hiệu lực, đúng phạm vi sản phẩm"},
-    {"step_no": 3, "action": "Kiểm tra cảm quan — màu sắc, mùi, độ ẩm; lấy mẫu lưu phòng thí nghiệm 200g/lô.", "responsible_role": "QC", "records": "Báo cáo kiểm nghiệm BM-QC-03"},
-    {"step_no": 4, "action": "Phân loại: chấp nhận → khu Halal; nghi vấn → khu cách ly chờ Halal Lead xử lý.", "responsible_role": "QC + Halal Lead", "criteria": "Niêm phong nguyên vẹn, chứng nhận hợp lệ, không có dấu hiệu tạp nhiễm"},
-    {"step_no": 5, "action": "Cập nhật hệ thống AMINRA — tạo lô (batch) trong module Truy xuất nguồn gốc, gán mã lô + ngày nhập.", "responsible_role": "Nhân viên kho", "records": "Mã lô auto-generated"},
-    {"step_no": 6, "action": "Sắp xếp vào kho Halal — kệ riêng, biển báo rõ ràng; cập nhật bảng tồn kho.", "responsible_role": "Nhân viên kho"}
+    {"step_no": 1, "action": "Bảo vệ cổng kho tiếp nhận xe giao hàng — kiểm tra phiếu giao hàng (Delivery Order), biển số xe, thông tin tài xế, thời gian. Liên lạc Trưởng kho qua bộ đàm trước khi cho xe vào khu vực giao.", "responsible_role": "Bảo vệ cổng kho", "records": "Sổ ra vào BM-SEC-01"},
+    {"step_no": 2, "action": "Kiểm tra niêm phong container và phương tiện vận chuyển. Nếu niêm phong nguyên vẹn → tiếp tục bước 3. Nếu phát hiện niêm phong bị phá hỏng → tạm dừng tiếp nhận, lập biên bản, báo Halal Lead trong 30 phút.", "responsible_role": "Trưởng kho + Bảo vệ", "criteria": "Niêm phong nguyên vẹn, mã niêm phong khớp với chứng từ"},
+    {"step_no": 3, "action": "Yêu cầu tài xế/nhà cung cấp xuất trình bản gốc hoặc bản sao có công chứng của: (a) Chứng nhận Halal còn hiệu lực; (b) Phiếu phân tích chất lượng (CoA — Certificate of Analysis); (c) Phiếu xuất kho từ nhà sản xuất.", "responsible_role": "Trưởng kho", "records": "Bản sao chứng nhận Halal lưu file nhà cung cấp", "criteria": "Chứng nhận còn hiệu lực ≥ 30 ngày, đúng phạm vi sản phẩm, do tổ chức chứng nhận đã được công nhận (JAKIM, HCA, MUI...)"},
+    {"step_no": 4, "action": "Xác minh trực tuyến số chứng nhận Halal trên cổng đăng ký công khai của tổ chức cấp (vd portal.jakim.gov.my, hca-vn.org/registry). Chụp màn hình kết quả xác minh, đính kèm hồ sơ.", "responsible_role": "Trưởng kho", "records": "Screenshot xác minh trực tuyến", "criteria": "Trạng thái 'Active' trên cổng chính thức"},
+    {"step_no": 5, "action": "Nhân viên QC tiến hành kiểm tra cảm quan: (a) Quan sát màu sắc lô hàng so với mẫu chuẩn lưu phòng thí nghiệm; (b) Ngửi mùi đặc trưng — phát hiện mùi lạ, mốc, ôi thiu; (c) Đo độ ẩm bằng máy đo cầm tay (≤ 12% cho quế khô); (d) Kiểm tra dấu hiệu sâu mọt, tạp chất.", "responsible_role": "Nhân viên QC", "records": "Báo cáo kiểm nghiệm cảm quan BM-QC-03", "criteria": "Đạt mọi tiêu chí cảm quan theo Specifications-Raw-Material"},
+    {"step_no": 6, "action": "Lấy mẫu lưu phòng thí nghiệm — 200g/lô cho kiểm nghiệm vi sinh và hóa lý nội bộ; 50g lưu mẫu đối chứng tại tủ -20°C trong 2 năm. Niêm phong mẫu, dán nhãn mã lô.", "responsible_role": "Nhân viên QC", "records": "Phiếu lấy mẫu BM-QC-04"},
+    {"step_no": 7, "action": "Phân loại lô: (a) Đạt → chuyển sang khu Halal; (b) Mashbooh (nghi vấn) → khu Cách ly chờ Halal Lead xử lý trong 24h; (c) Không đạt rõ ràng → từ chối nhận, lập biên bản trả hàng, báo Bộ phận Mua hàng.", "responsible_role": "Trưởng kho + Halal Lead", "records": "Quyết định phân loại trên Phiếu nhập kho BM-RAW-01", "criteria": "Niêm phong nguyên, chứng nhận hợp lệ, cảm quan đạt, không có dấu hiệu tạp nhiễm"},
+    {"step_no": 8, "action": "Nhập mã lô vào hệ thống AMINRA — module Truy xuất nguồn gốc. Trường bắt buộc: tên nhà cung cấp, số chứng nhận Halal, ngày sản xuất, ngày hết hạn, số lượng, đơn vị, mã CoA. Hệ thống tự sinh Batch ID format AMI-QTL-YYYYMMDD-NNN.", "responsible_role": "Nhân viên kho", "records": "Bản ghi điện tử trong AMINRA — không thể chỉnh sửa sau khi xác nhận"},
+    {"step_no": 9, "action": "Sắp xếp lô vào khu vực kho Halal theo sơ đồ phân tách BM-STO-01: kệ riêng, biển báo 'HALAL' màu xanh, không đặt cùng pallet với lô non-Halal hoặc Mashbooh. Cập nhật bảng tồn kho điện tử + thẻ kho giấy.", "responsible_role": "Nhân viên kho", "records": "Thẻ kho BM-STO-04 + bản ghi AMINRA"},
+    {"step_no": 10, "action": "QC chạy kiểm nghiệm vi sinh nhanh trên mẫu — Total Plate Count, Coliform, E. coli, Salmonella, Yeast & Mold. Kết quả trong 48h. Nếu không đạt → kích hoạt SOP-NCR-001 (Xử lý không phù hợp).", "responsible_role": "Nhân viên QC", "records": "Báo cáo kiểm nghiệm vi sinh BM-LAB-01", "criteria": "TPC ≤ 10⁶ CFU/g, Coliform ≤ 10² CFU/g, E.coli/Salmonella negative"},
+    {"step_no": 11, "action": "Halal Lead audit ngẫu nhiên 10% các lô nhập trong tháng — kiểm tra hồ sơ + đối chứng vật lý tại kho. Báo cáo kết quả audit lên Tổng giám đốc trong cuộc họp hàng tháng.", "responsible_role": "Halal Lead", "records": "Báo cáo audit nội bộ BM-AUD-01", "criteria": "≥ 95% lô đạt yêu cầu hồ sơ và phân tách"},
+    {"step_no": 12, "action": "Xử lý lô không đạt: (a) Trả nhà cung cấp trong 7 ngày kể từ phát hiện; (b) Cập nhật điểm đánh giá nhà cung cấp trên ASL (giảm điểm uy tín); (c) Nếu vi phạm Halal nghiêm trọng → tạm ngưng quan hệ, báo cơ quan chứng nhận."},
+    {"step_no": 13, "action": "Đào tạo lại nhân sự khi: (a) SOP có sửa đổi; (b) Phát hiện không tuân thủ trong audit; (c) Tuyển nhân sự mới. Tài liệu đào tạo lưu hồ sơ nhân sự và báo cáo HR hàng quý.", "responsible_role": "Halal Lead + HR", "records": "Hồ sơ đào tạo BM-HR-02"}
   ],
   "records": [
-    "Phiếu nhập kho BM-RAW-01 — lưu 5 năm",
-    "Bản sao chứng nhận Halal nhà cung cấp — lưu cho đến khi cert hết hạn + 2 năm",
-    "Báo cáo kiểm nghiệm cảm quan BM-QC-03 — lưu 3 năm",
-    "Sổ theo dõi nguyên liệu nghi vấn — lưu 5 năm"
+    "BM-RAW-01 — Phiếu nhập kho nguyên liệu (lưu 5 năm theo TCVN 12944:2020)",
+    "BM-QC-03 — Báo cáo kiểm nghiệm cảm quan (lưu 3 năm)",
+    "BM-QC-04 — Phiếu lấy mẫu lưu phòng thí nghiệm (lưu 2 năm)",
+    "BM-LAB-01 — Báo cáo kiểm nghiệm vi sinh (lưu 5 năm)",
+    "Bản sao chứng nhận Halal nhà cung cấp (lưu cho đến khi cert hết hạn + 2 năm)",
+    "Screenshot xác minh chứng nhận trực tuyến (lưu cùng phiếu nhập kho)",
+    "BM-AUD-01 — Báo cáo audit nội bộ hàng tháng (lưu 7 năm)",
+    "BM-HR-02 — Hồ sơ đào tạo nhân sự (lưu suốt thời gian làm việc + 3 năm sau nghỉ)",
+    "Sổ ra vào BM-SEC-01 (lưu 1 năm)",
+    "Bản ghi điện tử Truy xuất nguồn gốc trên AMINRA (lưu vĩnh viễn — không thể xóa)"
   ],
   "appendices": [
-    "Phụ lục A — Mẫu phiếu nhập kho BM-RAW-01",
-    "Phụ lục B — Sơ đồ luồng nguyên liệu trong cơ sở"
+    "Phụ lục A — Mẫu Phiếu nhập kho BM-RAW-01 (1 trang A4)",
+    "Phụ lục B — Sơ đồ luồng nguyên liệu trong cơ sở (BM-STO-01)",
+    "Phụ lục C — Tiêu chí Specifications cho từng loại nguyên liệu (Spec-Raw-001 đến Spec-Raw-012)",
+    "Phụ lục D — Checklist kiểm tra cảm quan (BM-QC-03-Check)",
+    "Phụ lục E — Danh sách Approved Supplier List quý hiện tại (ASL-2026-Q2)",
+    "Phụ lục F — Sơ đồ tổ chức và sơ đồ leo thang khi có sự cố"
   ],
   "effective_date": "2026-04-01",
   "review_date": "2027-04-01",
-  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "approved_by": "Nguyễn Văn Anh — Tổng giám đốc, ký ngày 2026-03-25",
   "issued_date": "2026-05-05"
 }

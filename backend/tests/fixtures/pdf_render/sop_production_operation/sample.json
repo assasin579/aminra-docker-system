@@ -1,32 +1,65 @@
 {
   "business_name": "Công ty TNHH Quế Thiên Lộc",
   "sop_id": "SOP-PRO-001",
-  "title": "Vận hành sản xuất Halal",
-  "version": "1.0",
-  "purpose": "Quy định trình tự vận hành dây chuyền sản xuất bảo đảm sản phẩm cuối tuân thủ Halal, không lẫn nguyên liệu Haram, không nhiễm chéo trong quá trình chế biến.",
-  "scope": "Áp dụng cho dây chuyền chế biến, sấy, đóng gói quế xuất khẩu — từ khi xuất kho nguyên liệu đến khi nhập kho thành phẩm.",
+  "title": "Quy trình vận hành dây chuyền sản xuất Halal",
+  "version": "2.2",
+  "purpose": "Quy định trình tự vận hành dây chuyền chế biến — sấy — đóng gói quế xuất khẩu, đảm bảo sản phẩm cuối tuân thủ Halal MS 1500:2019, không lẫn nguyên liệu Haram, không nhiễm chéo trong quá trình chế biến. SOP này tích hợp HACCP CCP1 (kiểm soát vi sinh sấy) và HACCP CCP2 (kiểm soát đóng gói chống tạp nhiễm) — đáp ứng đồng thời tiêu chuẩn Halal và an toàn thực phẩm.",
+  "scope": "Áp dụng cho dây chuyền chế biến quế xuất khẩu tại Cơ sở Yên Bái — bao gồm 5 công đoạn: (1) Xuất nguyên liệu thô từ kho Halal; (2) Sàng lọc và phân loại; (3) Sấy nhiệt khí; (4) Nghiền và rây bột (cho dòng sản phẩm bột quế); (5) Đóng gói và niêm phong. KHÔNG áp dụng cho dây chuyền tinh dầu (xem SOP-OIL-001) và dây chuyền R&D mẫu thử.",
   "responsibilities": [
-    {"role": "Quản đốc xưởng", "duties": "Phê duyệt kế hoạch sản xuất, giám sát tuân thủ SOP."},
-    {"role": "Vận hành viên", "duties": "Thực hiện đúng trình tự, ghi chép thông số quá trình."},
-    {"role": "QC ca sản xuất", "duties": "Kiểm tra điểm tới hạn (CCP), lấy mẫu, ký xác nhận."},
-    {"role": "Halal Lead", "duties": "Audit định kỳ tuân thủ, xử lý không phù hợp."}
+    {"role": "Quản đốc xưởng", "duties": "Phê duyệt kế hoạch sản xuất hàng tuần; giám sát tuân thủ SOP; quyết định dừng/chạy ca; báo cáo Halal Lead khi có sự cố."},
+    {"role": "Vận hành viên dây chuyền", "duties": "Vận hành thiết bị theo công thức; ghi chép thông số mỗi 30 phút; báo cáo bất thường ngay cho Quản đốc."},
+    {"role": "QC ca sản xuất", "duties": "Kiểm tra CCP1, CCP2 theo lịch; lấy mẫu thành phẩm; ký xác nhận hồ sơ; có quyền dừng dây chuyền nếu phát hiện vi phạm Halal."},
+    {"role": "Halal Lead / IHC Officer", "duties": "Audit định kỳ tuân thủ Halal; xử lý sự cố tạp nhiễm; phê duyệt mọi thay đổi công thức và quy trình."},
+    {"role": "Tổ vệ sinh ca", "duties": "Vệ sinh dây chuyền trước/sau ca; kiểm tra hiệu quả vệ sinh bằng test ATP; bàn giao xác nhận cho Vận hành viên."},
+    {"role": "Trưởng phòng R&D", "duties": "Thẩm định công thức Halal; cung cấp Spec kỹ thuật cho từng sản phẩm; cập nhật khi có thay đổi nguyên liệu."},
+    {"role": "Bộ phận Bảo trì", "duties": "Bảo trì thiết bị theo lịch ngăn ngừa nhiễm chéo (vd kiểm tra van chống trào, ron seal)."}
+  ],
+  "definitions": [
+    {"term": "CCP (Critical Control Point)", "definition": "Điểm tới hạn — bước trong quy trình mà kiểm soát là cần thiết để ngăn ngừa, loại bỏ hoặc giảm thiểu nguy cơ an toàn thực phẩm và Halal đến mức chấp nhận."},
+    {"term": "CCP1 — Sấy nhiệt", "definition": "Nhiệt độ sấy ≥ 60°C duy trì ≥ 30 phút — kiểm soát Salmonella, E. coli, nấm mốc. Đo bằng cảm biến nhiệt được hiệu chuẩn 6 tháng/lần."},
+    {"term": "CCP2 — Đóng gói", "definition": "Niêm phong kín, kiểm tra rò rỉ chân không, mã truy xuất nguồn gốc rõ ràng — ngăn tạp nhiễm sau sản xuất."},
+    {"term": "Công thức Halal-approved", "definition": "Công thức sản phẩm đã được Halal Lead + R&D phê duyệt, lưu trong hệ thống AMINRA module Recipe Management. Mỗi sửa đổi cần phê duyệt lại."},
+    {"term": "Batch Production Record (BPR)", "definition": "Hồ sơ sản xuất lô — ghi chép mọi thông số, thời gian, nhân sự thực hiện cho 1 lô sản xuất. Mã BPR-AMI-{YYYYMMDD}-{seq}."},
+    {"term": "Allergen cross-contact", "definition": "Tiếp xúc chéo dị ứng — vd dây chuyền cũng dùng cho hạt điều có thể gây dị ứng. Xử lý bằng phân tách thời gian + vệ sinh kỹ."}
   ],
   "procedure_steps": [
-    {"step_no": 1, "action": "Vệ sinh dây chuyền trước ca — sử dụng nước nóng 80°C + chất tẩy đã được Halal Lead phê duyệt.", "responsible_role": "Vận hành viên", "records": "Nhật ký vệ sinh BM-PRO-01"},
-    {"step_no": 2, "action": "Xuất nguyên liệu từ kho Halal theo phiếu yêu cầu sản xuất, kiểm tra mã lô.", "responsible_role": "Quản đốc + Nhân viên kho"},
-    {"step_no": 3, "action": "Cài đặt thông số máy — nhiệt độ sấy, tốc độ băng tải theo công thức.", "responsible_role": "Vận hành viên", "criteria": "Trong khoảng dung sai cho phép"},
-    {"step_no": 4, "action": "Vận hành — ghi chép thông số mỗi 30 phút; lấy mẫu thành phẩm 3 lần/ca.", "responsible_role": "Vận hành viên + QC"},
-    {"step_no": 5, "action": "Kiểm tra CCP1 (Critical Control Point) — nhiệt độ sấy ≥ 60°C trong ≥ 30 phút.", "responsible_role": "QC", "records": "Báo cáo CCP BM-PRO-02"},
-    {"step_no": 6, "action": "Đóng gói thành phẩm — niêm phong Halal + mã truy xuất nguồn gốc.", "responsible_role": "Vận hành viên đóng gói"},
-    {"step_no": 7, "action": "Vệ sinh kết thúc ca — kiểm tra niêm phong dây chuyền, ký xác nhận.", "responsible_role": "Vận hành viên + QC", "records": "Checklist BM-PRO-03"}
+    {"step_no": 1, "action": "Trước ca (T-30min): Tổ vệ sinh hoàn thành vệ sinh dây chuyền theo SOP-CLN-001. Vận hành viên kiểm tra: (a) Niêm phong vệ sinh chưa bị phá; (b) Test ATP đạt < 100 RLU; (c) Hồ sơ vệ sinh ca trước đã ký.", "responsible_role": "Vận hành viên + Tổ vệ sinh", "records": "Nhật ký vệ sinh BM-PRO-01", "criteria": "ATP < 100 RLU trên 5 điểm test"},
+    {"step_no": 2, "action": "Nhận kế hoạch sản xuất từ Quản đốc — xác nhận: (a) Nguyên liệu trong kho Halal đủ số lượng; (b) Công thức Halal-approved cho lô này; (c) Bao bì PE Halal-approved có sẵn.", "responsible_role": "Vận hành viên + Quản đốc", "records": "Phiếu yêu cầu sản xuất BM-PRO-04"},
+    {"step_no": 3, "action": "Xuất nguyên liệu từ kho — Trưởng kho + Vận hành viên đối chiếu mã lô (Batch ID) trên hệ thống AMINRA, kiểm tra niêm phong bao nguyên liệu, vận chuyển bằng xe nâng RIÊNG cho Halal.", "responsible_role": "Trưởng kho + Vận hành viên", "records": "Phiếu xuất kho BM-STO-05", "criteria": "Mã lô khớp 100% giữa hệ thống và bao nguyên liệu vật lý"},
+    {"step_no": 4, "action": "Cài đặt thông số máy theo công thức — Vận hành viên nhập tham số từ Recipe Management vào HMI: nhiệt độ sấy, tốc độ băng tải, thời gian, lưu lượng khí. Quản đốc xác nhận trước khi chạy.", "responsible_role": "Vận hành viên + Quản đốc", "criteria": "Thông số trong dung sai cho phép theo Spec"},
+    {"step_no": 5, "action": "Khởi động dây chuyền — chạy không tải 5 phút để xác nhận thiết bị ổn định; sau đó nạp nguyên liệu. Tạo Batch Production Record (BPR) trong AMINRA — hệ thống tự sinh mã BPR.", "responsible_role": "Vận hành viên", "records": "BPR điện tử trong AMINRA"},
+    {"step_no": 6, "action": "Vận hành & ghi thông số — mỗi 30 phút Vận hành viên ghi: nhiệt độ sấy thực tế, tốc độ băng tải, áp suất khí, độ ẩm thành phẩm. Hệ thống cảnh báo (đèn vàng) nếu lệch > 5%.", "responsible_role": "Vận hành viên", "records": "BPR + Nhật ký vận hành BM-PRO-05", "criteria": "100% thông số ghi đầy đủ, không gap > 30 phút"},
+    {"step_no": 7, "action": "Kiểm tra CCP1 (Sấy) — QC ca đo nhiệt độ tâm sản phẩm bằng cảm biến độc lập (không dùng cảm biến của máy) tại 3 điểm dọc băng tải, mỗi giờ 1 lần. Bắt buộc ≥ 60°C trong ≥ 30 phút.", "responsible_role": "QC ca sản xuất", "records": "Báo cáo CCP1 BM-PRO-02 (lưu 5 năm)", "criteria": "≥ 60°C × ≥ 30 phút; nếu vi phạm → dừng dây chuyền, cách ly lô, kích hoạt SOP-NCR-001"},
+    {"step_no": 8, "action": "Lấy mẫu thành phẩm 3 lần/ca (đầu, giữa, cuối ca) — gửi phòng thí nghiệm test: độ ẩm cuối, hàm lượng tinh dầu, vi sinh nhanh (TPC, Coliform). Kết quả trong 4h.", "responsible_role": "QC ca sản xuất", "records": "Phiếu lấy mẫu BM-QC-04 + Báo cáo BM-LAB-01"},
+    {"step_no": 9, "action": "Đóng gói — chuyển thành phẩm sang khu đóng gói (qua cửa air-shower để giảm bụi). Vận hành viên đóng gói cài đặt máy đóng kín với áp lực nhiệt theo Spec; mỗi gói có mã truy xuất QR-code (link AMINRA Trace).", "responsible_role": "Vận hành viên đóng gói", "records": "BPR cập nhật phần đóng gói"},
+    {"step_no": 10, "action": "Kiểm tra CCP2 (Đóng gói) — QC kiểm 1 gói/100 gói: (a) Niêm phong kín — test rò rỉ chân không; (b) Trọng lượng đúng ± 1%; (c) Mã QR scan ra đúng Batch ID; (d) Nhãn không lệch, in rõ ràng.", "responsible_role": "QC ca sản xuất", "records": "Báo cáo CCP2 BM-PRO-06 (lưu 5 năm)", "criteria": "≥ 99% mẫu kiểm đạt; nếu < 99% → cách ly cả ca, kiểm tra 100%"},
+    {"step_no": 11, "action": "Nhập kho thành phẩm — chuyển sang Warehouse C bằng xe nâng RIÊNG; Trưởng kho thành phẩm tiếp nhận, ký xác nhận trên BPR. Hệ thống tự cập nhật tồn kho thành phẩm.", "responsible_role": "Vận hành viên + Trưởng kho thành phẩm", "records": "Phiếu nhập kho thành phẩm BM-PRO-07"},
+    {"step_no": 12, "action": "Kết ca — Vận hành viên + QC ký bàn giao trên BPR; Tổ vệ sinh tiến hành vệ sinh kết ca theo SOP-CLN-001; niêm phong dây chuyền chờ ca tiếp theo.", "responsible_role": "Vận hành viên + QC + Tổ vệ sinh", "records": "Checklist kết ca BM-PRO-03"},
+    {"step_no": 13, "action": "Audit định kỳ — Halal Lead audit 1 ca/tuần ngẫu nhiên: kiểm tra BPR, đo lại CCP độc lập, phỏng vấn nhân sự về Halal compliance. Báo cáo Tổng GĐ hàng tháng.", "responsible_role": "Halal Lead", "records": "Báo cáo audit nội bộ BM-AUD-02 (lưu 7 năm)"},
+    {"step_no": 14, "action": "Hiệu chuẩn thiết bị — cảm biến nhiệt, cân, máy đo độ ẩm hiệu chuẩn 6 tháng/lần bởi đơn vị được công nhận; máy đo ATP hàng tuần với chất chuẩn.", "responsible_role": "Bộ phận Bảo trì", "records": "Sổ hiệu chuẩn BM-MNT-01 (lưu vĩnh viễn)"}
   ],
   "records": [
-    "Nhật ký vệ sinh BM-PRO-01 — lưu 5 năm",
-    "Báo cáo CCP BM-PRO-02 — lưu 5 năm",
-    "Checklist kết ca BM-PRO-03 — lưu 3 năm"
+    "BM-PRO-01 — Nhật ký vệ sinh đầu ca (lưu 5 năm)",
+    "BM-PRO-02 — Báo cáo CCP1 sấy nhiệt (lưu 5 năm — bằng chứng HACCP)",
+    "BM-PRO-03 — Checklist kết ca (lưu 3 năm)",
+    "BM-PRO-04 — Phiếu yêu cầu sản xuất (lưu 5 năm)",
+    "BM-PRO-05 — Nhật ký vận hành 30 phút (lưu 3 năm)",
+    "BM-PRO-06 — Báo cáo CCP2 đóng gói (lưu 5 năm)",
+    "BM-PRO-07 — Phiếu nhập kho thành phẩm (lưu 5 năm)",
+    "BM-AUD-02 — Báo cáo audit Halal hàng tuần (lưu 7 năm)",
+    "BM-MNT-01 — Sổ hiệu chuẩn thiết bị (lưu vĩnh viễn)",
+    "BPR điện tử trên AMINRA (lưu vĩnh viễn — không thể chỉnh sửa sau khi đóng lô)"
+  ],
+  "appendices": [
+    "Phụ lục A — Sơ đồ luồng dây chuyền sản xuất quế (5 công đoạn)",
+    "Phụ lục B — Specifications kỹ thuật cho 8 SKU sản phẩm chính (Spec-PRO-001 đến 008)",
+    "Phụ lục C — Hướng dẫn vận hành máy sấy nhiệt khí (Operating Manual)",
+    "Phụ lục D — Mẫu Batch Production Record điện tử (screenshot)",
+    "Phụ lục E — Sơ đồ leo thang khi vi phạm CCP (CCP Deviation Decision Tree)",
+    "Phụ lục F — Lịch hiệu chuẩn thiết bị 12 tháng tới"
   ],
   "effective_date": "2026-04-01",
   "review_date": "2027-04-01",
-  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "approved_by": "Nguyễn Văn Anh — Tổng giám đốc, ký ngày 2026-03-25",
   "issued_date": "2026-05-05"
 }
