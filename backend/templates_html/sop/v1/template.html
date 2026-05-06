@@ -1,5 +1,5 @@
 {% extends "_base/base.html" %}
-{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, approval_block %}
 
 {% block extra_css %}<link rel="stylesheet" href="{{ asset('sop/v1/style.css') }}">{% endblock %}
 
@@ -127,12 +127,21 @@
 {# ────────── Approval footer ────────── #}
 <section class="section">
   {{ section_opener(9, "Approval", "Phê duyệt & rà soát") }}
+
   {{ kv_block([
-    {"label": "Ngày hiệu lực",      "value": data.effective_date},
+    {"label": "Ngày hiệu lực",       "value": data.effective_date},
     {"label": "Ngày rà soát kế tiếp", "value": data.get('review_date') or "—"},
-    {"label": "Người phê duyệt",    "value": data.get('approved_by') or cfg.get('approved_by_default') or "—"},
-    {"label": "Ngày phát hành",     "value": data.issued_date},
+    {"label": "Ngày phát hành",      "value": data.issued_date},
   ], keep_empty=True) }}
+
+  {{ approval_block(
+      signatories=[
+        {"role": "Soạn thảo",  "name": "(Họ tên)", "title": "Halal Lead / IHC Officer"},
+        {"role": "Kiểm tra",   "name": "(Họ tên)", "title": "Trưởng phòng QA"},
+        {"role": "Phê duyệt",  "name": data.get('approved_by') or cfg.get('approved_by_default') or "(Họ tên)", "title": "Tổng giám đốc"},
+      ],
+      include_stamp=True,
+  ) }}
 
   {% set fnote %}<strong>Tài liệu kiểm soát</strong>SOP này được kiểm soát theo quy trình quản lý tài liệu của <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong>. Phiên bản hiệu lực được duy trì tại nền tảng AMINRA Halal.{% endset %}
   {{ callout("Lưu ý", fnote, variant="brand") }}

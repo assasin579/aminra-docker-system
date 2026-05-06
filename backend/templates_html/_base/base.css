@@ -213,7 +213,10 @@ em { font-style: italic; }
   background: var(--c-brand-primary);
   color: var(--c-text-on-brand);
   overflow: hidden;
-  padding: 22mm 18mm 18mm 18mm;
+  /* Asymmetric padding — generous left indent so title/meta have visual
+   * breathing room from the page edge. Right side is tighter because the
+   * accent strip already provides a hard edge. */
+  padding: 26mm 22mm 22mm 30mm;
   display: flex;
   flex-direction: column;
 }
@@ -611,6 +614,83 @@ ul.lst li::before {
 .approval-cell { font-size: var(--fs-tiny); color: rgba(255,255,255,0.7); }
 .approval-cell strong { color: #fff; display: block; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 .approval-line { height: 12mm; border-bottom: 0.5pt solid rgba(255,255,255,0.4); margin-bottom: 1mm; }
+
+/* ─── Approval block (signatures + stamp) ─────────────────────────────── */
+
+.approval-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0 var(--sp-3) 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+
+.approval-cell {
+  border: 0.5pt solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+  font-size: var(--fs-small);
+  display: flex;
+  flex-direction: column;
+}
+
+.approval-cell__role {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-brand-primary);
+  margin-bottom: var(--sp-2);
+}
+
+.approval-cell__signature-area {
+  height: 22mm;
+  border-bottom: 0.5pt dashed var(--c-text-soft);
+  margin-bottom: var(--sp-2);
+}
+
+.approval-cell__name {
+  font-weight: var(--fw-semibold);
+  color: var(--c-ink);
+  font-size: var(--fs-small);
+}
+
+.approval-cell__title {
+  font-size: var(--fs-tiny);
+  color: var(--c-text-muted);
+  margin-top: 1mm;
+  letter-spacing: 0.02em;
+}
+
+.approval-cell__date {
+  font-size: var(--fs-tiny);
+  color: var(--c-text-soft);
+  margin-top: 1mm;
+}
+
+/* Stamp variant — circular dashed placeholder where the rubber stamp goes. */
+.approval-cell--stamp .approval-cell__stamp-area {
+  height: 22mm;
+  display: grid;
+  place-items: center;
+  margin-bottom: var(--sp-2);
+}
+
+.approval-cell__stamp-circle {
+  width: 18mm;
+  height: 18mm;
+  border: 0.5pt dashed var(--c-text-soft);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-soft);
+}
+
 
 /* Style-guide-only utilities (swatch + spacing ruler) */
 

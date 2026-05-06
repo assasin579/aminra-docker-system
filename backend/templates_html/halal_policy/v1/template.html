@@ -1,5 +1,5 @@
 {% extends "_base/base.html" %}
-{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, pull_quote %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede, pull_quote, approval_block %}
 
 {% block extra_css %}<link rel="stylesheet" href="{{ asset('halal_policy/v1/style.css') }}">{% endblock %}
 
@@ -119,17 +119,7 @@
   ], keep_empty=True) }}
 
   {% if data.get('signatories') %}
-  <h3>Người ký xác nhận</h3>
-  <div class="signature-grid">
-    {% for s in data['signatories'] %}
-    <div class="signature-cell">
-      <div class="signature-line"></div>
-      <div class="signature-name">{{ s.name }}</div>
-      <div class="signature-title">{{ s.title }}</div>
-      {% if s.get('signature_date') %}<div class="signature-date">Ngày ký: {{ s['signature_date'] }}</div>{% endif %}
-    </div>
-    {% endfor %}
-  </div>
+  {{ approval_block(signatories=data['signatories'], include_stamp=True) }}
   {% endif %}
 
   {% set fnote %}<strong>Tài liệu chính thức</strong>Chính sách này được ban lãnh đạo <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong> phê duyệt và có hiệu lực kể từ ngày ghi trên. Mọi sửa đổi phải được Ban Halal nội bộ và Tổng giám đốc đồng phê duyệt.{% endset %}

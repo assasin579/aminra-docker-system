@@ -215,3 +215,47 @@
 {% macro lede(text) %}
 <p class="lede">{{ text }}</p>
 {% endmacro %}
+
+
+{# ─── approval_block ──────────────────────────────────────────────────────
+   Formal approval grid: signature columns + stamp column. Used at the bottom
+   of SOP / Halal Policy / HAS Manual.
+
+   Args:
+     signatories  (list) — list of {role, name?, title?, signature_date?}
+                            Each becomes one cell with a signature line +
+                            printed name + title underneath.
+     include_stamp (bool) — render a circular stamp placeholder in the
+                            rightmost cell. Default true (Vietnamese formal
+                            docs almost always reserve stamp space).
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro approval_block(signatories=[], include_stamp=True) %}
+<div class="approval-block">
+  {% for s in signatories %}
+  {% set _role  = s.get('role') %}
+  {% set _title = s.get('title') %}
+  {% set _name  = s.get('name') %}
+  {% set _date  = s.get('signature_date') %}
+  <div class="approval-cell">
+    <div class="approval-cell__role">{{ _role or _title or "Phê duyệt" }}</div>
+    <div class="approval-cell__signature-area"></div>
+    <div class="approval-cell__name">{{ _name or "(Họ tên)" }}</div>
+    {% if _title and _role and _title != _role %}
+      <div class="approval-cell__title">{{ _title }}</div>
+    {% endif %}
+    {% if _date %}
+      <div class="approval-cell__date">Ngày ký: {{ _date }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% if include_stamp %}
+  <div class="approval-cell approval-cell--stamp">
+    <div class="approval-cell__role">Đóng dấu</div>
+    <div class="approval-cell__stamp-area">
+      <div class="approval-cell__stamp-circle">CON DẤU</div>
+    </div>
+    <div class="approval-cell__title">Cơ sở phát hành</div>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
