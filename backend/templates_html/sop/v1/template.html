@@ -1,0 +1,140 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, kv_block, data_table, callout, bullet_list, lede %}
+
+{% block extra_css %}<link rel="stylesheet" href="{{ asset('sop/v1/style.css') }}">{% endblock %}
+
+{% block content %}
+
+{# ────────── COVER ────────── #}
+{{ doc_cover(
+    title=data.get('title') or cfg.get('doc_type_label') or "Quy trình vận hành chuẩn",
+    eyebrow="Standard Operating Procedure",
+    subtitle=data.business_name,
+    year=(data.issued_date|string)[:4] if data.issued_date else None,
+    meta=[
+      {"label": "Mã SOP",      "value": data.get('sop_id') or cfg.get('sop_id_default') or "—"},
+      {"label": "Phiên bản",   "value": data.get('version') or "1.0"},
+      {"label": "Hiệu lực",    "value": data.effective_date},
+    ],
+    approval_block=cfg.get('show_approval_block', True),
+) }}
+
+{# ────────── 01 · Mục đích ────────── #}
+<section class="section">
+  {{ section_opener(1, "Purpose", "Mục đích") }}
+  {% if data.get('purpose') %}
+    {{ lede(data['purpose']) }}
+  {% else %}
+    {{ lede(cfg.get('purpose_default') or "Quy trình này quy định cách thức thực hiện hoạt động liên quan nhằm đảm bảo tuân thủ tiêu chuẩn Halal trong toàn bộ chu trình.") }}
+  {% endif %}
+</section>
+
+{# ────────── 02 · Phạm vi áp dụng ────────── #}
+<section class="section">
+  {{ section_opener(2, "Scope", "Phạm vi áp dụng") }}
+  {% if data.get('scope') %}
+    <p>{{ data['scope'] }}</p>
+  {% else %}
+    <p>{{ cfg.get('scope_default') or "Áp dụng cho toàn bộ hoạt động liên quan tại cơ sở sản xuất của " ~ data.business_name ~ "." }}</p>
+  {% endif %}
+</section>
+
+{# ────────── 03 · Trách nhiệm ────────── #}
+{% if data.get('responsibilities') %}
+<section class="section">
+  {{ section_opener(3, "Responsibilities", "Trách nhiệm") }}
+  {% set resp_rows = [] %}
+  {% for r in data['responsibilities'] %}
+    {% set _ = resp_rows.append([r.role, r.duties]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Vai trò",       "width": "30%"},
+        {"label": "Trách nhiệm chính"},
+      ],
+      rows=resp_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── 04 · Tài liệu liên quan ────────── #}
+{% if data.get('references') %}
+<section class="section">
+  {{ section_opener(4, "References", "Tài liệu liên quan") }}
+  {{ bullet_list(data['references']) }}
+</section>
+{% endif %}
+
+{# ────────── 05 · Định nghĩa thuật ngữ ────────── #}
+{% if data.get('definitions') %}
+<section class="section">
+  {{ section_opener(5, "Definitions", "Định nghĩa thuật ngữ") }}
+  {% set def_rows = [] %}
+  {% for d in data['definitions'] %}
+    {% set _ = def_rows.append([d.term, d.definition]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Thuật ngữ", "width": "26%"},
+        {"label": "Định nghĩa"},
+      ],
+      rows=def_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── 06 · Quy trình thực hiện ────────── #}
+{% if data.get('procedure_steps') %}
+<section class="section">
+  {{ section_opener(6, "Procedure", "Quy trình thực hiện") }}
+  {% set step_rows = [] %}
+  {% for s in data['procedure_steps'] %}
+    {% set _ = step_rows.append([
+      "%02d"|format(s.step_no),
+      s.action,
+      s.get('responsible_role') or "—",
+      s.get('records') or s.get('criteria') or "—",
+    ]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "STT",            "width": "8%"},
+        {"label": "Hành động"},
+        {"label": "Trách nhiệm",   "width": "22%"},
+        {"label": "Hồ sơ / Tiêu chí", "width": "26%"},
+      ],
+      rows=step_rows,
+  ) }}
+</section>
+{% endif %}
+
+{# ────────── 07 · Hồ sơ lưu trữ ────────── #}
+{% if data.get('records') %}
+<section class="section">
+  {{ section_opener(7, "Records", "Hồ sơ lưu trữ") }}
+  {{ bullet_list(data['records']) }}
+</section>
+{% endif %}
+
+{# ────────── 08 · Phụ lục ────────── #}
+{% if data.get('appendices') %}
+<section class="section">
+  {{ section_opener(8, "Appendices", "Phụ lục") }}
+  {{ bullet_list(data['appendices']) }}
+</section>
+{% endif %}
+
+{# ────────── Approval footer ────────── #}
+<section class="section">
+  {{ section_opener(9, "Approval", "Phê duyệt &amp; rà soát") }}
+  {{ kv_block([
+    {"label": "Ngày hiệu lực",      "value": data.effective_date},
+    {"label": "Ngày rà soát kế tiếp", "value": data.get('review_date') or "—"},
+    {"label": "Người phê duyệt",    "value": data.get('approved_by') or cfg.get('approved_by_default') or "—"},
+    {"label": "Ngày phát hành",     "value": data.issued_date},
+  ], keep_empty=True) }}
+
+  {% set fnote %}<strong>Tài liệu kiểm soát</strong>SOP này được kiểm soát theo quy trình quản lý tài liệu của <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong>. Phiên bản hiệu lực được duy trì tại nền tảng AMINRA Halal.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

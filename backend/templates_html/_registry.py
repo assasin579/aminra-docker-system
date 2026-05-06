@@ -44,16 +44,51 @@ _REGISTRY: dict[str, TemplateEntry] = {
         version="v1",
         title_default="Hồ sơ doanh nghiệp",
     ),
-    # Phase 2 — placeholder entries; resolves to None until template ships
+
+    # ── 6 SOP variants share the same `sop/v1/` template ────────────────
+    # Per-variant differences (title, scope default) come from
+    # admin_templates/<doc_type>.json — admin can tweak without dev help.
+    "sop_raw_material_receiving": TemplateEntry(
+        doc_type="sop_raw_material_receiving",
+        template_relpath="sop/v1/template.html",
+        version="v1",
+        title_default="SOP — Tiếp nhận nguyên liệu",
+    ),
+    "sop_storage_segregation": TemplateEntry(
+        doc_type="sop_storage_segregation",
+        template_relpath="sop/v1/template.html",
+        version="v1",
+        title_default="SOP — Lưu trữ và phân tách",
+    ),
+    "sop_production_operation": TemplateEntry(
+        doc_type="sop_production_operation",
+        template_relpath="sop/v1/template.html",
+        version="v1",
+        title_default="SOP — Vận hành sản xuất",
+    ),
+    "sop_cleaning_sanitation": TemplateEntry(
+        doc_type="sop_cleaning_sanitation",
+        template_relpath="sop/v1/template.html",
+        version="v1",
+        title_default="SOP — Vệ sinh và làm sạch",
+    ),
+    "sop_handling_nonconformances": TemplateEntry(
+        doc_type="sop_handling_nonconformances",
+        template_relpath="sop/v1/template.html",
+        version="v1",
+        title_default="SOP — Xử lý không phù hợp",
+    ),
+    "sop_complaint_recall": TemplateEntry(
+        doc_type="sop_complaint_recall",
+        template_relpath="sop/v1/template.html",
+        version="v1",
+        title_default="SOP — Khiếu nại và thu hồi",
+    ),
+
+    # Phase 2 remaining — Groups 2-5 (placeholder until template ships)
     "halal_policy": None,
     "has_manual": None,
     "halal_manual": None,
-    "sop_raw_material_receiving": None,
-    "sop_storage_segregation": None,
-    "sop_production_operation": None,
-    "sop_cleaning_sanitation": None,
-    "sop_handling_nonconformances": None,
-    "sop_complaint_recall": None,
     "internal_halal_committee": None,
     "ingredient_raw_material": None,
     "process_flow_chart": None,

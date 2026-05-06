@@ -1,0 +1,32 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "sop_id": "SOP-PRO-001",
+  "title": "Vận hành sản xuất Halal",
+  "version": "1.0",
+  "purpose": "Quy định trình tự vận hành dây chuyền sản xuất bảo đảm sản phẩm cuối tuân thủ Halal, không lẫn nguyên liệu Haram, không nhiễm chéo trong quá trình chế biến.",
+  "scope": "Áp dụng cho dây chuyền chế biến, sấy, đóng gói quế xuất khẩu — từ khi xuất kho nguyên liệu đến khi nhập kho thành phẩm.",
+  "responsibilities": [
+    {"role": "Quản đốc xưởng", "duties": "Phê duyệt kế hoạch sản xuất, giám sát tuân thủ SOP."},
+    {"role": "Vận hành viên", "duties": "Thực hiện đúng trình tự, ghi chép thông số quá trình."},
+    {"role": "QC ca sản xuất", "duties": "Kiểm tra điểm tới hạn (CCP), lấy mẫu, ký xác nhận."},
+    {"role": "Halal Lead", "duties": "Audit định kỳ tuân thủ, xử lý không phù hợp."}
+  ],
+  "procedure_steps": [
+    {"step_no": 1, "action": "Vệ sinh dây chuyền trước ca — sử dụng nước nóng 80°C + chất tẩy đã được Halal Lead phê duyệt.", "responsible_role": "Vận hành viên", "records": "Nhật ký vệ sinh BM-PRO-01"},
+    {"step_no": 2, "action": "Xuất nguyên liệu từ kho Halal theo phiếu yêu cầu sản xuất, kiểm tra mã lô.", "responsible_role": "Quản đốc + Nhân viên kho"},
+    {"step_no": 3, "action": "Cài đặt thông số máy — nhiệt độ sấy, tốc độ băng tải theo công thức.", "responsible_role": "Vận hành viên", "criteria": "Trong khoảng dung sai cho phép"},
+    {"step_no": 4, "action": "Vận hành — ghi chép thông số mỗi 30 phút; lấy mẫu thành phẩm 3 lần/ca.", "responsible_role": "Vận hành viên + QC"},
+    {"step_no": 5, "action": "Kiểm tra CCP1 (Critical Control Point) — nhiệt độ sấy ≥ 60°C trong ≥ 30 phút.", "responsible_role": "QC", "records": "Báo cáo CCP BM-PRO-02"},
+    {"step_no": 6, "action": "Đóng gói thành phẩm — niêm phong Halal + mã truy xuất nguồn gốc.", "responsible_role": "Vận hành viên đóng gói"},
+    {"step_no": 7, "action": "Vệ sinh kết thúc ca — kiểm tra niêm phong dây chuyền, ký xác nhận.", "responsible_role": "Vận hành viên + QC", "records": "Checklist BM-PRO-03"}
+  ],
+  "records": [
+    "Nhật ký vệ sinh BM-PRO-01 — lưu 5 năm",
+    "Báo cáo CCP BM-PRO-02 — lưu 5 năm",
+    "Checklist kết ca BM-PRO-03 — lưu 3 năm"
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "issued_date": "2026-05-05"
+}

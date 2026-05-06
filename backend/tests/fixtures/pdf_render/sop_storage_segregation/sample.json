@@ -1,0 +1,33 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "sop_id": "SOP-STO-001",
+  "title": "Lưu trữ và phân tách Halal",
+  "version": "1.0",
+  "purpose": "Đảm bảo nguyên liệu, bán thành phẩm và thành phẩm Halal được lưu trữ tách biệt vật lý hoặc theo thời gian với các vật phẩm non-Halal, ngăn ngừa nhiễm chéo.",
+  "scope": "Áp dụng tại tất cả khu vực kho, container vận chuyển và thiết bị lưu trữ tạm trong cơ sở sản xuất.",
+  "responsibilities": [
+    {"role": "Trưởng kho", "duties": "Quản lý phân khu Halal/non-Halal, định kỳ kiểm tra niêm phong và biển báo."},
+    {"role": "Halal Lead", "duties": "Phê duyệt sơ đồ phân tách, đào tạo nhân sự, xử lý sự cố nhiễm chéo."},
+    {"role": "Nhân viên kho", "duties": "Tuân thủ sơ đồ phân tách khi xếp hàng, vệ sinh giữa các lô."}
+  ],
+  "definitions": [
+    {"term": "Phân tách vật lý", "definition": "Tách bằng tường, vách ngăn, hoặc khoảng cách ≥ 2m giữa khu Halal và non-Halal."},
+    {"term": "Phân tách thời gian", "definition": "Sản xuất Halal trước, vệ sinh đầy đủ, sau đó mới sản xuất non-Halal (hoặc ngược lại)."}
+  ],
+  "procedure_steps": [
+    {"step_no": 1, "action": "Phân chia kho thành 3 khu — Halal, Non-Halal (nếu có), Cách ly chờ xử lý.", "responsible_role": "Trưởng kho", "records": "Sơ đồ kho BM-STO-01"},
+    {"step_no": 2, "action": "Gắn biển báo rõ ràng tại từng khu — chữ + ký hiệu màu xanh (Halal) / đỏ (Non-Halal).", "responsible_role": "Trưởng kho"},
+    {"step_no": 3, "action": "Khi nhập hàng, kiểm tra mã lô, chuyển vào đúng khu phân tách.", "responsible_role": "Nhân viên kho", "criteria": "Không đặt 2 lô khác trạng thái trên cùng pallet"},
+    {"step_no": 4, "action": "Định kỳ tuần kiểm tra niêm phong + sạch sẽ giữa các khu — báo cáo Halal Lead.", "responsible_role": "Halal Lead", "records": "Checklist BM-STO-02"},
+    {"step_no": 5, "action": "Khi phát hiện nhiễm chéo — cách ly ngay, lập biên bản, theo SOP-NCR-001.", "responsible_role": "Halal Lead + QC"}
+  ],
+  "records": [
+    "Sơ đồ phân tách kho BM-STO-01 — cập nhật khi có thay đổi layout",
+    "Checklist tuần kiểm tra phân tách BM-STO-02 — lưu 3 năm",
+    "Biên bản nhiễm chéo (nếu có) — lưu 7 năm"
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "approved_by": "Trần Thị Bình, Halal Lead",
+  "issued_date": "2026-05-05"
+}

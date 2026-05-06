@@ -143,9 +143,12 @@ class SourceMergeFilter:
                     "email": sub.halal_responsible_person.email,
                 }
 
-        # 4. request payload (last — admin override OR explicit user input)
+        # 4. request payload (last — admin override OR explicit user input).
+        # Keep empty lists (`[]`) so templates can detect "field exists but
+        # empty" — StrictUndefined raises if a Pydantic-defaulted list field
+        # is silently dropped here.
         for k, v in (ctx.data or {}).items():
-            if v not in (None, "", []):
+            if v is not None and v != "":
                 merged[k] = v
 
         # 5. ensure issued_date is always present (defaults to today)

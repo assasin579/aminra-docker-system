@@ -1,0 +1,40 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "sop_id": "SOP-RCL-001",
+  "title": "Khiếu nại khách hàng và thu hồi sản phẩm",
+  "version": "1.1",
+  "purpose": "Đảm bảo tiếp nhận, xử lý khiếu nại từ khách hàng kịp thời và thực hiện thu hồi sản phẩm khi phát hiện rủi ro Halal/an toàn — bảo vệ niềm tin người tiêu dùng và tuân thủ quy định.",
+  "scope": "Áp dụng cho mọi khiếu nại về chất lượng/Halal từ khách hàng B2B, người tiêu dùng cuối, cơ quan chứng nhận hoặc cơ quan quản lý.",
+  "responsibilities": [
+    {"role": "Bộ phận CSKH", "duties": "Tiếp nhận khiếu nại, ghi nhận đầy đủ thông tin, chuyển QC trong 4h."},
+    {"role": "QC + Halal Lead", "duties": "Điều tra, đánh giá mức độ rủi ro (Class I/II/III)."},
+    {"role": "Tổng giám đốc", "duties": "Quyết định thu hồi, ký công văn gửi khách hàng + cơ quan chức năng."},
+    {"role": "Bộ phận logistics", "duties": "Thực hiện thu hồi vật lý, theo dõi đến khi hoàn tất."}
+  ],
+  "definitions": [
+    {"term": "Class I", "definition": "Rủi ro nghiêm trọng — sản phẩm chứa Haram hoặc gây hại sức khỏe → thu hồi ngay trong 24h."},
+    {"term": "Class II", "definition": "Rủi ro tiềm tàng — vi phạm tiêu chuẩn nhưng chưa nguy hại → thu hồi trong 7 ngày."},
+    {"term": "Class III", "definition": "Vi phạm nhỏ, không nguy hại — xử lý qua chính sách đổi trả."}
+  ],
+  "procedure_steps": [
+    {"step_no": 1, "action": "CSKH tiếp nhận khiếu nại qua hotline / email / web — ghi vào sổ trong vòng 1h.", "responsible_role": "CSKH", "records": "Sổ khiếu nại BM-RCL-01"},
+    {"step_no": 2, "action": "Phân loại sơ bộ — chuyển QC + Halal Lead trong 4h kể từ khi tiếp nhận.", "responsible_role": "CSKH"},
+    {"step_no": 3, "action": "Điều tra — truy xuất lô bằng mã sản phẩm, kiểm tra hồ sơ sản xuất.", "responsible_role": "QC", "records": "Báo cáo điều tra BM-RCL-02"},
+    {"step_no": 4, "action": "Đánh giá rủi ro — phân loại Class I/II/III, báo cáo Tổng GĐ.", "responsible_role": "Halal Lead", "criteria": "Hoàn thành trong 24h cho Class I"},
+    {"step_no": 5, "action": "Tổng GĐ quyết định thu hồi → công văn gửi khách hàng + báo cơ quan chứng nhận trong 48h.", "responsible_role": "Tổng GĐ", "records": "Công văn thu hồi BM-RCL-03"},
+    {"step_no": 6, "action": "Logistics thực hiện thu hồi vật lý — theo dõi đến khi đạt 100% lô bị ảnh hưởng.", "responsible_role": "Logistics", "records": "Báo cáo thu hồi BM-RCL-04"},
+    {"step_no": 7, "action": "Mock recall (diễn tập) — định kỳ 6 tháng/lần, đo thời gian truy xuất ≤ 4h.", "responsible_role": "Halal Lead", "criteria": "Truy xuất 100% lô ≤ 4h"},
+    {"step_no": 8, "action": "Hành động khắc phục — phối hợp SOP-NCR-001, cập nhật SOP, đào tạo lại.", "responsible_role": "Halal Lead + Quản đốc"}
+  ],
+  "records": [
+    "Sổ khiếu nại BM-RCL-01 — lưu 7 năm",
+    "Báo cáo điều tra khiếu nại BM-RCL-02 — lưu 7 năm",
+    "Công văn thu hồi BM-RCL-03 — lưu vĩnh viễn",
+    "Báo cáo thu hồi vật lý BM-RCL-04 — lưu 10 năm",
+    "Báo cáo mock recall định kỳ — lưu 5 năm"
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "issued_date": "2026-05-05"
+}

@@ -99,6 +99,66 @@ class CompanyProfileData(BaseModel):
 # ── Registry of supported doc_types (Phase 1: only company_profile) ────────
 
 
+# ── SOP (shared by 6 sop_* doc_types) ───────────────────────────────────────
+
+
+class ResponsibilityRow(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    role: str = Field(..., min_length=1, max_length=120)
+    duties: str = Field(..., min_length=1, max_length=600)
+
+
+class DefinitionRow(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    term: str = Field(..., min_length=1, max_length=120)
+    definition: str = Field(..., min_length=1, max_length=600)
+
+
+class ProcedureStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    step_no: int = Field(..., ge=1, le=999)
+    action: str = Field(..., min_length=1, max_length=600)
+    responsible_role: Optional[str] = Field(None, max_length=120)
+    records: Optional[str] = Field(None, max_length=200)
+    criteria: Optional[str] = Field(None, max_length=300)
+
+
+class SopData(BaseModel):
+    """Shared input for every `sop_*` doc_type.
+
+    Per-variant differences (title, scope defaults, procedure step examples)
+    come from admin_templates/<sop_type>.json cfg, not from this schema.
+    """
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    # Identity
+    business_name: str = Field(..., min_length=1, max_length=200)
+    sop_id: Optional[str] = Field(None, max_length=40, pattern=r"^[A-Z0-9\-]+$")
+    title: Optional[str] = Field(None, max_length=200)
+    version: Optional[str] = Field(None, max_length=20)
+
+    # Body
+    purpose: Optional[str] = Field(None, max_length=1500)
+    scope: Optional[str] = Field(None, max_length=1500)
+    responsibilities: List[ResponsibilityRow] = Field(default_factory=list, max_length=20)
+    references: List[str] = Field(default_factory=list, max_length=30)
+    definitions: List[DefinitionRow] = Field(default_factory=list, max_length=30)
+    procedure_steps: List[ProcedureStep] = Field(default_factory=list, max_length=50)
+    records: List[str] = Field(default_factory=list, max_length=20)
+    appendices: List[str] = Field(default_factory=list, max_length=10)
+
+    # Approval / lifecycle
+    effective_date: date
+    review_date: Optional[date] = None
+    approved_by: Optional[str] = Field(None, max_length=200)
+
+    # Render
+    issued_date: date
+
+
+# ── Style guide (kitchen sink — internal) ───────────────────────────────────
+
+
 class StyleGuideData(BaseModel):
     """Trivial schema for the kitchen-sink style guide template.
 
@@ -113,18 +173,20 @@ class StyleGuideData(BaseModel):
 SUPPORTED_DOC_TYPES = {
     "_style_guide": StyleGuideData,
     "company_profile": CompanyProfileData,
-    # Phase 2 — add stubs that point to NotImplementedError until schema is
-    # finalised so the registry endpoint can advertise the full list while
-    # /render-pdf returns 501 for not-yet-implemented types.
+
+    # All 6 SOP variants share SopData — they differ only in admin cfg
+    # (title, scope_default, procedure step examples).
+    "sop_raw_material_receiving": SopData,
+    "sop_storage_segregation": SopData,
+    "sop_production_operation": SopData,
+    "sop_cleaning_sanitation": SopData,
+    "sop_handling_nonconformances": SopData,
+    "sop_complaint_recall": SopData,
+
+    # Phase 2 remaining (Group 2-5)
     "halal_policy": None,
     "has_manual": None,
     "halal_manual": None,
-    "sop_raw_material_receiving": None,
-    "sop_storage_segregation": None,
-    "sop_production_operation": None,
-    "sop_cleaning_sanitation": None,
-    "sop_handling_nonconformances": None,
-    "sop_complaint_recall": None,
     "internal_halal_committee": None,
     "ingredient_raw_material": None,
     "process_flow_chart": None,

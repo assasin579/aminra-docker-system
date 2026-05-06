@@ -26,8 +26,15 @@ PAGE_WIDTH_PX = 1240             # 150 dpi A4 ≈ 1240 × 1754 px
 
 # (doc_type, fixture relative path under tests/fixtures/pdf_render/)
 CASES = [
-    ("_style_guide",   "_style_guide/sample.json"),
-    ("company_profile", "company_profile/sample.json"),
+    ("_style_guide",                  "_style_guide/sample.json"),
+    ("company_profile",               "company_profile/sample.json"),
+    # 6 SOP variants share sop/v1/template.html — baselines diverge by data
+    ("sop_raw_material_receiving",    "sop_raw_material_receiving/sample.json"),
+    ("sop_storage_segregation",       "sop_storage_segregation/sample.json"),
+    ("sop_production_operation",      "sop_production_operation/sample.json"),
+    ("sop_cleaning_sanitation",       "sop_cleaning_sanitation/sample.json"),
+    ("sop_handling_nonconformances",  "sop_handling_nonconformances/sample.json"),
+    ("sop_complaint_recall",          "sop_complaint_recall/sample.json"),
 ]
 
 

@@ -1,0 +1,34 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "sop_id": "SOP-CLN-001",
+  "title": "Vệ sinh và làm sạch theo chuẩn Halal",
+  "version": "1.1",
+  "purpose": "Đảm bảo thiết bị, dụng cụ, mặt bằng sản xuất được vệ sinh đúng cách (sertu nếu cần) khi chuyển đổi giữa nguyên liệu Halal và non-Halal hoặc theo lịch định kỳ.",
+  "scope": "Áp dụng cho toàn bộ thiết bị tiếp xúc thực phẩm, bề mặt thao tác, dụng cụ vệ sinh — bao gồm cả khu vực kho, sản xuất, đóng gói.",
+  "responsibilities": [
+    {"role": "Quản đốc xưởng", "duties": "Lập lịch vệ sinh, giám sát thực hiện."},
+    {"role": "Vận hành viên", "duties": "Thực hiện vệ sinh đúng quy trình, ghi chép."},
+    {"role": "QC", "duties": "Kiểm tra hiệu quả vệ sinh bằng test ATP hoặc cảm quan."},
+    {"role": "Halal Lead", "duties": "Phê duyệt hóa chất sử dụng, hướng dẫn sertu khi cần."}
+  ],
+  "definitions": [
+    {"term": "Sertu", "definition": "Quy trình vệ sinh đặc biệt theo Sharia — rửa 7 lần (1 lần với nước pha đất sạch) — áp dụng khi tiếp xúc với najis (vd thịt heo)."},
+    {"term": "Najis", "definition": "Vật ô uế theo Sharia — bao gồm thịt heo, chó, máu, xác động vật chết tự nhiên..."}
+  ],
+  "procedure_steps": [
+    {"step_no": 1, "action": "Vệ sinh thường ngày — quét, rửa nước, lau khô. Áp dụng cho tất cả khu vực không tiếp xúc najis.", "responsible_role": "Vận hành viên", "records": "Lịch vệ sinh BM-CLN-01"},
+    {"step_no": 2, "action": "Vệ sinh kỹ tuần — tháo rời thiết bị, ngâm chất tẩy ≥ 30 phút, kiểm tra ngóc ngách.", "responsible_role": "Vận hành viên + Tổ vệ sinh", "records": "Checklist BM-CLN-02"},
+    {"step_no": 3, "action": "Sertu (nếu phát hiện tiếp xúc najis) — Halal Lead chỉ đạo, thực hiện 7 lần rửa, lần 1 với nước+đất sạch.", "responsible_role": "Halal Lead + Tổ vệ sinh", "records": "Biên bản sertu BM-CLN-03"},
+    {"step_no": 4, "action": "Test ATP sau vệ sinh — giá trị < 100 RLU mới đạt.", "responsible_role": "QC", "criteria": "ATP < 100 RLU"},
+    {"step_no": 5, "action": "Niêm phong khu vực đã vệ sinh — chờ đến ca tiếp theo.", "responsible_role": "QC + Quản đốc"}
+  ],
+  "records": [
+    "Lịch vệ sinh ngày/tuần/tháng BM-CLN-01 — lưu 3 năm",
+    "Checklist vệ sinh kỹ BM-CLN-02 — lưu 3 năm",
+    "Biên bản sertu (khi áp dụng) BM-CLN-03 — lưu vĩnh viễn"
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "approved_by": "Trần Thị Bình, Halal Lead",
+  "issued_date": "2026-05-05"
+}

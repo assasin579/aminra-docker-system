@@ -1,0 +1,32 @@
+{
+  "business_name": "Công ty TNHH Quế Thiên Lộc",
+  "sop_id": "SOP-NCR-001",
+  "title": "Xử lý không phù hợp",
+  "version": "1.0",
+  "purpose": "Quy định cách phát hiện, ghi nhận, cách ly, điều tra nguyên nhân gốc và xử lý sản phẩm/quy trình không phù hợp tiêu chuẩn Halal hoặc tiêu chí chất lượng nội bộ.",
+  "scope": "Áp dụng cho mọi sản phẩm bị nghi ngờ nhiễm Haram, vi phạm thông số kỹ thuật, sự cố vệ sinh, khiếu nại nội bộ.",
+  "responsibilities": [
+    {"role": "Bất kỳ nhân viên nào phát hiện", "duties": "Báo cáo ngay cho QC trực ca; tạm dừng sử dụng/giao hàng sản phẩm liên quan."},
+    {"role": "QC", "duties": "Cách ly lô, gắn nhãn 'CHỜ XỬ LÝ', mở phiếu NCR."},
+    {"role": "Halal Lead", "duties": "Điều tra nguyên nhân gốc (5-Why), quyết định: rework / hủy / chuyển non-Halal."},
+    {"role": "Quản đốc xưởng", "duties": "Áp dụng hành động khắc phục, cập nhật SOP nếu cần."}
+  ],
+  "procedure_steps": [
+    {"step_no": 1, "action": "Phát hiện không phù hợp → báo cáo trong vòng 30 phút.", "responsible_role": "Tất cả nhân sự", "records": "Phiếu NCR BM-NCR-01"},
+    {"step_no": 2, "action": "QC cách ly lô — gắn nhãn đỏ, di chuyển vào khu Cách ly.", "responsible_role": "QC", "criteria": "Hoàn thành trong 1 giờ kể từ khi phát hiện"},
+    {"step_no": 3, "action": "Mở phiếu NCR — điền thông tin lô, mô tả vấn đề, ảnh minh họa.", "responsible_role": "QC", "records": "Phiếu NCR có ảnh"},
+    {"step_no": 4, "action": "Halal Lead điều tra — phỏng vấn nhân sự, kiểm tra nhật ký, áp dụng 5-Why.", "responsible_role": "Halal Lead", "records": "Báo cáo điều tra BM-NCR-02"},
+    {"step_no": 5, "action": "Quyết định xử lý: (a) Rework nếu sửa được — (b) Hủy — (c) Chuyển non-Halal nếu khách hàng chấp nhận.", "responsible_role": "Halal Lead + Tổng GĐ"},
+    {"step_no": 6, "action": "Áp dụng hành động khắc phục — cập nhật SOP, đào tạo lại nhân sự, sửa thiết bị.", "responsible_role": "Quản đốc + Halal Lead", "records": "Báo cáo CAR BM-NCR-03"},
+    {"step_no": 7, "action": "Đóng phiếu NCR khi xác nhận hành động hiệu quả — Halal Lead ký.", "responsible_role": "Halal Lead", "criteria": "Không tái diễn trong 90 ngày"}
+  ],
+  "records": [
+    "Phiếu NCR BM-NCR-01 — lưu 7 năm",
+    "Báo cáo điều tra BM-NCR-02 — lưu 7 năm",
+    "Báo cáo CAR (Corrective Action Request) BM-NCR-03 — lưu 7 năm"
+  ],
+  "effective_date": "2026-04-01",
+  "review_date": "2027-04-01",
+  "approved_by": "Nguyễn Văn Anh, Tổng giám đốc",
+  "issued_date": "2026-05-05"
+}
