@@ -187,7 +187,21 @@ em { font-style: italic; }
 .dim { color: var(--c-text-muted); }
 .tnum { font-variant-numeric: tabular-nums; }
 
-/* ─── COVER PAGE — full-bleed gradient hero with geometric overlays ──────── */
+/* ─── COVER PAGE — solid color hero (perf-tuned) ──────────────────────────
+ *
+ * Why no gradient: every gradient (linear OR radial) becomes a PDF
+ * Shading object; viewers (Chrome, Firefox, Acrobat) re-evaluate the
+ * shading at every paint frame. Stacking 3 of them under the cover made
+ * the page unscrollable. Solid background fills are a single Path op
+ * → instant repaint.
+ *
+ * Visual identity is preserved by the deep-navy brand colour + a single
+ * accent strip on the right edge (solid block, also cheap). We removed:
+ *   - .cover::before     two radial gradients
+ *   - .cover::after      dot grid + mask (removed 2026-05-06)
+ *   - .cover__mark       SVG with internal gradients (removed 2026-05-06)
+ *   - cover linear-gradient (replaced with solid)
+ */
 
 .cover {
   position: relative;
@@ -196,29 +210,18 @@ em { font-style: italic; }
   width: 210mm;
   height: 297mm;
   margin: -18mm -15mm 0 -15mm;          /* cancel @page margins for full bleed */
-  background: var(--grad-hero);
-  color: #fff;
+  background: var(--c-brand-primary);
+  color: var(--c-text-on-brand);
   overflow: hidden;
   padding: 22mm 18mm 18mm 18mm;
   display: flex;
   flex-direction: column;
 }
 
-/* Geometric layered SVG painted as background — dot grid + circles */
-.cover::before {
-  content: "";
-  position: absolute; inset: 0;
-  background-image:
-    radial-gradient(circle at 88% 18%, rgba(74,222,128,0.20) 0, rgba(74,222,128,0) 38%),
-    radial-gradient(circle at 12% 92%, rgba(255,255,255,0.12) 0, rgba(255,255,255,0) 28%);
-  pointer-events: none;
-}
-
-/* The dot-grid + mask overlay was removed in 2026-05-06: it was painting
- * ~3850 vector dot instances into the PDF page stream and forcing alpha
- * mask compositing in the viewer, which made the cover unscrollable on
- * Chrome/Firefox PDF preview. The hero gradient + ::before radial blobs
- * give the cover enough texture without the perf cost. */
+/* Decorative cover-mark SVG kept addressable in macros but hidden on
+ * cover by default; bring back via per-doc style.css if a specific
+ * template wants a visible mark. */
+.cover__mark { display: none; }
 
 .cover__head {
   position: relative; z-index: 2;
@@ -299,16 +302,19 @@ em { font-style: italic; }
   line-height: 1.3;
 }
 
-/* Vertical strip on right edge of cover */
+/* Vertical strip on right edge of cover — solid colour for instant paint
+ * (was a gradient prior to 2026-05-06 perf fix). */
 .cover__strip {
   position: absolute; top: 0; right: 0;
   width: 9mm; height: 100%;
-  background: var(--grad-accent);
+  background: var(--c-brand-accent);
   z-index: 1;
 }
 
-/* Optional decorative geometric mark bottom-right */
-.cover__mark {
+/* .cover__mark hidden by default (declared near .cover above). The
+ * positional rules are kept here so a doc-specific stylesheet can
+ * unhide + customise placement without redefining geometry. */
+.cover__mark--positioned {
   position: absolute; right: 22mm; bottom: 36mm; z-index: 2;
   width: 36mm; height: 36mm;
   opacity: 0.85;
