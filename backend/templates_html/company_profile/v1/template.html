@@ -54,7 +54,7 @@
 {# ────────── Section 02 — Hoạt động + sản phẩm ────────── #}
 {% if data.get('business_activities') or [] or data.get('products') or [] %}
 <section class="section">
-  {{ section_opener(2, "Hoạt động kinh doanh", "Lĩnh vực &amp; Sản phẩm chính") }}
+  {{ section_opener(2, "Hoạt động kinh doanh", "Lĩnh vực & Sản phẩm chính") }}
 
   {% if data.get('business_activities') or [] %}
   <h3>Lĩnh vực hoạt động</h3>
@@ -82,7 +82,7 @@
 
 {# ────────── Section 03 — Cam kết Halal ────────── #}
 <section class="section">
-  {{ section_opener(3, "Cam kết tuân thủ", "Cam kết Halal &amp; Trách nhiệm") }}
+  {{ section_opener(3, "Cam kết tuân thủ", "Cam kết Halal & Trách nhiệm") }}
 
   {% if data.get('halal_commitment') %}
     {{ pull_quote(data.get('halal_commitment'), cite=data.business_name) }}

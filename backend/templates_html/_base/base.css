@@ -325,9 +325,10 @@ em { font-style: italic; }
 .section-opener {
   position: relative;
   margin: 0 0 var(--sp-5) 0;
-  padding: var(--sp-6) 0 var(--sp-4) 0;
-  page-break-before: always;
-  break-before: page;
+  padding: var(--sp-5) 0 var(--sp-4) 0;
+  /* Don't force a page break before — let content flow. But keep the
+   * title-with-content rule: if a section opener would orphan at the
+   * bottom of a page, push it to the next page along with its body. */
   page-break-after: avoid;
   break-after: avoid;
   page-break-inside: avoid;
@@ -382,11 +383,13 @@ em { font-style: italic; }
 
 .section {
   margin: 0 0 var(--sp-6) 0;
-  page-break-before: always;
-  break-before: page;
+  /* Auto-flow content. Browser breaks pages only when content overflows.
+   * Previously forced one-page-per-section produced a lot of whitespace
+   * (many pages were 30%+ blank). The section-opener still has its own
+   * `page-break-before: avoid + after: avoid` rule below to keep the
+   * giant number + title together with at least the first paragraph
+   * of body content. */
 }
-/* First section after cover: cover already breaks; collapse double-break */
-.cover + .section { page-break-before: auto; break-before: auto; }
 .section h2 { margin-bottom: var(--sp-3); }
 .section h3 { margin-top: var(--sp-4); margin-bottom: var(--sp-2); }
 

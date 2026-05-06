@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import html as _htmlesc
 import io
 import logging
 import os
@@ -260,13 +261,7 @@ class PDFRenderer:
                     margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
                     display_header_footer=True,
                     header_template="<div></div>",       # CSS @page rules drive headers
-                    footer_template=(
-                        "<div style=\"width:100%;font-size:8pt;color:#94a3b8;"
-                        "padding:0 15mm;font-family:Inter,sans-serif;text-align:right;\">"
-                        "Trang <span class=\"pageNumber\"></span>"
-                        " / <span class=\"totalPages\"></span>"
-                        "</div>"
-                    ),
+                    footer_template=_build_footer_html(data),
                 )
                 await page.close()
             finally:
@@ -337,6 +332,46 @@ class PDFRenderer:
         if not resolved.is_file():
             raise FileNotFoundError(f"asset not found: {relpath}")
         return resolved.as_uri()
+
+
+# ── Running footer (brand on every page) ───────────────────────────────────
+
+
+def _build_footer_html(data: dict) -> str:
+    """Build the Chromium native print footer with brand + doc_id + page number.
+
+    Chromium's `footer_template` is a fragment-of-HTML strung that's injected
+    on every page. It supports the special spans `pageNumber`, `totalPages`,
+    `title`, `date` — but not Jinja, so we string-format the dynamic bits
+    here. All `data` values are HTML-escaped to defend against an attacker
+    who somehow lands user-controlled content into a name field.
+    """
+    business_name = (data.get("business_name") or "").strip()
+    # Document ID falls back across schemas: SOP, policy, manual all expose
+    # one of these keys per their Pydantic shape.
+    doc_id = (
+        data.get("sop_id")
+        or data.get("policy_id")
+        or data.get("manual_id")
+        or ""
+    ).strip()
+
+    left = _htmlesc.escape(business_name)
+    if doc_id:
+        left += " &middot; " + _htmlesc.escape(doc_id)
+
+    return (
+        "<div style=\""
+        "width:100%;font-size:7pt;color:#94a3b8;"
+        "padding:0 15mm;font-family:Inter,sans-serif;"
+        "display:flex;justify-content:space-between;align-items:center;"
+        "letter-spacing:0.04em;"
+        "\">"
+        f"<span style=\"font-weight:600;\">{left}</span>"
+        "<span>Trang <span class=\"pageNumber\"></span> / "
+        "<span class=\"totalPages\"></span></span>"
+        "</div>"
+    )
 
 
 # ── PDF metadata strip (deterministic output) ───────────────────────────────
