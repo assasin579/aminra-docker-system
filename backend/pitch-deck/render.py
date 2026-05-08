@@ -58,19 +58,40 @@ async def render() -> None:
             # Ensure web fonts are fully loaded before rendering
             await page.evaluate("() => document.fonts.ready")
 
+            # Paper size = standard 16:9 slide (13.333"×7.5" = 960×540 pt).
+            # Viewport stays 1920×1080 for design fidelity; Chromium scales the
+            # rendered page to fit the smaller paper. PDF is fully vector so
+            # quality is identical, but per-page area is 4× smaller — viewers
+            # render & scroll much faster.
             await page.pdf(
                 path=str(PDF_LOCAL),
-                width=f"{PAGE_WIDTH_PX}px",
-                height=f"{PAGE_HEIGHT_PX}px",
+                width="13.333in",
+                height="7.5in",
                 margin={"top": "0", "right": "0", "bottom": "0", "left": "0"},
                 print_background=True,
-                prefer_css_page_size=True,
+                prefer_css_page_size=False,
             )
         finally:
             await browser.close()
 
-    size_kb = PDF_LOCAL.stat().st_size // 1024
-    print(f"✓ rendered  {PDF_LOCAL}  ({size_kb} KB)")
+    raw_kb = PDF_LOCAL.stat().st_size // 1024
+    print(f"✓ rendered  {PDF_LOCAL}  ({raw_kb} KB raw)")
+
+    # Compress: pikepdf re-saves with object stream + content stream compression.
+    try:
+        import pikepdf
+        with pikepdf.open(PDF_LOCAL, allow_overwriting_input=True) as doc:
+            doc.save(
+                PDF_LOCAL,
+                compress_streams=True,
+                stream_decode_level=pikepdf.StreamDecodeLevel.generalized,
+                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+                linearize=False,
+            )
+        opt_kb = PDF_LOCAL.stat().st_size // 1024
+        print(f"✓ compressed {PDF_LOCAL}  ({opt_kb} KB · saved {raw_kb - opt_kb} KB)")
+    except ImportError:
+        print("note: pikepdf not installed — skipping compression")
 
     PDF_DOWNLOADS.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(PDF_LOCAL, PDF_DOWNLOADS)

@@ -5,9 +5,7 @@
    ════════════════════════════════════════════════════════════════════════════════ */
 
 @font-face { font-family: 'Inter'; src: url('../templates_html/_shared/fonts/Inter-Regular.woff2')  format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
-@font-face { font-family: 'Inter'; src: url('../templates_html/_shared/fonts/Inter-Medium.woff2')   format('woff2'); font-weight: 500; font-style: normal; font-display: block; }
 @font-face { font-family: 'Inter'; src: url('../templates_html/_shared/fonts/Inter-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: block; }
-@font-face { font-family: 'Inter'; src: url('../templates_html/_shared/fonts/Inter-Bold.woff2')     format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
 @font-face { font-family: 'Inter'; src: url('../templates_html/_shared/fonts/Inter-Italic.woff2')   format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
 
 :root {
@@ -41,7 +39,7 @@
 }
 
 @page {
-  size: 1920px 1080px;
+  size: 13.333in 7.5in;
   margin: 0;
 }
 
@@ -78,10 +76,7 @@ html, body {
 
 .slide.cream { background: var(--cream-100); color: var(--ink-900); }
 .slide.dark {
-  background:
-    radial-gradient(circle at 82% 18%, rgba(201,162,74,0.16) 0%, transparent 50%),
-    radial-gradient(circle at 12% 95%, rgba(201,162,74,0.08) 0%, transparent 50%),
-    var(--navy-900);
+  background: var(--navy-900);
   color: var(--cream-100);
 }
 
@@ -137,7 +132,7 @@ html, body {
 .slide.dark .slide-title { color: var(--cream-50); }
 .slide-title em {
   font-style: italic;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--gold-700);
 }
 .slide.dark .slide-title em { color: var(--gold-500); }
@@ -172,7 +167,7 @@ html, body {
   gap: 12px;
   font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--gold-700);
@@ -216,7 +211,7 @@ html, body {
 .pain-list li::before {
   content: '×';
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 24px;
   color: var(--gold-600);
   line-height: 1;
@@ -255,7 +250,7 @@ html, body {
 .footer-stat .item .l {
   font-family: var(--font-display);
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--ink-500);
   letter-spacing: 0.04em;
 }
@@ -330,7 +325,7 @@ html, body {
 .ba-strip .lbl {
   font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold-700);
@@ -352,7 +347,7 @@ html, body {
 .ba-strip .col-ba .h {
   font-family: var(--font-display);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -365,7 +360,7 @@ html, body {
   font-size: 20px;
   line-height: 1.5;
   color: var(--ink-900);
-  font-weight: 500;
+  font-weight: 400;
 }
 .slide.dark .ba-strip .col-ba .v { color: var(--cream-50); }
 .ba-strip .col-ba.before .v { color: var(--ink-500); }
