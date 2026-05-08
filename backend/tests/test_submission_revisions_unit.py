@@ -253,20 +253,29 @@ class TestResubmit:
         with pytest.raises(InvalidStateTransition):
             await resubmit(conn, submission_id=sub_id)
 
-    async def test_resubmit_double_call_second_fails(self, conn, fresh_submission):
-        from services.submission_revisions import (
-            InvalidStateTransition, request_revision, resubmit,
-        )
+    async def test_resubmit_double_call_second_is_idempotent_noop(self, conn, fresh_submission):
+        """After 1 successful resubmit, a second call should be a safe no-op
+        (round > 0, no pending revision, status=reviewing) — handles UX cases
+        like double-click, stale tab, or /replace-document already auto-flipped
+        the status before the explicit /resubmit click (W3-M6 path)."""
+        from services.submission_revisions import request_revision, resubmit
 
         sub_id, _, prov_id = fresh_submission
         await request_revision(
             conn, submission_id=sub_id, requester_id=prov_id,
             requester_name="X", feedback="issue",
         )
-        await resubmit(conn, submission_id=sub_id)
-        # Second call: status is now 'reviewing', not 'revision_required'
-        with pytest.raises(InvalidStateTransition):
-            await resubmit(conn, submission_id=sub_id)
+        first = await resubmit(conn, submission_id=sub_id)
+        assert not first.get("noop")
+
+        second = await resubmit(conn, submission_id=sub_id)
+        assert second.get("noop") is True
+        # Status must remain reviewing; round must not increment again.
+        sub = await conn.fetchrow(
+            "SELECT status, revision_round FROM submissions WHERE id = $1", sub_id,
+        )
+        assert sub["status"] == "reviewing"
+        assert sub["revision_round"] == 1
 
 
 # ── list_revision_history ─────────────────────────────────────────────────

@@ -25,6 +25,7 @@ interface RevisionRound {
   document_feedback: DocumentFeedbackItem[];
   requested_at: string;
   resolved_at: string | null;
+  business_response: string | null;
 }
 
 interface Props {
@@ -52,7 +53,10 @@ export default function RevisionPanel({
     try {
       const res = await fetch(
         `/api/api/submissions/${submissionId}/revisions`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
       );
       if (!res.ok) throw new Error(`Lỗi ${res.status}`);
       const data = await res.json();
@@ -64,9 +68,12 @@ export default function RevisionPanel({
     }
   };
 
+  // Re-fetch on status change too — after a resubmit / request_revision the
+  // parent refreshes the submission, status flips, and we want the new round
+  // (or the new business_response field) to land without a manual reload.
   useEffect(() => {
     fetchHistory();
-  }, [submissionId]);
+  }, [submissionId, status]);
 
   // Determine what the panel can do based on role + status
   const providerCanRequest =
@@ -545,6 +552,29 @@ function RevisionHistory({
                 </li>
               ))}
             </ul>
+          )}
+
+          {r.business_response && (
+            <div
+              className="mt-3 rounded-lg p-2.5 text-sm"
+              style={{
+                background: "rgba(38, 194, 154, 0.08)",
+                border: "1px solid rgba(38, 194, 154, 0.25)",
+              }}
+            >
+              <div
+                className="text-xs font-medium mb-1"
+                style={{ color: "#0A6B4F" }}
+              >
+                Phản hồi từ doanh nghiệp
+              </div>
+              <p
+                className="whitespace-pre-wrap"
+                style={{ color: "#0A1F44" }}
+              >
+                {r.business_response}
+              </p>
+            </div>
           )}
 
           {r.resolved_at && (
