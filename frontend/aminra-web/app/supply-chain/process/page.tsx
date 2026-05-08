@@ -298,10 +298,22 @@ export default function ProcessPage() {
 
   const deleteProcess = async (id: string) => {
     if (!confirm("Xác nhận xoá quy trình này?")) return;
-    await fetch(`/api/api/supply-chain/processes/${id}`, {
+    const res = await fetch(`/api/api/supply-chain/processes/${id}`, {
       method: "DELETE",
       headers,
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const { parseApiError } = await import("@/lib/apiError");
+      // Most common case: FK from production_batches → user-friendly hint.
+      const detail = parseApiError(body, `Lỗi ${res.status}`);
+      alert(
+        res.status === 500 || /foreign key|violates|reference/i.test(detail)
+          ? "Không thể xoá quy trình vì đang được tham chiếu bởi 1 lô hàng. Hãy xoá / hoàn tất lô hàng đó trước."
+          : detail,
+      );
+      return;
+    }
     if (activeId === id) {
       setActiveId(null);
       setNodes([]);
@@ -520,7 +532,7 @@ export default function ProcessPage() {
             processes.map((p, idx) => (
               <div
                 key={p.id}
-                className={`rounded-lg p-3 cursor-pointer transition-all animate-list-item stagger-${Math.min(idx + 1, 12)}`}
+                className={`group rounded-lg p-3 cursor-pointer transition-all animate-list-item stagger-${Math.min(idx + 1, 12)}`}
                 style={{
                   background: activeId === p.id ? "#0A1F44" : "#FFFFFF",
                   color: activeId === p.id ? "#FFFFFF" : "#0A1F44",
@@ -544,10 +556,12 @@ export default function ProcessPage() {
                       e.stopPropagation();
                       deleteProcess(p.id);
                     }}
-                    className="text-xs opacity-0 group-hover:opacity-100 hover:text-red-400"
+                    aria-label="Xoá quy trình"
+                    title="Xoá quy trình"
+                    className="text-xs opacity-60 group-hover:opacity-100 hover:text-red-400 transition-opacity"
                     style={{
                       color:
-                        activeId === p.id ? "rgba(255,255,255,0.5)" : "#9CA3AF",
+                        activeId === p.id ? "rgba(255,255,255,0.7)" : "#9CA3AF",
                     }}
                   >
                     ✕
