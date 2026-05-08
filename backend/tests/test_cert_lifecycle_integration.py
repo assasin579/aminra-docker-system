@@ -29,7 +29,12 @@ async def conn():
 
 @pytest.fixture
 async def fresh_cert(conn):
-    """Insert a cert + return id, owner_user_id, business_tenant for cleanup."""
+    """Insert a submission + cert pair, return id + ids for cleanup.
+
+    `halal_certificates.submission_id` is NOT NULL (constraint added after
+    Q1 2026), so the fixture must create a submission first. Cleanup
+    cascades via DELETE order.
+    """
     prov = await conn.fetchrow(
         "SELECT id, tenant_id FROM users WHERE role='provider' AND is_owner=true LIMIT 1"
     )
@@ -39,25 +44,38 @@ async def fresh_cert(conn):
     if not prov or not biz:
         pytest.skip("Need provider + business users seeded")
 
+    submission_id = uuid4()
     cert_id = uuid4()
     cert_number = f"TEST-LIFE-{uuid4().hex[:8].upper()}"
     await conn.execute(
         """
-        INSERT INTO halal_certificates
-            (id, cert_number, issued_by, business_tenant, company_name,
-             issue_date, expiry_date, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
+        INSERT INTO submissions
+            (id, business_tenant, provider_id, document_ids,
+             revision_round, sla_alerts_sent, status)
+        VALUES ($1, $2, $3, '{}'::uuid[], 0, '{}'::jsonb, 'approved')
         """,
-        cert_id, cert_number, prov["id"], biz["tenant_id"], "Test Co",
-        date.today(), date.today() + timedelta(days=365),
+        submission_id, biz["tenant_id"], prov["id"],
+    )
+    await conn.execute(
+        """
+        INSERT INTO halal_certificates
+            (id, submission_id, cert_number, issued_by, business_tenant,
+             company_name, issue_date, expiry_date, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
+        """,
+        cert_id, submission_id, cert_number, prov["id"], biz["tenant_id"],
+        "Test Co", date.today(), date.today() + timedelta(days=365),
     )
     yield {
         "id": str(cert_id),
+        "submission_id": str(submission_id),
         "cert_number": cert_number,
         "provider_id": str(prov["id"]),
         "business_tenant": str(biz["tenant_id"]),
     }
+    # Cleanup in reverse FK order
     await conn.execute("DELETE FROM halal_certificates WHERE id = $1", cert_id)
+    await conn.execute("DELETE FROM submissions WHERE id = $1", submission_id)
 
 
 # ── revoke_cert flow ───────────────────────────────────────────────────────
@@ -118,22 +136,36 @@ class TestDBConstraint:
         if not prov or not biz:
             pytest.skip("Need seeded users")
 
+        submission_id = uuid4()
         cert_id = uuid4()
         cert_number = f"TEST-BAD-{uuid4().hex[:8].upper()}"
+        # halal_certificates.submission_id is NOT NULL — create a submission
+        # first so we exercise the (revoked_at without reason) check constraint
+        # rather than tripping the FK / NOT NULL guard.
+        await conn.execute(
+            """
+            INSERT INTO submissions
+                (id, business_tenant, provider_id, document_ids,
+                 revision_round, sla_alerts_sent, status)
+            VALUES ($1, $2, $3, '{}'::uuid[], 0, '{}'::jsonb, 'approved')
+            """,
+            submission_id, biz["tenant_id"], prov["id"],
+        )
         try:
             with pytest.raises(asyncpg.exceptions.CheckViolationError):
                 # Try to set revoked_at without reason — must violate constraint
                 await conn.execute(
                     """
                     INSERT INTO halal_certificates
-                        (id, cert_number, issued_by, business_tenant, company_name,
-                         issue_date, expiry_date, status, revoked_at)
-                    VALUES ($1, $2, $3, $4, 'X', NOW(), NOW(), 'revoked', NOW())
+                        (id, submission_id, cert_number, issued_by, business_tenant,
+                         company_name, issue_date, expiry_date, status, revoked_at)
+                    VALUES ($1, $2, $3, $4, $5, 'X', NOW(), NOW(), 'revoked', NOW())
                     """,
-                    cert_id, cert_number, prov["id"], biz["tenant_id"],
+                    cert_id, submission_id, cert_number, prov["id"], biz["tenant_id"],
                 )
         finally:
             await conn.execute("DELETE FROM halal_certificates WHERE id = $1", cert_id)
+            await conn.execute("DELETE FROM submissions WHERE id = $1", submission_id)
 
 
 # ── Endpoint integration ───────────────────────────────────────────────────
