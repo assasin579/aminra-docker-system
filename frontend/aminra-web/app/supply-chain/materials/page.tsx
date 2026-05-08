@@ -224,17 +224,24 @@ export default function MaterialsPage() {
     if (!matForm.name || !matForm.supplier_id) return;
     setMatSaving(true);
     try {
+      const { parseApiError } = await import("@/lib/apiError");
+      // Strip empty optional strings → null so Pydantic Optional[…] validators
+      // don't fail on blank inputs the user simply skipped.
+      const payload: Record<string, unknown> = { ...matForm };
+      for (const k of Object.keys(payload)) {
+        if (payload[k] === "") payload[k] = null;
+      }
       const url = editMat
         ? `/api/api/supply-chain/materials/${editMat.id}`
         : "/api/api/supply-chain/materials";
       const res = await fetch(url, {
         method: editMat ? "PUT" : "POST",
         headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify(matForm),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Lỗi");
+        alert(parseApiError(e, `Lỗi ${res.status}`));
         return;
       }
       setShowMatForm(false);
@@ -328,7 +335,8 @@ export default function MaterialsPage() {
       );
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Upload thất bại");
+        const { parseApiError } = await import("@/lib/apiError");
+        alert(parseApiError(e, "Upload thất bại"));
         return;
       }
       openCerts(supId);
@@ -385,7 +393,8 @@ export default function MaterialsPage() {
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
-      alert(e.detail || "Không thể xác minh");
+      const { parseApiError } = await import("@/lib/apiError");
+      alert(parseApiError(e, "Không thể xác minh"));
       return;
     }
     alert("Đã xác minh nhà cung cấp!");
@@ -1239,6 +1248,16 @@ export default function MaterialsPage() {
                   if (!supForm.name) return;
                   setSupSaving(true);
                   try {
+                    const { parseApiError } = await import("@/lib/apiError");
+                    // Pydantic Optional[EmailStr] still rejects empty string
+                    // (only None passes). Strip empty optional strings to None
+                    // so blank fields don't trip server-side validation.
+                    const payload: Record<string, unknown> = {
+                      ...supForm,
+                    };
+                    for (const k of Object.keys(payload)) {
+                      if (payload[k] === "") payload[k] = null;
+                    }
                     const url = editSup
                       ? `/api/api/supply-chain/suppliers/${editSup.id}`
                       : "/api/api/supply-chain/suppliers";
@@ -1248,11 +1267,11 @@ export default function MaterialsPage() {
                         ...headers,
                         "Content-Type": "application/json",
                       },
-                      body: JSON.stringify(supForm),
+                      body: JSON.stringify(payload),
                     });
                     if (!res.ok) {
                       const e = await res.json().catch(() => ({}));
-                      alert(e.detail || "Lỗi");
+                      alert(parseApiError(e, `Lỗi ${res.status}`));
                       return;
                     }
                     setShowSupForm(false);
