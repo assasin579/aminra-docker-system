@@ -9,6 +9,52 @@ os.environ.setdefault(
     "pytest-only-secret-do-not-use-in-prod-aaaaaaaaaaaaaaaaaaaaaaaa",
 )
 
+
+# ─── DATABASE_URL auto-detect for in-container test runs ────────────────────
+#
+# The 246 supply-chain + sealing + anchor tests skip when DATABASE_URL is
+# unset (~50% of all skips). When pytest runs inside the AMINRA backend
+# container with the postgres-db service reachable on the docker network,
+# auto-fill DATABASE_URL with dev creds so those tests run.
+#
+# Safety:
+#   - Only fires inside a container (`/.dockerenv` exists).
+#   - Only fires if the user hasn't already set DATABASE_URL.
+#   - Only uses default DEV creds — production sets DATABASE_URL via
+#     Vault so this branch never runs there.
+#   - Probes the service with a short timeout; on any failure, leaves
+#     DATABASE_URL unset so dependent tests skip cleanly.
+
+def _maybe_autodetect_database_url() -> None:
+    if os.getenv("DATABASE_URL"):
+        return
+    from pathlib import Path as _P
+    if not _P("/.dockerenv").exists():
+        return
+    # Compose service name + dev creds. Real prod sets DATABASE_URL elsewhere.
+    candidate = (
+        "postgresql://aminra_user:aminra_secure_2026"
+        "@aminra-docker-system-postgres-db-1:5432/aminra"
+    )
+    try:
+        import asyncio as _asyncio
+        import asyncpg as _asyncpg
+        async def _probe() -> bool:
+            try:
+                conn = await _asyncpg.connect(candidate, timeout=2)
+                await conn.close()
+                return True
+            except Exception:
+                return False
+        if _asyncio.run(_probe()):
+            os.environ["DATABASE_URL"] = candidate
+    except Exception:
+        # asyncpg/asyncio import failed or runtime hiccup — leave URL unset.
+        pass
+
+
+_maybe_autodetect_database_url()
+
 from uuid import uuid4
 
 import asyncpg
