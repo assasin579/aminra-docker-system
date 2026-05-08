@@ -1,4 +1,14 @@
 import os
+
+# Test-only JWT secret. Set BEFORE importing any module that reads it at
+# module-load time (e.g. auth.jwt_utils raises if missing). Real value is
+# injected by docker-compose env / Vault in dev + prod. Tests must NEVER
+# rely on this value to validate real tokens.
+os.environ.setdefault(
+    "JWT_SECRET",
+    "pytest-only-secret-do-not-use-in-prod-aaaaaaaaaaaaaaaaaaaaaaaa",
+)
+
 from uuid import uuid4
 
 import asyncpg
