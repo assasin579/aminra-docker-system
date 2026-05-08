@@ -9,5 +9,7 @@ def test_upload_invalid_extension(client, admin_token):
     assert resp.status_code in [400, 413, 422]
 
 def test_evaluate_without_file(client):
+    """Post-C12 fix (/evaluate now requires auth): unauth call hits auth
+    gate first → 401, never reaches the file-validation 422."""
     resp = client.post("/evaluate")
-    assert resp.status_code == 422  # missing required field
+    assert resp.status_code == 401  # auth required

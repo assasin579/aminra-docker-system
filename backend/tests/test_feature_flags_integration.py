@@ -250,7 +250,8 @@ class TestTenantIsolation:
             ("put", "/auth/admin/feature-flags/x/overrides/y"),
             ("delete", "/auth/admin/feature-flags/x/overrides/y"),
         ):
-            r = getattr(client, method)(path, json={} if method == "put" else None)
+            kwargs = {"json": {}} if method == "put" else {}
+            r = getattr(client, method)(path, **kwargs)
             assert r.status_code in (401, 403), f"{method.upper()} {path} should be blocked, got {r.status_code}"
 
     def test_my_endpoint_does_not_leak_other_tenant_overrides(self, client, admin_token):
