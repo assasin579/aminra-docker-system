@@ -25,9 +25,9 @@ SLIDES_HTML = HERE / "slides.html"
 PDF_LOCAL = HERE / "aminra-pitch-deck.pdf"
 PDF_DOWNLOADS = Path.home() / "Downloads" / "aminra-pitch-deck.pdf"
 
-# 16:9 landscape — 1280×720 logical px
-PAGE_WIDTH_PX = 1280
-PAGE_HEIGHT_PX = 720
+# 16:9 landscape — 1920×1080 (AMINRA brand spec)
+PAGE_WIDTH_PX = 1920
+PAGE_HEIGHT_PX = 1080
 
 
 async def render() -> None:
