@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>AMINRA · Pitch Deck 2026</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 01 — COVER
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide cover">
+  <div class="cover-inner">
+    <div class="brand-row">
+      <span class="leaf-mark"></span>
+      <span>AMINRA · Halal Cert SaaS</span>
+    </div>
+
+    <div>
+      <h1 class="cover-title">Số hoá ngành<br><em>chứng nhận Halal</em><br>Việt Nam.</h1>
+      <p class="cover-tagline">
+        Một nền tảng kết nối doanh nghiệp với tổ chức chứng nhận quốc tế —
+        tự động hoá tài liệu bằng AI, niềm tin có blockchain anchor.
+      </p>
+    </div>
+
+    <div class="cover-meta">
+      <span>Pitch deck<strong>v1 · 2026-05</strong></span>
+      <span>Phase<strong>MVP completion</strong></span>
+      <span>Audience<strong>Seed investors</strong></span>
+    </div>
+  </div>
+
+  <!-- Hand-drawn leaf accent in BG -->
+  <svg class="leaf-bg" viewBox="0 0 200 200" aria-hidden="true">
+    <path d="M55 35c-22 18-32 38-32 60 0 26 22 40 38 40 32 0 56-26 56-60 0-16-6-32-16-44-12 12-28 12-46 4z"
+          fill="#16a34a"/>
+    <path d="M40 100c10-16 26-26 46-30" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>
+
+  <span class="slide-num">01 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 02 — THE PROBLEM
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Vấn đề · 2026</div>
+  <h1 class="slide-title">Halal cert vẫn là<br>quy trình <em>giấy</em>.</h1>
+  <p class="slide-lede">
+    Trong khi global Halal economy chạm $2,5 nghìn tỷ, ngành chứng nhận
+    Halal Việt Nam vẫn vận hành như 20 năm trước — giấy tờ, email rời rạc,
+    không truy xuất được.
+  </p>
+
+  <div class="two-col" style="flex: 1; gap: 56px;">
+    <div class="col">
+      <span class="col-tag dn">Phía Doanh nghiệp</span>
+      <h2>Mất 4–12 tuần. Tốn $5K–$50K. Không biết đang ở đâu.</h2>
+      <ul class="pain-list">
+        <li>8–15 loại tài liệu phải tự soạn thủ công (HAS Manual, SOP, Halal Policy, Process Flow…)</li>
+        <li>Mỗi vòng review = email PDF qua lại, không có version history</li>
+        <li>Không có dashboard tracking — gọi điện hỏi CB mới biết tiến độ</li>
+        <li>Cert giấy in ra → buyer Trung Đông không xác minh được tính thật/giả</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <span class="col-tag cb">Phía Tổ chức chứng nhận (CB)</span>
+      <h2>Hồ sơ rời rạc. Audit log thủ công. Không thước đo SLA.</h2>
+      <ul class="pain-list">
+        <li>Hồ sơ đến qua email + Drive + giấy → thiếu cách ly tenant</li>
+        <li>Không có công cụ collaborative review giữa nhiều auditor</li>
+        <li>Audit log nằm trong Excel — không tamper-evident</li>
+        <li>Cấp cert xong là hết quan hệ — không có cơ chế tái audit, surveillance</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat"><span class="value">$2.5T</span><span class="label">Halal economy 2026</span></div>
+    <div class="stat"><span class="value">1.9B</span><span class="label">Người tiêu dùng Halal</span></div>
+    <div class="stat"><span class="value">117</span><span class="label">Bước trung bình / cert</span></div>
+    <div class="stat"><span class="value">80%</span><span class="label">Quy trình thủ công hiện tại</span></div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">02 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 03 — THE SOLUTION
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Giải pháp</div>
+  <h1 class="slide-title">Một nền tảng. Hai phía.<br>Niềm tin <em>có blockchain</em>.</h1>
+  <p class="slide-lede">
+    AMINRA là SaaS đa người thuê (multi-tenant) kết nối doanh nghiệp Việt với
+    các tổ chức chứng nhận Halal quốc tế — tự động hoá bằng AI, mọi cert được
+    anchor lên Bitcoin + Polygon, public verifier không cần đăng nhập.
+  </p>
+
+  <div class="quadrants">
+    <div class="q q1">
+      <div class="q-icon">⚡</div>
+      <h3>AI-Assisted Documentation</h3>
+      <p>OpenRouter LLM gateway (DeepSeek primary) tự động sinh 13 loại tài liệu Halal —
+      HAS Manual, Halal Policy, 6× SOP, Process Flow, Ingredient list… Trung bình 30 giây/doc.</p>
+    </div>
+
+    <div class="q q2">
+      <div class="q-icon">⌗</div>
+      <h3>Multi-tenant SaaS</h3>
+      <p>Schema-per-tenant (PostgreSQL) cách ly cứng — không có cross-tenant leak.
+      3 portal độc lập: Doanh nghiệp · Tổ chức chứng nhận · Admin. JWT + RBAC.</p>
+    </div>
+
+    <div class="q q3">
+      <div class="q-icon">⛓</div>
+      <h3>Blockchain-Anchored</h3>
+      <p>Mỗi cert được hash SHA-256 → Merkle tree → anchor vào <strong>Bitcoin OP_RETURN</strong>
+      và <strong>Polygon smart contract</strong>. Public verifier qua URL, không cần auth.</p>
+    </div>
+
+    <div class="q q4">
+      <div class="q-icon">▣</div>
+      <h3>Production-grade</h3>
+      <p><strong>62 backend tests</strong> (unit + integration + sec) · 10 frontend tests · 13 PDF templates ship ·
+      GDPR (data export/deletion built-in) · Audit log every action.</p>
+    </div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">03 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 04 — END-TO-END FLOW (the big diagram)
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Luồng nghiệp vụ end-to-end</div>
+  <h1 class="slide-title">Từ đăng ký tới cert <em>verifiable</em>.</h1>
+  <p class="slide-lede" style="max-width:90ch;">
+    Trung bình <strong style="color:var(--c-emerald-7)">2-4 tuần</strong> thay vì 8-12 tuần.
+    Mỗi bước có audit log + SLA badge. Không email PDF qua lại, không giấy in.
+  </p>
+
+  <div class="flow-wrap">
+    <svg class="flow" viewBox="0 0 1180 360" xmlns="http://www.w3.org/2000/svg" aria-label="AMINRA business flow">
+      <defs>
+        <marker id="arrowEm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#16a34a"/>
+        </marker>
+        <linearGradient id="dnGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#0a1f44"/><stop offset="100%" stop-color="#1f3d80"/>
+        </linearGradient>
+        <linearGradient id="cbGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#128039"/><stop offset="100%" stop-color="#16a34a"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Lane labels -->
+      <text x="40" y="60"  font-size="11" font-weight="700" letter-spacing="2" fill="#475569" text-anchor="start">DOANH NGHIỆP</text>
+      <text x="40" y="200" font-size="11" font-weight="700" letter-spacing="2" fill="#475569" text-anchor="start">AMINRA</text>
+      <text x="40" y="320" font-size="11" font-weight="700" letter-spacing="2" fill="#475569" text-anchor="start">CB / AUDITOR</text>
+
+      <!-- Lane backgrounds -->
+      <rect x="180" y="30"  width="980" height="60" rx="3" fill="rgba(15,42,92,0.04)"/>
+      <rect x="180" y="170" width="980" height="60" rx="3" fill="rgba(22,163,74,0.05)"/>
+      <rect x="180" y="290" width="980" height="60" rx="3" fill="rgba(15,42,92,0.04)"/>
+
+      <!-- DN steps (top lane) -->
+      <g>
+        <rect x="200" y="40" width="140" height="40" rx="4" fill="url(#dnGrad)"/>
+        <text x="270" y="65" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Đăng ký + invite</text>
+      </g>
+      <g>
+        <rect x="380" y="40" width="160" height="40" rx="4" fill="url(#dnGrad)"/>
+        <text x="460" y="65" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Tạo company profile</text>
+      </g>
+      <g>
+        <rect x="580" y="40" width="170" height="40" rx="4" fill="url(#dnGrad)"/>
+        <text x="665" y="65" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Submit application</text>
+      </g>
+      <g>
+        <rect x="930" y="40" width="200" height="40" rx="4" fill="url(#dnGrad)"/>
+        <text x="1030" y="65" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Nhận cert + share QR</text>
+      </g>
+
+      <!-- AMINRA steps (middle lane) -->
+      <g>
+        <rect x="380" y="180" width="160" height="40" rx="4" fill="url(#cbGrad)"/>
+        <text x="460" y="205" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">AI gen 13 PDF docs</text>
+      </g>
+      <g>
+        <rect x="580" y="180" width="170" height="40" rx="4" fill="url(#cbGrad)"/>
+        <text x="665" y="205" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Routing → CB phù hợp</text>
+      </g>
+      <g>
+        <rect x="790" y="180" width="120" height="40" rx="4" fill="url(#cbGrad)"/>
+        <text x="850" y="205" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Audit log</text>
+      </g>
+      <g>
+        <rect x="930" y="180" width="200" height="40" rx="4" fill="url(#cbGrad)"/>
+        <text x="1030" y="205" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Anchor BTC + Polygon</text>
+      </g>
+
+      <!-- CB steps (bottom lane) -->
+      <g>
+        <rect x="580" y="300" width="170" height="40" rx="4" fill="#fff" stroke="#0a1f44" stroke-width="1.4"/>
+        <text x="665" y="325" fill="#0a1f44" font-size="12" font-weight="600" text-anchor="middle">Review + revisions</text>
+      </g>
+      <g>
+        <rect x="790" y="300" width="120" height="40" rx="4" fill="#fff" stroke="#0a1f44" stroke-width="1.4"/>
+        <text x="850" y="325" fill="#0a1f44" font-size="12" font-weight="600" text-anchor="middle">Approve</text>
+      </g>
+
+      <!-- Arrows between steps -->
+      <line x1="340" y1="60"  x2="378" y2="60"  stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+      <line x1="540" y1="60"  x2="578" y2="60"  stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+
+      <!-- Submit DN → AI gen vertical -->
+      <line x1="665" y1="80" x2="665" y2="178" stroke="#16a34a" stroke-width="1.6" stroke-dasharray="4,3"/>
+      <text x="675" y="135" font-size="10" fill="#16a34a" font-weight="600">trigger</text>
+      <line x1="460" y1="80" x2="460" y2="178" stroke="#16a34a" stroke-width="1.6" stroke-dasharray="4,3"/>
+
+      <!-- AI gen → routing -->
+      <line x1="540" y1="200" x2="578" y2="200" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+      <line x1="750" y1="200" x2="788" y2="200" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+      <line x1="910" y1="200" x2="928" y2="200" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+
+      <!-- Route → CB review -->
+      <line x1="665" y1="220" x2="665" y2="298" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+      <line x1="750" y1="320" x2="788" y2="320" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+
+      <!-- CB approve → AMINRA anchor -->
+      <line x1="850" y1="298" x2="850" y2="222" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+
+      <!-- AMINRA → DN cert -->
+      <line x1="1030" y1="178" x2="1030" y2="82" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrowEm)"/>
+
+      <!-- Hand-drawn annotation -->
+      <path d="M860 100 Q900 88 935 75" stroke="#d97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <polygon points="930,73 945,73 938,82" fill="#d97706"/>
+      <text x="855" y="120" font-size="10.5" font-style="italic" fill="#d97706" font-weight="600">cert + QR public verifier</text>
+    </svg>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">04 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 05 — DN PORTAL
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Portal Doanh nghiệp</div>
+  <h1 class="slide-title">Submit nhanh.<br>Track <em>minh bạch</em>.</h1>
+  <p class="slide-lede">
+    Doanh nghiệp đăng nhập portal <code style="font-family:monospace;background:var(--c-cream-100);padding:2px 6px;border-radius:3px;">/businesses</code>,
+    hoàn thành company profile, AMINRA tự động sinh đầy đủ tài liệu Halal, submit
+    application một-cú-nhấn, theo dõi tiến độ qua SLA badge thời gian thật.
+  </p>
+
+  <div class="two-col" style="gap:36px;">
+    <div class="col">
+      <div class="feature-grid" style="grid-template-columns:1fr;gap:14px;">
+        <div class="card">
+          <span class="num">01</span>
+          <h4>Auto-generate 13 PDF templates</h4>
+          <p>HAS Manual, Halal Policy, 6× SOP, Internal Halal Committee, Ingredient Raw Material, Process Flow Chart, Company Profile, Generic. Mỗi template tuân thủ chuẩn TCVN 12944, JAKIM, BPJPH.</p>
+        </div>
+        <div class="card">
+          <span class="num">02</span>
+          <h4>SLA badge + submission revisions</h4>
+          <p>Mỗi submission có badge urgency. Khi CB yêu cầu chỉnh sửa, business reply visible per round. Resubmit idempotent, không lo duplicate.</p>
+        </div>
+        <div class="card">
+          <span class="num">03</span>
+          <h4>Supply chain tracing</h4>
+          <p>Quản lý supplier · raw material · process step · production batch — toàn bộ chuỗi cung ứng truy xuất được tới lô nguyên liệu cụ thể.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="portal-mock">
+        <div class="titlebar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="url">aminra.com/businesses/dashboard</span>
+        </div>
+        <div class="body">
+          <div>
+            <div class="nav-item">Dashboard</div>
+            <div class="nav-item active">Submissions</div>
+            <div class="nav-item">Documents</div>
+            <div class="nav-item">Supply chain</div>
+            <div class="nav-item">Certificates</div>
+            <div class="nav-item">Account</div>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:12px;color:var(--c-navy-900);margin-bottom:8px;">3 submissions đang xử lý</div>
+            <div class="table-row" style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:var(--c-soft);border-color:var(--c-border);">
+              <span>Submission</span><span>SLA</span><span>Trạng thái</span>
+            </div>
+            <div class="table-row">
+              <span>Quế Trà My — JAKIM</span><span style="color:var(--c-emerald-7);font-weight:600;">3 ngày</span><span><span class="badge cert">Đã cert</span></span>
+            </div>
+            <div class="table-row">
+              <span>Cà phê Đắk Lắk — BPJPH</span><span style="color:var(--c-amber);font-weight:600;">12 ngày</span><span><span class="badge review">Đang review</span></span>
+            </div>
+            <div class="table-row">
+              <span>Điều Bình Phước — HDC</span><span style="color:var(--c-soft);font-weight:600;">draft</span><span><span class="badge draft">Nháp</span></span>
+            </div>
+            <div style="margin-top:10px;font-size:10px;color:var(--c-muted);font-style:italic;">↳ click vào hàng để xem chi tiết + revision history</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:18px;">
+        <strong>Tự động:</strong> Khi DN cập nhật ingredient list trong supply chain, AMINRA tự động đề xuất regenerate Process Flow Chart + Ingredient Raw Material PDF với data mới.
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">05 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 06 — CB PORTAL
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Portal Tổ chức chứng nhận (CB)</div>
+  <h1 class="slide-title">Review tập trung.<br>Audit <em>tamper-evident</em>.</h1>
+  <p class="slide-lede">
+    Auditor đăng nhập <code style="font-family:monospace;background:var(--c-cream-100);padding:2px 6px;border-radius:3px;">/auditors</code>
+    — tất cả submission từ nhiều DN tập trung một dashboard. Document versioning với
+    diff view. Audit log every action, append-only, blockchain-anchored mỗi 24h.
+  </p>
+
+  <div class="two-col" style="gap:36px;">
+    <div class="col">
+      <div class="portal-mock">
+        <div class="titlebar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="url">aminra.com/auditors/submission/12af7</span>
+        </div>
+        <div class="body" style="grid-template-columns:1fr;">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <div>
+                <div style="font-weight:700;font-size:13px;color:var(--c-navy-900);">Quế Trà My organic — Round 2 review</div>
+                <div style="font-size:10px;color:var(--c-muted);margin-top:2px;">HTX Quế Trà My · Quảng Nam · doc_id: 12af7-2026-001</div>
+              </div>
+              <span class="badge review">Đang review</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:10.5px;">
+              <div style="border:1px solid var(--c-border);padding:8px;border-radius:3px;">
+                <div style="font-weight:700;color:var(--c-navy-900);">📄 HAS Manual v3 ✓</div>
+                <div style="color:var(--c-muted);margin-top:2px;">Reviewed 2026-05-04</div>
+              </div>
+              <div style="border:1px solid var(--c-border);padding:8px;border-radius:3px;">
+                <div style="font-weight:700;color:var(--c-navy-900);">📄 Halal Policy v3 ✓</div>
+                <div style="color:var(--c-muted);margin-top:2px;">Reviewed 2026-05-04</div>
+              </div>
+              <div style="border:1px solid var(--c-amber);padding:8px;border-radius:3px;background:rgba(217,119,6,0.04);">
+                <div style="font-weight:700;color:var(--c-navy-900);">📄 Process Flow v2 → v3 (diff)</div>
+                <div style="color:var(--c-amber);margin-top:2px;">CCP point 3 mới được thêm</div>
+              </div>
+              <div style="border:1px solid var(--c-border);padding:8px;border-radius:3px;">
+                <div style="font-weight:700;color:var(--c-navy-900);">📄 Internal Halal Committee v2</div>
+                <div style="color:var(--c-muted);margin-top:2px;">3 thành viên · CV checked</div>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--c-muted);margin-top:10px;font-style:italic;">↳ audit log: 14 events · last anchor 2 phút trước</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:18px;">
+        <strong>Document versioning:</strong> Mọi version cũ retained. Khi DN sửa lại HAS Manual,
+        auditor xem được diff side-by-side — không cần email back-and-forth.
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="feature-grid" style="grid-template-columns:1fr;gap:14px;">
+        <div class="card">
+          <span class="num">01</span>
+          <h4>Multi-DN dashboard</h4>
+          <p>Một auditor handle nhiều DN cùng lúc, tự động routing theo expertise (gia vị, đồ uống, thịt, cosmetics…). Workload balanced auto.</p>
+        </div>
+        <div class="card">
+          <span class="num">02</span>
+          <h4>Audit log tamper-evident</h4>
+          <p>Mọi action (login, view doc, comment, approve) ghi vào audit log append-only. SHA-256 chain, anchor lên Bitcoin OP_RETURN mỗi 24h. Không thể sửa lén.</p>
+        </div>
+        <div class="card">
+          <span class="num">03</span>
+          <h4>Cert lifecycle automation</h4>
+          <p>Approve → AMINRA tự generate cert PDF (reportlab + QR) → SHA-256 hash → Merkle batch → BTC + Polygon anchor → Public verify URL ready trong 5 phút.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">06 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 07 — TRUST STACK (blockchain anchor)
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Trust stack — niềm tin có thể xác minh</div>
+  <h1 class="slide-title">Buyer Dubai scan QR →<br>thấy cert <em>trên blockchain</em>.</h1>
+  <p class="slide-lede" style="max-width:90ch;">
+    Cert giấy có thể bị giả. Cert AMINRA không. Mỗi cert = SHA-256 hash → Merkle root →
+    anchor vào hai chain độc lập. Public verifier không cần đăng nhập, không phụ thuộc AMINRA online.
+  </p>
+
+  <div class="trust-flow">
+    <div class="step">
+      <div class="step-icon">📄</div>
+      <h5>1. Cert PDF</h5>
+      <p>reportlab + QR + cert_id immutable</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="step-icon">🔒</div>
+      <h5>2. SHA-256 hash</h5>
+      <p>Deterministic bytes. Same input = same hash.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="step-icon">⛓</div>
+      <h5>3. Merkle batch</h5>
+      <p>Gom 1024 cert/batch trước anchor — gas-efficient</p>
+    </div>
+  </div>
+
+  <div class="trust-flow" style="margin-top:0;">
+    <div class="step" style="background:rgba(247,147,26,0.08);border-color:#f7931a;">
+      <div class="step-icon" style="background:#f7931a;color:#fff;">₿</div>
+      <h5>4a. Bitcoin OP_RETURN</h5>
+      <p>32-byte Merkle root → mainnet · ~10 min finality</p>
+    </div>
+    <div class="arrow" style="grid-column:span 1;">+</div>
+    <div class="step" style="background:rgba(130,71,229,0.08);border-color:#8247e5;">
+      <div class="step-icon" style="background:#8247e5;color:#fff;">⬢</div>
+      <h5>4b. Polygon contract</h5>
+      <p>Smart contract event · ~2 sec finality</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step" style="background:rgba(22,163,74,0.06);border-color:var(--c-emerald);">
+      <div class="step-icon" style="background:var(--c-emerald);color:#fff;">🔍</div>
+      <h5>5. Public verify URL</h5>
+      <p>aminra.com/verify/{cert_id} — no auth needed</p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:18px;">
+    <strong>Dual-chain redundancy:</strong> Bitcoin = institutional-grade tamper-resistance.
+    Polygon = instant verify cho buyer mobile. Cả hai phải bị compromise đồng thời mới có thể giả cert.
+    Tham khảo <code style="font-family:monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid var(--c-border);">test_anchor_bitcoin_unit.py</code>,
+    <code style="font-family:monospace;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid var(--c-border);">test_public_verify_blockchain.py</code>.
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">07 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 08 — AI-Assisted Documentation
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">PDF Render Service · Production</div>
+  <h1 class="slide-title">13 loại tài liệu Halal —<br><em>30 giây</em>, không lỗi format.</h1>
+  <p class="slide-lede">
+    OpenRouter LLM gateway (DeepSeek primary) + Jinja2 templates + Playwright Chromium.
+    3-stage pipeline: <strong>aggregator → filter → renderer</strong>. 4-layer design system governance —
+    tokens / macros / lint / visual regression.
+  </p>
+
+  <div class="template-grid">
+    <div class="doc"><span class="doc-num">01</span><span class="doc-name">Company Profile</span><span class="doc-pages">4 pages · live</span></div>
+    <div class="doc"><span class="doc-num">02</span><span class="doc-name">Halal Policy</span><span class="doc-pages">7 pages · live</span></div>
+    <div class="doc"><span class="doc-num">03</span><span class="doc-name">HAS Manual</span><span class="doc-pages">11 pages · live</span></div>
+    <div class="doc"><span class="doc-num">04</span><span class="doc-name">Halal Manual (alias)</span><span class="doc-pages">11 pages · live</span></div>
+    <div class="doc"><span class="doc-num">05</span><span class="doc-name">SOP — Raw material receiving</span><span class="doc-pages">8 pages · live</span></div>
+    <div class="doc"><span class="doc-num">06</span><span class="doc-name">SOP — Cleaning &amp; sanitization</span><span class="doc-pages">8 pages · live</span></div>
+    <div class="doc"><span class="doc-num">07</span><span class="doc-name">SOP — Production &amp; processing</span><span class="doc-pages">7 pages · live</span></div>
+    <div class="doc"><span class="doc-num">08</span><span class="doc-name">SOP — Storage &amp; warehousing</span><span class="doc-pages">7 pages · live</span></div>
+    <div class="doc"><span class="doc-num">09</span><span class="doc-name">SOP — Complaint &amp; recall</span><span class="doc-pages">8 pages · live</span></div>
+    <div class="doc"><span class="doc-num">10</span><span class="doc-name">SOP — Internal audit</span><span class="doc-pages">7 pages · live</span></div>
+    <div class="doc"><span class="doc-num">11</span><span class="doc-name">Internal Halal Committee</span><span class="doc-pages">5 pages · live</span></div>
+    <div class="doc"><span class="doc-num">12</span><span class="doc-name">Ingredient Raw Material</span><span class="doc-pages">5 pages · live</span></div>
+    <div class="doc"><span class="doc-num">13</span><span class="doc-name">Process Flow + CCP</span><span class="doc-pages">5 pages · live</span></div>
+    <div class="doc" style="background:linear-gradient(135deg,#0a1f44,#16a34a);"><span class="doc-num" style="color:rgba(255,255,255,0.7);">∎</span><span class="doc-name" style="color:#fff;">Generic catch-all</span><span class="doc-pages" style="color:#4ade80;">4 pages · live</span></div>
+  </div>
+
+  <div class="two-col" style="gap:36px;flex:0;">
+    <div>
+      <h3 class="section-h">Pipeline 3-stage</h3>
+      <ul class="win-list">
+        <li><strong>Aggregator</strong> — pull data từ 8 nguồn (DB tenant, supply chain, audit log…)</li>
+        <li><strong>Filter pipeline</strong> — 6 filters: Validation, SourceMerge, PlaceholderFiller, Format, Truncation, Watermark</li>
+        <li><strong>Renderer</strong> — Playwright Chromium → PDF, metadata stripped, deterministic bytes</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="section-h">Governance 4-layer</h3>
+      <ul class="win-list">
+        <li><strong>L1</strong> tokens (raw primitives — never used in templates)</li>
+        <li><strong>L2</strong> semantic CSS vars — what templates use</li>
+        <li><strong>L3</strong> component-level overrides per template</li>
+        <li>+ <code style="font-family:monospace;font-size:11px;background:var(--c-cream-100);padding:1px 5px;border-radius:2px;">scripts/lint-templates.sh</code> CI check on every PR</li>
+      </ul>
+    </div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">08 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 09 — Numbers + Roadmap
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="eyebrow">Trạng thái MVP · 2026-05</div>
+  <h1 class="slide-title">Production-grade.<br><em>Ready for demo</em>.</h1>
+
+  <div class="numbers-grid">
+    <div class="nstat"><span class="v">62</span><span class="l">Backend tests passing<br>unit · integration · sec</span></div>
+    <div class="nstat"><span class="v">13</span><span class="l">PDF templates live<br>13 doc_types ship</span></div>
+    <div class="nstat"><span class="v">24</span><span class="l">Backend services<br>cert · anchor · audit · pdf …</span></div>
+    <div class="nstat"><span class="v">16</span><span class="l">Frontend portal routes<br>3 portals (DN · CB · Admin)</span></div>
+  </div>
+
+  <div class="numbers-grid" style="margin-bottom:32px;">
+    <div class="nstat"><span class="v">3</span><span class="l">DB engines<br>PostgreSQL · Qdrant · Redis</span></div>
+    <div class="nstat"><span class="v">2</span><span class="l">Blockchains<br>Bitcoin · Polygon</span></div>
+    <div class="nstat"><span class="v">3</span><span class="l">Languages live<br>vi · en · ar (RTL)</span></div>
+    <div class="nstat"><span class="v">100%</span><span class="l">GDPR built-in<br>data export · deletion</span></div>
+  </div>
+
+  <h3 class="section-h" style="margin-bottom:14px;">Roadmap 2026–2027</h3>
+  <div class="roadmap">
+    <div class="phase">
+      <div class="when">Q3 2026 · Hiện tại</div>
+      <h5>MVP completion</h5>
+      <p>Phase 4 + 5 PDF render testing · Auth provider quyết · RBAC engine migration · CMS quyết</p>
+    </div>
+    <div class="phase">
+      <div class="when">Q4 2026</div>
+      <h5>Public launch + first 5 CBs</h5>
+      <p>Onboard 5 tổ chức cert (JAKIM, BPJPH, HDC, ESMA, MUIS) · 100+ DN OCOP Việt Nam · Public verifier live</p>
+    </div>
+    <div class="phase">
+      <div class="when">2027</div>
+      <h5>International expansion</h5>
+      <p>Mở rộng SE Asia (Indonesia, Malaysia) + GCC (UAE, Saudi). API marketplace cho 3rd party CB integrate.</p>
+    </div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">09 / 10</span>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     SLIDE 10 — Closing / Ask
+     ════════════════════════════════════════════════════════════════ -->
+<section class="slide closing">
+  <div class="eyebrow" style="color:var(--c-emerald-3);">Cơ hội đầu tư</div>
+  <h1 class="slide-title">
+    Cùng số hoá ngành<br><em>chứng nhận Halal</em><br>cho 1.9 tỷ người tiêu dùng.
+  </h1>
+  <p class="slide-lede">
+    AMINRA là hạ tầng số đầu tiên của Việt Nam được thiết kế từ ngày đầu để
+    pass audit của các CB quốc tế (JAKIM, BPJPH, HDC, ESMA, MUIS). MVP đã sẵn sàng demo.
+  </p>
+
+  <div class="ask-block">
+    <div class="label">Đang gọi vốn</div>
+    <div class="value">Seed round — open to investor introductions</div>
+    <div style="margin-top:10px;font-size:13px;opacity:0.8;line-height:1.6;">
+      Vốn dùng cho: (1) onboard 5 CB đầu tiên, (2) Phase 4+5 production hardening,
+      (3) sale &amp; growth team Việt Nam, (4) infrastructure scaling cho 100+ DN.
+    </div>
+  </div>
+
+  <div class="contact-row">
+    <div class="item">
+      <span class="k">Founder</span>
+      <span class="v">Đinh Lê Hoàng</span>
+    </div>
+    <div class="item">
+      <span class="k">Email</span>
+      <span class="v">founder@aminra.com</span>
+    </div>
+    <div class="item">
+      <span class="k">Demo</span>
+      <span class="v">aminra.com/demo</span>
+    </div>
+    <div class="item">
+      <span class="k">Repo</span>
+      <span class="v">github.com/aminra (private)</span>
+    </div>
+  </div>
+
+  <span class="slide-brand">AMINRA</span>
+  <span class="slide-num">10 / 10</span>
+</section>
+
+</body>
+</html>
