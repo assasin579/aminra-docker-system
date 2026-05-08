@@ -1,6 +1,104 @@
 import os
+from uuid import uuid4
+
+import asyncpg
 import pytest
 import httpx
+
+
+# ─── Shared DB + auth fixtures (supply chain test suites) ────────────────────
+
+
+class _FakeClient:
+    host = "10.0.0.1"
+
+
+class FakeRequest:
+    """Stand-in for FastAPI Request — only client.host + headers are used by
+    audit logging. Avoids spinning up the full ASGI stack for unit tests."""
+    client = _FakeClient()
+    headers = {"user-agent": "pytest"}
+
+
+@pytest.fixture
+async def db_tx():
+    """Per-test asyncpg connection wrapped in an outer transaction that rolls
+    back on teardown. Keeps the dev DB pristine across test runs."""
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        pytest.skip("DATABASE_URL not set")
+    c = await asyncpg.connect(url)
+    tr = c.transaction()
+    await tr.start()
+    try:
+        yield c
+    finally:
+        try:
+            await tr.rollback()
+        finally:
+            await c.close()
+
+
+def _user_payload(row, role="business"):
+    return {
+        "sub": str(row["id"]),
+        "email": row["email"],
+        "role": role,
+        "is_owner": True,
+        "tenant_id": str(row["tenant_id"]) if "tenant_id" in row.keys() else str(row["id"]),
+    }
+
+
+@pytest.fixture
+async def biz_a(db_tx):
+    """First business tenant — primary actor in most tests."""
+    row = await db_tx.fetchrow(
+        "SELECT id, email, tenant_id FROM users "
+        "WHERE role='business' AND is_owner=true ORDER BY created_at LIMIT 1"
+    )
+    if not row:
+        pytest.skip("Need a business owner user in DB")
+    return _user_payload(row, "business")
+
+
+@pytest.fixture
+async def biz_b(db_tx, biz_a):
+    """Second business tenant — different tenant_id from biz_a, used for
+    cross-tenant isolation tests."""
+    row = await db_tx.fetchrow(
+        "SELECT id, email, tenant_id FROM users "
+        "WHERE role='business' AND is_owner=true AND tenant_id <> $1 "
+        "ORDER BY created_at LIMIT 1",
+        biz_a["tenant_id"],
+    )
+    if not row:
+        pytest.skip("Need 2 business tenants for cross-tenant tests")
+    return _user_payload(row, "business")
+
+
+@pytest.fixture
+async def prov_user(db_tx):
+    row = await db_tx.fetchrow(
+        "SELECT id, email FROM users "
+        "WHERE role='provider' AND is_owner=true ORDER BY created_at LIMIT 1"
+    )
+    if not row:
+        pytest.skip("Need a provider user in DB")
+    return {
+        "sub": str(row["id"]),
+        "email": row["email"],
+        "role": "provider",
+        "is_owner": True,
+        "tenant_id": str(row["id"]),
+    }
+
+
+@pytest.fixture
+def fake_request():
+    return FakeRequest()
+
+
+# ─── Original session-scoped HTTP client + admin login ───────────────────────
 
 
 @pytest.fixture(scope="session")
