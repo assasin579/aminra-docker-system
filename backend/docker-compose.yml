@@ -7,8 +7,12 @@ services:
     ports:
       - "6333:6333"
       - "6334:6334"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - qdrant_data:/qdrant/storage
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
       interval: 10s

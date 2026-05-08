@@ -5,9 +5,13 @@ services:
     container_name: aminra-prometheus
     ports:
       - "9090:9090"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -19,9 +23,13 @@ services:
     image: grafana/loki:3.0.0
     container_name: aminra-loki
     # Port 3100 internal only (conflicts with aminra-frontend on host)
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - monitoring-network
     restart: unless-stopped
@@ -30,10 +38,14 @@ services:
   promtail:
     image: grafana/promtail:3.0.0
     container_name: aminra-promtail
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - monitoring-network
     restart: unless-stopped
@@ -47,10 +59,13 @@ services:
     ports:
       - "3200:3000"
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - monitoring-network
     restart: unless-stopped

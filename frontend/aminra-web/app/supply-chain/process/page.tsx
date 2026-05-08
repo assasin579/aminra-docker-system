@@ -125,7 +125,7 @@ function flowToReact(
     id: n.id,
     type: "stepNode",
     position: { x: n.x || 100, y: n.y || i * 120 },
-    data: { label: n.label, nodeType: n.type, order: n.order ?? i + 1, ...n },
+    data: { ...n, label: n.label, nodeType: n.type, order: n.order ?? i + 1 },
   }));
   const rfEdges: Edge[] = edges.map((e, i) => ({
     id: `e-${i}`,

@@ -42,8 +42,8 @@ interface UserAuthState {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  loginBusiness: (email: string, password: string) => Promise<void>;
-  loginProvider: (email: string, password: string) => Promise<void>;
+  loginBusiness: (email: string, password: string, remember?: boolean) => Promise<void>;
+  loginProvider: (email: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
 }
 

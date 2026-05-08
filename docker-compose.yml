@@ -7,6 +7,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - app-network
     restart: unless-stopped
@@ -25,6 +30,7 @@ services:
     ports:
       - "3100:3000"
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - NODE_ENV=production
       - BACKEND_URL=http://aminra-backend:8000
     networks:
@@ -51,15 +57,18 @@ services:
   aminra-frontend-dev:
     image: node:20-alpine
     working_dir: /app
-    command: sh -c "npm install --legacy-peer-deps && npm run dev"
+    command: sh -c "apk add --no-cache tzdata && npm install --legacy-peer-deps && npm run dev"
     ports:
       - "3100:3000"
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - NODE_ENV=development
       - BACKEND_URL=http://aminra-backend:8000
     volumes:
       - ./frontend/aminra-web:/app
       - /app/node_modules
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     tmpfs:
       - /app/.next:exec
     networks:
@@ -85,6 +94,7 @@ services:
     ports:
       - "8100:8000"
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - QDRANT_URL=http://qdrant-db:6333
       - REDIS_URL=redis://redis:6379/0
       - EMBED_MODEL=intfloat/multilingual-e5-base
@@ -121,6 +131,8 @@ services:
       - template-data:/app/admin_templates
       - doc-cache:/app/doc_text_cache
       - vault-secrets:/vault/secrets:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -138,11 +150,15 @@ services:
       context: ./databases/postgres
       dockerfile: Dockerfile
     environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - PGTZ=Asia/Ho_Chi_Minh
       - POSTGRES_DB=aminra
       - POSTGRES_USER=aminra_user
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - app-network
     restart: unless-stopped
@@ -163,9 +179,12 @@ services:
     ports:
       - "6433:6333"
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     volumes:
       - qdrant-data:/qdrant/storage
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - app-network
     restart: unless-stopped
@@ -183,8 +202,12 @@ services:
   redis:
     image: redis:7.4-alpine
     command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - redis-data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - app-network
     restart: unless-stopped
@@ -205,12 +228,15 @@ services:
       dockerfile: Dockerfile
     command: ["arq", "services.jobs.WorkerSettings"]
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_URL=http://qdrant-db:6333
       - QDRANT_API_KEY=${QDRANT_API_KEY}
       - EMBED_MODEL=intfloat/multilingual-e5-base
     volumes:
       - upload-data:/app/docs
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - app-network
       - vault-network
