@@ -688,6 +688,58 @@ h3.section-h {
 .closing .slide-brand::before,
 .cover .slide-brand::before { background: var(--c-emerald-3); }
 
+/* ── Timeline (use case slide) ────────────────────────────────────────────────── */
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--c-text);
+  align-items: start;
+}
+.timeline li:last-child { border-bottom: none; }
+.timeline li .t {
+  font-family: ui-monospace, SF Mono, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-emerald-7);
+  letter-spacing: 0.04em;
+  padding-top: 1px;
+}
+.timeline li strong { color: var(--c-navy-900); }
+
+/* ── Before / After compare table ─────────────────────────────────────────────── */
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-bottom: 12px;
+}
+.compare td {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--c-border);
+  vertical-align: middle;
+}
+.compare td:first-child {
+  color: var(--c-muted);
+  width: 44%;
+}
+.compare td:nth-child(2) {
+  color: var(--c-emerald);
+  font-weight: 700;
+  width: 24px;
+  text-align: center;
+}
+.compare td:last-child {
+  color: var(--c-navy-900);
+  font-weight: 600;
+}
+.compare tr:last-child td { border-bottom: none; }
+
 /* ── Mini-callout ─────────────────────────────────────────────────────────────── */
 .callout {
   background: var(--c-cream-100);
