@@ -93,16 +93,16 @@ class TestRequiredFields:
         with pytest.raises(ValidationError):
             SupplierCreate()  # name required
 
-    async def test_07_empty_string_name_currently_passes_pydantic(self, db_tx, biz_a):
-        # Documents current behavior: Pydantic has no min_length on name → "" accepted.
-        # This is a gap (a supplier with empty name is meaningless). If product
-        # later adds min_length=1, this assertion flips to expect ValidationError.
-        r = await _create(db_tx, biz_a, name="")
-        assert "id" in r
+    async def test_07_empty_string_name_rejected(self, db_tx, biz_a):
+        # Pydantic min_length=1 + non-blank validator now reject empty.
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _create(db_tx, biz_a, name="")
 
-    async def test_08_whitespace_only_name_currently_passes(self, db_tx, biz_a):
-        r = await _create(db_tx, biz_a, name="   ")
-        assert "id" in r
+    async def test_08_whitespace_only_name_rejected(self, db_tx, biz_a):
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _create(db_tx, biz_a, name="   ")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -111,11 +111,11 @@ class TestRequiredFields:
 
 
 class TestFieldFormat:
-    async def test_09_invalid_email_currently_passes(self, db_tx, biz_a):
-        # No EmailStr validator on SupplierCreate.email → "abc" stored as-is.
-        # FLAG: should consider EmailStr to fail-fast at API boundary.
-        r = await _create(db_tx, biz_a, name="email_invalid", email="not-an-email")
-        assert "id" in r
+    async def test_09_invalid_email_rejected(self, db_tx, biz_a):
+        # Pydantic EmailStr now enforces RFC 5322-ish format at API boundary.
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _create(db_tx, biz_a, name="email_invalid", email="not-an-email")
 
     async def test_10_email_with_vn_subdomain(self, db_tx, biz_a):
         r = await _create(db_tx, biz_a, name="vn email", email="lien.he@congty.com.vn")
@@ -138,10 +138,11 @@ class TestFieldFormat:
         with pytest.raises(Exception):  # asyncpg DataError or similar
             await _create(db_tx, biz_a, name="ph over", phone="0" * 51)
 
-    async def test_15_tax_code_with_letters_currently_accepted(self, db_tx, biz_a):
-        # No regex on tax_code at Pydantic / DB level. Logic gap.
-        r = await _create(db_tx, biz_a, name="tc letters", tax_code="ABC1234567")
-        assert "id" in r
+    async def test_15_tax_code_with_letters_rejected(self, db_tx, biz_a):
+        # VN tax code regex now enforces digits-only (10 or 10-3 format).
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _create(db_tx, biz_a, name="tc letters", tax_code="ABC1234567")
 
     async def test_16_tax_code_over_20_chars_rejected_by_db(self, db_tx, biz_a):
         with pytest.raises(Exception):

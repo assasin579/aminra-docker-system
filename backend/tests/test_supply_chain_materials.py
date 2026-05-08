@@ -187,17 +187,16 @@ class TestSupplierFK:
         sup_a = await _new_supplier(db_tx, biz_a, "A1")
         mat = await _new_material(db_tx, biz_a, sup_a, name="m")
         sup_b = await _new_supplier(db_tx, biz_b, "B1")
-        # Update only checks UPDATE result count; supplier_id swap to other tenant
-        # is currently NOT validated against ownership (gap). Document via assertion.
-        # Test asserts current behavior for now; flagged for product review.
-        await update_material(
-            mid=mat["id"], req=MaterialUpdate(supplier_id=sup_b),
-            user=biz_a, db=db_tx,
-        )
+        # Cross-tenant FK swap now blocked: 400 from ownership check.
+        with pytest.raises(HTTPException) as exc:
+            await update_material(
+                mid=mat["id"], req=MaterialUpdate(supplier_id=sup_b),
+                user=biz_a, db=db_tx,
+            )
+        assert exc.value.status_code == 400
+        # supplier_id must remain unchanged
         row = await db_tx.fetchrow("SELECT supplier_id FROM materials WHERE id=$1", mat["id"])
-        # Existing code accepts this (gap). If future code adds the check,
-        # this assertion would flip to assert it stays sup_a.
-        assert str(row["supplier_id"]) == sup_b
+        assert str(row["supplier_id"]) == sup_a
 
     async def test_23_delete_supplier_with_material_blocks(self, db_tx, biz_a):
         from supply_chain.supplier_router import delete_supplier

@@ -85,10 +85,10 @@ class TestRequiredFields:
         with pytest.raises(ValidationError):
             ProcessCreate()
 
-    async def test_07_empty_string_name_currently_accepted(self, db_tx, biz_a):
-        # Pydantic has no min_length on name. Document gap.
-        r = await _create(db_tx, biz_a, name="")
-        assert "id" in r
+    async def test_07_empty_string_name_rejected(self, db_tx, biz_a):
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _create(db_tx, biz_a, name="")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -189,10 +189,11 @@ class TestLengthBoundaries:
         r = await _create(db_tx, biz_a, name="huge fc", flowchart=flow)
         assert "id" in r
 
-    async def test_20_name_with_only_whitespace_max_len(self, db_tx, biz_a):
-        # Edge: length OK but content meaningless. Currently accepted.
-        r = await _create(db_tx, biz_a, name=" " * 255)
-        assert "id" in r
+    async def test_20_name_with_only_whitespace_rejected(self, db_tx, biz_a):
+        # Whitespace-only fails the non-blank validator regardless of length.
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _create(db_tx, biz_a, name=" " * 255)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

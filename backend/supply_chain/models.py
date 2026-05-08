@@ -1,34 +1,67 @@
 """Pydantic models for Supply Chain modules."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List
 from datetime import date, datetime
+import re
+
+
+# VN tax code format: 10 digits (cá nhân / chi nhánh độc lập) or
+# 10 digits + "-" + 3 digits (doanh nghiệp với chi nhánh phụ thuộc).
+_VN_TAX_CODE_RE = re.compile(r"^\d{10}(-\d{3})?$")
+
+
+def _validate_tax_code(v: Optional[str]) -> Optional[str]:
+    if v is None or v == "":
+        return v
+    if not _VN_TAX_CODE_RE.fullmatch(v):
+        raise ValueError(
+            "Mã số thuế không hợp lệ — phải là 10 chữ số, "
+            "hoặc 10-3 chữ số (vd: 0312345678 hoặc 0312345678-001)"
+        )
+    return v
+
+
+def _validate_non_blank(v: str) -> str:
+    if not v or not v.strip():
+        raise ValueError("Trường bắt buộc, không được để trống / chỉ khoảng trắng")
+    return v
 
 
 # ── Suppliers ────────────────────────────────────────────────────────────────
 
 
 class SupplierCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     address: Optional[str] = None
     phone: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     contact_person: Optional[str] = None
     supplier_type: Optional[str] = None
     tax_code: Optional[str] = None
     notes: Optional[str] = None
 
+    _name_nonblank = field_validator("name")(lambda cls, v: _validate_non_blank(v))
+    _tax_format = field_validator("tax_code")(lambda cls, v: _validate_tax_code(v))
+
 
 class SupplierUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
     address: Optional[str] = None
     phone: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     contact_person: Optional[str] = None
     supplier_type: Optional[str] = None
     tax_code: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_nb(cls, v):
+        return _validate_non_blank(v) if v is not None else v
+
+    _tax_format = field_validator("tax_code")(lambda cls, v: _validate_tax_code(v))
 
 
 class SupplierOut(BaseModel):
@@ -63,7 +96,7 @@ class CertificateOut(BaseModel):
 
 
 class MaterialCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     supplier_id: str
     sku: Optional[str] = None
     category: Optional[str] = None
@@ -71,10 +104,18 @@ class MaterialCreate(BaseModel):
     description: Optional[str] = None
     unit: Optional[str] = None
 
+    _name_nb = field_validator("name")(lambda cls, v: _validate_non_blank(v))
+
 
 class MaterialUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
     supplier_id: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_nb(cls, v):
+        return _validate_non_blank(v) if v is not None else v
+
     sku: Optional[str] = None
     category: Optional[str] = None
     halal_risk: Optional[str] = None
@@ -99,16 +140,23 @@ class MaterialOut(BaseModel):
 
 
 class ProcessCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     flowchart: Optional[dict] = None
+
+    _name_nb = field_validator("name")(lambda cls, v: _validate_non_blank(v))
 
 
 class ProcessUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     flowchart: Optional[dict] = None
     is_active: Optional[bool] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_nb(cls, v):
+        return _validate_non_blank(v) if v is not None else v
 
 
 class ProcessOut(BaseModel):
@@ -127,10 +175,12 @@ class ProcessOut(BaseModel):
 
 class BatchCreate(BaseModel):
     batch_code: Optional[str] = None
-    product_name: str
+    product_name: str = Field(..., min_length=1, max_length=255)
     process_template_id: Optional[str] = None
     notes: Optional[str] = None
     materials: Optional[List[dict]] = None  # [{"material_id": "...", "quantity": 10, "unit": "kg"}]
+
+    _pn_nb = field_validator("product_name")(lambda cls, v: _validate_non_blank(v))
 
 
 class BatchUpdate(BaseModel):

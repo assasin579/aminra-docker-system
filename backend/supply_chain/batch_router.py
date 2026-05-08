@@ -136,6 +136,26 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
     process_id = req.process_template_id
     if process_id:
         _validate_uuid(process_id)
+        # Cross-tenant guard: process must belong to caller. Without this check,
+        # one tenant could attach another tenant's process template, leaking
+        # IP and breaking traceability assumptions.
+        owns_proc = await db.fetchval(
+            "SELECT 1 FROM process_templates WHERE id=$1 AND tenant_id=$2",
+            process_id, tenant_id,
+        )
+        if not owns_proc:
+            raise HTTPException(400, "Quy trình không tồn tại")
+
+    # Pre-validate materials before inserting batch (fail fast, no orphan rows).
+    if req.materials:
+        for m in req.materials:
+            _validate_uuid(m["material_id"])
+            owns_mat = await db.fetchval(
+                "SELECT 1 FROM materials WHERE id=$1 AND tenant_id=$2",
+                m["material_id"], tenant_id,
+            )
+            if not owns_mat:
+                raise HTTPException(400, f"Nguyên liệu không tồn tại: {m['material_id']}")
 
     row = await db.fetchrow(
         """
@@ -151,10 +171,9 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
 
     batch_id = str(row["id"])
 
-    # Link materials
+    # Link materials (already validated above)
     if req.materials:
         for m in req.materials:
-            _validate_uuid(m["material_id"])
             await db.execute(
                 """
                 INSERT INTO batch_materials (batch_id, material_id, quantity, unit)
@@ -449,6 +468,28 @@ async def get_batch(bid: str, user=Depends(get_current_user), db=Depends(get_db)
     }
 
 
+# Batch lifecycle: draft → in_progress → {completed | rejected} (terminal).
+# Self-transitions (X → X) are silently allowed for idempotent PUTs.
+_BATCH_TRANSITIONS = {
+    "draft": {"in_progress", "rejected"},
+    "in_progress": {"completed", "rejected"},
+    "completed": set(),  # terminal
+    "rejected": set(),   # terminal
+}
+
+
+def _validate_batch_transition(from_status: str, to_status: str) -> None:
+    if from_status == to_status:
+        return
+    allowed = _BATCH_TRANSITIONS.get(from_status, set())
+    if to_status not in allowed:
+        raise HTTPException(
+            409,
+            f"Chuyển trạng thái không hợp lệ: {from_status} → {to_status}. "
+            f"Cho phép từ '{from_status}': {sorted(allowed) or 'không có (terminal)'}",
+        )
+
+
 @router.put("/batches/{bid}")
 async def update_batch(bid: str, req: BatchUpdate, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(bid)
@@ -461,6 +502,15 @@ async def update_batch(bid: str, req: BatchUpdate, user=Depends(get_current_user
         params.append(req.product_name)
         idx += 1
     if req.status is not None:
+        # Validate transition against current status before mutating.
+        prev_status = await db.fetchval(
+            "SELECT status FROM production_batches WHERE id=$1 AND tenant_id=$2",
+            bid, tenant_id,
+        )
+        if prev_status is None:
+            raise HTTPException(404)
+        _validate_batch_transition(prev_status, req.status)
+
         updates.append(f"status = ${idx}")
         params.append(req.status)
         idx += 1
@@ -475,7 +525,12 @@ async def update_batch(bid: str, req: BatchUpdate, user=Depends(get_current_user
 
     if not updates:
         return {"message": "Không có thay đổi"}
-    await db.execute(f"UPDATE production_batches SET {', '.join(updates)} WHERE id=$1 AND tenant_id=$2", *params)
+    result = await db.execute(
+        f"UPDATE production_batches SET {', '.join(updates)} WHERE id=$1 AND tenant_id=$2",
+        *params,
+    )
+    if result == "UPDATE 0":
+        raise HTTPException(404)
     return {"message": "Đã cập nhật"}
 
 

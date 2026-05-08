@@ -127,6 +127,15 @@ async def update_material(mid: str, req: MaterialUpdate, user=Depends(get_curren
         if val is not None:
             if field == "supplier_id":
                 _validate_uuid(val)
+                # Prevent cross-tenant FK swap: the supplier must belong to
+                # this tenant, otherwise a malicious / mistaken update could
+                # link a material to a competitor's supplier.
+                owns = await db.fetchval(
+                    "SELECT 1 FROM suppliers WHERE id=$1 AND tenant_id=$2",
+                    val, tenant_id,
+                )
+                if not owns:
+                    raise HTTPException(400, "Nhà cung cấp không tồn tại")
             updates.append(f"{field} = ${idx}")
             params.append(val)
             idx += 1

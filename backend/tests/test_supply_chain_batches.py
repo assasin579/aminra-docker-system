@@ -123,10 +123,10 @@ class TestRequiredFields:
         with pytest.raises(ValidationError):
             BatchCreate()
 
-    async def test_07_empty_product_name_currently_accepted(self, db_tx, biz_a):
-        # No min_length validation. Document gap.
-        r = await _new_batch(db_tx, biz_a, product_name="")
-        assert "id" in r
+    async def test_07_empty_product_name_rejected(self, db_tx, biz_a):
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            await _new_batch(db_tx, biz_a, product_name="")
 
     async def test_08_invalid_process_template_uuid_400(self, db_tx, biz_a):
         with pytest.raises(HTTPException) as exc:
@@ -151,17 +151,14 @@ class TestFKConstraints:
                 process_template_id=str(uuid4()),
             )
 
-    async def test_10_process_template_other_tenant_should_block(self, db_tx, biz_a, biz_b):
-        # GAP: create_batch does NOT verify process_template_id belongs to caller's
-        # tenant — only the FK to process_templates table. Currently a biz_a user
-        # CAN reference a biz_b process. Test documents the current behavior.
+    async def test_10_process_template_other_tenant_blocked(self, db_tx, biz_a, biz_b):
         proc_b = await _new_process(db_tx, biz_b, name="B's proc")
-        r = await _new_batch(
-            db_tx, biz_a, product_name="cross tenant proc",
-            process_template_id=proc_b,
-        )
-        # If product later adds tenant check, this assertion flips.
-        assert "id" in r
+        with pytest.raises(HTTPException) as exc:
+            await _new_batch(
+                db_tx, biz_a, product_name="cross tenant proc",
+                process_template_id=proc_b,
+            )
+        assert exc.value.status_code == 400
 
     async def test_11_material_does_not_exist_fk_violation(self, db_tx, biz_a):
         with pytest.raises(Exception):
@@ -178,16 +175,15 @@ class TestFKConstraints:
             )
         assert exc.value.status_code == 400
 
-    async def test_13_material_from_other_tenant_currently_accepted(self, db_tx, biz_a, biz_b):
-        # GAP: create_batch links materials without verifying tenant ownership.
-        # Document current — flag for product to add the check.
+    async def test_13_material_from_other_tenant_blocked(self, db_tx, biz_a, biz_b):
         sup_b = await _new_supplier(db_tx, biz_b)
         mat_b = await _new_material(db_tx, biz_b, sup_b)
-        r = await _new_batch(
-            db_tx, biz_a, product_name="cross mat",
-            materials=[{"material_id": mat_b, "quantity": 5}],
-        )
-        assert "id" in r
+        with pytest.raises(HTTPException) as exc:
+            await _new_batch(
+                db_tx, biz_a, product_name="cross mat",
+                materials=[{"material_id": mat_b, "quantity": 5}],
+            )
+        assert exc.value.status_code == 400
 
     async def test_14_multiple_materials_attached(self, db_tx, biz_a):
         sup = await _new_supplier(db_tx, biz_a)
@@ -229,13 +225,11 @@ class TestBatchCode:
         with pytest.raises(Exception):
             await _new_batch(db_tx, biz_a, batch_code="X" * 101, product_name="over")
 
-    async def test_19_duplicate_batch_code_currently_accepted(self, db_tx, biz_a):
-        # GAP: no UNIQUE constraint on batch_code. Two batches can share code,
-        # which breaks the trace endpoint /batches/trace/{batch_code}.
-        # Documenting current behavior — recommend adding partial-unique index.
-        a = await _new_batch(db_tx, biz_a, batch_code="DUP-001", product_name="A")
-        b = await _new_batch(db_tx, biz_a, batch_code="DUP-001", product_name="B")
-        assert a["id"] != b["id"]
+    async def test_19_duplicate_batch_code_rejected_within_tenant(self, db_tx, biz_a):
+        # UNIQUE (tenant_id, batch_code) now enforced — second insert fails.
+        await _new_batch(db_tx, biz_a, batch_code="DUP-001", product_name="A")
+        with pytest.raises(Exception):  # asyncpg UniqueViolationError
+            await _new_batch(db_tx, biz_a, batch_code="DUP-001", product_name="B")
 
     async def test_20_auto_code_unique_within_tenant(self, db_tx, biz_a):
         # Auto-generated codes use uuid4 suffix → collision is astronomically
@@ -336,21 +330,21 @@ class TestStatusTransitions:
                 user=biz_a, db=db_tx,
             )
 
-    async def test_31_skip_in_progress_draft_to_completed_currently_allowed(self, db_tx, biz_a):
-        # GAP: no transition matrix on batch_status. Going draft → completed
-        # bypasses in_progress. Document; product may want strictness later.
+    async def test_31_skip_in_progress_draft_to_completed_blocked(self, db_tx, biz_a):
+        # Transition matrix now enforces draft → in_progress before completed.
         r = await _new_batch(db_tx, biz_a, product_name="skip")
-        await update_batch(bid=r["id"], req=BatchUpdate(status="completed"), user=biz_a, db=db_tx)
-        row = await db_tx.fetchrow("SELECT status FROM production_batches WHERE id=$1", r["id"])
-        assert row["status"] == "completed"
+        with pytest.raises(HTTPException) as exc:
+            await update_batch(bid=r["id"], req=BatchUpdate(status="completed"), user=biz_a, db=db_tx)
+        assert exc.value.status_code == 409
 
-    async def test_32_terminal_completed_can_still_be_updated(self, db_tx, biz_a):
-        # GAP: completed/rejected should be terminal but currently mutable.
+    async def test_32_terminal_completed_cannot_be_mutated(self, db_tx, biz_a):
+        # completed / rejected are terminal — any further status change → 409.
         r = await _new_batch(db_tx, biz_a, product_name="terminal")
+        await update_batch(bid=r["id"], req=BatchUpdate(status="in_progress"), user=biz_a, db=db_tx)
         await update_batch(bid=r["id"], req=BatchUpdate(status="completed"), user=biz_a, db=db_tx)
-        await update_batch(bid=r["id"], req=BatchUpdate(status="draft"), user=biz_a, db=db_tx)
-        row = await db_tx.fetchrow("SELECT status FROM production_batches WHERE id=$1", r["id"])
-        assert row["status"] == "draft"
+        with pytest.raises(HTTPException) as exc:
+            await update_batch(bid=r["id"], req=BatchUpdate(status="draft"), user=biz_a, db=db_tx)
+        assert exc.value.status_code == 409
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -449,18 +443,16 @@ class TestMultiTenant:
             await get_batch(bid=r["id"], user=biz_b, db=db_tx)
         assert exc.value.status_code == 404
 
-    async def test_39_biz_b_update_silent_noop(self, db_tx, biz_a, biz_b):
-        # update_batch executes UPDATE ... WHERE id=$1 AND tenant_id=$2 — if 0
-        # rows match the function STILL returns "Đã cập nhật" because there's
-        # no result-count check. That's a bug — caller can't distinguish noop
-        # from success. Document for fix.
+    async def test_39_biz_b_update_404(self, db_tx, biz_a, biz_b):
+        # update_batch now checks UPDATE result count and raises 404 when 0.
         r = await _new_batch(db_tx, biz_a, product_name="A only upd")
-        result = await update_batch(
-            bid=r["id"], req=BatchUpdate(product_name="hacked"),
-            user=biz_b, db=db_tx,
-        )
-        assert "Đã cập nhật" in result.get("message", "") or result is None
-        # Confirm row NOT actually mutated
+        with pytest.raises(HTTPException) as exc:
+            await update_batch(
+                bid=r["id"], req=BatchUpdate(product_name="hacked"),
+                user=biz_b, db=db_tx,
+            )
+        assert exc.value.status_code == 404
+        # Row must remain unchanged.
         row = await db_tx.fetchrow("SELECT product_name FROM production_batches WHERE id=$1", r["id"])
         assert row["product_name"] == "A only upd"
 
