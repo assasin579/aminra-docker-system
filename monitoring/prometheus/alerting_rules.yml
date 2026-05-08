@@ -1,0 +1,93 @@
+# AMINRA Prometheus alerting rules.
+# Wire into prometheus.yml via:
+#   rule_files:
+#     - /etc/prometheus/alerting_rules.yml
+#
+# Alert routing (severity → channel) is handled in Alertmanager config.
+
+groups:
+  - name: aminra_api_slo
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API error rate > 5% trong 5 phút"
+          description: "{{ $value | humanizePercentage }} requests đang trả 5xx. Check Sentry + structlog cho stack trace."
+
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (le, route) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "P99 latency > 3s trên route {{ $labels.route }}"
+          description: "Có thể do DB slow query, LLM timeout, hoặc Playwright render queue đầy. Check arq queue depth + DB pg_stat_statements."
+
+  - name: aminra_jobs
+    interval: 30s
+    rules:
+      - alert: JobFailureRate
+        expr: rate(arq_job_failed_total[15m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "arq job fail rate > 10% trong 15 phút"
+          description: "Job '{{ $labels.job }}' fail liên tục. Check Sentry cho exception. Thường do LLM timeout / R2 unreachable / DB lock."
+
+  - name: aminra_security
+    interval: 30s
+    rules:
+      - alert: AuthFailureSpike
+        expr: |
+          sum(rate(http_requests_total{route=~"/auth/login.*", status="401"}[5m]))
+          > 5
+        for: 5m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "Auth failure > 5 req/s trong 5 phút"
+          description: "Có thể credential stuffing. Check logs theo IP, kích hoạt rate-limit ở edge nếu cần. Khoá account sau N fail (cần config)."
+
+  - name: aminra_infra
+    interval: 1m
+    rules:
+      - alert: BackupNotRunning
+        expr: |
+          time() - aminra_backup_last_success_timestamp_seconds > 86400
+        for: 10m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "Backup chưa chạy thành công > 24h"
+          description: "Cron `~/scripts/db_backup.sh` không emit metric trong 24h. Check cron daemon + B2/R2 credentials."
+
+      - alert: DiskAlmostFull
+        expr: |
+          (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"}
+           / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) < 0.2
+        for: 5m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "Disk còn < 20% trên {{ $labels.instance }}:{{ $labels.mountpoint }}"
+          description: "Hiện còn {{ $value | humanizePercentage }}. Hành động: rotate logs, archive uploads cũ ra R2, hoặc thêm volume."
