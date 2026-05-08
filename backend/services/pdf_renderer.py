@@ -305,9 +305,17 @@ class PDFRenderer:
             "show_approval_block": True,
             **(cfg or {}),
         }
+        # Wrap data in SchemaAwareData when a Pydantic schema is registered for
+        # this doc_type — eliminates the recurring `.get()` bug class. Optional
+        # fields no longer need `.get()`; typos still raise. Falls back to the
+        # plain dict for unimplemented doc_types so nothing breaks.
+        from services.pdf_render_schemas import get_schema as _get_schema
+        from services.schema_aware_data import SchemaAwareData
+        schema_cls = _get_schema(entry.doc_type)
+        ctx_data = SchemaAwareData(data, schema_cls) if schema_cls else data
         return template.render(
             title=title,
-            data=data,
+            data=ctx_data,
             cfg=cfg_filled,
             content=content,
             is_draft=is_draft,
