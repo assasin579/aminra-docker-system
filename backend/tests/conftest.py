@@ -152,3 +152,47 @@ def admin_token(client, admin_credentials):
     if resp.status_code == 200:
         return resp.json()["access_token"]
     return None
+
+
+# ─── Host-only test auto-skip ────────────────────────────────────────────────
+#
+# Some tests need resources only available on the host CI runner, not inside
+# the backend Docker container:
+#   - subprocess `docker` CLI (migration / audit log immutability checks)
+#   - filesystem layout at REPO_ROOT (Procfile, Dockerfile, env.example)
+#   - running frontend service for HTTP-render assertions
+#
+# Auto-skip these when running inside the container so in-container CI signal
+# stays clean. Host CI must run pytest with HOST_CI=1 to opt back in.
+
+from pathlib import Path as _Path
+
+_IN_CONTAINER = _Path("/.dockerenv").exists() and os.getenv("HOST_CI") != "1"
+
+# Match against pytest nodeid (e.g. "tests/test_x.py::TestY::test_z").
+_HOST_ONLY_PATTERNS: tuple[str, ...] = (
+    # Whole files reading REPO_ROOT files or subprocessing docker
+    "tests/test_config_tunables.py",
+    "tests/test_document_versioning_func.py",
+    "tests/test_document_versioning_sec.py",
+    "tests/test_document_versioning_integration.py",
+    # Specific classes inside multi-class regression file
+    "tests/test_document_versioning_regression.py::TestServiceHealth",
+    "tests/test_document_versioning_regression.py::TestNegativeRegression",
+    "tests/test_document_versioning_regression.py::TestFlagOnAdditions",
+    "tests/test_document_versioning_regression.py::TestFlagOffBaseline",
+    "tests/test_document_versioning_regression.py::TestWorkflows",
+    "tests/test_document_versioning_regression.py::TestFrontendRenders",
+)
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip host-only tests when running inside the container."""
+    if not _IN_CONTAINER:
+        return
+    skip = pytest.mark.skip(
+        reason="host-only test (docker CLI / repo-root files / running FE) — set HOST_CI=1 to opt in"
+    )
+    for item in items:
+        if any(p in item.nodeid for p in _HOST_ONLY_PATTERNS):
+            item.add_marker(skip)

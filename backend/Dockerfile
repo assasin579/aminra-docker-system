@@ -31,6 +31,7 @@ RUN playwright install --with-deps chromium
 COPY pipeline/ ./pipeline/
 COPY auth/ ./auth/
 COPY services/ ./services/
+COPY contracts/ ./contracts/
 COPY templates/ ./templates/
 COPY templates_docx/ ./templates_docx/
 COPY templates_html/ ./templates_html/
