@@ -60,6 +60,25 @@ sync-templates: ## Hot-copy backend/templates_html + services + auth into runnin
 	@docker cp backend/auth/pdf_render_router.py aminra-docker-system-aminra-backend-1:/app/auth/
 	@echo "synced — restart not needed unless Python sources changed"
 
+# ── Keycloak (auth — ADR-005 Phase 1) ────────────────────────────────────────
+
+.PHONY: keycloak-up
+keycloak-up: ## Start keycloak service (depends postgres-db healthy)
+	@docker compose up -d keycloak
+	@echo "Keycloak starting at http://localhost:8180 — wait ~60s for first boot"
+
+.PHONY: keycloak-bootstrap
+keycloak-bootstrap: ## Idempotent: realm + clients + roles
+	@bash scripts/keycloak-bootstrap.sh
+
+.PHONY: keycloak-mfa
+keycloak-mfa: ## Configure conditional MFA flow (run after keycloak-bootstrap)
+	@bash scripts/keycloak-configure-mfa.sh
+
+.PHONY: keycloak-logs
+keycloak-logs: ## Tail keycloak logs
+	@docker compose logs -f keycloak
+
 # ── Pre-commit ───────────────────────────────────────────────────────────────
 
 .PHONY: pre-commit-install

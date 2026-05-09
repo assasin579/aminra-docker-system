@@ -155,6 +155,8 @@ services:
       - POSTGRES_DB=aminra
       - POSTGRES_USER=aminra_user
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Keycloak DB bootstrap — used by 02-keycloak-init.sh (ADR-005 Phase 1)
+      - KEYCLOAK_DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime:ro
@@ -172,6 +174,53 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ── Keycloak (auth provider — ADR-005 Phase 1 deploy) ─────────────────────
+  # Realm bootstrap qua scripts/keycloak-bootstrap.sh (idempotent, kc.sh CLI).
+  # Phase 2/3 sẽ wire FE/BE migrate khỏi manual JWT.
+  keycloak:
+    image: bitnami/keycloak:25
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - KEYCLOAK_DATABASE_VENDOR=postgresql
+      - KEYCLOAK_DATABASE_HOST=postgres-db
+      - KEYCLOAK_DATABASE_PORT=5432
+      - KEYCLOAK_DATABASE_NAME=keycloak
+      - KEYCLOAK_DATABASE_USER=keycloak
+      - KEYCLOAK_DATABASE_PASSWORD=${KEYCLOAK_DB_PASSWORD}
+      - KEYCLOAK_ADMIN_USER=admin
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KEYCLOAK_HTTP_PORT=8080
+      - KEYCLOAK_MANAGEMENT_PORT=9000
+      # Production behind nginx — ADR-005 Phase 2 sẽ flip KEYCLOAK_PROXY=edge
+      # và set KEYCLOAK_HOSTNAME=auth.aminra.vn
+      - KEYCLOAK_LOG_LEVEL=INFO
+    ports:
+      - "8180:8080"
+    volumes:
+      - keycloak-data:/bitnami/keycloak
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - app-network
+      - vault-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      postgres-db:
+        condition: service_healthy
 
   qdrant-db:
     build:
@@ -266,5 +315,6 @@ volumes:
   redis-data:
   template-data:
   doc-cache:
+  keycloak-data:
   vault-secrets:
     external: true
