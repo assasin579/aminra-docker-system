@@ -15,6 +15,11 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_H = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
 REFRESH_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", "7"))
 
+# ADR-005 Phase 3a — dual-auth feature flag. Default off so existing
+# manual JWT tokens keep working unchanged. Flip to "true" once
+# Keycloak realm is bootstrapped and FE is migrated (Phase 2).
+AUTH_KEYCLOAK_ENABLED = os.getenv("AUTH_KEYCLOAK_ENABLED", "false").lower() == "true"
+
 _bearer = HTTPBearer(auto_error=False)
 
 ADMIN_EMAIL = "admin@aminra.com"
@@ -68,13 +73,26 @@ def decode_token(token: str) -> dict:
 from fastapi import Request
 
 
-def get_current_user(
+async def get_current_user(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> dict:
-    if creds:
-        return decode_token(creds.credentials)
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    if not creds:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    token = creds.credentials
+
+    # ADR-005 Phase 3a dual-auth: try Keycloak first only when the token
+    # looks RS256/has-kid. Manual HS256 tokens skip the Keycloak path
+    # entirely and stay on the legacy fast path.
+    if AUTH_KEYCLOAK_ENABLED:
+        from auth import keycloak_validator
+        if keycloak_validator.looks_like_keycloak_token(token):
+            claims = keycloak_validator.validate_keycloak_token(token)
+            from auth.db import get_pool
+            return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+
+    return decode_token(token)
 
 
 def require_business_owner(user: dict = Depends(get_current_user)) -> dict:

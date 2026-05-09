@@ -108,6 +108,11 @@ services:
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_HOURS=8
       - JWT_REFRESH_DAYS=7
+      # ADR-005 Phase 3a dual-auth — flag off until FE migration complete
+      - AUTH_KEYCLOAK_ENABLED=${AUTH_KEYCLOAK_ENABLED:-false}
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=aminra
+      - KEYCLOAK_AUDIENCE=aminra-backend
       # Web Push (PWA) — VAPID keys sourced from Vault (secret/aminra/web-push)
       # Rotation: bash vault/scripts/rotate-secrets.sh web-push
       - CORS_ORIGINS=https://dev-web.silvergem.org,https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
