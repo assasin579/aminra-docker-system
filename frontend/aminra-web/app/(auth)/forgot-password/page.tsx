@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { KeycloakSsoNotice } from "@/components/KeycloakSsoButton";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -64,6 +65,9 @@ export default function ForgotPasswordPage() {
           boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
         }}
       >
+        <KeycloakSsoNotice
+          message="Nếu tài khoản đã được nâng cấp lên Keycloak SSO, vui lòng đặt lại mật khẩu trên Keycloak account console. Form bên dưới chỉ áp dụng cho tài khoản chưa di trú."
+        />
         {sent ? (
           <div role="status" className="text-center space-y-4">
             <div className="inline-grid place-items-center w-12 h-12 rounded-full bg-[#DCE3F0]">

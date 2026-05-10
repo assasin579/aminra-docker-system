@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
+import { KeycloakSsoButton } from "@/components/KeycloakSsoButton";
 
 export default function ProviderLoginPage() {
   const router = useRouter();
@@ -193,6 +194,11 @@ export default function ProviderLoginPage() {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
+
+        <KeycloakSsoButton
+          returnTo="/dashboard/provider"
+          hint="Auditor / CB Admin: TOTP bắt buộc theo realm policy"
+        />
 
         <div
           className="mt-6 pt-5 text-center"

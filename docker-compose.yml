@@ -33,6 +33,11 @@ services:
       - TZ=Asia/Ho_Chi_Minh
       - NODE_ENV=production
       - BACKEND_URL=http://aminra-backend:8000
+      # ADR-005 Phase 2 Keycloak SSO — flag off until canary verified
+      - NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED=${NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED:-false}
+      - NEXT_PUBLIC_KEYCLOAK_URL=${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8180}
+      - NEXT_PUBLIC_KEYCLOAK_REALM=aminra
+      - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=aminra-frontend
     networks:
       - app-network
     restart: unless-stopped
@@ -64,6 +69,11 @@ services:
       - TZ=Asia/Ho_Chi_Minh
       - NODE_ENV=development
       - BACKEND_URL=http://aminra-backend:8000
+      # ADR-005 Phase 2 Keycloak SSO — flag off in dev unless explicitly toggled
+      - NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED=${NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED:-false}
+      - NEXT_PUBLIC_KEYCLOAK_URL=${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8180}
+      - NEXT_PUBLIC_KEYCLOAK_REALM=aminra
+      - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=aminra-frontend
     volumes:
       - ./frontend/aminra-web:/app
       - /app/node_modules
@@ -110,9 +120,13 @@ services:
       - JWT_REFRESH_DAYS=7
       # ADR-005 Phase 3a dual-auth — flag off until FE migration complete
       - AUTH_KEYCLOAK_ENABLED=${AUTH_KEYCLOAK_ENABLED:-false}
-      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8180}
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - KEYCLOAK_REALM=aminra
       - KEYCLOAK_AUDIENCE=aminra-backend
+      # Phase 4 admin REST — service account for user creation
+      - KEYCLOAK_ADMIN_CLI_CLIENT_ID=aminra-admin-cli
+      - KEYCLOAK_ADMIN_CLI_SECRET=${KEYCLOAK_ADMIN_CLI_SECRET:-}
       # Web Push (PWA) — VAPID keys sourced from Vault (secret/aminra/web-push)
       # Rotation: bash vault/scripts/rotate-secrets.sh web-push
       - CORS_ORIGINS=https://dev-web.silvergem.org,https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
@@ -183,27 +197,30 @@ services:
   # ── Keycloak (auth provider — ADR-005 Phase 1 deploy) ─────────────────────
   # Realm bootstrap qua scripts/keycloak-bootstrap.sh (idempotent, kc.sh CLI).
   # Phase 2/3 sẽ wire FE/BE migrate khỏi manual JWT.
+  # Image: official Keycloak (quay.io). Bitnami images deprecated 2024.
   keycloak:
-    image: bitnami/keycloak:25
+    image: quay.io/keycloak/keycloak:25.0
+    command: ["start-dev"]
     environment:
       - TZ=Asia/Ho_Chi_Minh
-      - KEYCLOAK_DATABASE_VENDOR=postgresql
-      - KEYCLOAK_DATABASE_HOST=postgres-db
-      - KEYCLOAK_DATABASE_PORT=5432
-      - KEYCLOAK_DATABASE_NAME=keycloak
-      - KEYCLOAK_DATABASE_USER=keycloak
-      - KEYCLOAK_DATABASE_PASSWORD=${KEYCLOAK_DB_PASSWORD}
-      - KEYCLOAK_ADMIN_USER=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres-db:5432/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
+      - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KEYCLOAK_HTTP_PORT=8080
-      - KEYCLOAK_MANAGEMENT_PORT=9000
-      # Production behind nginx — ADR-005 Phase 2 sẽ flip KEYCLOAK_PROXY=edge
-      # và set KEYCLOAK_HOSTNAME=auth.aminra.vn
-      - KEYCLOAK_LOG_LEVEL=INFO
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_BACKCHANNEL=false
+      - KC_LOG_LEVEL=INFO
+      # Production: switch start-dev → start --optimized + KC_HOSTNAME=auth.aminra.vn + KC_PROXY=edge
     ports:
       - "8180:8080"
+      - "9180:9000"
     volumes:
-      - keycloak-data:/bitnami/keycloak
+      - keycloak-data:/opt/keycloak/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     networks:
@@ -213,16 +230,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '1.5'
+          memory: 1.5G
         reservations:
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health/ready || exit 1"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     depends_on:
       postgres-db:
         condition: service_healthy

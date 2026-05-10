@@ -206,8 +206,109 @@ cat > "$TMP/aminra-backend.json" <<'EOF'
 }
 EOF
 
+cat > "$TMP/aminra-admin-cli.json" <<'EOF'
+{
+  "clientId": "aminra-admin-cli",
+  "name": "AMINRA Admin CLI (BE service account for user mgmt)",
+  "enabled": true,
+  "publicClient": false,
+  "bearerOnly": false,
+  "standardFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "implicitFlowEnabled": false,
+  "serviceAccountsEnabled": true,
+  "fullScopeAllowed": false
+}
+EOF
+
 create_client_if_missing aminra-frontend "$TMP/aminra-frontend.json"
 create_client_if_missing aminra-backend "$TMP/aminra-backend.json"
+create_client_if_missing aminra-admin-cli "$TMP/aminra-admin-cli.json"
+
+# ── 4b. Add protocol-mappers to aminra-frontend (Phase 3b) ────────────────────
+# Maps user attributes (tenant_id, is_owner, status) into JWT claims so the
+# backend can skip the DB enrichment lookup. User attributes are set at
+# user creation time by the registration flow (Phase 4).
+
+ensure_mapper() {
+  local client_uuid="$1"
+  local mapper_name="$2"
+  local user_attr="$3"
+  local json_type="$4"  # String | boolean | int | long
+  local existing
+  existing=$(api GET "/$REALM/clients/$client_uuid/protocol-mappers/models" \
+    | jq -r --arg n "$mapper_name" '.[] | select(.name==$n) | .id')
+  if [[ -n "$existing" ]]; then
+    log "Mapper $mapper_name exists on client — skipping"
+    return
+  fi
+  log "Adding mapper $mapper_name → claim $user_attr ($json_type)"
+  api POST "/$REALM/clients/$client_uuid/protocol-mappers/models" -d @- <<EOF
+{
+  "name": "$mapper_name",
+  "protocol": "openid-connect",
+  "protocolMapper": "oidc-usermodel-attribute-mapper",
+  "consentRequired": false,
+  "config": {
+    "user.attribute": "$user_attr",
+    "claim.name": "$user_attr",
+    "jsonType.label": "$json_type",
+    "id.token.claim": "true",
+    "access.token.claim": "true",
+    "userinfo.token.claim": "true",
+    "multivalued": "false"
+  }
+}
+EOF
+}
+
+FE_CLIENT_UUID=$(api GET "/$REALM/clients?clientId=aminra-frontend" | jq -r '.[0].id // empty')
+if [[ -n "$FE_CLIENT_UUID" ]]; then
+  ensure_mapper "$FE_CLIENT_UUID" "tenant_id-mapper" "tenant_id" "String"
+  ensure_mapper "$FE_CLIENT_UUID" "is_owner-mapper"  "is_owner"  "boolean"
+  ensure_mapper "$FE_CLIENT_UUID" "status-mapper"    "status"    "String"
+else
+  log "WARNING: aminra-frontend client UUID not found — skipping mapper setup"
+fi
+
+# ── 4c. Grant realm-management roles to aminra-admin-cli (Phase 4) ────────────
+# Lets BE call admin REST API via client_credentials grant (no master pw).
+
+ADMIN_CLI_UUID=$(api GET "/$REALM/clients?clientId=aminra-admin-cli" | jq -r '.[0].id // empty')
+if [[ -z "$ADMIN_CLI_UUID" ]]; then
+  log "WARNING: aminra-admin-cli client UUID not found — skipping role grant"
+else
+  RM_CLIENT_UUID=$(api GET "/$REALM/clients?clientId=realm-management" | jq -r '.[0].id // empty')
+  SVC_USER_ID=$(api GET "/$REALM/clients/$ADMIN_CLI_UUID/service-account-user" | jq -r '.id // empty')
+  if [[ -z "$RM_CLIENT_UUID" || -z "$SVC_USER_ID" ]]; then
+    log "WARNING: realm-management client or service-account user missing — skip"
+  else
+    ROLES_JSON=$(api GET "/$REALM/clients/$RM_CLIENT_UUID/roles")
+    GRANT_PAYLOAD=$(echo "$ROLES_JSON" | jq '[.[] | select(.name=="manage-users" or .name=="query-users" or .name=="view-users") | {id, name}]')
+    if [[ "$(echo "$GRANT_PAYLOAD" | jq 'length')" -ge 3 ]]; then
+      log "Granting manage-users + query-users + view-users to aminra-admin-cli service account"
+      api POST "/$REALM/users/$SVC_USER_ID/role-mappings/clients/$RM_CLIENT_UUID" -d "$GRANT_PAYLOAD" || \
+        log "  Grant returned non-201 — likely already granted"
+    else
+      log "WARNING: realm-management role payload has fewer than 3 expected roles"
+    fi
+  fi
+
+  # Surface client secret so founder can paste into .env (KEYCLOAK_ADMIN_CLI_SECRET).
+  CLI_SECRET=$(api GET "/$REALM/clients/$ADMIN_CLI_UUID/client-secret" | jq -r '.value // empty')
+  if [[ -n "$CLI_SECRET" ]]; then
+    cat >&2 <<EOF
+
+────────────────────────────────────────────────────────────────────
+SECRET — DO NOT COMMIT.
+Add to top-level .env (or Vault: secret/aminra/keycloak/admin_cli_secret):
+
+  KEYCLOAK_ADMIN_CLI_SECRET=$CLI_SECRET
+
+────────────────────────────────────────────────────────────────────
+EOF
+  fi
+fi
 
 # ── 5. Create realm roles ─────────────────────────────────────────────────────
 

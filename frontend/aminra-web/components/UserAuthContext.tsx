@@ -44,6 +44,13 @@ interface UserAuthState {
   loading: boolean;
   loginBusiness: (email: string, password: string, remember?: boolean) => Promise<void>;
   loginProvider: (email: string, password: string, remember?: boolean) => Promise<void>;
+  /**
+   * ADR-005 Phase 2: install a Keycloak-issued access token as the active
+   * session. The token is verified and enriched by the BE dual-auth path
+   * (`get_current_user` → keycloak_validator). Caller is responsible for
+   * UI-level role gating (e.g. business login page rejecting non-business).
+   */
+  loginViaKeycloak: (accessToken: string, expectedRole?: UserRole) => Promise<void>;
   logout: () => void;
 }
 
@@ -54,6 +61,7 @@ const UserAuthContext = createContext<UserAuthState>({
   loading: true,
   loginBusiness: async () => {},
   loginProvider: async () => {},
+  loginViaKeycloak: async () => {},
   logout: () => {},
 });
 
@@ -167,6 +175,32 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     [_saveSession],
   );
 
+  const loginViaKeycloak = useCallback(
+    async (accessToken: string, expectedRole?: UserRole) => {
+      // BE dual-auth path validates the Keycloak JWT and returns the
+      // enriched profile. Use the same /api/auth/me endpoint as the
+      // legacy refresh path — keeps server logic single-source.
+      const res = await fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg =
+          (body && (body.detail || body.message)) ||
+          `Keycloak token rejected (HTTP ${res.status})`;
+        throw new Error(msg);
+      }
+      const profile = (await res.json()) as UserProfile;
+      if (expectedRole && profile.role !== expectedRole) {
+        throw new Error(
+          `Tài khoản không phù hợp (kỳ vọng ${expectedRole}, nhận được ${profile.role})`,
+        );
+      }
+      _saveSession(accessToken, profile, true);
+    },
+    [_saveSession],
+  );
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -191,6 +225,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         loading,
         loginBusiness,
         loginProvider,
+        loginViaKeycloak,
         logout,
       }}
     >

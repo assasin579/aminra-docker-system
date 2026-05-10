@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { KeycloakSsoNotice } from "@/components/KeycloakSsoButton";
 
 type TokenStatus = "verifying" | "valid" | "invalid";
 
@@ -114,6 +115,9 @@ export default function ResetPasswordPage() {
           boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
         }}
       >
+        <KeycloakSsoNotice
+          message="Tài khoản đã di trú sang Keycloak SSO không dùng liên kết này. Vui lòng đặt lại mật khẩu trên Keycloak account console. Form bên dưới chỉ áp dụng cho tài khoản còn dùng hệ thống cũ."
+        />
         {status === "verifying" && (
           <p className="text-center text-sm" style={{ color: "#6B7280" }}>
             Đang xác thực liên kết...

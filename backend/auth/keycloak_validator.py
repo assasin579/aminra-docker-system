@@ -24,10 +24,16 @@ from jose import JWTError, jwt
 from jose.utils import base64url_decode
 
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
+# When backend runs inside docker network but token issuer is the public
+# URL (browser-facing), JWKs fetch must use the internal route for
+# reachability while issuer comparison uses the public URL.
+KEYCLOAK_INTERNAL_URL = os.getenv(
+    "KEYCLOAK_INTERNAL_URL", KEYCLOAK_URL,
+).rstrip("/")
 KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "aminra")
 KEYCLOAK_AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", "aminra-backend")
 
-_JWKS_URL = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
+_JWKS_URL = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
 _ISSUER = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}"
 _JWKS_TTL = 3600
 
@@ -91,16 +97,31 @@ def validate_keycloak_token(token: str) -> dict:
     if not key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown signing key")
 
+    alg = header.get("alg", "RS256")
+    if alg not in ("RS256", "RS384", "RS512"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Disallowed alg: {alg}",
+        )
     try:
         claims = jwt.decode(
             token,
             key,
-            algorithms=[header.get("alg", "RS256")],
+            algorithms=[alg],
             audience=KEYCLOAK_AUDIENCE,
             issuer=_ISSUER,
         )
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
+    except Exception as e:
+        # python-jose can raise TypeError on malformed numeric claims
+        # (exp/nbf/iat as string/list/dict) and JWKError on unsupported
+        # key shapes. We MUST surface those as 401, not 500 — otherwise
+        # an attacker can DoS or fingerprint by triggering server errors.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token rejected: {type(e).__name__}",
+        )
 
     return claims
 
@@ -115,15 +136,55 @@ def _pick_app_role(realm_roles: list[str]) -> Optional[str]:
     return None
 
 
+_FAST_PATH_REQUIRED = ("email", "tenant_id", "is_owner", "status")
+
+
+def _has_full_mapper_claims(claims: dict) -> bool:
+    """True when Keycloak custom token mappers (Phase 3b) populated all
+    app-domain claims in the JWT. Lets us skip the DB enrichment lookup."""
+    return all(claims.get(k) is not None for k in _FAST_PATH_REQUIRED)
+
+
+def _claims_to_user_via_jwt(claims: dict) -> dict:
+    """Build app user dict from JWT claims alone (mapper fast path).
+
+    `tenant_id` is normalised to string; `is_owner` to bool. Mapper jsonType
+    `boolean` may serialise the value as a string in some Keycloak versions
+    so coerce defensively.
+    """
+    is_owner_raw = claims["is_owner"]
+    is_owner = is_owner_raw is True or str(is_owner_raw).lower() == "true"
+
+    realm_roles = (claims.get("realm_access") or {}).get("roles") or []
+    return {
+        "sub": claims.get("sub"),
+        "email": claims["email"],
+        "role": _pick_app_role(realm_roles),
+        "is_owner": is_owner,
+        "status": claims["status"],
+        "tenant_id": str(claims["tenant_id"]),
+        "_keycloak": True,
+        "_from_jwt_claims": True,
+    }
+
+
 async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
     """Map Keycloak JWT claims → existing app user dict shape.
 
-    DB is authoritative for tenant_id / is_owner / status during the
-    migration window. Email is the join key.
+    Fast path (Phase 3b): when realm has the user-attribute mappers, the
+    JWT carries `tenant_id`/`is_owner`/`status` directly and we return
+    without touching the DB.
+
+    Fallback path (Phase 3a): DB lookup by email is authoritative. Used
+    for users created before mappers were configured, or when mappers
+    aren't yet active in the realm.
     """
     email = claims.get("email")
     if not email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing email claim")
+
+    if _has_full_mapper_claims(claims):
+        return _claims_to_user_via_jwt(claims)
 
     realm_roles = (claims.get("realm_access") or {}).get("roles") or []
     keycloak_role = _pick_app_role(realm_roles)
@@ -136,9 +197,6 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         )
 
     if not row:
-        # Keycloak-authenticated user has no DB record yet (post Phase 4
-        # re-register flow). Return minimal shape; downstream require_*
-        # guards will reject as expected.
         return {
             "sub": claims.get("sub"),
             "email": email,
@@ -151,8 +209,6 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
 
     db_role = row["role"]
     if keycloak_role and db_role and keycloak_role != db_role:
-        # Realm role drift vs DB — log but trust DB during migration.
-        # Phase 4 sync will reconcile. Avoid raising to not break login.
         import logging
         logging.getLogger(__name__).warning(
             "Role drift for %s: keycloak=%s db=%s — using db",
