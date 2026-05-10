@@ -80,7 +80,16 @@ export function getOidcManager(): UserManager {
 
 export async function signinRedirect(returnTo?: string): Promise<void> {
   const mgr = getOidcManager();
-  await mgr.signinRedirect({ state: returnTo ?? "/" });
+  // `prompt=login` forces Keycloak to show the credentials form even if
+  // the realm session cookie is already set. Without it, a user who
+  // logs out on the FE but whose Keycloak realm cookie is still valid
+  // would be silently re-authenticated as the same identity on the
+  // next signin click. This also lets users on a shared device pick a
+  // different account.
+  await mgr.signinRedirect({
+    state: returnTo ?? "/",
+    extraQueryParams: { prompt: "login" },
+  });
 }
 
 export async function handleSigninCallback(): Promise<{
@@ -105,12 +114,28 @@ export async function getOidcUser(): Promise<User | null> {
 export async function signoutRedirect(): Promise<void> {
   if (!isOidcEnabled()) return;
   const mgr = getOidcManager();
-  // Best-effort end-session at Keycloak; falls back to local clear if RP
-  // signout endpoint disabled.
   try {
     await mgr.signoutRedirect();
+    return;
   } catch {
-    await mgr.removeUser();
+    // UserManager.signoutRedirect requires an active stored user. If
+    // local state was already cleared (e.g. by a parallel tab), the
+    // call throws — fall back to a direct end-session URL so the
+    // realm cookie is cleared anyway.
+    try {
+      await mgr.removeUser();
+    } catch {}
+    if (typeof window !== "undefined") {
+      const authority =
+        process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? "http://localhost:8180";
+      const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM ?? "aminra";
+      const clientId =
+        process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? "aminra-frontend";
+      const postLogout = encodeURIComponent(`${window.location.origin}/`);
+      window.location.href =
+        `${authority}/realms/${realm}/protocol/openid-connect/logout` +
+        `?post_logout_redirect_uri=${postLogout}&client_id=${clientId}`;
+    }
   }
 }
 

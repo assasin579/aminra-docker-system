@@ -202,6 +202,34 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    // Detect Keycloak session via stored OIDC user. If present, redirect
+    // through Keycloak end-session endpoint so realm cookie is cleared —
+    // otherwise next "Đăng nhập SSO" would auto-relogin same user.
+    (async () => {
+      try {
+        const { isOidcEnabled, getOidcUser, signoutRedirect } = await import(
+          "@/lib/auth-oidc"
+        );
+        if (isOidcEnabled()) {
+          const oidcUser = await getOidcUser();
+          if (oidcUser) {
+            // Clear local first so the post-logout return lands on a clean state.
+            setToken(null);
+            setUser(null);
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(PROFILE_KEY);
+            sessionStorage.removeItem(TOKEN_KEY);
+            sessionStorage.removeItem(PROFILE_KEY);
+            localStorage.removeItem("aminra_admin_token");
+            document.cookie = "aminra_session=; path=/; max-age=0";
+            await signoutRedirect();
+            return;
+          }
+        }
+      } catch {
+        // Fall through to legacy local-only logout
+      }
+    })();
     setToken(null);
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);

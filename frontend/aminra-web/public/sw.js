@@ -1,5 +1,5 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v4";
+const CACHE_NAME = "aminra-v5";
 const OFFLINE_URL = "/audits";
 // URLs the SW must NEVER serve from cache (always go to network).
 // Admin rotates template content; serving stale = wrong file delivered.
@@ -40,6 +40,12 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-GET requests (POST/PUT for checklist updates go to IndexedDB queue)
   if (request.method !== "GET") return;
+
+  // Skip cross-origin requests entirely. Keycloak SSO + Sentry tunnel
+  // + any 3rd-party fetch must NOT route through our offline cache —
+  // when fetch fails, we'd serve our OFFLINE_URL HTML which breaks
+  // JSON-expecting clients (oidc-client-ts metadata fetch).
+  if (url.origin !== self.location.origin) return;
 
   // API calls: network-first, fallback to cache
   if (url.pathname.startsWith("/api/")) {

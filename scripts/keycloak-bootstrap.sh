@@ -43,6 +43,41 @@ require() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: $1 required" >&2; 
 require curl
 require jq
 
+# ── 0. Ensure postgres has keycloak DB + role (idempotent) ────────────────────
+# When the postgres-data volume already existed (common on dev re-run) the
+# init script `02-keycloak-init.sh` does NOT execute — postgres only runs
+# init scripts on first initdb. Compensate with a manual create step that
+# tolerates "already exists".
+
+KC_DB_PW="${KEYCLOAK_DB_PASSWORD:-}"
+if [[ -z "$KC_DB_PW" && -f .env ]]; then
+  KC_DB_PW=$(grep -E '^KEYCLOAK_DB_PASSWORD=' .env | cut -d= -f2- | tr -d '"' || true)
+fi
+
+if [[ -n "$KC_DB_PW" ]]; then
+  log "Ensuring postgres has keycloak role + database"
+  POSTGRES_CONTAINER=$(docker compose ps -q postgres-db 2>/dev/null || true)
+  if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    docker compose exec -T postgres-db psql -U aminra_user -d aminra <<SQL >/dev/null 2>&1 || true
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'keycloak') THEN
+    CREATE ROLE keycloak WITH LOGIN ENCRYPTED PASSWORD '${KC_DB_PW}';
+  END IF;
+END
+\$\$;
+SQL
+    if ! docker compose exec -T postgres-db psql -U aminra_user -d aminra -tAc "SELECT 1 FROM pg_database WHERE datname='keycloak'" 2>/dev/null | grep -q 1; then
+      docker compose exec -T postgres-db psql -U aminra_user -d aminra -c "CREATE DATABASE keycloak OWNER keycloak;" >/dev/null 2>&1 || true
+      docker compose exec -T postgres-db psql -U aminra_user -d aminra -c "GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;" >/dev/null 2>&1 || true
+    fi
+  else
+    log "  WARN: postgres-db container not running — skipping DB pre-create"
+  fi
+else
+  log "  WARN: KEYCLOAK_DB_PASSWORD not set — skipping DB pre-create"
+fi
+
 api() {
   local method="$1"; shift
   local path="$1"; shift
@@ -111,7 +146,17 @@ else
   exit 1
 fi
 
-# ── 3. Configure realm token settings + password policy ───────────────────────
+# ── 3a. Enable unmanagedAttributePolicy (Keycloak v25 strict profile) ─────────
+# Without this, custom user attributes (tenant_id/is_owner/status set by
+# admin REST or via mappers) are stripped → "Account is not fully set up"
+# error on direct grant + missing claims in JWT. Idempotent PUT.
+
+log "Enabling unmanagedAttributePolicy on user profile"
+PROFILE_JSON=$(api GET "/$REALM/users/profile")
+PROFILE_PATCHED=$(echo "$PROFILE_JSON" | jq '. + {unmanagedAttributePolicy: "ENABLED"}')
+api PUT "/$REALM/users/profile" -d "$PROFILE_PATCHED" >/dev/null
+
+# ── 3b. Configure realm token settings + password policy ──────────────────────
 
 log "Updating realm token expiry + password policy"
 api PUT "/$REALM" -d @- <<'EOF'
@@ -164,7 +209,7 @@ cat > "$TMP/aminra-frontend.json" <<'EOF'
   "enabled": true,
   "publicClient": true,
   "standardFlowEnabled": true,
-  "directAccessGrantsEnabled": false,
+  "directAccessGrantsEnabled": true,
   "implicitFlowEnabled": false,
   "serviceAccountsEnabled": false,
   "rootUrl": "https://fe.silvergem.org",
@@ -187,7 +232,7 @@ cat > "$TMP/aminra-frontend.json" <<'EOF'
     "post.logout.redirect.uris": "+",
     "access.token.lifespan": "900"
   },
-  "fullScopeAllowed": false
+  "fullScopeAllowed": true
 }
 EOF
 
@@ -224,6 +269,15 @@ EOF
 create_client_if_missing aminra-frontend "$TMP/aminra-frontend.json"
 create_client_if_missing aminra-backend "$TMP/aminra-backend.json"
 create_client_if_missing aminra-admin-cli "$TMP/aminra-admin-cli.json"
+
+# Ensure existing aminra-frontend has the dev-test-friendly settings even
+# on re-runs (create-if-missing doesn't update existing clients).
+FE_UUID=$(api GET "/$REALM/clients?clientId=aminra-frontend" | jq -r '.[0].id // empty')
+if [[ -n "$FE_UUID" ]]; then
+  log "Patching aminra-frontend: directAccessGrantsEnabled + fullScopeAllowed"
+  api PUT "/$REALM/clients/$FE_UUID" \
+    -d '{"directAccessGrantsEnabled":true,"fullScopeAllowed":true}' >/dev/null
+fi
 
 # ── 4b. Add protocol-mappers to aminra-frontend (Phase 3b) ────────────────────
 # Maps user attributes (tenant_id, is_owner, status) into JWT claims so the
@@ -262,11 +316,38 @@ ensure_mapper() {
 EOF
 }
 
+ensure_audience_mapper() {
+  local client_uuid="$1"
+  local audience="$2"
+  local existing
+  existing=$(api GET "/$REALM/clients/$client_uuid/protocol-mappers/models" \
+    | jq -r --arg a "aud-$audience" '.[] | select(.name==$a) | .id')
+  if [[ -n "$existing" ]]; then
+    log "Audience mapper for $audience exists — skipping"
+    return
+  fi
+  log "Adding audience mapper → $audience"
+  api POST "/$REALM/clients/$client_uuid/protocol-mappers/models" -d @- <<EOF
+{
+  "name": "aud-$audience",
+  "protocol": "openid-connect",
+  "protocolMapper": "oidc-audience-mapper",
+  "consentRequired": false,
+  "config": {
+    "included.client.audience": "$audience",
+    "id.token.claim": "false",
+    "access.token.claim": "true"
+  }
+}
+EOF
+}
+
 FE_CLIENT_UUID=$(api GET "/$REALM/clients?clientId=aminra-frontend" | jq -r '.[0].id // empty')
 if [[ -n "$FE_CLIENT_UUID" ]]; then
   ensure_mapper "$FE_CLIENT_UUID" "tenant_id-mapper" "tenant_id" "String"
   ensure_mapper "$FE_CLIENT_UUID" "is_owner-mapper"  "is_owner"  "boolean"
   ensure_mapper "$FE_CLIENT_UUID" "status-mapper"    "status"    "String"
+  ensure_audience_mapper "$FE_CLIENT_UUID" "aminra-backend"
 else
   log "WARNING: aminra-frontend client UUID not found — skipping mapper setup"
 fi
@@ -332,8 +413,11 @@ create_role_if_missing platform_admin  "AMINRA Platform Admin — quản lý n�
 
 # ── 6. Required actions: enable VERIFY_EMAIL + CONFIGURE_TOTP ─────────────────
 
-log "Enabling required action: VERIFY_EMAIL"
-api PUT "/$REALM/authentication/required-actions/VERIFY_EMAIL" -d '{"alias":"VERIFY_EMAIL","name":"Verify Email","providerId":"VERIFY_EMAIL","enabled":true,"defaultAction":true,"priority":50,"config":{}}'
+log "Enabling required action: VERIFY_EMAIL (defaultAction=false)"
+# Action stays enabled (FE registration flow can still trigger it explicitly
+# when needed), but defaultAction=false so admin-REST-created users with
+# emailVerified=true can authenticate without "Account is not fully set up".
+api PUT "/$REALM/authentication/required-actions/VERIFY_EMAIL" -d '{"alias":"VERIFY_EMAIL","name":"Verify Email","providerId":"VERIFY_EMAIL","enabled":true,"defaultAction":false,"priority":50,"config":{}}'
 
 log "Enabling required action: CONFIGURE_TOTP"
 api PUT "/$REALM/authentication/required-actions/CONFIGURE_TOTP" -d '{"alias":"CONFIGURE_TOTP","name":"Configure OTP","providerId":"CONFIGURE_TOTP","enabled":true,"defaultAction":false,"priority":10,"config":{}}'

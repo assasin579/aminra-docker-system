@@ -254,7 +254,45 @@ async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _
 
 @router.get("/me", response_model=UserProfile)
 async def get_me(user: dict = Depends(get_current_user), db: Connection = Depends(get_db)):
-    row = await db.fetchrow("SELECT * FROM users WHERE id = $1", user["sub"])
+    # Keycloak-issued tokens carry Keycloak's UUID as `sub`, not AMINRA DB
+    # user id. Look up by email instead when user came from Keycloak.
+    if user.get("_keycloak"):
+        row = await db.fetchrow("SELECT * FROM users WHERE email = $1", user["email"])
+        if not row:
+            # Auto-provision DB row for Keycloak user on first login.
+            # Trust JWT claims (signed by Keycloak) for role/owner/status.
+            # tenant_id from JWT may be a non-UUID slug (e.g. "demo-biz");
+            # only persist if valid UUID — else leave NULL and let user
+            # complete their profile / be re-tenanted by admin later.
+            import uuid
+            tenant_uuid = None
+            raw_tenant = user.get("tenant_id")
+            if raw_tenant:
+                try:
+                    tenant_uuid = uuid.UUID(str(raw_tenant))
+                except (ValueError, TypeError):
+                    tenant_uuid = None
+            # Map Keycloak realm role → DB user_role enum (only business/provider).
+            # Privileged roles (auditor/cb_admin/platform_admin) all map to "provider".
+            kc_role = user.get("role") or "business"
+            db_role = "business" if kc_role == "business" else "provider"
+            row = await db.fetchrow(
+                """
+                INSERT INTO users (email, password_hash, role, company_name,
+                                   status, is_owner, tenant_id)
+                VALUES ($1, '__keycloak__', $2::user_role, $3, $4::user_status, $5, $6)
+                ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+                RETURNING *
+                """,
+                user["email"],
+                db_role,
+                user.get("company_name") or user["email"].split("@")[0],
+                user.get("status") or "active",
+                bool(user.get("is_owner", True)),
+                tenant_uuid,
+            )
+    else:
+        row = await db.fetchrow("SELECT * FROM users WHERE id = $1", user["sub"])
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
