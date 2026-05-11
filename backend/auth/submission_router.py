@@ -9,7 +9,7 @@ from datetime import datetime
 
 from uuid import UUID as _UUID
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel
 from asyncpg import Connection
 
@@ -304,6 +304,36 @@ async def provider_stats(
             for r in recent
         ],
     }
+
+
+# ── Provider: overdue queue (SLA escalation, scoped to org) ───────────────────
+
+
+@router.get("/overdue")
+async def provider_overdue(
+    limit: int = Query(100, ge=0, le=500),
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Provider-scoped overdue queue.
+
+    Owner (cb_admin) sees all submissions of their CB org past deadline.
+    Auditor (non-owner) sees only submissions assigned to them.
+    Same SLA semantics as admin queue, but tenant-scoped.
+    """
+    if user.get("role") != "provider":
+        raise HTTPException(403, "Chỉ dành cho tổ chức")
+
+    from services.submission_sla import list_overdue_submissions
+
+    kwargs = {"limit": limit}
+    if user.get("is_owner"):
+        kwargs["provider_id"] = user["sub"]
+    else:
+        kwargs["auditor_id"] = user["sub"]
+
+    items = await list_overdue_submissions(db, **kwargs)
+    return {"items": items, "count": len(items)}
 
 
 # ── Business: list providers ──────────────────────────────────────────────────

@@ -138,10 +138,31 @@ async def list_overdue_submissions(
     db: asyncpg.Connection,
     *,
     limit: int = 100,
+    provider_id: Optional[str] = None,
+    auditor_id: Optional[str] = None,
 ) -> list[dict]:
-    """For admin dashboard. All overdue submissions across all providers."""
+    """All overdue submissions across providers (admin), or scoped to a
+    single provider org / auditor.
+
+    Scope rules:
+      - provider_id given → only submissions where s.provider_id = $X
+      - auditor_id given → only submissions where s.auditor_id = $X
+      - neither → cross-tenant (admin use)
+
+    At most ONE of provider_id / auditor_id should be set; if both given,
+    auditor_id wins (narrower scope).
+    """
+    extra_clause = ""
+    params: list = [list(ACTIVE_STATUSES), limit]
+    if auditor_id is not None:
+        extra_clause = " AND s.auditor_id = $3"
+        params.append(auditor_id)
+    elif provider_id is not None:
+        extra_clause = " AND s.provider_id = $3"
+        params.append(provider_id)
+
     rows = await db.fetch(
-        """
+        f"""
         SELECT s.id, s.company_name, s.status, s.submitted_at, s.deadline,
                u.email AS provider_email,
                u.company_name AS provider_name,
@@ -150,12 +171,11 @@ async def list_overdue_submissions(
         LEFT JOIN users u ON u.id = s.provider_id
         WHERE s.deadline IS NOT NULL
           AND s.deadline < NOW()
-          AND s.status = ANY($1::text[])
+          AND s.status = ANY($1::text[]){extra_clause}
         ORDER BY s.deadline ASC
         LIMIT $2
         """,
-        list(ACTIVE_STATUSES),
-        limit,
+        *params,
     )
     return [
         {

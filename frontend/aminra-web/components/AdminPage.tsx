@@ -2525,6 +2525,30 @@ export default function AdminPageClient() {
           >
             ⚠ Overdue queue
           </a>
+          <a
+            href="/admin/standards"
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+            style={{
+              background: "rgba(0,0,0,0.02)",
+              color: "#6B7280",
+              border: "1px solid #E2E8F0",
+              textDecoration: "none",
+            }}
+          >
+            Standards
+          </a>
+          <a
+            href="/admin/industries"
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+            style={{
+              background: "rgba(0,0,0,0.02)",
+              color: "#6B7280",
+              border: "1px solid #E2E8F0",
+              textDecoration: "none",
+            }}
+          >
+            Industries ↔ Standards
+          </a>
         </div>
       </div>
 

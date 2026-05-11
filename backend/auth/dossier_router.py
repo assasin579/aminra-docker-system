@@ -194,7 +194,7 @@ async def create_dossier(
 
     # Optional sanity: warn if standard not in user's industry available list
     db_user = await db.fetchrow(
-        "SELECT industry_schema_id FROM users WHERE email = $1", user["email"],
+        "SELECT id, industry_schema_id FROM users WHERE email = $1", user["email"],
     )
     if db_user and db_user["industry_schema_id"]:
         ok = await db.fetchval(

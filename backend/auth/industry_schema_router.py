@@ -27,7 +27,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user
+from auth.jwt_utils import get_current_user, require_admin
 
 log = logging.getLogger("aminra.industry_schema")
 
@@ -286,11 +286,10 @@ async def _table_exists(db, table_name: str) -> bool:
 
 @admin_router.get("", response_model=List[IndustrySchemaPublic])
 async def admin_list_all(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
     """Admin sees all schemas including disabled."""
-    _require_admin(user)
     rows = await db.fetch(
         "SELECT * FROM industry_schemas ORDER BY display_order, name_vi"
     )
@@ -300,10 +299,9 @@ async def admin_list_all(
 @admin_router.post("", response_model=IndustrySchemaPublic, status_code=201)
 async def admin_create(
     req: IndustrySchemaCreate,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     # Check uniqueness
     existing = await db.fetchval(
         "SELECT 1 FROM industry_schemas WHERE code = $1", req.code,
@@ -335,10 +333,9 @@ async def admin_create(
 async def admin_update(
     schema_id: UUID,
     req: IndustrySchemaUpdate,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     sets = []
     params = []
     idx = 1
@@ -370,12 +367,11 @@ async def admin_update(
 @admin_router.delete("/{schema_id}", status_code=204)
 async def admin_disable(
     schema_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
     """Soft delete — set enabled=false. Tenants already assigned remain;
     only blocks new tenant onboarding to this schema."""
-    _require_admin(user)
     result = await db.execute(
         "UPDATE industry_schemas SET enabled = false, updated_at = NOW() "
         "WHERE id = $1",
@@ -395,11 +391,10 @@ async def admin_disable(
 async def admin_replace_doc_types(
     schema_id: UUID,
     req: DocTypesBulkReplace,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
     """Bulk replace doc_type list for schema. Atomic."""
-    _require_admin(user)
 
     exists = await db.fetchval(
         "SELECT 1 FROM industry_schemas WHERE id = $1", schema_id,

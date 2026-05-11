@@ -87,6 +87,10 @@ export default function CreateDocumentPage() {
       featureFlags[`pdf_html_renderer_v1.${docType}`] === true,
     [featureFlags],
   );
+  // Coverage map: doc_type → { coverage_pct, filled, total }
+  const [coverageMap, setCoverageMap] = useState<
+    Record<string, { coverage_pct: number; filled: number; total: number }>
+  >({});
   const [allPlaceholders, setAllPlaceholders] = useState<
     Array<{
       key: string;
@@ -165,12 +169,48 @@ export default function CreateDocumentPage() {
     })();
   }, [token, selectedStandardCode]);
 
-  // ── Toggle template selection ────────────────────────────────────────────
+  // Fetch coverage map for templates in current standard (parallel)
+  useEffect(() => {
+    if (!token || !standard?.doc_types?.length) {
+      setCoverageMap({});
+      return;
+    }
+    (async () => {
+      const results = await Promise.all(
+        standard.doc_types.map(async (dt) => {
+          try {
+            const r = await fetch(
+              `/api/api/templates/${dt.doc_type}/placeholder-coverage`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (!r.ok) return [dt.doc_type, null] as const;
+            const b = await r.json();
+            return [
+              dt.doc_type,
+              {
+                coverage_pct: b.coverage_pct,
+                filled: b.filled,
+                total: b.total_fields,
+              },
+            ] as const;
+          } catch {
+            return [dt.doc_type, null] as const;
+          }
+        }),
+      );
+      const map: Record<string, { coverage_pct: number; filled: number; total: number }> = {};
+      for (const [k, v] of results) {
+        if (v) map[k] = v;
+      }
+      setCoverageMap(map);
+    })();
+  }, [token, standard]);
+
+  // ── Toggle template selection — uncapped (was max 3) ─────────────────────
 
   const toggleTemplate = (docType: string) => {
     setSelectedTypes((prev) => {
       if (prev.includes(docType)) return prev.filter((t) => t !== docType);
-      if (prev.length >= 3) return prev;
       return [...prev, docType];
     });
   };
@@ -794,22 +834,29 @@ export default function CreateDocumentPage() {
                     : templates
                   ).map((t) => {
                     const selected = selectedTypes.includes(t.doc_type);
-                    const disabled = !selected && selectedTypes.length >= 3;
+                    const cov = coverageMap[t.doc_type];
+                    // Coverage color: <40% red, 40-70% amber, ≥70% green
+                    const covColor = cov
+                      ? cov.coverage_pct >= 70
+                        ? "#16A34A"
+                        : cov.coverage_pct >= 40
+                          ? "#D97706"
+                          : "#DC2626"
+                      : "#94A3B8";
 
                     return (
                       <button
                         key={t.doc_type}
                         onClick={() => toggleTemplate(t.doc_type)}
-                        disabled={disabled}
                         className="text-left rounded-xl p-4 transition-all"
                         style={{
                           background: selected
                             ? "rgba(10,31,68,0.06)"
                             : "#FFFFFF",
                           border: `2px solid ${selected ? "#0A1F44" : "#E2E8F0"}`,
-                          opacity: disabled ? 0.4 : 1,
-                          cursor: disabled ? "not-allowed" : "pointer",
+                          cursor: "pointer",
                         }}
+                        data-testid={`template-card-${t.doc_type}`}
                       >
                         <div
                           className="grid"
@@ -842,7 +889,7 @@ export default function CreateDocumentPage() {
                               </svg>
                             )}
                           </div>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <div
                               className="text-sm font-semibold"
                               style={{ color: "#0A1F44" }}
@@ -857,6 +904,19 @@ export default function CreateDocumentPage() {
                                 .filter(Boolean)
                                 .join(" · ")}
                             </div>
+                            {cov && (
+                              <div
+                                className="text-[10px] mt-2 px-2 py-0.5 rounded inline-block font-mono"
+                                style={{
+                                  background: `${covColor}15`,
+                                  color: covColor,
+                                  border: `1px solid ${covColor}40`,
+                                }}
+                                title={`${cov.filled}/${cov.total} field đã fill`}
+                              >
+                                {cov.coverage_pct}% real data
+                              </div>
+                            )}
                           </div>
                         </div>
                       </button>

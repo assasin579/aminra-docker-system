@@ -108,3 +108,84 @@ class TestAdminOverdueEndpoint:
         assert "items" in result
         assert "count" in result
         assert overdue_submission["submission_id"] in [i["submission_id"] for i in result["items"]]
+
+
+# ── Provider scope (cross-tenant isolation) ────────────────────────────────
+
+
+@pytest.fixture
+async def overdue_two_providers(conn):
+    """Insert 1 overdue submission for provider A + 1 for provider B."""
+    biz = await conn.fetchrow(
+        "SELECT id, tenant_id FROM users WHERE role='business' AND is_owner=true LIMIT 1"
+    )
+    provs = await conn.fetch(
+        "SELECT id FROM users WHERE role='provider' AND is_owner=true LIMIT 2"
+    )
+    if not biz or len(provs) < 2:
+        pytest.skip("Need ≥2 seeded providers")
+
+    sub_a, sub_b = uuid4(), uuid4()
+    submitted = datetime.now(timezone.utc) - timedelta(days=30)
+    deadline = datetime.now(timezone.utc) - timedelta(days=5)
+    for sub_id, prov in [(sub_a, provs[0]), (sub_b, provs[1])]:
+        await conn.execute(
+            """
+            INSERT INTO submissions
+                (id, business_tenant, provider_id, document_ids, status, company_name,
+                 submitted_at, deadline)
+            VALUES ($1, $2, $3, '{}'::uuid[], 'reviewing', 'XTenantOverdue', $4, $5)
+            """,
+            sub_id, biz["tenant_id"], prov["id"], submitted, deadline,
+        )
+    yield {
+        "sub_a": str(sub_a), "prov_a": str(provs[0]["id"]),
+        "sub_b": str(sub_b), "prov_b": str(provs[1]["id"]),
+    }
+    await conn.execute("DELETE FROM submissions WHERE id = ANY($1::uuid[])", [sub_a, sub_b])
+
+
+class TestProviderScopeIsolation:
+    async def test_provider_a_sees_only_own(self, conn, overdue_two_providers):
+        """Provider A's overdue list MUST exclude provider B's submission."""
+        from services.submission_sla import list_overdue_submissions
+
+        items = await list_overdue_submissions(
+            conn, limit=200, provider_id=overdue_two_providers["prov_a"],
+        )
+        ids = {i["submission_id"] for i in items}
+        assert overdue_two_providers["sub_a"] in ids
+        assert overdue_two_providers["sub_b"] not in ids
+
+    async def test_provider_b_sees_only_own(self, conn, overdue_two_providers):
+        from services.submission_sla import list_overdue_submissions
+
+        items = await list_overdue_submissions(
+            conn, limit=200, provider_id=overdue_two_providers["prov_b"],
+        )
+        ids = {i["submission_id"] for i in items}
+        assert overdue_two_providers["sub_b"] in ids
+        assert overdue_two_providers["sub_a"] not in ids
+
+    async def test_admin_unscoped_sees_both(self, conn, overdue_two_providers):
+        """Without scope param, admin path sees cross-tenant."""
+        from services.submission_sla import list_overdue_submissions
+
+        items = await list_overdue_submissions(conn, limit=200)
+        ids = {i["submission_id"] for i in items}
+        assert overdue_two_providers["sub_a"] in ids
+        assert overdue_two_providers["sub_b"] in ids
+
+    async def test_auditor_filter_supersedes_provider(self, conn, overdue_two_providers):
+        """When both provided, auditor_id (narrower) wins. Auditor unassigned →
+        no auditor_id matches → empty result (defensive)."""
+        from services.submission_sla import list_overdue_submissions
+
+        items = await list_overdue_submissions(
+            conn, limit=200,
+            provider_id=overdue_two_providers["prov_a"],
+            auditor_id=str(uuid4()),  # random — no submission has this auditor
+        )
+        ids = {i["submission_id"] for i in items}
+        assert overdue_two_providers["sub_a"] not in ids
+        assert overdue_two_providers["sub_b"] not in ids

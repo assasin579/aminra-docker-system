@@ -803,6 +803,42 @@ export default function ProviderDashboard() {
         </div>
       )}
 
+      {/* Overdue alert banner */}
+      {au && au.overdue > 0 && (
+        <Link
+          href="/dashboard/provider/overdue"
+          className="block rounded-xl p-4 mb-6 btn-lift animate-section"
+          style={{
+            background: "rgba(220,38,38,0.06)",
+            border: "1px solid rgba(220,38,38,0.25)",
+          }}
+          data-testid="provider-overdue-banner"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#991B1B" }}
+              >
+                ⚠ {au.overdue} hồ sơ đã quá deadline
+              </p>
+              <p
+                className="text-xs mt-0.5"
+                style={{ color: "#7C2D12" }}
+              >
+                Mở queue SLA để xem chi tiết và xử lý
+              </p>
+            </div>
+            <span
+              className="px-3 py-1.5 rounded-lg text-xs font-medium"
+              style={{ background: "#0A1F44", color: "white" }}
+            >
+              Xem queue →
+            </span>
+          </div>
+        </Link>
+      )}
+
       {/* Metrics row */}
       {au && (
         <div className="grid grid-cols-2 gap-4 mb-6 animate-section">

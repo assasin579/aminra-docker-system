@@ -30,7 +30,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user
+from auth.jwt_utils import get_current_user, require_admin
 
 log = logging.getLogger("aminra.standard_type")
 
@@ -208,10 +208,9 @@ async def get_standard(
 
 @admin_router.get("", response_model=List[StandardTypePublic])
 async def admin_list_all(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     rows = await db.fetch("SELECT * FROM standard_types ORDER BY display_order, name_vi")
     return [await _row_to_public(db, r) for r in rows]
 
@@ -219,10 +218,9 @@ async def admin_list_all(
 @admin_router.post("", response_model=StandardTypePublic, status_code=201)
 async def admin_create(
     req: StandardTypeCreate,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     existing = await db.fetchval(
         "SELECT 1 FROM standard_types WHERE code = $1", req.code,
     )
@@ -250,10 +248,9 @@ async def admin_create(
 async def admin_update(
     standard_id: UUID,
     req: StandardTypeUpdate,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     sets, params, idx = [], [], 1
     for field, val in req.model_dump(exclude_unset=True).items():
         sets.append(f"{field} = ${idx}")
@@ -275,10 +272,9 @@ async def admin_update(
 @admin_router.delete("/{standard_id}", status_code=204)
 async def admin_disable(
     standard_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     result = await db.execute(
         "UPDATE standard_types SET enabled = false, updated_at = NOW() WHERE id = $1",
         standard_id,
@@ -291,10 +287,9 @@ async def admin_disable(
 async def admin_replace_doc_types(
     standard_id: UUID,
     req: DocTypesBulkReplace,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
-    _require_admin(user)
     exists = await db.fetchval("SELECT 1 FROM standard_types WHERE id = $1", standard_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Standard not found")
@@ -318,11 +313,10 @@ async def admin_replace_doc_types(
 async def admin_replace_industry_standards(
     industry_id: UUID,
     req: IndustryStandardsBulkReplace,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
     db=Depends(get_db),
 ):
     """Replace the M:N mapping of standards available for an industry."""
-    _require_admin(user)
     exists = await db.fetchval(
         "SELECT 1 FROM industry_schemas WHERE id = $1", industry_id,
     )
