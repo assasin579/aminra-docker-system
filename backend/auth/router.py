@@ -55,7 +55,6 @@ def _row_to_profile(row, member_count: int | None = None, industry_code: str | N
     from auth.permissions import get_user_permissions
 
     perms = get_user_permissions(dict(row))
-    ihc_inception = row.get("ihc_inception_date")
     return UserProfile(
         id=str(row["id"]),
         email=row["email"],
@@ -72,22 +71,6 @@ def _row_to_profile(row, member_count: int | None = None, industry_code: str | N
         permissions=perms,
         industry_schema_id=str(row["industry_schema_id"]) if row.get("industry_schema_id") else None,
         industry_schema_code=industry_code,
-        # Phase 1 rich-data fields
-        founded_year=row.get("founded_year"),
-        halal_commitment_statement=row.get("halal_commitment_statement"),
-        total_employees=row.get("total_employees"),
-        najis_handling_policy=row.get("najis_handling_policy"),
-        cross_contamination_controls=row.get("cross_contamination_controls"),
-        product_categories=row.get("product_categories"),
-        primary_suppliers=row.get("primary_suppliers"),
-        ingredient_origin_countries=row.get("ingredient_origin_countries"),
-        packaging_materials_brief=row.get("packaging_materials_brief"),
-        ihc_chairman_name=row.get("ihc_chairman_name"),
-        ihc_chairman_title=row.get("ihc_chairman_title"),
-        ihc_inception_date=ihc_inception.isoformat() if ihc_inception else None,
-        ihc_members_brief=row.get("ihc_members_brief"),
-        ihc_meeting_frequency=row.get("ihc_meeting_frequency"),
-        production_capacity_brief=row.get("production_capacity_brief"),
     )
 
 
@@ -1301,14 +1284,7 @@ async def get_company_profile(
         raise HTTPException(400, "Tenant không xác định")
 
     row = await db.fetchrow(
-        """SELECT company_name, email, address, phone, representative_name, manager_name,
-                  founded_year, halal_commitment_statement, total_employees,
-                  najis_handling_policy, cross_contamination_controls,
-                  product_categories, primary_suppliers, ingredient_origin_countries,
-                  packaging_materials_brief,
-                  ihc_chairman_name, ihc_chairman_title, ihc_inception_date,
-                  ihc_members_brief, ihc_meeting_frequency,
-                  production_capacity_brief
+        """SELECT company_name, email, address, phone, representative_name, manager_name
            FROM users WHERE id = $1 AND is_owner = true""",
         tenant_id,
     )
@@ -1322,21 +1298,6 @@ async def get_company_profile(
         "phone": row["phone"],
         "representative_name": row["representative_name"],
         "manager_name": row["manager_name"],
-        "founded_year": row["founded_year"],
-        "halal_commitment_statement": row["halal_commitment_statement"],
-        "total_employees": row["total_employees"],
-        "najis_handling_policy": row["najis_handling_policy"],
-        "cross_contamination_controls": row["cross_contamination_controls"],
-        "product_categories": row["product_categories"],
-        "primary_suppliers": row["primary_suppliers"],
-        "ingredient_origin_countries": row["ingredient_origin_countries"],
-        "packaging_materials_brief": row["packaging_materials_brief"],
-        "ihc_chairman_name": row["ihc_chairman_name"],
-        "ihc_chairman_title": row["ihc_chairman_title"],
-        "ihc_inception_date": row["ihc_inception_date"].isoformat() if row["ihc_inception_date"] else None,
-        "ihc_members_brief": row["ihc_members_brief"],
-        "ihc_meeting_frequency": row["ihc_meeting_frequency"],
-        "production_capacity_brief": row["production_capacity_brief"],
     }
 
 
@@ -1346,27 +1307,7 @@ async def update_company_profile(
     owner: dict = Depends(require_business_owner),
     db: Connection = Depends(get_db),
 ):
-    """Update company profile fields (owner only). All fields nullable;
-    only provided fields update (COALESCE preserves existing on null/empty)."""
-    # Dynamic SET clause from provided fields only
-    update_data = req.model_dump(exclude_unset=True)
-    if not update_data:
-        return {"message": "Không có thay đổi"}
-
-    # Coerce ihc_inception_date ISO string → Python date (asyncpg DATE column).
-    # None passes through unchanged.
-    if "ihc_inception_date" in update_data and update_data["ihc_inception_date"]:
-        from datetime import date as _date
-        v = update_data["ihc_inception_date"]
-        if isinstance(v, str):
-            try:
-                update_data["ihc_inception_date"] = _date.fromisoformat(v)
-            except ValueError:
-                raise HTTPException(
-                    status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    "ihc_inception_date phải là ISO date 'YYYY-MM-DD'",
-                )
-
+    """Update company profile fields (owner only)."""
     # Resolve canonical AMINRA user.id. JWT sub may be Keycloak UUID (not
     # AMINRA DB id) when token comes via Keycloak SSO. Look up by email
     # when sub is not a valid AMINRA user row.
@@ -1376,7 +1317,6 @@ async def update_company_profile(
     if raw_sub:
         try:
             _uuid.UUID(str(raw_sub))
-            # Verify this UUID exists in AMINRA users
             exists = await db.fetchval(
                 "SELECT 1 FROM users WHERE id = $1::uuid", raw_sub,
             )
@@ -1392,25 +1332,25 @@ async def update_company_profile(
             raise HTTPException(404, "User row not found. Call /auth/me first.")
         target_id = str(row["id"])
 
-    # Build SET clause — Pydantic exclude_unset means field WAS in request body
-    set_parts = []
-    values: list = []
-    idx = 1
-    for field, val in update_data.items():
-        set_parts.append(f"{field} = ${idx}")
-        values.append(val)
-        idx += 1
-    values.append(target_id)
-
-    result = await db.execute(
-        f"UPDATE users SET {', '.join(set_parts)} WHERE id = ${idx}::uuid",
-        *values,
+    await db.execute(
+        """UPDATE users
+           SET company_name = COALESCE(NULLIF($1, ''), company_name),
+               representative_name = COALESCE(NULLIF($2, ''), representative_name),
+               address = COALESCE(NULLIF($3, ''), address),
+               phone = COALESCE(NULLIF($4, ''), phone),
+               email = COALESCE(NULLIF($5, ''), email),
+               manager_name = COALESCE(NULLIF($6, ''), manager_name)
+           WHERE id = $7::uuid""",
+        req.company_name,
+        req.representative_name,
+        req.address,
+        req.phone,
+        req.email,
+        req.manager_name,
+        target_id,
     )
-    # `result` is e.g. "UPDATE 1" — fail if 0 rows touched
-    if result.endswith(" 0"):
-        raise HTTPException(404, "Không tìm thấy bản ghi user để cập nhật")
-    log.info(f"[auth] Company profile updated by {owner['sub']}: {list(update_data.keys())}")
-    return {"message": "Đã cập nhật thông tin công ty", "updated_fields": list(update_data.keys())}
+    log.info(f"[auth] Company profile updated by {owner['sub']}")
+    return {"message": "Đã cập nhật thông tin công ty"}
 
 
 # ── Change password ──────────────────────────────────────────────────────────

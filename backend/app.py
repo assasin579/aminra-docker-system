@@ -885,25 +885,78 @@ def _find_template_file(doc_type: str, lang: str) -> Optional[Path]:
 
 @app.get("/templates/available")
 def list_available_templates():
-    """List doc_types that have template files, with language availability."""
-    result = []
-    for doc_type, label in HALAL_DOC_TYPES.items():
-        dir_path = TEMPLATE_FILES_DIR / doc_type
-        if not dir_path.exists():
+    """List doc_types với format availability (DOCX và/hoặc PDF).
+
+    Trả về tất cả doc_types trong HALAL_DOC_TYPES, mỗi item có:
+      - has_vi / has_en — file DOCX upload (admin_templates/files/)
+      - has_pdf — PDF template render via Playwright (templates_html/)
+      - format_available: 'docx' | 'pdf' | 'both' | 'none'
+
+    Mục đích: user thấy hết 13 doc_types kể cả khi admin chưa upload DOCX
+    (vẫn có thể generate qua PDF render). FE display badge theo
+    format_available để user chọn đúng mode.
+    """
+    # Pre-load PDF registry để check pdf availability
+    try:
+        from templates_html._registry import list_supported as _pdf_supported
+        _pdf_doc_types = {
+            i["doc_type"]: i.get("implemented", False) for i in _pdf_supported()
+        }
+    except Exception:
+        _pdf_doc_types = {}
+
+    # Merge sources: HALAL_DOC_TYPES (DOCX legacy) + PDF registry (HTML).
+    # Skip internal-only entries (_style_guide) and aliases (halal_manual is
+    # alias of has_manual — show one canonical entry only).
+    merged_doc_types: dict[str, str] = dict(HALAL_DOC_TYPES)
+    for dt, implemented in _pdf_doc_types.items():
+        if not implemented:
             continue
-        vi_file = _find_template_file(doc_type, "vi")
-        en_file = _find_template_file(doc_type, "en")
-        if vi_file or en_file:
-            result.append(
-                {
-                    "doc_type": doc_type,
-                    "label": label,
-                    "has_vi": vi_file is not None,
-                    "has_en": en_file is not None,
-                    "vi_size": vi_file.stat().st_size if vi_file else None,
-                    "en_size": en_file.stat().st_size if en_file else None,
-                }
-            )
+        if dt.startswith("_"):  # internal/_style_guide
+            continue
+        if dt == "halal_manual":  # alias of has_manual — skip duplicate
+            continue
+        if dt not in merged_doc_types:
+            # Add doc_type that exists only in PDF registry (vd `generic`)
+            merged_doc_types[dt] = dt.replace("_", " ").title()
+
+    # Remove halal_manual alias from output even if in HALAL_DOC_TYPES
+    merged_doc_types.pop("halal_manual", None)
+
+    result = []
+    for doc_type, label in merged_doc_types.items():
+        vi_file = None
+        en_file = None
+        dir_path = TEMPLATE_FILES_DIR / doc_type
+        if dir_path.exists():
+            vi_file = _find_template_file(doc_type, "vi")
+            en_file = _find_template_file(doc_type, "en")
+
+        has_docx = vi_file is not None or en_file is not None
+        has_pdf = bool(_pdf_doc_types.get(doc_type, False))
+
+        if has_docx and has_pdf:
+            fmt = "both"
+        elif has_docx:
+            fmt = "docx"
+        elif has_pdf:
+            fmt = "pdf"
+        else:
+            # Neither DOCX nor PDF available — skip (no way to generate)
+            continue
+
+        result.append(
+            {
+                "doc_type": doc_type,
+                "label": label,
+                "has_vi": vi_file is not None,
+                "has_en": en_file is not None,
+                "has_pdf": has_pdf,
+                "format_available": fmt,
+                "vi_size": vi_file.stat().st_size if vi_file else None,
+                "en_size": en_file.stat().st_size if en_file else None,
+            }
+        )
     return {"templates": result}
 
 

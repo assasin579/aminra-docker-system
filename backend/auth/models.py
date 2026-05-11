@@ -85,22 +85,6 @@ class UserProfile(BaseModel):
     permissions: Optional[dict] = None
     industry_schema_id: Optional[str] = None
     industry_schema_code: Optional[str] = None
-    # Phase 1 rich-data fields (Section: Halal Compliance + Products + IHC + Production)
-    founded_year: Optional[int] = None
-    halal_commitment_statement: Optional[str] = None
-    total_employees: Optional[int] = None
-    najis_handling_policy: Optional[str] = None
-    cross_contamination_controls: Optional[str] = None
-    product_categories: Optional[str] = None
-    primary_suppliers: Optional[str] = None
-    ingredient_origin_countries: Optional[str] = None
-    packaging_materials_brief: Optional[str] = None
-    ihc_chairman_name: Optional[str] = None
-    ihc_chairman_title: Optional[str] = None
-    ihc_inception_date: Optional[str] = None  # ISO date string in API
-    ihc_members_brief: Optional[str] = None
-    ihc_meeting_frequency: Optional[str] = None
-    production_capacity_brief: Optional[str] = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -115,22 +99,6 @@ class CompanyProfileUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     manager_name: Optional[str] = None
-    # Phase 1 rich-data fields
-    founded_year: Optional[int] = None
-    halal_commitment_statement: Optional[str] = None
-    total_employees: Optional[int] = None
-    najis_handling_policy: Optional[str] = None
-    cross_contamination_controls: Optional[str] = None
-    product_categories: Optional[str] = None
-    primary_suppliers: Optional[str] = None
-    ingredient_origin_countries: Optional[str] = None
-    packaging_materials_brief: Optional[str] = None
-    ihc_chairman_name: Optional[str] = None
-    ihc_chairman_title: Optional[str] = None
-    ihc_inception_date: Optional[str] = None  # ISO date "YYYY-MM-DD"
-    ihc_members_brief: Optional[str] = None
-    ihc_meeting_frequency: Optional[str] = None
-    production_capacity_brief: Optional[str] = None
 
 
 class RefreshRequest(BaseModel):

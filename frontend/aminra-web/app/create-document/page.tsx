@@ -13,6 +13,8 @@ interface TemplateInfo {
   label: string;
   has_vi: boolean;
   has_en: boolean;
+  has_pdf?: boolean;
+  format_available?: "docx" | "pdf" | "both";
   vi_size: number | null;
   en_size: number | null;
 }
@@ -87,10 +89,6 @@ export default function CreateDocumentPage() {
       featureFlags[`pdf_html_renderer_v1.${docType}`] === true,
     [featureFlags],
   );
-  // Coverage map: doc_type → { coverage_pct, filled, total }
-  const [coverageMap, setCoverageMap] = useState<
-    Record<string, { coverage_pct: number; filled: number; total: number }>
-  >({});
   const [allPlaceholders, setAllPlaceholders] = useState<
     Array<{
       key: string;
@@ -169,48 +167,12 @@ export default function CreateDocumentPage() {
     })();
   }, [token, selectedStandardCode]);
 
-  // Fetch coverage map for templates in current standard (parallel)
-  useEffect(() => {
-    if (!token || !standard?.doc_types?.length) {
-      setCoverageMap({});
-      return;
-    }
-    (async () => {
-      const results = await Promise.all(
-        standard.doc_types.map(async (dt) => {
-          try {
-            const r = await fetch(
-              `/api/api/templates/${dt.doc_type}/placeholder-coverage`,
-              { headers: { Authorization: `Bearer ${token}` } },
-            );
-            if (!r.ok) return [dt.doc_type, null] as const;
-            const b = await r.json();
-            return [
-              dt.doc_type,
-              {
-                coverage_pct: b.coverage_pct,
-                filled: b.filled,
-                total: b.total_fields,
-              },
-            ] as const;
-          } catch {
-            return [dt.doc_type, null] as const;
-          }
-        }),
-      );
-      const map: Record<string, { coverage_pct: number; filled: number; total: number }> = {};
-      for (const [k, v] of results) {
-        if (v) map[k] = v;
-      }
-      setCoverageMap(map);
-    })();
-  }, [token, standard]);
-
-  // ── Toggle template selection — uncapped (was max 3) ─────────────────────
+  // ── Toggle template selection ────────────────────────────────────────────
 
   const toggleTemplate = (docType: string) => {
     setSelectedTypes((prev) => {
       if (prev.includes(docType)) return prev.filter((t) => t !== docType);
+      if (prev.length >= 3) return prev;
       return [...prev, docType];
     });
   };
@@ -475,7 +437,12 @@ export default function CreateDocumentPage() {
     setGenerated(false);
     try {
       for (const docType of selectedTypes) {
-        if (outputFormat === "pdf") {
+        // Per-doc auto-pick: PDF-only templates force PDF regardless of
+        // user's outputFormat choice (DOCX would fail — admin chưa upload).
+        const tpl = templates.find((t) => t.doc_type === docType);
+        const isPdfOnly = tpl?.format_available === "pdf";
+        const useFormat = isPdfOnly ? "pdf" : outputFormat;
+        if (useFormat === "pdf") {
           await generatePdfFallbackDocx(docType);
         } else {
           await generateDocx(docType);
@@ -834,29 +801,22 @@ export default function CreateDocumentPage() {
                     : templates
                   ).map((t) => {
                     const selected = selectedTypes.includes(t.doc_type);
-                    const cov = coverageMap[t.doc_type];
-                    // Coverage color: <40% red, 40-70% amber, ≥70% green
-                    const covColor = cov
-                      ? cov.coverage_pct >= 70
-                        ? "#16A34A"
-                        : cov.coverage_pct >= 40
-                          ? "#D97706"
-                          : "#DC2626"
-                      : "#94A3B8";
+                    const disabled = !selected && selectedTypes.length >= 3;
 
                     return (
                       <button
                         key={t.doc_type}
                         onClick={() => toggleTemplate(t.doc_type)}
+                        disabled={disabled}
                         className="text-left rounded-xl p-4 transition-all"
                         style={{
                           background: selected
                             ? "rgba(10,31,68,0.06)"
                             : "#FFFFFF",
                           border: `2px solid ${selected ? "#0A1F44" : "#E2E8F0"}`,
-                          cursor: "pointer",
+                          opacity: disabled ? 0.4 : 1,
+                          cursor: disabled ? "not-allowed" : "pointer",
                         }}
-                        data-testid={`template-card-${t.doc_type}`}
                       >
                         <div
                           className="grid"
@@ -902,19 +862,47 @@ export default function CreateDocumentPage() {
                             >
                               {[t.has_vi && "VI", t.has_en && "EN"]
                                 .filter(Boolean)
-                                .join(" · ")}
+                                .join(" · ") || "Chỉ PDF"}
                             </div>
-                            {cov && (
-                              <div
-                                className="text-[10px] mt-2 px-2 py-0.5 rounded inline-block font-mono"
-                                style={{
-                                  background: `${covColor}15`,
-                                  color: covColor,
-                                  border: `1px solid ${covColor}40`,
-                                }}
-                                title={`${cov.filled}/${cov.total} field đã fill`}
-                              >
-                                {cov.coverage_pct}% real data
+                            {t.format_available && (
+                              <div className="mt-2 flex gap-1">
+                                {t.format_available === "both" && (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{
+                                      background: "rgba(22,163,74,0.1)",
+                                      color: "#16A34A",
+                                      border: "1px solid rgba(22,163,74,0.3)",
+                                    }}
+                                  >
+                                    DOCX+PDF
+                                  </span>
+                                )}
+                                {t.format_available === "docx" && (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{
+                                      background: "#F1F5F9",
+                                      color: "#0A1F44",
+                                      border: "1px solid #E2E8F0",
+                                    }}
+                                  >
+                                    DOCX
+                                  </span>
+                                )}
+                                {t.format_available === "pdf" && (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{
+                                      background: "rgba(217,119,6,0.1)",
+                                      color: "#D97706",
+                                      border: "1px solid rgba(217,119,6,0.3)",
+                                    }}
+                                    title="Chỉ render qua PDF (admin chưa upload DOCX)"
+                                  >
+                                    PDF only
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>

@@ -126,68 +126,6 @@ async def registry(user: dict = Depends(get_current_user)) -> list[dict]:
     return list_supported()
 
 
-@router.get("/{doc_type}/placeholder-coverage", tags=["pdf-render"])
-async def placeholder_coverage(
-    doc_type: str = Path(..., min_length=1, max_length=64),
-    user: dict = Depends(get_current_user),
-    db=Depends(get_db),
-) -> dict:
-    """Return per-field coverage map for a doc_type given the caller's
-    company data.
-
-    Used by FE create-document page to display "% real data" badge before
-    user commits to generate. Helps user understand which company fields
-    they should fill (in Settings/Company) to reduce placeholder fill.
-    """
-    from services.template_field_coverage import calculate_coverage
-
-    if user["role"] != "business":
-        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
-
-    # Resolve canonical tenant UUID. JWT tenant_id may be:
-    #   - valid UUID (legacy JWT path) → use directly
-    #   - Keycloak slug like "demo-biz" → fall through to DB email lookup
-    #   - None (Keycloak before /auth/me provisioned) → DB email lookup
-    import uuid as _uuid
-    tenant_id = None
-    raw_tenant = user.get("tenant_id")
-    if raw_tenant:
-        try:
-            _uuid.UUID(str(raw_tenant))
-            tenant_id = raw_tenant
-        except (ValueError, TypeError):
-            tenant_id = None
-    if not tenant_id:
-        row = await db.fetchrow(
-            "SELECT id, tenant_id FROM users WHERE email = $1", user["email"],
-        )
-        if not row:
-            raise HTTPException(404, "User row not found. Call /auth/me first.")
-        tenant_id = row["tenant_id"] or row["id"]
-
-    user_row = await db.fetchrow(
-        """SELECT company_name, address, phone, email, representative_name,
-                  founded_year, total_employees, halal_commitment_statement,
-                  najis_handling_policy, cross_contamination_controls,
-                  product_categories, primary_suppliers,
-                  ingredient_origin_countries, packaging_materials_brief,
-                  ihc_chairman_name, ihc_chairman_title, ihc_inception_date,
-                  ihc_members_brief, ihc_meeting_frequency,
-                  production_capacity_brief
-           FROM users WHERE id = $1 AND is_owner = true""",
-        tenant_id,
-    )
-    if not user_row:
-        raise HTTPException(404, "Tenant owner row not found")
-
-    # Convert ihc_inception_date (date) to iso string for display preview
-    row_dict = dict(user_row)
-    if row_dict.get("ihc_inception_date"):
-        row_dict["ihc_inception_date"] = row_dict["ihc_inception_date"].isoformat()
-
-    return calculate_coverage(row_dict, doc_type)
-
-
 @router.post(
     "/{doc_type}/render-pdf",
     tags=["pdf-render"],
