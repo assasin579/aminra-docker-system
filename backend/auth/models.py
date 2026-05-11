@@ -83,6 +83,8 @@ class UserProfile(BaseModel):
     phone: Optional[str] = None
     representative_name: Optional[str] = None
     permissions: Optional[dict] = None
+    industry_schema_id: Optional[str] = None
+    industry_schema_code: Optional[str] = None
 
 
 class ChangePasswordRequest(BaseModel):

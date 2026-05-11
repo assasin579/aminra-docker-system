@@ -126,6 +126,9 @@ from auth.password_reset_router import router as password_reset_router
 from auth.admin_analytics_router import router as admin_analytics_router
 from auth.gdpr_router import router as gdpr_router
 from auth.feature_flags_router import router as feature_flags_router, admin_router as feature_flags_admin_router
+from auth.industry_schema_router import router as industry_schema_router, admin_router as industry_schema_admin_router
+from auth.standard_type_router import router as standard_type_router, admin_router as standard_type_admin_router
+from auth.dossier_router import router as dossier_router
 from auth.pdf_render_router import router as pdf_render_router
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
@@ -134,8 +137,13 @@ app.include_router(audit_log_router, prefix="/auth", tags=["audit-logs"])
 app.include_router(password_reset_router, prefix="/auth", tags=["password-reset"])
 app.include_router(admin_analytics_router, prefix="/auth", tags=["admin-analytics"])
 app.include_router(feature_flags_admin_router, prefix="/auth/admin", tags=["admin-feature-flags"])
+app.include_router(industry_schema_admin_router, prefix="/auth/admin/industry-schemas", tags=["admin-industry-schemas"])
 app.include_router(gdpr_router, prefix="/api/users", tags=["data-rights"])
 app.include_router(feature_flags_router, prefix="/api/feature-flags", tags=["feature-flags"])
+app.include_router(industry_schema_router, prefix="/industry-schemas", tags=["industry-schemas"])
+app.include_router(standard_type_router, prefix="/standard-types", tags=["standard-types"])
+app.include_router(standard_type_admin_router, prefix="/auth/admin/standard-types", tags=["admin-standard-types"])
+app.include_router(dossier_router, prefix="/dossiers", tags=["dossiers"])
 app.include_router(pdf_render_router, prefix="/api/templates", tags=["pdf-render"])
 app.include_router(document_router, prefix="/api", tags=["documents"])
 app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])

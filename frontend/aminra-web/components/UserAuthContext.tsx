@@ -35,6 +35,10 @@ export interface UserProfile {
   /** IHC role (set on business members designated to Internal Halal Committee).
    *  Auto-grants can_approve_documents per JAKIM MS 1500 §5.4. */
   ihc_role?: string | null;
+  /** TASK #19 — Industry schema assigned during onboarding. Null until
+   *  business owner completes industry-select flow. Locked post-cert issued. */
+  industry_schema_id?: string | null;
+  industry_schema_code?: string | null;
 }
 
 interface UserAuthState {
@@ -51,6 +55,10 @@ interface UserAuthState {
    * UI-level role gating (e.g. business login page rejecting non-business).
    */
   loginViaKeycloak: (accessToken: string, expectedRole?: UserRole) => Promise<void>;
+  /** Re-fetch /auth/me and update local user state. Used after server-side
+   *  profile mutations (e.g. industry-schema assignment) so subsequent
+   *  guard checks see the latest fields. */
+  refreshProfile: () => Promise<void>;
   logout: () => void;
 }
 
@@ -62,6 +70,7 @@ const UserAuthContext = createContext<UserAuthState>({
   loginBusiness: async () => {},
   loginProvider: async () => {},
   loginViaKeycloak: async () => {},
+  refreshProfile: async () => {},
   logout: () => {},
 });
 
@@ -201,6 +210,21 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     [_saveSession],
   );
 
+  const refreshProfile = useCallback(async () => {
+    if (!token) return;
+    const res = await fetch("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const profile = (await res.json()) as UserProfile;
+    setUser(profile);
+    // Persist into whichever storage has the token
+    if (localStorage.getItem(TOKEN_KEY))
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    else if (sessionStorage.getItem(TOKEN_KEY))
+      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  }, [token]);
+
   const logout = useCallback(() => {
     // Detect Keycloak session via stored OIDC user. If present, redirect
     // through Keycloak end-session endpoint so realm cookie is cleared —
@@ -254,6 +278,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         loginBusiness,
         loginProvider,
         loginViaKeycloak,
+        refreshProfile,
         logout,
       }}
     >

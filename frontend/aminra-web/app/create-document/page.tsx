@@ -26,6 +26,39 @@ interface CompanyProfile {
   manager_name: string | null;
 }
 
+interface StandardSummary {
+  id: string;
+  code: string;
+  name_vi: string;
+  is_default: boolean;
+}
+
+interface IndustrySchemaSummary {
+  id: string;
+  code: string;
+  name_vi: string;
+  icon: string | null;
+  available_standards: StandardSummary[];
+}
+
+interface StandardDetail {
+  id: string;
+  code: string;
+  name_vi: string;
+  organization: string | null;
+  scheme_version: string | null;
+  doc_types: Array<{ doc_type: string; required: boolean; display_order: number }>;
+}
+
+const INDUSTRY_ICON_MAP: Record<string, string> = {
+  factory: "🏭",
+  restaurant: "🏨",
+  cow: "🐄",
+  pharmacy: "💊",
+  cosmetic: "💄",
+  truck: "🚛",
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function CreateDocumentPage() {
@@ -33,6 +66,9 @@ export default function CreateDocumentPage() {
 
   const [step, setStep] = useState(1);
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  const [industry, setIndustry] = useState<IndustrySchemaSummary | null>(null);
+  const [standard, setStandard] = useState<StandardDetail | null>(null);
+  const [selectedStandardCode, setSelectedStandardCode] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,12 +104,17 @@ export default function CreateDocumentPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [tplRes, profileRes, phRes] = await Promise.all([
+        const [tplRes, profileRes, phRes, industryRes] = await Promise.all([
           fetch("/api/templates/available"),
           fetch("/api/auth/company-profile", {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch("/api/placeholders"),
+          user?.industry_schema_code
+            ? fetch(`/api/industry-schemas/${user.industry_schema_code}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+            : Promise.resolve(null),
         ]);
 
         if (tplRes.ok) {
@@ -89,6 +130,17 @@ export default function CreateDocumentPage() {
           const phData = await phRes.json();
           setAllPlaceholders(phData.placeholders || []);
         }
+
+        if (industryRes && industryRes.ok) {
+          const industryData: IndustrySchemaSummary = await industryRes.json();
+          setIndustry(industryData);
+          // Auto-select default standard if exactly 1 available, else pre-select default
+          if (industryData.available_standards.length > 0) {
+            const def = industryData.available_standards.find((s) => s.is_default);
+            const auto = def ?? industryData.available_standards[0];
+            setSelectedStandardCode(auto.code);
+          }
+        }
       } catch {
         setError("Không thể tải dữ liệu");
       } finally {
@@ -97,7 +149,21 @@ export default function CreateDocumentPage() {
     };
 
     fetchData();
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, user?.industry_schema_code]);
+
+  // Fetch standard detail (doc_types list) when user picks a standard
+  useEffect(() => {
+    if (!token || !selectedStandardCode) {
+      setStandard(null);
+      return;
+    }
+    (async () => {
+      const res = await fetch(`/api/standard-types/${selectedStandardCode}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setStandard(await res.json());
+    })();
+  }, [token, selectedStandardCode]);
 
   // ── Toggle template selection ────────────────────────────────────────────
 
@@ -483,6 +549,74 @@ export default function CreateDocumentPage() {
           </p>
         </div>
 
+        {/* TASK #19 — Industry + Standard chooser */}
+        {industry && (
+          <div
+            className="rounded-2xl p-4 animate-section space-y-3"
+            style={{
+              background: "rgba(10,31,68,0.04)",
+              border: "1px solid #E2E8F0",
+            }}
+            data-testid="industry-context-badge"
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-3xl leading-none">
+                {INDUSTRY_ICON_MAP[industry.icon ?? ""] ?? "📋"}
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold" style={{ color: "#0A1F44" }}>
+                  Ngành: {industry.name_vi}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
+                  Chọn tiêu chuẩn cho hồ sơ này:
+                </div>
+              </div>
+              <Link
+                href="/settings/company"
+                className="text-xs underline"
+                style={{ color: "#6B7280" }}
+              >
+                Đổi ngành
+              </Link>
+            </div>
+
+            {industry.available_standards.length > 1 ? (
+              <div className="flex flex-wrap gap-2">
+                {industry.available_standards.map((s) => {
+                  const sel = selectedStandardCode === s.code;
+                  return (
+                    <button
+                      key={s.code}
+                      type="button"
+                      onClick={() => setSelectedStandardCode(s.code)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{
+                        background: sel ? "#0A1F44" : "#FFFFFF",
+                        color: sel ? "#FFFFFF" : "#0A1F44",
+                        border: sel
+                          ? "1px solid #0A1F44"
+                          : "1px solid #E2E8F0",
+                        cursor: "pointer",
+                      }}
+                      data-testid={`standard-pick-${s.code}`}
+                    >
+                      {s.name_vi.split(" — ")[0]}
+                      {s.is_default && " ★"}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              standard && (
+                <div className="text-xs" style={{ color: "#6B7280" }}>
+                  Tiêu chuẩn: <strong>{standard.name_vi.split(" — ")[0]}</strong>
+                  {" "}({standard.doc_types.length} mẫu tài liệu chuẩn)
+                </div>
+              )
+            )}
+          </div>
+        )}
+
         {/* Step indicator */}
         <div
           className="grid items-center justify-center animate-section"
@@ -651,7 +785,14 @@ export default function CreateDocumentPage() {
                       "repeat(auto-fill, minmax(180px, 1fr))",
                   }}
                 >
-                  {templates.map((t) => {
+                  {(standard
+                    ? templates.filter((t) =>
+                        standard.doc_types.some(
+                          (dt) => dt.doc_type === t.doc_type,
+                        ),
+                      )
+                    : templates
+                  ).map((t) => {
                     const selected = selectedTypes.includes(t.doc_type);
                     const disabled = !selected && selectedTypes.length >= 3;
 

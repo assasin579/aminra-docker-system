@@ -4,6 +4,32 @@ import { useState, useEffect } from "react";
 import { useUserAuth } from "@/components/UserAuthContext";
 import Link from "next/link";
 
+interface StandardSummary {
+  id: string;
+  code: string;
+  name_vi: string;
+  is_default: boolean;
+}
+
+interface IndustrySchemaSummary {
+  id: string;
+  code: string;
+  name_vi: string;
+  name_en: string | null;
+  description: string | null;
+  icon: string | null;
+  available_standards: StandardSummary[];
+}
+
+const INDUSTRY_ICON_MAP: Record<string, string> = {
+  factory: "🏭",
+  restaurant: "🏨",
+  cow: "🐄",
+  pharmacy: "💊",
+  cosmetic: "💄",
+  truck: "🚛",
+};
+
 export default function CompanySettingsPage() {
   const { user, token, isAuthenticated } = useUserAuth();
 
@@ -11,6 +37,7 @@ export default function CompanySettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [industry, setIndustry] = useState<IndustrySchemaSummary | null>(null);
 
   const [form, setForm] = useState({
     company_name: "",
@@ -26,9 +53,17 @@ export default function CompanySettingsPage() {
   useEffect(() => {
     if (!isAuthenticated || !token) return;
     setLoading(true);
-    fetch("/api/auth/company-profile", { headers })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
+    Promise.all([
+      fetch("/api/auth/company-profile", { headers }).then((r) =>
+        r.ok ? r.json() : null,
+      ),
+      user?.industry_schema_code
+        ? fetch(`/api/industry-schemas/${user.industry_schema_code}`, {
+            headers,
+          }).then((r) => (r.ok ? r.json() : null))
+        : Promise.resolve(null),
+    ])
+      .then(([data, industryData]) => {
         if (data)
           setForm({
             company_name: data.company_name || "",
@@ -38,10 +73,11 @@ export default function CompanySettingsPage() {
             email: data.email || "",
             manager_name: data.manager_name || "",
           });
+        if (industryData) setIndustry(industryData);
       })
       .catch(() => setError("Không thể tải thông tin"))
       .finally(() => setLoading(false));
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, user?.industry_schema_code]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -190,6 +226,84 @@ export default function CompanySettingsPage() {
               lý bởi chủ tài khoản đã mời bạn.
             </div>
           )}
+
+          {/* TASK #19 — Industry schema (read-only, locked post-cert) */}
+          <div>
+            <label
+              className="block text-xs font-medium mb-1.5"
+              style={{ color: "#6B7280" }}
+            >
+              Ngành nghề doanh nghiệp
+            </label>
+            {industry ? (
+              <div
+                className="rounded-xl p-4"
+                style={{
+                  background: "rgba(10,31,68,0.04)",
+                  border: "1px solid #E2E8F0",
+                }}
+                data-testid="industry-display-block"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl leading-none">
+                    {INDUSTRY_ICON_MAP[industry.icon ?? ""] ?? "📋"}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold" style={{ color: "#0A1F44" }}>
+                      {industry.name_vi}
+                    </div>
+                    {industry.description && (
+                      <div className="text-xs mt-2" style={{ color: "#6B7280" }}>
+                        {industry.description}
+                      </div>
+                    )}
+                    {industry.available_standards.length > 0 && (
+                      <div className="text-[11px] mt-3" style={{ color: "#6B7280" }}>
+                        Tiêu chuẩn áp dụng được:{" "}
+                        {industry.available_standards
+                          .map(
+                            (s) =>
+                              s.name_vi.split(" — ")[0] +
+                              (s.is_default ? " ★" : ""),
+                          )
+                          .join(" · ")}
+                        <span className="block mt-1" style={{ color: "#94A3B8" }}>
+                          (★ = mặc định. Chọn tiêu chuẩn cụ thể khi tạo hồ sơ.)
+                        </span>
+                      </div>
+                    )}
+                    <div className="text-[11px] mt-3" style={{ color: "#94A3B8" }}>
+                      🔒 Khóa sau khi cert đầu tiên đã issue. Liên hệ AMINRA admin nếu cần đổi.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : isOwner ? (
+              <div
+                className="rounded-xl p-4 text-xs"
+                style={{
+                  background: "#FEF2F2",
+                  border: "1px solid #FECACA",
+                  color: "#DC2626",
+                }}
+              >
+                Chưa chọn ngành nghề.{" "}
+                <Link
+                  href="/business/onboarding/industry-select"
+                  className="underline font-medium"
+                >
+                  Chọn ngay
+                </Link>
+              </div>
+            ) : (
+              <div
+                className="rounded-xl p-4 text-xs"
+                style={{ background: "#F3F4F6", color: "#6B7280" }}
+              >
+                Chưa được chủ tài khoản chọn ngành nghề
+              </div>
+            )}
+          </div>
 
           {fields.map((f) => (
             <div key={f.key}>

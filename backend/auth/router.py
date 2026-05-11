@@ -51,7 +51,7 @@ log = logging.getLogger("aminra.auth")
 router = APIRouter()
 
 
-def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
+def _row_to_profile(row, member_count: int | None = None, industry_code: str | None = None) -> UserProfile:
     from auth.permissions import get_user_permissions
 
     perms = get_user_permissions(dict(row))
@@ -69,6 +69,8 @@ def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
         phone=row.get("phone"),
         representative_name=row.get("representative_name"),
         permissions=perms,
+        industry_schema_id=str(row["industry_schema_id"]) if row.get("industry_schema_id") else None,
+        industry_schema_code=industry_code,
     )
 
 
@@ -302,7 +304,13 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
             "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
             row["id"],
         )
-    return _row_to_profile(row, member_count=member_count)
+    industry_code = None
+    if row.get("industry_schema_id"):
+        industry_code = await db.fetchval(
+            "SELECT code FROM industry_schemas WHERE id = $1",
+            row["industry_schema_id"],
+        )
+    return _row_to_profile(row, member_count=member_count, industry_code=industry_code)
 
 
 # ── Invite member (business owner, max 7) ──────────────────────────────────────

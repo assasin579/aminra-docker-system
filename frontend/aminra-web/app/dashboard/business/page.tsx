@@ -87,6 +87,17 @@ export default function BusinessDashboard() {
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== "business")) {
       router.replace("/business/login");
+      return;
+    }
+    // TASK #19: tenant owner without industry_schema_id → onboarding
+    if (
+      !loading &&
+      isAuthenticated &&
+      user?.role === "business" &&
+      user?.is_owner &&
+      !user?.industry_schema_id
+    ) {
+      router.replace("/business/onboarding/industry-select");
     }
   }, [loading, isAuthenticated, user, router]);
 
