@@ -212,13 +212,16 @@ services:
       - KC_HEALTH_ENABLED=true
       - KC_METRICS_ENABLED=true
       - KC_HTTP_ENABLED=true
-      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT=true
       - KC_HOSTNAME_STRICT_BACKCHANNEL=false
       - KC_LOG_LEVEL=INFO
-      # Production: switch start-dev → start --optimized + KC_HOSTNAME=auth.aminra.vn + KC_PROXY=edge
+      # Production hostname (Cloudflare Tunnel → localhost:8180, set 2026-05-14 Phase A)
+      - KC_HOSTNAME=auth.silvergem.org
+      - KC_PROXY=edge
+      # Phase C TODO: switch start-dev → start --optimized (cần Dockerfile build step custom)
     ports:
       - "8180:8080"
-      - "9180:9000"
+      - "127.0.0.1:9180:9000"   # Management port — localhost only (metrics, health, JVM stats)
     volumes:
       - keycloak-data:/opt/keycloak/data
       - /etc/localtime:/etc/localtime:ro
