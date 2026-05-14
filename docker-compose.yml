@@ -224,6 +224,7 @@ services:
       - "127.0.0.1:9180:9000"   # Management port — localhost only (metrics, health, JVM stats)
     volumes:
       - keycloak-data:/opt/keycloak/data
+      - ./keycloak-themes/aminra:/opt/keycloak/themes/aminra:ro
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     networks:

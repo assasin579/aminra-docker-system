@@ -1,0 +1,260 @@
+/* AMINRA Keycloak theme — replicate FE /business/login + /business/register visual.
+ * Source: frontend/aminra-web/app/(auth)/business/login/page.tsx
+ * Brand tokens: branding/aminra/identity.md §4 Color Palette + §5 Typography
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --navy-900: #0A1F44;
+  --navy-800: #102A5C;
+  --navy-100: #DCE3F0;
+  --gold-500: #C9A24A;
+  --cream-50: #FAF7EE;
+  --cream-100: #F5F1E8;
+  --ink-900: #1A1A1A;
+  --ink-700: #3D3D3D;
+  --ink-500: #6B7280;
+  --ink-300: #94A3B8;
+  --border: #E2E8F0;
+  --error: #EF4444;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, var(--navy-100) 0%, var(--cream-100) 100%);
+  min-height: 100vh;
+  color: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+}
+
+/* Reset Keycloak base */
+.login-pf, .login-pf body, #kc-header, #kc-header-wrapper, .login-pf-page, .login-pf-page-header {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+#kc-header-wrapper { display: none; }
+.login-pf-page-header { display: none; }
+.login-pf-signup, .login-pf-social-section { background: transparent !important; }
+.kc-logo-text, .kc-feedback-text { display: none; }
+.pf-c-login__main, .pf-c-login__main-body, .pf-c-login__main-footer, .pf-c-login {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* AMINRA layout */
+.aminra-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.aminra-container {
+  width: 100%;
+  max-width: 28rem;
+}
+
+/* Logo header */
+.aminra-logo-block {
+  text-align: center;
+  margin-bottom: 32px;
+  animation: aminra-fade-in 0.6s ease-out both;
+}
+
+.aminra-mark-wrap {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(10, 31, 68, 0.12);
+  margin-bottom: 16px;
+}
+
+.aminra-mark {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.aminra-wordmark {
+  height: 28px;
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
+}
+
+.aminra-subtitle {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+/* Card */
+.aminra-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  animation: aminra-fade-in 0.6s ease-out 0.1s both;
+}
+
+@keyframes aminra-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Form */
+.aminra-form { display: flex; flex-direction: column; gap: 20px; }
+
+.aminra-field { display: flex; flex-direction: column; }
+
+.aminra-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-500);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.aminra-input {
+  font: inherit;
+  font-size: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #FFFFFF;
+  color: var(--ink-900);
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.aminra-input:focus {
+  outline: none;
+  border-color: var(--navy-900);
+  box-shadow: 0 0 0 3px rgba(10, 31, 68, 0.08);
+}
+.aminra-input::placeholder { color: var(--ink-300); }
+
+/* Remember + forgot row */
+.aminra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+.aminra-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-500);
+  cursor: pointer;
+}
+.aminra-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  accent-color: var(--navy-900);
+}
+.aminra-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--navy-900);
+  text-decoration: none;
+}
+.aminra-link:hover { text-decoration: underline; }
+
+/* Submit */
+.aminra-submit {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--navy-900);
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.aminra-submit:hover:not(:disabled) {
+  background: var(--navy-800);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 31, 68, 0.18);
+}
+.aminra-submit:disabled {
+  background: var(--border);
+  color: var(--ink-500);
+  cursor: not-allowed;
+}
+
+/* Error / alert */
+.aminra-error {
+  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Footer link section */
+.aminra-card-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-500);
+}
+.aminra-card-footer a { color: var(--navy-900); font-weight: 500; text-decoration: none; }
+.aminra-card-footer a:hover { text-decoration: underline; }
+
+.aminra-footnote {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--ink-300);
+}
+.aminra-footnote a { color: var(--ink-500); text-decoration: none; }
+.aminra-footnote a:hover { text-decoration: underline; }
+
+/* Keycloak built-in feedback messages */
+.alert-error { color: var(--error); }
+.alert-success { color: #16a34a; }
+.alert-warning { color: #d97706; }
+.alert {
+  font-size: 13px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.alert-error  { background: rgba(239, 68, 68, 0.10); border: 1px solid rgba(239, 68, 68, 0.20); }
+.alert-success { background: rgba(34, 197, 94, 0.10); border: 1px solid rgba(34, 197, 94, 0.20); }
+
+/* TOTP / required action panels */
+.kc-form-options { display: none; }
+
+/* Locale switcher in top corner if enabled */
+.aminra-locale {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+.aminra-locale a { color: inherit; text-decoration: none; margin-left: 8px; }
+.aminra-locale a:hover { color: var(--navy-900); }
