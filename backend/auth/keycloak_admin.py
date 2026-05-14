@@ -92,6 +92,7 @@ def _user_payload(
     is_owner: bool,
     user_status: str,
     company_name: Optional[str] = None,
+    email_verified: bool = False,
 ) -> dict:
     """Build POST /users payload. Keycloak expects attributes as
     `dict[str, list[str]]` — every value is a list of strings even when
@@ -102,16 +103,22 @@ def _user_payload(
     }
     if tenant_id is not None:
         attributes["tenant_id"] = [str(tenant_id)]
+    # The realm profile (KC user-profile config) marks firstName + lastName as
+    # required for the `user` role; without both, password grants fail with
+    # `Account is not fully set up`. AMINRA accounts are companies, not
+    # persons — fill firstName with `company_name` and lastName with a stable
+    # placeholder so KC validation passes and admins still see a recognisable
+    # label in the KC console.
     payload: dict = {
         "username": email,
         "email": email,
         "enabled": True,
-        "emailVerified": False,
+        "emailVerified": email_verified,
         "attributes": attributes,
-        "requiredActions": ["VERIFY_EMAIL"],
+        "requiredActions": [] if email_verified else ["VERIFY_EMAIL"],
+        "firstName": company_name or email.split("@", 1)[0],
+        "lastName": "Account",
     }
-    if company_name:
-        payload["firstName"] = company_name
     return payload
 
 
@@ -125,6 +132,7 @@ def create_user(
     user_status: str = "active",
     company_name: Optional[str] = None,
     require_mfa: bool = False,
+    email_verified: bool = False,
 ) -> str:
     """Create a Keycloak user + set initial password + assign realm role.
 
@@ -133,8 +141,14 @@ def create_user(
     Raises KeycloakAdminError on any step failure. Caller is responsible
     for compensating (e.g. delete partial DB row) if create succeeds but
     password/role assignment fails.
+
+    `email_verified=True` skips the VERIFY_EMAIL required action — use when
+    the creator vouches for the identity (admin-created accounts).
     """
-    payload = _user_payload(email, tenant_id, is_owner, user_status, company_name)
+    payload = _user_payload(
+        email, tenant_id, is_owner, user_status, company_name,
+        email_verified=email_verified,
+    )
     if require_mfa:
         payload["requiredActions"].append("CONFIGURE_TOTP")
 
@@ -218,3 +232,38 @@ def set_required_actions(user_id: str, actions: list[str]) -> None:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Keycloak set_required_actions failed ({resp.status_code})",
         )
+
+
+def delete_user(user_id: str) -> None:
+    """Delete a Keycloak user by UUID. Idempotent — a 404 is treated as success
+    so callers can safely run this after a partial deletion."""
+    resp = httpx.delete(
+        f"{_ADMIN_BASE}/users/{user_id}",
+        headers=_admin_headers(),
+        timeout=10.0,
+    )
+    if resp.status_code in (204, 404):
+        return
+    raise KeycloakAdminError(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail=f"Keycloak delete_user failed ({resp.status_code}): {resp.text[:200]}",
+    )
+
+
+def find_user_by_email(email: str) -> Optional[str]:
+    """Look up a Keycloak user UUID by email (exact match). Returns None if not found."""
+    resp = httpx.get(
+        f"{_ADMIN_BASE}/users",
+        params={"email": email, "exact": "true"},
+        headers=_admin_headers(),
+        timeout=5.0,
+    )
+    if resp.status_code != 200:
+        raise KeycloakAdminError(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Keycloak find_user_by_email failed ({resp.status_code})",
+        )
+    users = resp.json()
+    if not users:
+        return None
+    return users[0]["id"]

@@ -1067,12 +1067,14 @@ class AdminCreateUserRequest(BaseModel):
 
 
 class AdminUpdateUserRequest(BaseModel):
+    # Phase 4c-2: `password` removed — Keycloak owns credentials. Admin who
+    # needs to reset a user's password does it via the Keycloak admin console
+    # (or future /admin/users/{id}/reset-password proxy endpoint).
     company_name: Optional[str] = None
     company_code: Optional[str] = None
     status: Optional[str] = None  # active | pending | suspended
     role: Optional[str] = None
     is_owner: Optional[bool] = None
-    password: Optional[str] = None  # if set → rehash and update
 
 
 @app.get("/admin/users")
@@ -1114,43 +1116,76 @@ async def admin_list_users(
 
 @app.post("/admin/users")
 async def admin_create_user(request: Request, body: AdminCreateUserRequest):
+    """Phase 4c-2: admin-created users are provisioned in Keycloak first,
+    then mirrored into the local `users` table (no password_hash — Keycloak
+    owns credentials). `email_verified=True` because the admin vouches for
+    the identity, so the user can log in without an email round-trip."""
     _require_admin(request)
     from auth.db import get_pool
-    from auth.password import hash_password
-    import uuid as _uuid2
+    from auth import keycloak_admin
 
     pool = get_pool()
-    pw_hash = hash_password(body.password)
-    user_id = str(_uuid2.uuid4())
-    tenant_id = user_id if body.role == "business" else None
     async with pool.acquire() as conn:
         existing = await conn.fetchrow("SELECT id FROM users WHERE email=$1", body.email)
         if existing:
             raise HTTPException(400, "Email đã tồn tại")
-        await conn.execute(
-            """INSERT INTO users
-               (id, email, password_hash, role, company_name, company_code,
-                status, is_owner, tenant_id)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)""",
-            user_id,
-            body.email,
-            pw_hash,
-            body.role,
-            body.company_name,
-            body.company_code,
-            body.status,
-            True,
-            tenant_id,
+
+    try:
+        kc_user_id = keycloak_admin.create_user(
+            email=body.email,
+            password=body.password,
+            role=body.role,
+            tenant_id=None,  # owner → tenant_id = own users.id, set below after insert
+            is_owner=True,
+            user_status=body.status,
+            company_name=body.company_name,
+            email_verified=True,
         )
-        row = await conn.fetchrow(
-            "SELECT id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at FROM users WHERE id=$1",
-            user_id,
-        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(409, "Email đã được đăng ký trong Keycloak")
+        raise
+
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                """INSERT INTO users
+                   (email, keycloak_sub, password_hash, role, company_name,
+                    company_code, status, is_owner, tenant_id)
+                   VALUES ($1,$2,NULL,$3::user_role,$4,$5,$6::user_status,$7,NULL)
+                   RETURNING id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at""",
+                body.email,
+                kc_user_id,
+                body.role,
+                body.company_name,
+                body.company_code,
+                body.status,
+                True,
+            )
+            if body.role == "business":
+                await conn.execute(
+                    "UPDATE users SET tenant_id = id WHERE id = $1", row["id"]
+                )
+                row = await conn.fetchrow(
+                    "SELECT id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at "
+                    "FROM users WHERE id=$1",
+                    row["id"],
+                )
+        except Exception:
+            # Compensate Keycloak side so we don't leak orphan KC users
+            try:
+                keycloak_admin.delete_user(kc_user_id)
+            except Exception:
+                log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+            raise
     return dict(row)
 
 
 @app.put("/admin/users/{user_id}")
 async def admin_update_user(user_id: str, request: Request, body: AdminUpdateUserRequest):
+    """Phase 4c-2: PG-side profile updates only. Password changes route through
+    Keycloak (admin console or future reset-password proxy). Role/realm-role
+    sync to Keycloak is deferred to the RBAC engine work (U4 / ADR-006)."""
     _require_admin(request)
     from auth.db import get_pool
 
@@ -1173,12 +1208,6 @@ async def admin_update_user(user_id: str, request: Request, body: AdminUpdateUse
                 updates.append(f"{field} = ${idx}")
                 params.append(val)
                 idx += 1
-        if body.password:
-            from auth.password import hash_password
-
-            updates.append(f"password_hash = ${idx}")
-            params.append(hash_password(body.password))
-            idx += 1
         if not updates:
             return dict(row)
         params.append(user_id)
@@ -1192,16 +1221,40 @@ async def admin_update_user(user_id: str, request: Request, body: AdminUpdateUse
 
 @app.delete("/admin/users/{user_id}")
 async def admin_delete_user(user_id: str, request: Request):
+    """Phase 4c-2: delete the Keycloak user first (best-effort), then the PG
+    row. Best-effort because a KC-side 404 is a no-op (already gone) — we
+    don't want a stale KC failure to block a perfectly valid PG cleanup."""
     _require_admin(request)
     if user_id == "54182089-3a6d-458a-994d-93ac4e0c504f":  # guard: never delete seeded admin
         raise HTTPException(403, "Không thể xoá tài khoản admin gốc")
     from auth.db import get_pool
+    from auth import keycloak_admin
 
     pool = get_pool()
     async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT id, role, tenant_id FROM users WHERE id=$1", user_id)
+        row = await conn.fetchrow(
+            "SELECT id, role, tenant_id, email, keycloak_sub FROM users WHERE id=$1",
+            user_id,
+        )
         if not row:
             raise HTTPException(404, "User không tồn tại")
+
+        kc_sub = row["keycloak_sub"]
+        # Fall back to email lookup for users created before keycloak_sub backfill
+        if not kc_sub and row["email"]:
+            try:
+                kc_sub = keycloak_admin.find_user_by_email(row["email"])
+            except keycloak_admin.KeycloakAdminError:
+                kc_sub = None
+        if kc_sub:
+            try:
+                keycloak_admin.delete_user(str(kc_sub))
+            except keycloak_admin.KeycloakAdminError as e:
+                log.warning(
+                    "Keycloak delete_user failed for %s (sub=%s): %s — continuing PG cleanup",
+                    row["email"], kc_sub, e.detail,
+                )
+
         # Delete tenant members first (cascade doesn't cover cross-tenant)
         if row["role"] == "business" and row["tenant_id"] == user_id:
             await conn.execute("DELETE FROM documents WHERE tenant_id=$1", user_id)

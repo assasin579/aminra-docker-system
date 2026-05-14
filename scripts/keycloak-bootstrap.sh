@@ -262,7 +262,7 @@ cat > "$TMP/aminra-admin-cli.json" <<'EOF'
   "directAccessGrantsEnabled": false,
   "implicitFlowEnabled": false,
   "serviceAccountsEnabled": true,
-  "fullScopeAllowed": false
+  "fullScopeAllowed": true
 }
 EOF
 
@@ -277,6 +277,16 @@ if [[ -n "$FE_UUID" ]]; then
   log "Patching aminra-frontend: directAccessGrantsEnabled + fullScopeAllowed"
   api PUT "/$REALM/clients/$FE_UUID" \
     -d '{"directAccessGrantsEnabled":true,"fullScopeAllowed":true}' >/dev/null
+fi
+
+# Phase 4c-2: enforce fullScopeAllowed=true on aminra-admin-cli even when the
+# client was created by an older bootstrap run (default was `false`). Without
+# this, realm-management client roles granted to the service account user are
+# stripped from the client_credentials access token and `create_user` 403s.
+ADMIN_CLI_UUID_FORCE=$(api GET "/$REALM/clients?clientId=aminra-admin-cli" | jq -r '.[0].id // empty')
+if [[ -n "$ADMIN_CLI_UUID_FORCE" ]]; then
+  api PUT "/$REALM/clients/$ADMIN_CLI_UUID_FORCE" \
+    -d '{"fullScopeAllowed":true}' >/dev/null
 fi
 
 # ── 4b. Add protocol-mappers to aminra-frontend (Phase 3b) ────────────────────
@@ -365,13 +375,14 @@ else
     log "WARNING: realm-management client or service-account user missing — skip"
   else
     ROLES_JSON=$(api GET "/$REALM/clients/$RM_CLIENT_UUID/roles")
-    GRANT_PAYLOAD=$(echo "$ROLES_JSON" | jq '[.[] | select(.name=="manage-users" or .name=="query-users" or .name=="view-users") | {id, name}]')
-    if [[ "$(echo "$GRANT_PAYLOAD" | jq 'length')" -ge 3 ]]; then
-      log "Granting manage-users + query-users + view-users to aminra-admin-cli service account"
+    # Phase 4c-2: view-realm added so create_user can call GET /admin/realms/{realm}/roles/{role}
+    GRANT_PAYLOAD=$(echo "$ROLES_JSON" | jq '[.[] | select(.name=="manage-users" or .name=="query-users" or .name=="view-users" or .name=="view-realm") | {id, name}]')
+    if [[ "$(echo "$GRANT_PAYLOAD" | jq 'length')" -ge 4 ]]; then
+      log "Granting manage-users + query-users + view-users + view-realm to aminra-admin-cli service account"
       api POST "/$REALM/users/$SVC_USER_ID/role-mappings/clients/$RM_CLIENT_UUID" -d "$GRANT_PAYLOAD" || \
         log "  Grant returned non-201 — likely already granted"
     else
-      log "WARNING: realm-management role payload has fewer than 3 expected roles"
+      log "WARNING: realm-management role payload has fewer than 4 expected roles"
     fi
   fi
 
