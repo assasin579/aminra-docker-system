@@ -13,6 +13,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user
 from auth.notification_router import notify
 
@@ -1441,12 +1442,13 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
             raise HTTPException(400, "Phải nhập lý do khi thu hồi chứng nhận")
         from services.cert_lifecycle import revoke_active_certs_for_business
 
+        revoker_id = await resolve_canonical_user_id(user, db)
         affected = await revoke_active_certs_for_business(
             db,
             business_tenant=str(visit["business_tenant"]),
             issued_by=str(provider_id),
             reason=notes.strip(),
-            revoked_by=user["sub"],
+            revoked_by=str(revoker_id) if revoker_id else None,
         )
         log.info(f"[audit] {affected} cert(s) revoked for {visit['business_tenant']} by {provider_id}")
     else:
@@ -1636,8 +1638,9 @@ async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=
         raise HTTPException(400, "action: close | reject")
 
     if action == "close":
+        closer_id = await resolve_canonical_user_id(user, db)
         await db.execute(
-            "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2", user["sub"], ncr_id
+            "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2", closer_id, ncr_id
         )
     else:
         await db.execute("UPDATE audit_ncr SET status='open' WHERE id=$1", ncr_id)

@@ -17,6 +17,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user
 from auth.rate_limit import rate_limit_api, rate_limit_data_export
 from services.audit_log import log_audit
@@ -51,12 +52,13 @@ async def export_my_data(
     """
     bundle = await export_user_data(db, user)
 
+    actor_id = await resolve_canonical_user_id(user, db)
     await log_audit(
         db,
         user=user,
         action="data.export.requested",
         entity_type="user",
-        entity_id=user["sub"],
+        entity_id=str(actor_id) if actor_id else user.get("email", ""),
         metadata={
             "byte_size": len(json.dumps(bundle)),
             "section_counts": {
@@ -107,7 +109,9 @@ async def request_deletion(
     Generates a single-use confirmation token and emails it. The account is
     NOT deleted yet — execution requires a separate POST /me/confirm-deletion.
     """
-    user_id = user["sub"]
+    user_id = await resolve_canonical_user_id(user, db)
+    if not user_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User row not found in AMINRA DB")
     email = user["email"]
     company = (await db.fetchval("SELECT company_name FROM users WHERE id = $1", user_id)) or ""
 

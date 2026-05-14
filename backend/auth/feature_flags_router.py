@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user
 from services import feature_flags
 
@@ -112,8 +113,9 @@ async def admin_set_override(
     flag = await db.fetchrow("SELECT name FROM feature_flags WHERE name = $1", name)
     if flag is None:
         raise HTTPException(404, f"Flag {name!r} not found")
+    actor_id = await resolve_canonical_user_id(user, db)
     await feature_flags.set_tenant_override(
-        db, tenant_id, name, body.enabled, reason=body.reason, created_by=user.get("sub")
+        db, tenant_id, name, body.enabled, reason=body.reason, created_by=str(actor_id) if actor_id else None
     )
     log.info(f"[feature-flags] Override tenant={tenant_id} flag={name} enabled={body.enabled}")
     return {"tenant_id": tenant_id, "feature_name": name, "enabled": body.enabled}

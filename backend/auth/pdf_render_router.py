@@ -150,7 +150,8 @@ async def render_pdf(
 ) -> Response:
     started = time.monotonic()
     tenant_id = user.get("tenant_id")
-    actor_id = user.get("sub")
+    # actor identity flows through `log_audit` below, which resolves the
+    # canonical AMINRA users.id internally — no need to hold it here.
 
     # ── 1. cfg_override is admin-only ──────────────────────────────────────
     if body.cfg_override is not None and not _is_platform_admin(user):

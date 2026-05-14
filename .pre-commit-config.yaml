@@ -88,6 +88,17 @@ repos:
         files: ^backend/templates_html/
         pass_filenames: false
 
+      # Tier 2: guard the KC-sub vs AMINRA-id class bug. Scans staged
+      # additions for new `user["sub"]`-style reads and asks the author to
+      # either route through `resolve_canonical_user_id` or annotate the
+      # line with `# kc-sub: <reason>`. Pre-existing reads aren't blocked.
+      # See scripts/check-user-sub-usage.sh + backend/auth/identity.py.
+      - id: kc-sub-guard
+        name: guard against KC-sub being used as AMINRA users.id
+        entry: bash scripts/check-user-sub-usage.sh
+        language: system
+        files: ^backend/.*\.py$
+
       - id: mypy-fast
         name: mypy (manual — backend services + auth only)
         entry: bash -c 'docker run --rm -v "$PWD/backend:/src:ro" python:3.11-slim sh -c "pip install --quiet mypy 2>/dev/null && mypy /src/services /src/auth --ignore-missing-imports --no-strict-optional --follow-imports=silent"'

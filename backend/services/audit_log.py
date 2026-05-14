@@ -64,7 +64,12 @@ async def log_audit(
         return
 
     user = user or {}
-    user_id = user.get("sub")
+    # `audit_logs.user_id` is FK → users.id. `user["sub"]` is the Keycloak
+    # UUID under SSO and would FK-violate. Resolve to the canonical AMINRA
+    # id via the shared helper. None is OK for anonymous events (the FK is
+    # ON DELETE SET NULL).
+    from auth.identity import resolve_canonical_user_id
+    user_id = await resolve_canonical_user_id(user, db) if user.get("email") or user.get("sub") else None
     user_email = user.get("email")
     user_role = user.get("role")
     tenant_id = user.get("tenant_id")

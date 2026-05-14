@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from asyncpg import Connection
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_business_owner
 from auth.notification_router import notify
 from services.audit_log import log_audit
@@ -838,11 +839,12 @@ async def provider_request_revision(
         for df in req.document_feedback
     ]
 
+    requester_id = await resolve_canonical_user_id(user, db)
     try:
         result = await request_revision(
             db,
             submission_id=submission_id,
-            requester_id=user["sub"],
+            requester_id=str(requester_id) if requester_id else None,
             requester_name=requester_name,
             feedback=req.feedback,
             document_feedback=doc_feedback,
@@ -1037,11 +1039,13 @@ async def assign_auditor(
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được gán auditor")
 
-    # Verify auditor belongs to this provider's team
+    # Verify auditor belongs to this provider's team. `user["sub"]` is the
+    # Keycloak UUID; resolve to AMINRA users.id so the tenant scoping matches.
+    provider_owner_id = await resolve_canonical_user_id(user, db)
     auditor = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
         req.auditor_id,
-        user["sub"],
+        provider_owner_id,
     )
     if not auditor:
         raise HTTPException(404, "Auditor không tồn tại trong tổ chức")
@@ -1050,7 +1054,7 @@ async def assign_auditor(
         "UPDATE submissions SET auditor_id = $1, status = 'assigned', updated_at = NOW() WHERE id = $2 AND provider_id = $3",
         req.auditor_id,
         submission_id,
-        user["sub"],
+        provider_owner_id,
     )
     if result == "UPDATE 0":
         raise HTTPException(404, "Không tìm thấy hồ sơ")
@@ -1177,6 +1181,7 @@ async def save_evaluation(
 
     checklist_json = _json.dumps(req.checklist)
 
+    evaluator_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         """
         INSERT INTO submission_evaluations (submission_id, auditor_id, checklist, score, notes)
@@ -1185,7 +1190,7 @@ async def save_evaluation(
         DO UPDATE SET checklist=$3::jsonb, score=$4, notes=$5, updated_at=NOW()
     """,
         submission_id,
-        user["sub"],
+        evaluator_id,
         checklist_json,
         req.score,
         req.notes,

@@ -35,6 +35,7 @@ from auth.db import init_pool, close_pool
 from auth.router import router as auth_router
 from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, decode_token
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
@@ -1563,7 +1564,8 @@ async def evaluate_doc(
                     str(save_path),
                     file_size,
                     mime,
-                    jwt_user["sub"],
+                    # documents.user_id is FK → users.id; resolve from JWT.
+                    await resolve_canonical_user_id(jwt_user, conn),
                     jwt_user["tenant_id"],
                     result.get("doc_type"),
                     result.get("compliance_score"),
