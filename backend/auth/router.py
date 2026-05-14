@@ -8,10 +8,6 @@ from fastapi.responses import FileResponse
 from asyncpg import Connection, UniqueViolationError
 
 from .db import get_db
-# Phase 4b: keep `password.hash_password` for invite/member-create flows
-# (auditor invite, business member invite) — those still use email link with
-# initial password. TODO Phase 4c: migrate to Keycloak invitation flow.
-from .password import hash_password
 from .jwt_utils import (
     get_current_user,
     require_business_owner,
@@ -248,6 +244,9 @@ async def invite_member(
     owner: dict = Depends(require_business_owner),
     db: Connection = Depends(get_db),
 ):
+    """Phase 4c-3: provision the member in Keycloak first, mirror into PG with
+    password_hash NULL. Owner vouches → email_verified=True so the new member
+    can log in immediately via SSO without an email round-trip."""
     tenant_id = owner["tenant_id"]
     current_count = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
@@ -256,27 +255,50 @@ async def invite_member(
     if current_count >= MAX_MEMBERS:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Tenant đã đạt giới hạn {MAX_MEMBERS} thành viên")
 
-    pw_hash = hash_password(req.password)
+    existing = await db.fetchval("SELECT id FROM users WHERE email = $1", req.email)
+    if existing:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký")
+
+    try:
+        kc_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="business",
+            tenant_id=str(tenant_id),
+            is_owner=False,
+            user_status="active",
+            company_name=req.display_name,
+            email_verified=True,
+        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký trong Keycloak")
+        raise
+
     try:
         row = await db.fetchrow(
             """
-            INSERT INTO users (email, password_hash, role, company_name,
+            INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
                                status, is_owner, tenant_id, invited_by, ihc_role, department)
-            VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6, $7)
+            VALUES ($1, $2, NULL, 'business', $3, 'active', false, $4, $5, $6, $7)
             RETURNING id, email, company_name, status, created_at
             """,
             req.email,
-            pw_hash,
+            kc_user_id,
             req.display_name,
             tenant_id,
             owner["sub"],
             req.ihc_role or None,
             req.department or None,
         )
-    except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký")
+    except Exception:
+        try:
+            keycloak_admin.delete_user(kc_user_id)
+        except Exception:
+            log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+        raise
 
-    log.info(f"[auth] Member invited: {req.email} → tenant {tenant_id}")
+    log.info(f"[auth] Member invited (KC): {req.email} → tenant {tenant_id}")
     return {
         "member_id": str(row["id"]),
         "email": row["email"],
@@ -388,28 +410,51 @@ async def accept_invite(token: str, request: Request, db: Connection = Depends(g
     if row["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         raise HTTPException(410, "Link đã hết hạn")
 
-    pw_hash = hash_password(password)
+    existing = await db.fetchval("SELECT id FROM users WHERE email = $1", row["email"])
+    if existing:
+        raise HTTPException(409, "Email đã được đăng ký")
+
     try:
-        user_row = await db.fetchrow(
+        kc_user_id = keycloak_admin.create_user(
+            email=row["email"],
+            password=password,
+            role="business",
+            tenant_id=str(row["tenant_id"]),
+            is_owner=False,
+            user_status="active",
+            company_name=display_name or row["email"],
+            email_verified=True,
+        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(409, "Email đã được đăng ký trong Keycloak")
+        raise
+
+    try:
+        await db.fetchrow(
             """
-            INSERT INTO users (email, password_hash, role, company_name,
+            INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
                                status, is_owner, tenant_id, ihc_role, department)
-            VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6)
+            VALUES ($1, $2, NULL, 'business', $3, 'active', false, $4, $5, $6)
             RETURNING id
         """,
             row["email"],
-            pw_hash,
+            kc_user_id,
             display_name or row["email"],
             row["tenant_id"],
             row["role"],
             row["department"],
         )
-    except UniqueViolationError:
-        raise HTTPException(409, "Email đã được đăng ký")
+    except Exception:
+        try:
+            keycloak_admin.delete_user(kc_user_id)
+        except Exception:
+            log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+        raise
 
     await db.execute("UPDATE member_invites SET accepted_at = NOW() WHERE id = $1", row["id"])
 
-    log.info(f"[auth] Invite accepted: {row['email']} → tenant {row['tenant_id']}")
+    log.info(f"[auth] Invite accepted (KC): {row['email']} → tenant {row['tenant_id']}")
     return {"message": "Đã tham gia thành công! Bạn có thể đăng nhập ngay.", "email": row["email"]}
 
 
@@ -692,24 +737,47 @@ async def invite_auditor(
     if current >= MAX_AUDITORS:
         raise HTTPException(422, f"Đã đạt giới hạn {MAX_AUDITORS} auditor")
 
-    pw_hash = hash_password(req.password)
+    existing = await db.fetchval("SELECT id FROM users WHERE email = $1", req.email)
+    if existing:
+        raise HTTPException(409, "Email đã được đăng ký")
+
+    try:
+        kc_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="auditor",
+            tenant_id=str(tenant_id),
+            is_owner=False,
+            user_status="active",
+            company_name=req.display_name,
+            email_verified=True,
+        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(409, "Email đã được đăng ký trong Keycloak")
+        raise
+
     try:
         row = await db.fetchrow(
-            """INSERT INTO users (email, password_hash, role, company_name,
+            """INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
                                   status, is_owner, tenant_id, invited_by, department)
-               VALUES ($1, $2, 'provider', $3, 'active', false, $4, $5, $6)
+               VALUES ($1, $2, NULL, 'provider', $3, 'active', false, $4, $5, $6)
                RETURNING id, email, company_name, status, created_at""",
             req.email,
-            pw_hash,
+            kc_user_id,
             req.display_name,
             tenant_id,
             owner["sub"],
             req.specialty or None,
         )
-    except UniqueViolationError:
-        raise HTTPException(409, "Email đã được đăng ký")
+    except Exception:
+        try:
+            keycloak_admin.delete_user(kc_user_id)
+        except Exception:
+            log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+        raise
 
-    log.info(f"[auth] Auditor invited: {req.email} → provider {tenant_id}")
+    log.info(f"[auth] Auditor invited (KC): {req.email} → provider {tenant_id}")
     return {"auditor_id": str(row["id"]), "email": row["email"], "message": "Đã tạo auditor"}
 
 
@@ -770,12 +838,9 @@ async def update_auditor(
         updates.append(f"email = ${idx}")
         params.append(req["email"])
         idx += 1
-    if "password" in req and req["password"]:
-        if len(req["password"]) < 8:
-            raise HTTPException(400, "Mật khẩu tối thiểu 8 ký tự")
-        updates.append(f"password_hash = ${idx}")
-        params.append(hash_password(req["password"]))
-        idx += 1
+    # Phase 4c-3: password updates go through Keycloak — the provider owner
+    # asks the auditor to reset via the KC account console or via a future
+    # /provider/auditors/{id}/reset-password proxy. Silently ignore here.
 
     if not updates:
         return {"message": "Không có thay đổi"}

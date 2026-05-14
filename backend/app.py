@@ -1124,6 +1124,12 @@ async def admin_create_user(request: Request, body: AdminCreateUserRequest):
     from auth.db import get_pool
     from auth import keycloak_admin
 
+    # AdminCreateUserRequest.role uses the PG-side taxonomy `business|provider`;
+    # Keycloak realm roles split provider into `auditor` vs `cb_admin`. Admin-
+    # created provider accounts are CB owners → map to `cb_admin`. Individual
+    # auditors come in via /provider/auditors with realm role `auditor`.
+    kc_realm_role = "cb_admin" if body.role == "provider" else body.role
+
     pool = get_pool()
     async with pool.acquire() as conn:
         existing = await conn.fetchrow("SELECT id FROM users WHERE email=$1", body.email)
@@ -1134,7 +1140,7 @@ async def admin_create_user(request: Request, body: AdminCreateUserRequest):
         kc_user_id = keycloak_admin.create_user(
             email=body.email,
             password=body.password,
-            role=body.role,
+            role=kc_realm_role,
             tenant_id=None,  # owner → tenant_id = own users.id, set below after insert
             is_owner=True,
             user_status=body.status,
@@ -1162,7 +1168,10 @@ async def admin_create_user(request: Request, body: AdminCreateUserRequest):
                 body.status,
                 True,
             )
-            if body.role == "business":
+            # Owner accounts are their own tenant root — applies to business
+            # owners (DN) and provider owners (CB), both stored with role in
+            # ('business', 'provider') in PG.
+            if body.role in ("business", "provider"):
                 await conn.execute(
                     "UPDATE users SET tenant_id = id WHERE id = $1", row["id"]
                 )
