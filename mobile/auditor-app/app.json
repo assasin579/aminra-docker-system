@@ -54,6 +54,9 @@
     ],
     "extra": {
       "apiBaseUrl": "https://dev-web.silvergem.org",
+      "keycloakUrl": "https://auth.silvergem.org",
+      "keycloakRealm": "aminra",
+      "keycloakClientId": "aminra-frontend",
       "router": {}
     }
   }

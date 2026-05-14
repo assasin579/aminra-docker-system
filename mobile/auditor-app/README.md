@@ -58,7 +58,7 @@ Prerequisites:
 
 - **Routing:** expo-router (file-based, mirrors Next.js feel)
 - **Data:** TanStack Query for server state; SecureStore for JWT
-- **Auth:** Same `/api/auth/login` JWT as web; rejects non-provider role
+- **Auth:** Keycloak OAuth2 password grant against the realm (`POST /realms/aminra/protocol/openid-connect/token`), then `/api/auth/me` to resolve the AMINRA profile + enforce the provider-role guard. Token stored in SecureStore.
 - **Images:** Resize to 1600px @ 0.7 quality before upload (factory wifi friendly)
 - **GPS:** `expo-location` with foreground permission for sign-off
 - **Tokens:** Design tokens in `lib/tokens.ts` mirror web emerald-700 brand
@@ -67,8 +67,8 @@ Prerequisites:
 
 | Endpoint | Used by |
 |---|---|
-| `POST /api/auth/login` | Login |
-| `GET  /api/auth/me` | Token verify on app launch |
+| `POST {KEYCLOAK_URL}/realms/aminra/protocol/openid-connect/token` (grant_type=password) | Login |
+| `GET  /api/auth/me` | Profile resolve (post-login + token verify on app launch) |
 | `GET  /api/audits/` | Visits list |
 | `GET  /api/audits/visits/{id}` | Visit detail |
 | `GET  /api/audits/visits/{id}/items` | Checklist |

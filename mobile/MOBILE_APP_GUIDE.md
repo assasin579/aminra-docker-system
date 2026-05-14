@@ -135,7 +135,7 @@ mobile/auditor-app/
 │
 ├── lib/                    ← TIỆN ÍCH (auth, API, design tokens)
 │   ├── api.ts              ← gọi backend
-│   ├── auth.ts             ← login + lưu token bảo mật
+│   ├── auth.ts             ← Keycloak password grant + lưu token bảo mật (SecureStore)
 │   ├── AuthContext.tsx     ← share auth state cho mọi màn hình
 │   └── tokens.ts           ← màu sắc + kích thước
 │
@@ -199,12 +199,14 @@ Save → restart app (Ctrl+C → `npm start`).
 ### Bước 2.6 — Test flow đăng nhập + xem visit
 
 1. App mở ra trang login
-2. Nhập email + password của 1 provider account thật (vd `cb-demo@demo.aminra.vn` / `DemoP@ss2026`)
+2. Nhập email + password của 1 provider/auditor account thật (vd `cb-demo@demo.aminra.vn` / `DemoP@ss2026`). Login đi qua **Keycloak OAuth2 password grant** trực tiếp tới `auth.silvergem.org` (xem `lib/auth.ts`) — không phải REST /auth/login như bản cũ.
 3. Đăng nhập → vào trang Visits → thấy danh sách audit
 4. Click 1 visit → thấy checklist
 5. Click pass/fail → backend update real-time
 
 Nếu work hết → bạn đã có app dev mode chạy thật. 🎉
+
+> 🔧 **Đổi Keycloak target:** nếu test với realm khác, sửa `keycloakUrl` / `keycloakRealm` / `keycloakClientId` trong `app.json` (section `extra`). Mặc định trỏ tới `https://auth.silvergem.org` / realm `aminra` / client `aminra-frontend`.
 
 ---
 

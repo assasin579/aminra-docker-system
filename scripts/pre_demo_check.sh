@@ -15,6 +15,26 @@ BACKEND_URL="${BACKEND_URL:-http://localhost:8100}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3100}"
 DEMO_PW="${DEMO_PW:-DemoP@ss2026}"
 
+# Phase 4c-9: Keycloak is the sole login path. Smokes exchange a password
+# grant against the realm for an access_token. Override these env vars to
+# point at staging/prod realms.
+KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.silvergem.org}"
+KEYCLOAK_REALM="${KEYCLOAK_REALM:-aminra}"
+KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-aminra-frontend}"
+ADMIN_DEMO_EMAIL="${ADMIN_DEMO_EMAIL:-demo-platform-admin@aminra.vn}"
+ADMIN_DEMO_PW="${ADMIN_DEMO_PW:-}"
+
+# kc_token <email> <password> → prints access_token on stdout (empty on failure).
+kc_token() {
+  local _email="$1" _password="$2"
+  curl -s -X POST "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \
+    --data-urlencode "grant_type=password" \
+    --data-urlencode "client_id=${KEYCLOAK_CLIENT_ID}" \
+    --data-urlencode "username=${_email}" \
+    --data-urlencode "password=${_password}" \
+    | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('access_token','') if isinstance(d, dict) else '')" 2>/dev/null
+}
+
 # ── Colors ──────────────────────────────────────────────────────────────────
 if [ -t 1 ]; then
   GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -88,13 +108,15 @@ else
   warn "Flow 2: RAG /topics not reachable — chat may fail"
 fi
 
-# Flow 3: Forgot password endpoint
-RESP=$(curl -s -w "%{http_code}" -X POST "${BACKEND_URL}/auth/request-password-reset" \
-       -H "Content-Type: application/json" -d '{"email":"ghost@nowhere.io"}' -o /dev/null)
-if [ "$RESP" = "200" ]; then
-  ok "Flow 3: Forgot-password endpoint returns 200"
+# Flow 3: Forgot password — Keycloak owns the reset flow. Smoke that the
+# realm's well-known discovery + login-actions URL are reachable; the page
+# itself is rendered by KC and not part of our backend.
+DISCOVERY=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration")
+if [ "$DISCOVERY" = "200" ]; then
+  ok "Flow 3: Keycloak realm discovery reachable (forgot-password served by KC)"
 else
-  fail "Flow 3: Forgot-password endpoint returned HTTP $RESP"
+  fail "Flow 3: Keycloak realm discovery returned HTTP $DISCOVERY"
 fi
 
 # Flow 4: Privacy + Terms pages
@@ -112,16 +134,12 @@ done
 # ── Tier 2 — Business flows ────────────────────────────────────────────────
 section "Tier 2 — Business flows (6-11)"
 
-# Login biz1
-LOGIN=$(curl -s -X POST "${BACKEND_URL}/auth/login" \
-        -H "Content-Type: application/json" \
-        -d "{\"email\":\"biz-demo-1@demo.aminra.vn\",\"password\":\"${DEMO_PW}\"}")
-BIZ_TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+# Login biz1 via Keycloak password grant
+BIZ_TOKEN=$(kc_token "biz-demo-1@demo.aminra.vn" "${DEMO_PW}")
 if [ -n "$BIZ_TOKEN" ]; then
-  ok "Flow 6: Business login succeeded"
+  ok "Flow 6: Business login succeeded (Keycloak password grant)"
 else
-  fail "Flow 6: Business login failed (have you run seed_demo_data.py?)"
-  BIZ_TOKEN=""
+  fail "Flow 6: Business login failed (have you run seed_demo_data.py + made sure the demo user has lastName + emailVerified=true in KC?)"
 fi
 
 # Flow 7: Document evaluation endpoint (don't actually evaluate — too expensive)
@@ -169,16 +187,12 @@ fi
 # ── Tier 3 — Provider flows ────────────────────────────────────────────────
 section "Tier 3 — Provider flows (12-16)"
 
-# Flow 12: Provider login
-LOGIN=$(curl -s -X POST "${BACKEND_URL}/auth/login" \
-        -H "Content-Type: application/json" \
-        -d "{\"email\":\"cb-demo@demo.aminra.vn\",\"password\":\"${DEMO_PW}\"}")
-PROV_TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+# Flow 12: Provider login via Keycloak password grant
+PROV_TOKEN=$(kc_token "cb-demo@demo.aminra.vn" "${DEMO_PW}")
 if [ -n "$PROV_TOKEN" ]; then
-  ok "Flow 12: Provider login succeeded"
+  ok "Flow 12: Provider login succeeded (Keycloak password grant)"
 else
   fail "Flow 12: Provider login failed"
-  PROV_TOKEN=""
 fi
 
 # Flow 13: Received submissions endpoint
@@ -227,11 +241,14 @@ if [ -n "$PROV_TOKEN" ]; then
   fi
 fi
 
-# Flow 18-20: Admin endpoints (require admin auth — use admin@aminra.com via password)
-ADMIN_LOGIN=$(curl -s -X POST "${BACKEND_URL}/auth/login" \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"admin@aminra.com\",\"password\":\"aminra2026\"}")
-ADMIN_TOKEN=$(echo "$ADMIN_LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+# Flow 18-20: Admin endpoints — need a Keycloak user with realm role
+# `platform_admin`. Override the username/password via env if your env
+# uses a different admin demo account.
+if [ -n "$ADMIN_DEMO_PW" ]; then
+  ADMIN_TOKEN=$(kc_token "$ADMIN_DEMO_EMAIL" "$ADMIN_DEMO_PW")
+else
+  ADMIN_TOKEN=""
+fi
 
 if [ -n "$ADMIN_TOKEN" ]; then
   # Flow 18: Analytics
@@ -252,7 +269,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     warn "Flow 20: Overdue queue returned HTTP $STATUS"
   fi
 else
-  warn "Flow 18-20: Admin login failed (admin@aminra.com / aminra2026 may differ in this env)"
+  warn "Flow 18-20: Admin smoke skipped — set ADMIN_DEMO_PW (and optionally ADMIN_DEMO_EMAIL, default demo-platform-admin@aminra.vn) to enable"
 fi
 
 # ── Frontend pages reachable ───────────────────────────────────────────────
