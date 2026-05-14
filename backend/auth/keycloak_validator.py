@@ -140,9 +140,24 @@ _FAST_PATH_REQUIRED = ("email", "tenant_id", "is_owner", "status")
 
 
 def _has_full_mapper_claims(claims: dict) -> bool:
-    """True when Keycloak custom token mappers (Phase 3b) populated all
-    app-domain claims in the JWT. Lets us skip the DB enrichment lookup."""
-    return all(claims.get(k) is not None for k in _FAST_PATH_REQUIRED)
+    """True when Keycloak token mappers populated all app-domain claims AND
+    the values are AMINRA-canonical (UUID for tenant_id, not a slug).
+
+    Phase 3b enabled this for /auth/me perf; but the realm currently stores
+    `tenant_id` user-attributes as slugs (e.g. "demo-biz") and the fast
+    path silently fed those slugs into `WHERE tenant_id = $1` downstream,
+    breaking the whole stack. Until KC attributes are migrated to UUIDs,
+    only trust the fast path when tenant_id parses as a UUID.
+    """
+    import uuid as _uuid
+
+    if not all(claims.get(k) is not None for k in _FAST_PATH_REQUIRED):
+        return False
+    try:
+        _uuid.UUID(str(claims["tenant_id"]))
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 def _claims_to_user_via_jwt(claims: dict) -> dict:
