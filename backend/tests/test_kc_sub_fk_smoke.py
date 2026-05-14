@@ -173,6 +173,34 @@ def test_auth_company_profile_no_fk_violation(client, fresh_biz):
     assert r.status_code == 200, r.text
 
 
+def test_auth_company_profile_get_roundtrip(client, fresh_biz):
+    """GET /auth/company-profile previously 500'd because it fed the JWT
+    `tenant_id` slug (e.g. "demo-biz") into `WHERE users.id = $1`. Without
+    a working GET the FE settings page reloads with an empty form even
+    when PUT actually persisted, surfacing as "thông tin không được lưu".
+    """
+    sentinel = f"Smoke Co — verified {uuid.uuid4().hex[:8]}"
+
+    # 1. PUT a unique value
+    put_r = client.put(
+        "/auth/company-profile",
+        headers=fresh_biz["headers"],
+        json={"company_name": sentinel, "address": "GET-roundtrip St"},
+    )
+    _no_fk_violation(put_r, "PUT /auth/company-profile")
+    assert put_r.status_code == 200, put_r.text
+
+    # 2. GET — must succeed AND return the value we just wrote
+    get_r = client.get("/auth/company-profile", headers=fresh_biz["headers"])
+    _no_fk_violation(get_r, "GET /auth/company-profile")
+    assert get_r.status_code == 200, get_r.text
+    body = get_r.json()
+    assert body["company_name"] == sentinel, (
+        f"GET drift: PUT wrote {sentinel!r}, GET returned {body['company_name']!r}"
+    )
+    assert body["address"] == "GET-roundtrip St", body
+
+
 def test_auth_me_returns_aminra_id(client, fresh_biz):
     """Sanity: /auth/me's `id` is the AMINRA users.id, not the KC sub."""
     r = client.get("/auth/me", headers=fresh_biz["headers"])

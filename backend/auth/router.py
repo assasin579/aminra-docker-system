@@ -1267,18 +1267,24 @@ async def get_company_profile(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    """Get company profile (from tenant owner) for template placeholder data."""
+    """Get company profile (from tenant owner) for template placeholder data.
+
+    The JWT `tenant_id` claim may be a slug from the Keycloak user-attribute
+    mapper (e.g. "demo-biz") rather than a UUID — feeding it straight into
+    `WHERE id = $1` 500s on the asyncpg UUID coercion. Resolve the canonical
+    AMINRA users.id via the shared helper instead.
+    """
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
-    if not tenant_id:
-        raise HTTPException(400, "Tenant không xác định")
+    user_id = await resolve_canonical_user_id(user, db)
+    if user_id is None:
+        raise HTTPException(404, "Không tìm thấy thông tin công ty")
 
     row = await db.fetchrow(
         """SELECT company_name, email, address, phone, representative_name, manager_name
            FROM users WHERE id = $1 AND is_owner = true""",
-        tenant_id,
+        user_id,
     )
     if not row:
         raise HTTPException(404, "Không tìm thấy thông tin công ty")
