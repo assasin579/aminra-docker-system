@@ -8,11 +8,14 @@ Two-step flow:
 
 Anonymization strategy:
   - users.email           → "deleted-{short_id}@aminra.deleted" (preserves UNIQUE)
-  - users.password_hash   → unrecoverable random string
   - users.company_name    → "[deleted]"
   - users.address/phone/representative_name → NULL
   - users.deleted_at      → NOW()
   - audit_logs.user_email → "[deleted]" (forensic action history kept)
+
+Credentials (Phase 4c-4): no more password_hash column to scrub — Keycloak
+owns auth. The Keycloak user is disabled via keycloak_admin.delete_user as
+part of the deletion path that calls into this module.
 
 Records intentionally NOT deleted:
   - halal_certificates: legal artifacts; public verify must continue. Privacy
@@ -91,13 +94,11 @@ async def confirm_and_anonymize(db, token: str) -> dict:
     original_email = row["email"]
     short = uuid.UUID(str(user_id)).hex[:12]
     anonymized_email = f"deleted-{short}@aminra.deleted"
-    fake_hash = "$2b$12$" + secrets.token_urlsafe(53)[:53]
 
     await db.execute(
         """
         UPDATE users
            SET email               = $1,
-               password_hash       = $2,
                company_name        = '[deleted]',
                company_code        = NULL,
                address             = NULL,
@@ -106,10 +107,9 @@ async def confirm_and_anonymize(db, token: str) -> dict:
                status              = 'suspended',
                deleted_at          = NOW(),
                updated_at          = NOW()
-         WHERE id = $3
+         WHERE id = $2
         """,
         anonymized_email,
-        fake_hash,
         user_id,
     )
 

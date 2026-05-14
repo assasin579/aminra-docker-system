@@ -196,9 +196,9 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
 
             row = await db.fetchrow(
                 """
-                INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
+                INSERT INTO users (email, keycloak_sub, role, company_name,
                                    status, is_owner, tenant_id, industry_schema_id)
-                VALUES ($1, $2, NULL, $3::user_role, $4, $5::user_status, $6, $7, $8)
+                VALUES ($1, $2, $3::user_role, $4, $5::user_status, $6, $7, $8)
                 ON CONFLICT (email) DO UPDATE SET keycloak_sub = EXCLUDED.keycloak_sub
                 RETURNING *
                 """,
@@ -244,9 +244,9 @@ async def invite_member(
     owner: dict = Depends(require_business_owner),
     db: Connection = Depends(get_db),
 ):
-    """Phase 4c-3: provision the member in Keycloak first, mirror into PG with
-    password_hash NULL. Owner vouches → email_verified=True so the new member
-    can log in immediately via SSO without an email round-trip."""
+    """Phase 4c-3: provision the member in Keycloak first, mirror into PG.
+    Owner vouches → email_verified=True so the new member can log in
+    immediately via SSO without an email round-trip."""
     tenant_id = owner["tenant_id"]
     current_count = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
@@ -278,9 +278,9 @@ async def invite_member(
     try:
         row = await db.fetchrow(
             """
-            INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
+            INSERT INTO users (email, keycloak_sub, role, company_name,
                                status, is_owner, tenant_id, invited_by, ihc_role, department)
-            VALUES ($1, $2, NULL, 'business', $3, 'active', false, $4, $5, $6, $7)
+            VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6, $7)
             RETURNING id, email, company_name, status, created_at
             """,
             req.email,
@@ -433,9 +433,9 @@ async def accept_invite(token: str, request: Request, db: Connection = Depends(g
     try:
         await db.fetchrow(
             """
-            INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
+            INSERT INTO users (email, keycloak_sub, role, company_name,
                                status, is_owner, tenant_id, ihc_role, department)
-            VALUES ($1, $2, NULL, 'business', $3, 'active', false, $4, $5, $6)
+            VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6)
             RETURNING id
         """,
             row["email"],
@@ -759,9 +759,9 @@ async def invite_auditor(
 
     try:
         row = await db.fetchrow(
-            """INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
+            """INSERT INTO users (email, keycloak_sub, role, company_name,
                                   status, is_owner, tenant_id, invited_by, department)
-               VALUES ($1, $2, NULL, 'provider', $3, 'active', false, $4, $5, $6)
+               VALUES ($1, $2, 'provider', $3, 'active', false, $4, $5, $6)
                RETURNING id, email, company_name, status, created_at""",
             req.email,
             kc_user_id,

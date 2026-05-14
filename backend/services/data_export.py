@@ -49,8 +49,10 @@ def _rows(rows, *, drop: set[str] = frozenset()) -> list[dict]:
     return [_row_to_dict(r, drop=drop) for r in rows]
 
 
-# Sensitive fields we never export
-SECRET_FIELDS = {"password_hash"}
+# Sensitive fields we never export. Empty post-Phase-4c-4 — Keycloak owns
+# credentials so there is no password_hash column to redact. Kept as a hook
+# so future sensitive columns get an obvious place to land.
+SECRET_FIELDS: set[str] = set()
 
 
 # ── Main entry point ────────────────────────────────────────────────────────

@@ -1117,9 +1117,9 @@ async def admin_list_users(
 @app.post("/admin/users")
 async def admin_create_user(request: Request, body: AdminCreateUserRequest):
     """Phase 4c-2: admin-created users are provisioned in Keycloak first,
-    then mirrored into the local `users` table (no password_hash — Keycloak
-    owns credentials). `email_verified=True` because the admin vouches for
-    the identity, so the user can log in without an email round-trip."""
+    then mirrored into the local `users` table. Keycloak owns credentials.
+    `email_verified=True` because the admin vouches for the identity, so the
+    user can log in without an email round-trip."""
     _require_admin(request)
     from auth.db import get_pool
     from auth import keycloak_admin
@@ -1156,9 +1156,9 @@ async def admin_create_user(request: Request, body: AdminCreateUserRequest):
         try:
             row = await conn.fetchrow(
                 """INSERT INTO users
-                   (email, keycloak_sub, password_hash, role, company_name,
+                   (email, keycloak_sub, role, company_name,
                     company_code, status, is_owner, tenant_id)
-                   VALUES ($1,$2,NULL,$3::user_role,$4,$5,$6::user_status,$7,NULL)
+                   VALUES ($1,$2,$3::user_role,$4,$5,$6::user_status,$7,NULL)
                    RETURNING id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at""",
                 body.email,
                 kc_user_id,
