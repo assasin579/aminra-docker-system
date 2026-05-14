@@ -154,14 +154,29 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
     # Keycloak-issued tokens carry Keycloak's UUID as `sub`, not AMINRA DB
     # user id. Look up by email instead when user came from Keycloak.
     if user.get("_keycloak"):
-        row = await db.fetchrow("SELECT * FROM users WHERE email = $1", user["email"])
+        import uuid
+
+        # Link by keycloak_sub (JWT `sub` = Keycloak user UUID) — durable link.
+        # Email fallback for accounts created pre-Phase 4b (before keycloak_sub column existed).
+        kc_sub = None
+        try:
+            kc_sub = uuid.UUID(str(user.get("sub", "")))
+        except (ValueError, TypeError):
+            kc_sub = None
+
+        row = None
+        if kc_sub:
+            row = await db.fetchrow("SELECT * FROM users WHERE keycloak_sub = $1", kc_sub)
         if not row:
-            # Auto-provision DB row for Keycloak user on first login.
-            # Trust JWT claims (signed by Keycloak) for role/owner/status.
-            # tenant_id from JWT may be a non-UUID slug (e.g. "demo-biz");
-            # only persist if valid UUID — else leave NULL and let user
-            # complete their profile / be re-tenanted by admin later.
-            import uuid
+            row = await db.fetchrow("SELECT * FROM users WHERE email = $1", user["email"])
+            # Backfill keycloak_sub on legacy row (linked by email).
+            if row and kc_sub and row.get("keycloak_sub") != kc_sub:
+                await db.execute("UPDATE users SET keycloak_sub = $1 WHERE id = $2", kc_sub, row["id"])
+
+        if not row:
+            # JIT auto-provision: Trust JWT claims (signed by Keycloak).
+            # tenant_id from JWT may be a non-UUID slug — only persist if valid UUID;
+            # for owners, post-INSERT UPDATE tenant_id = id (owner = own tenant root).
             tenant_uuid = None
             raw_tenant = user.get("tenant_id")
             if raw_tenant:
@@ -169,25 +184,41 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
                     tenant_uuid = uuid.UUID(str(raw_tenant))
                 except (ValueError, TypeError):
                     tenant_uuid = None
-            # Map Keycloak realm role → DB user_role enum (only business/provider).
-            # Privileged roles (auditor/cb_admin/platform_admin) all map to "provider".
+
             kc_role = user.get("role") or "business"
             db_role = "business" if kc_role == "business" else "provider"
+            is_owner = bool(user.get("is_owner", True))
+
+            # Read industry_schema_code from Keycloak user attribute (set via
+            # admin REST when seeding demo accounts or onboarding).
+            industry_uuid = None
+            industry_code = user.get("industry_schema_code")
+            if industry_code:
+                industry_uuid = await db.fetchval(
+                    "SELECT id FROM industry_schemas WHERE code = $1", industry_code
+                )
+
             row = await db.fetchrow(
                 """
-                INSERT INTO users (email, password_hash, role, company_name,
-                                   status, is_owner, tenant_id)
-                VALUES ($1, '__keycloak__', $2::user_role, $3, $4::user_status, $5, $6)
-                ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+                INSERT INTO users (email, keycloak_sub, password_hash, role, company_name,
+                                   status, is_owner, tenant_id, industry_schema_id)
+                VALUES ($1, $2, NULL, $3::user_role, $4, $5::user_status, $6, $7, $8)
+                ON CONFLICT (email) DO UPDATE SET keycloak_sub = EXCLUDED.keycloak_sub
                 RETURNING *
                 """,
                 user["email"],
+                kc_sub,
                 db_role,
                 user.get("company_name") or user["email"].split("@")[0],
                 user.get("status") or "active",
-                bool(user.get("is_owner", True)),
+                is_owner,
                 tenant_uuid,
+                industry_uuid,
             )
+            # Owner without explicit tenant_id → set tenant_id = own id (own tenant root)
+            if is_owner and row["tenant_id"] is None:
+                await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
+                row = await db.fetchrow("SELECT * FROM users WHERE id = $1", row["id"])
     else:
         row = await db.fetchrow("SELECT * FROM users WHERE id = $1", user["sub"])
     if not row:
