@@ -113,10 +113,12 @@ class LoginResponse(BaseModel):
 
 
 class RegisterBusinessResponse(BaseModel):
-    access_token: str
-    refresh_token: Optional[str] = None
-    token_type: str = "bearer"
-    user: UserProfile
+    """Phase 4b: register returns Keycloak user id + status. FE redirects
+    to Keycloak SSO to complete login flow (no token returned by BE)."""
+    user_id: str
+    email: str
+    status: str
+    message: str
 
 
 class RegisterProviderResponse(BaseModel):

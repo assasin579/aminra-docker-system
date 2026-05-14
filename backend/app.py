@@ -122,7 +122,8 @@ from auth.certificate_router import router as certificate_router
 from auth.notification_router import router as notification_router
 from auth.audit_router import router as audit_router
 from auth.audit_log_router import router as audit_log_router
-from auth.password_reset_router import router as password_reset_router
+# Phase 4b (2026-05-14): password_reset_router removed — Keycloak built-in flow
+# handles password reset via /realms/aminra/login-actions/reset-credentials
 from auth.admin_analytics_router import router as admin_analytics_router
 from auth.gdpr_router import router as gdpr_router
 from auth.feature_flags_router import router as feature_flags_router, admin_router as feature_flags_admin_router
@@ -134,7 +135,6 @@ from auth.pdf_render_router import router as pdf_render_router
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
 app.include_router(audit_log_router, prefix="/auth", tags=["audit-logs"])
-app.include_router(password_reset_router, prefix="/auth", tags=["password-reset"])
 app.include_router(admin_analytics_router, prefix="/auth", tags=["admin-analytics"])
 app.include_router(feature_flags_admin_router, prefix="/auth/admin", tags=["admin-feature-flags"])
 app.include_router(industry_schema_admin_router, prefix="/auth/admin/industry-schemas", tags=["admin-industry-schemas"])

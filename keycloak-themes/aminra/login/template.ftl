@@ -13,6 +13,43 @@
   </#if>
 </head>
 <body class="aminra-page ${bodyClass}">
+
+  <#-- Locale switcher (dropdown with flag + name) -->
+  <#if realm.internationalizationEnabled && locale.supported?size gt 1>
+    <#assign flagMap = {"vi": "🇻🇳", "en": "🇬🇧", "ar": "🇸🇦", "fr": "🇫🇷", "zh-CN": "🇨🇳"}>
+    <details class="aminra-locale" aria-label="Chọn ngôn ngữ">
+      <summary>
+        <#list locale.supported as l>
+          <#if l.languageTag == locale.currentLanguageTag>
+            <span class="flag">${(flagMap[l.languageTag])!"🌐"}</span>
+            <span class="name">${l.label}</span>
+          </#if>
+        </#list>
+        <svg class="chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+          <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="aminra-locale-menu" role="menu">
+        <#list locale.supported as l>
+          <#if l.languageTag == locale.currentLanguageTag>
+            <span class="aminra-locale-item active" role="menuitem" aria-current="true">
+              <span class="flag">${(flagMap[l.languageTag])!"🌐"}</span>
+              <span class="name">${l.label}</span>
+              <svg class="check" width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true">
+                <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          <#else>
+            <a class="aminra-locale-item" href="${l.url}" role="menuitem">
+              <span class="flag">${(flagMap[l.languageTag])!"🌐"}</span>
+              <span class="name">${l.label}</span>
+            </a>
+          </#if>
+        </#list>
+      </div>
+    </details>
+  </#if>
+
   <div class="aminra-container">
 
     <#-- Logo block -->

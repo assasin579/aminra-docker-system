@@ -1,98 +1,68 @@
-import os
-import json as _json
-import time as _time
-from datetime import datetime, timedelta, timezone
-from pathlib import Path as _Path
+"""Auth dependencies — Keycloak-only post Phase 4b cutover (ADR-005).
+
+Backwards-compatible module name `jwt_utils.py` kept to avoid sprawling import
+refactor across routers. Functions:
+
+- `get_current_user`: Validates Keycloak JWT (RS256, JWKs from realm).
+  PG profile lookup + JIT provisioning happens inside `keycloak_validator`.
+- `require_business_owner / require_provider_owner / require_active_user`:
+  Role/status guards consuming the dict returned by `get_current_user`.
+- `require_admin`: Currently checks Keycloak realm role `platform_admin` from
+  the same JWT. (Phase 4b: replaced dual-path JWT+opaque-session fallback.)
+
+Legacy artifacts removed in Phase 4b (2026-05-14):
+- create_access_token / create_refresh_token / decode_token / decode_refresh_token
+  → no longer issuing manual HS256 tokens (Keycloak owns issuance).
+- _validate_old_admin_session → opaque admin session file. Admin now uses
+  Keycloak realm role.
+- AUTH_KEYCLOAK_ENABLED flag → no longer feature-gated, Keycloak is the only path.
+"""
+
 from typing import Optional
-from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET = os.getenv("JWT_SECRET")
-if not SECRET:
-    raise RuntimeError("JWT_SECRET environment variable is required")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-EXPIRE_H = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
-REFRESH_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", "7"))
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-# ADR-005 Phase 3a — dual-auth feature flag. Default off so existing
-# manual JWT tokens keep working unchanged. Flip to "true" once
-# Keycloak realm is bootstrapped and FE is migrated (Phase 2).
-AUTH_KEYCLOAK_ENABLED = os.getenv("AUTH_KEYCLOAK_ENABLED", "false").lower() == "true"
 
 _bearer = HTTPBearer(auto_error=False)
 
-ADMIN_EMAIL = "admin@aminra.com"
-
-# Old-admin session file written by /admin/login in app.py
-_ADMIN_SESSIONS_FILE = _Path("data/admin_sessions.json")
-
-
-def _validate_old_admin_session(token: str) -> bool:
-    try:
-        if not _ADMIN_SESSIONS_FILE.exists():
-            return False
-        sessions = _json.loads(_ADMIN_SESSIONS_FILE.read_text())
-        exp = sessions.get(token)
-        return bool(exp and _time.time() <= exp)
-    except Exception:
-        return False
-
-
-def create_access_token(data: dict, expires_hours: Optional[int] = None) -> str:
-    payload = data.copy()
-    exp = datetime.now(timezone.utc) + timedelta(hours=expires_hours or EXPIRE_H)
-    payload.update({"exp": exp})
-    return jwt.encode(payload, SECRET, algorithm=ALGORITHM)
-
-
-def create_refresh_token(data: dict) -> str:
-    payload = data.copy()
-    exp = datetime.now(timezone.utc) + timedelta(days=REFRESH_EXPIRE_DAYS)
-    payload.update({"exp": exp, "type": "refresh"})
-    return jwt.encode(payload, SECRET, algorithm=ALGORITHM)
-
-
-def decode_refresh_token(token: str) -> dict:
-    try:
-        payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
-    if payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is not a refresh token")
-    return payload
-
 
 def decode_token(token: str) -> dict:
+    """Backwards-compat shim — validates Keycloak JWT, returns claims dict.
+
+    Used by file-download URL signing flows (document_router, certificate_router,
+    audit_router) that need to authenticate via `?token=` query param. Post Phase
+    4b, only Keycloak tokens are accepted.
+    """
+    from auth import keycloak_validator
+
+    if not keycloak_validator.looks_like_keycloak_token(token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
     try:
-        return jwt.decode(token, SECRET, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-
-
-from fastapi import Request
+        return keycloak_validator.validate_keycloak_token(token)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid or expired token: {e}")
 
 
 async def get_current_user(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> dict:
+    """Resolve current user from Keycloak JWT. Returns claims dict with keys:
+    sub, email, role, status, is_owner, tenant_id, _keycloak=True.
+    """
     if not creds:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
+    from auth import keycloak_validator
+    from auth.db import get_pool
+
     token = creds.credentials
+    if not keycloak_validator.looks_like_keycloak_token(token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
 
-    # ADR-005 Phase 3a dual-auth: try Keycloak first only when the token
-    # looks RS256/has-kid. Manual HS256 tokens skip the Keycloak path
-    # entirely and stay on the legacy fast path.
-    if AUTH_KEYCLOAK_ENABLED:
-        from auth import keycloak_validator
-        if keycloak_validator.looks_like_keycloak_token(token):
-            claims = keycloak_validator.validate_keycloak_token(token)
-            from auth.db import get_pool
-            return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
-
-    return decode_token(token)
+    claims = keycloak_validator.validate_keycloak_token(token)
+    return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
 
 
 def require_business_owner(user: dict = Depends(get_current_user)) -> dict:
@@ -113,48 +83,12 @@ def require_active_user(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
-async def require_admin(
-    creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
-) -> dict:
-    """Accept either a JWT user token (admin email + provider role) or the
-    opaque session token from /admin/login. Returns a user-shaped dict.
-
-    Falling back to the old-admin session keeps the /admin UI working with
-    routes registered under /api/auth/admin/* (analytics, audit-logs, etc.)
-    while a single backend dependency continues to gate access.
+async def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    """Admin = Keycloak realm role `platform_admin` (assigned via Keycloak admin
+    console or aminra-admin-cli service account). Post Phase 4b cutover the
+    opaque /admin/login session fallback was removed.
     """
-    if not creds:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-
-    token = creds.credentials
-
-    try:
-        user = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
-        if user.get("email") == ADMIN_EMAIL and user.get("role") == "provider":
-            return user
+    realm_roles = user.get("realm_roles") or []
+    if "platform_admin" not in realm_roles and user.get("role") != "platform_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    except JWTError:
-        pass
-
-    if not _validate_old_admin_session(token):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
-    from auth.db import get_pool
-
-    pool = get_pool()
-    async with pool.acquire() as db:
-        row = await db.fetchrow(
-            "SELECT id, email, role FROM users WHERE email = $1",
-            ADMIN_EMAIL,
-        )
-    if not row:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin user record missing — run admin bootstrap",
-        )
-    return {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": row["role"] or "provider",
-        "is_owner": True,
-    }
+    return user

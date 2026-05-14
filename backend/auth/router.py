@@ -8,22 +8,21 @@ from fastapi.responses import FileResponse
 from asyncpg import Connection, UniqueViolationError
 
 from .db import get_db
-from .password import hash_password, verify_password
+# Phase 4b: keep `password.hash_password` for invite/member-create flows
+# (auditor invite, business member invite) — those still use email link with
+# initial password. TODO Phase 4c: migrate to Keycloak invitation flow.
+from .password import hash_password
 from .jwt_utils import (
-    create_access_token,
-    create_refresh_token,
-    decode_refresh_token,
     get_current_user,
     require_business_owner,
 )
+from . import keycloak_admin
 from .rate_limit import rate_limit_api
 from .models import (
     BusinessRegisterRequest,
     ProviderRegisterRequest,
-    LoginRequest,
     InviteMemberRequest,
     UpdateMemberRequest,
-    LoginResponse,
     RegisterBusinessResponse,
     RegisterProviderResponse,
     UserProfile,
@@ -32,9 +31,7 @@ from .models import (
     InviteAuditorRequest,
     AuditorItem,
     AuditorsResponse,
-    RefreshRequest,
     CompanyProfileUpdate,
-    ChangePasswordRequest,
     MAX_MEMBERS,
 )
 
@@ -79,42 +76,35 @@ def _row_to_profile(row, member_count: int | None = None, industry_code: str | N
 
 @router.post("/business/register", response_model=RegisterBusinessResponse, status_code=201)
 async def register_business(
-    req: BusinessRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+    req: BusinessRegisterRequest, _: None = Depends(rate_limit_api)
 ):
-    pw_hash = hash_password(req.password)
+    """Create business user in Keycloak (Phase 4b cutover — ADR-005).
+
+    Post-creation, user logs in via Keycloak SSO. PG profile row is JIT
+    auto-provisioned on first /auth/me call (see keycloak_validator.enrich_keycloak_claims).
+    """
     try:
-        row = await db.fetchrow(
-            """
-            INSERT INTO users (email, password_hash, role, company_name, company_code,
-                               status, is_owner, tenant_id)
-            VALUES ($1, $2, 'business', $3, $4, 'active', true, NULL)
-            RETURNING *
-            """,
-            req.email,
-            pw_hash,
-            req.company_name,
-            req.company_code,
+        keycloak_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="business",
+            tenant_id=None,  # business owner = own tenant — set by JIT provisioning post-login
+            is_owner=True,
+            user_status="active",
+            company_name=req.company_name,
         )
-    except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
+        raise
 
-    # Set tenant_id = own id (owner is their own tenant root)
-    await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
-    row = await db.fetchrow("SELECT * FROM users WHERE id = $1", row["id"])
-
-    profile = _row_to_profile(row, member_count=0)
-    token_data = {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": "business",
-        "status": "active",
-        "is_owner": True,
-        "tenant_id": str(row["id"]),
-    }
-    token = create_access_token(token_data)
-    refresh = create_refresh_token(token_data)
-    log.info(f"[auth] Business registered: {req.email}")
-    return RegisterBusinessResponse(access_token=token, refresh_token=refresh, user=profile)
+    log.info(f"[auth] Business registered in Keycloak: {req.email} (sub={keycloak_user_id})")
+    return RegisterBusinessResponse(
+        user_id=keycloak_user_id,
+        email=req.email,
+        status="active",
+        message="Đăng ký thành công. Vui lòng đăng nhập qua Keycloak SSO.",
+    )
 
 
 # ── Register provider ──────────────────────────────────────────────────────────
@@ -122,133 +112,38 @@ async def register_business(
 
 @router.post("/provider/register", response_model=RegisterProviderResponse, status_code=201)
 async def register_provider(
-    req: ProviderRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+    req: ProviderRegisterRequest, _: None = Depends(rate_limit_api)
 ):
-    pw_hash = hash_password(req.password)
+    """Create provider user in Keycloak with status=pending (admin approval required)."""
     try:
-        row = await db.fetchrow(
-            """
-            INSERT INTO users (email, password_hash, role, company_name, company_code,
-                               status, is_owner)
-            VALUES ($1, $2, 'provider', $3, $4, 'pending', true)
-            RETURNING id, email, status
-            """,
-            req.email,
-            pw_hash,
-            req.company_name,
-            req.company_code,
+        keycloak_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="provider",
+            tenant_id=None,
+            is_owner=True,
+            user_status="pending",
+            company_name=req.company_name,
         )
-    except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
+        raise
 
-    log.info(f"[auth] Provider registered (pending): {req.email}")
+    log.info(f"[auth] Provider registered in Keycloak (pending): {req.email} (sub={keycloak_user_id})")
     return RegisterProviderResponse(
-        user_id=str(row["id"]),
-        email=row["email"],
-        status=row["status"],
+        user_id=keycloak_user_id,
+        email=req.email,
+        status="pending",
         message="Tài khoản của bạn đang chờ xét duyệt. Admin sẽ xem xét và thông báo kết quả.",
     )
 
 
-# ── Login ──────────────────────────────────────────────────────────────────────
-
-
-@router.post("/login", response_model=LoginResponse)
-async def login(
-    req: LoginRequest, request: Request, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
-):
-    from services.audit_log import log_audit
-
-    if req.role and req.role in ("business", "provider"):
-        row = await db.fetchrow("SELECT * FROM users WHERE email = $1 AND role = $2", req.email, req.role)
-    else:
-        row = await db.fetchrow("SELECT * FROM users WHERE email = $1", req.email)
-    if not row or not verify_password(req.password, row["password_hash"]):
-        await log_audit(
-            db,
-            action="login.failed",
-            entity_type="user",
-            metadata={"email": req.email, "reason": "invalid_credentials"},
-            request=request,
-        )
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email hoặc mật khẩu không đúng")
-
-    if row["status"] == "pending":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đang chờ xét duyệt")
-    if row["status"] == "suspended":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị tạm khoá")
-    # GDPR/PDPL: deleted accounts can never log in.
-    if row.get("deleted_at") is not None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị xoá")
-
-    # Auto-set tenant_id for provider owners (migration for existing accounts)
-    if row["role"] == "provider" and row["is_owner"] and not row["tenant_id"]:
-        await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
-        row = await db.fetchrow("SELECT * FROM users WHERE id = $1", row["id"])
-
-    # Count members for owners
-    member_count = None
-    if row["is_owner"] and row["tenant_id"]:
-        member_count = await db.fetchval(
-            "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
-            row["id"],
-        )
-
-    profile = _row_to_profile(row, member_count=member_count)
-    token_data = {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": row["role"],
-        "status": row["status"],
-        "is_owner": row["is_owner"],
-        "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
-    }
-    token = create_access_token(token_data)
-    refresh = create_refresh_token(token_data)
-
-    await log_audit(
-        db,
-        user=token_data,
-        action="login.success",
-        entity_type="user",
-        entity_id=str(row["id"]),
-        request=request,
-    )
-    return LoginResponse(access_token=token, refresh_token=refresh, user=profile)
-
-
-# ── Refresh token ─────────────────────────────────────────────────────────────
-
-
-@router.post("/refresh", response_model=LoginResponse)
-async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
-    payload = decode_refresh_token(req.refresh_token)
-
-    row = await db.fetchrow("SELECT * FROM users WHERE id = $1", payload["sub"])
-    if not row:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
-    if row["status"] != "active":
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User account is not active")
-
-    member_count = None
-    if row["is_owner"] and row["tenant_id"]:
-        member_count = await db.fetchval(
-            "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
-            row["id"],
-        )
-
-    profile = _row_to_profile(row, member_count=member_count)
-    token_data = {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": row["role"],
-        "status": row["status"],
-        "is_owner": row["is_owner"],
-        "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
-    }
-    new_access = create_access_token(token_data)
-    new_refresh = create_refresh_token(token_data)
-    return LoginResponse(access_token=new_access, refresh_token=new_refresh, user=profile)
+# ── Login + Refresh: REMOVED in Phase 4b (ADR-005 cutover 2026-05-14) ──────
+# All authentication now goes through Keycloak SSO. FE redirects to
+# auth.silvergem.org for login; backend validates Keycloak JWT via
+# `get_current_user` in jwt_utils.py. Token refresh is handled by Keycloak's
+# /token endpoint (RFC 6749) directly from FE.
 
 
 # ── Get current user ───────────────────────────────────────────────────────────
@@ -1353,34 +1248,9 @@ async def update_company_profile(
     return {"message": "Đã cập nhật thông tin công ty"}
 
 
-# ── Change password ──────────────────────────────────────────────────────────
-
-
-@router.put("/change-password")
-async def change_password(
-    req: ChangePasswordRequest,
-    user: dict = Depends(get_current_user),
-    db: Connection = Depends(get_db),
-):
-    """Change password for current user."""
-    from auth.password import WeakPasswordError, validate_password_strength
-
-    row = await db.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["sub"])
-    if not row:
-        raise HTTPException(404, "User không tồn tại")
-
-    if not verify_password(req.current_password, row["password_hash"]):
-        raise HTTPException(400, "Mật khẩu hiện tại không đúng")
-
-    try:
-        validate_password_strength(req.new_password)
-    except WeakPasswordError as e:
-        raise HTTPException(400, str(e))
-
-    new_hash = hash_password(req.new_password)
-    await db.execute("UPDATE users SET password_hash = $1 WHERE id = $2", new_hash, user["sub"])
-    log.info(f"[auth] Password changed for {user['sub']}")
-    return {"message": "Đã đổi mật khẩu thành công"}
+# ── Change password: REMOVED in Phase 4b (Keycloak owns passwords) ──────────
+# User changes password via Keycloak account console at:
+# https://auth.silvergem.org/realms/aminra/account/#/security/signing-in
 
 
 # ── Upload company logo ──────────────────────────────────────────────────────

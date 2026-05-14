@@ -248,13 +248,102 @@ html, body {
 /* TOTP / required action panels */
 .kc-form-options { display: none; }
 
-/* Locale switcher in top corner if enabled */
+/* Locale switcher — dropdown with flag + name */
 .aminra-locale {
-  position: absolute;
+  position: fixed;
   top: 16px;
-  right: 16px;
-  font-size: 12px;
-  color: var(--ink-500);
+  right: 20px;
+  z-index: 20;
+  font-family: inherit;
 }
-.aminra-locale a { color: inherit; text-decoration: none; margin-left: 8px; }
-.aminra-locale a:hover { color: var(--navy-900); }
+.aminra-locale > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-900);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(10, 31, 68, 0.08);
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.aminra-locale > summary::-webkit-details-marker { display: none; }
+.aminra-locale > summary:hover {
+  background: #FFFFFF;
+  border-color: var(--navy-100);
+  box-shadow: 0 4px 12px rgba(10, 31, 68, 0.12);
+}
+.aminra-locale > summary .flag { font-size: 16px; line-height: 1; }
+.aminra-locale > summary .name { font-weight: 500; }
+.aminra-locale > summary .chevron {
+  color: var(--ink-500);
+  margin-left: 2px;
+  transition: transform 0.2s;
+}
+.aminra-locale[open] > summary .chevron { transform: rotate(180deg); }
+.aminra-locale[open] > summary {
+  background: #FFFFFF;
+  border-color: var(--navy-900);
+  box-shadow: 0 4px 12px rgba(10, 31, 68, 0.12);
+}
+
+.aminra-locale-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 32px rgba(10, 31, 68, 0.14);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: aminra-menu-in 0.16s ease-out;
+}
+@keyframes aminra-menu-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.aminra-locale-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink-900);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.aminra-locale-item .flag { font-size: 18px; line-height: 1; }
+.aminra-locale-item .name { flex: 1; }
+.aminra-locale-item:hover {
+  background: var(--cream-50);
+  color: var(--navy-900);
+}
+.aminra-locale-item.active {
+  background: var(--navy-100);
+  color: var(--navy-900);
+  font-weight: 600;
+  cursor: default;
+}
+.aminra-locale-item.active .check { color: var(--navy-900); }
+
+/* Close dropdown when clicking outside (CSS-only via focus-within fallback) */
+@media (max-width: 480px) {
+  .aminra-locale { top: 12px; right: 12px; }
+  .aminra-locale > summary { font-size: 12px; padding: 6px 12px; }
+  .aminra-locale-menu { min-width: 160px; }
+}
