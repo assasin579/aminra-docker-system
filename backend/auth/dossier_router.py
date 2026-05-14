@@ -83,20 +83,10 @@ class DossierUpdate(BaseModel):
 
 
 async def _resolve_tenant_id(db, user: dict) -> Optional[UUID]:
-    """Resolve canonical tenant_id (DB UUID, not Keycloak slug) for the user.
-
-    For Keycloak users `tenant_id` from JWT may be a slug. Use email lookup
-    to find DB row, then use row.tenant_id (or row.id if owner with null tenant).
-    """
-    row = await db.fetchrow(
-        "SELECT id, tenant_id, is_owner FROM users WHERE email = $1", user["email"],
-    )
-    if not row:
-        return None
-    # Owner: tenant_id may be null; their own user.id IS the tenant root
-    if row["is_owner"]:
-        return row["tenant_id"] or row["id"]
-    return row["tenant_id"]
+    """Resolve canonical tenant_id (DB UUID, not Keycloak slug). Thin shim
+    over the shared helper so existing call sites stay readable."""
+    from .identity import resolve_canonical_tenant_id
+    return await resolve_canonical_tenant_id(user, db)
 
 
 async def _row_to_public(db, row, include_documents: bool = False) -> DossierPublic:

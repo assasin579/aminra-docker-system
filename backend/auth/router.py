@@ -13,6 +13,7 @@ from .jwt_utils import (
     require_business_owner,
 )
 from . import keycloak_admin
+from .identity import resolve_canonical_user_id
 from .rate_limit import rate_limit_api
 from .models import (
     BusinessRegisterRequest,
@@ -1299,29 +1300,9 @@ async def update_company_profile(
     db: Connection = Depends(get_db),
 ):
     """Update company profile fields (owner only)."""
-    # Resolve canonical AMINRA user.id. JWT sub may be Keycloak UUID (not
-    # AMINRA DB id) when token comes via Keycloak SSO. Look up by email
-    # when sub is not a valid AMINRA user row.
-    import uuid as _uuid
-    target_id = None
-    raw_sub = owner.get("sub")
-    if raw_sub:
-        try:
-            _uuid.UUID(str(raw_sub))
-            exists = await db.fetchval(
-                "SELECT 1 FROM users WHERE id = $1::uuid", raw_sub,
-            )
-            if exists:
-                target_id = raw_sub
-        except (ValueError, TypeError):
-            pass
-    if not target_id:
-        row = await db.fetchrow(
-            "SELECT id FROM users WHERE email = $1", owner["email"],
-        )
-        if not row:
-            raise HTTPException(404, "User row not found. Call /auth/me first.")
-        target_id = str(row["id"])
+    target_id = await resolve_canonical_user_id(owner, db)
+    if target_id is None:
+        raise HTTPException(404, "User row not found. Call /auth/me first.")
 
     await db.execute(
         """UPDATE users
@@ -1331,7 +1312,7 @@ async def update_company_profile(
                phone = COALESCE(NULLIF($4, ''), phone),
                email = COALESCE(NULLIF($5, ''), email),
                manager_name = COALESCE(NULLIF($6, ''), manager_name)
-           WHERE id = $7::uuid""",
+           WHERE id = $7""",
         req.company_name,
         req.representative_name,
         req.address,
