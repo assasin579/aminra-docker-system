@@ -1,19 +1,28 @@
 "use client";
 
+/**
+ * Phase 4c (2026-05-14): Admin auth via Keycloak realm role `platform_admin`.
+ *
+ * Token comes from the same Keycloak SSO session as regular users — there is
+ * no separate admin login form. `isAdmin` derives from the JWT's
+ * `realm_access.roles` claim. `login()` kicks off `signinRedirect` with a
+ * return-to of `/admin`; `logout()` ends the Keycloak SSO session entirely.
+ */
+
 import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
+  useState,
   ReactNode,
 } from "react";
-import { parseApiError } from "@/lib/apiError";
+import { signinRedirect, signoutRedirect } from "@/lib/auth-oidc";
 
 interface AdminAuthState {
   isAdmin: boolean;
   token: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (returnTo?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -24,70 +33,71 @@ const AdminAuthContext = createContext<AdminAuthState>({
   logout: () => {},
 });
 
-const TOKEN_KEY = "aminra_admin_token";
-const API = "/api";
+const USER_TOKEN_KEY = "aminra_user_token";
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    // base64url → base64
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function hasPlatformAdminRole(token: string | null): boolean {
+  if (!token) return false;
+  const claims = decodeJwtPayload(token);
+  if (!claims) return false;
+  const realm = claims["realm_access"] as { roles?: string[] } | undefined;
+  return Array.isArray(realm?.roles) && realm!.roles!.includes("platform_admin");
+}
+
+function readUserToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return (
+    localStorage.getItem(USER_TOKEN_KEY) ||
+    sessionStorage.getItem(USER_TOKEN_KEY) ||
+    null
+  );
+}
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
-  // Restore token from localStorage and verify with backend
   useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (!stored) return;
-    fetch(`${API}/admin/verify`, {
-      headers: { Authorization: `Bearer ${stored}` },
-    })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.valid) setToken(stored);
-        else localStorage.removeItem(TOKEN_KEY);
-      })
-      .catch(() => localStorage.removeItem(TOKEN_KEY));
+    if (typeof window === "undefined") return;
+    setToken(readUserToken());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === USER_TOKEN_KEY || e.key === null) {
+        setToken(readUserToken());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch(`${API}/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(err, "Đăng nhập thất bại"));
-    }
-    const { token: t } = await res.json();
-    setToken(t);
-    localStorage.setItem(TOKEN_KEY, t);
-    // Clear user session — admin and user sessions must not coexist
-    localStorage.removeItem("aminra_user_token");
-    localStorage.removeItem("aminra_user_profile");
-    sessionStorage.removeItem("aminra_user_token");
-    sessionStorage.removeItem("aminra_user_profile");
-    document.cookie = "aminra_session=; path=/; max-age=0";
+  const login = useCallback(async (returnTo?: string) => {
+    await signinRedirect(returnTo ?? "/admin");
   }, []);
 
   const logout = useCallback(() => {
-    if (token) {
-      fetch(`${API}/admin/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
     setToken(null);
-    localStorage.removeItem(TOKEN_KEY);
-    // Cross-context cleanup: never leave a stale user token after admin logout
-    localStorage.removeItem("aminra_user_token");
-    localStorage.removeItem("aminra_user_profile");
-    document.cookie = "aminra_session=; path=/; max-age=0";
-    try {
-      sessionStorage.clear();
-    } catch {}
-  }, [token]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(USER_TOKEN_KEY);
+      sessionStorage.removeItem(USER_TOKEN_KEY);
+      localStorage.removeItem("aminra_user_profile");
+    }
+    void signoutRedirect();
+  }, []);
+
+  const isAdmin = hasPlatformAdminRole(token);
 
   return (
-    <AdminAuthContext.Provider
-      value={{ isAdmin: !!token, token, login, logout }}
-    >
+    <AdminAuthContext.Provider value={{ isAdmin, token, login, logout }}>
       {children}
     </AdminAuthContext.Provider>
   );

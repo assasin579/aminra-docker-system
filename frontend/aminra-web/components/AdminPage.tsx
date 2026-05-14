@@ -10,7 +10,6 @@ import {
 } from "react";
 import { useAdminAuth } from "@/components/AdminAuthContext";
 import { useUserAuth } from "@/components/UserAuthContext";
-import AdminLoginModal from "@/components/AdminLoginModal";
 import AdminUserManager from "@/components/AdminUserManager";
 import { parseApiError } from "@/lib/apiError";
 import Modal from "@/components/Modal";
@@ -2275,17 +2274,16 @@ function PlaceholderManager({ token }: { token: string }) {
 }
 
 export default function AdminPageClient() {
-  const { isAdmin, token } = useAdminAuth();
+  const { isAdmin, token, login: adminLogin } = useAdminAuth();
   const { isAuthenticated: isUserLoggedIn } = useUserAuth();
-  const [showLogin, setShowLogin] = useState(false);
   const [activeSection, setActiveSection] = useState<
     "templates" | "users" | "placeholders"
   >("templates");
   const [activeGroup, setActiveGroup] = useState(0);
   const [activeType, setActiveType] = useState(DOC_TYPE_GROUPS[0].types[0].id);
 
-  // Block access when a business/provider user is logged in
-  if (isUserLoggedIn) {
+  // Logged in but not a `platform_admin` realm member (e.g. business / auditor)
+  if (isUserLoggedIn && !isAdmin) {
     return (
       <div className="grid place-items-center min-h-[70vh] text-center px-4">
         <div className="admin-scale-in">
@@ -2326,8 +2324,9 @@ export default function AdminPageClient() {
             className="text-base mb-4 max-w-sm mx-auto leading-relaxed"
             style={{ color: "#6B7280" }}
           >
-            Bạn đang đăng nhập bằng tài khoản doanh nghiệp/tổ chức. Vui lòng
-            đăng xuất trước khi truy cập khu vực Admin.
+            Tài khoản hiện tại không có quyền Admin (cần realm role
+            <code className="mx-1">platform_admin</code> trong Keycloak). Đăng
+            xuất rồi đăng nhập lại bằng tài khoản admin để tiếp tục.
           </p>
         </div>
       </div>
@@ -2381,7 +2380,7 @@ export default function AdminPageClient() {
             template đánh giá.
           </p>
           <button
-            onClick={() => setShowLogin(true)}
+            onClick={() => void adminLogin("/admin")}
             className="inline-grid items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
             style={{
               gridTemplateColumns: "auto 1fr",
@@ -2403,9 +2402,8 @@ export default function AdminPageClient() {
                 d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
               />
             </svg>
-            Đăng nhập Admin
+            Đăng nhập Admin (Keycloak SSO)
           </button>
-          {showLogin && <AdminLoginModal onClose={() => setShowLogin(false)} />}
         </div>
       </div>
     );

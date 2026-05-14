@@ -2,8 +2,6 @@ import os
 import sys
 import logging
 import json as _json
-import secrets
-import time
 import uuid
 import httpx
 from contextlib import asynccontextmanager
@@ -37,7 +35,7 @@ from auth.db import init_pool, close_pool
 from auth.router import router as auth_router
 from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
-from auth.jwt_utils import get_current_user
+from auth.jwt_utils import get_current_user, decode_token
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
 
@@ -174,59 +172,26 @@ TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATE_FILES_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATE_REVISIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── Admin auth ─────────────────────────────────────────────────────────────────
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-if not ADMIN_PASSWORD:
-    log.warning("ADMIN_PASSWORD not set — admin panel login disabled")
-    ADMIN_PASSWORD = secrets.token_hex(32)  # random = effectively disabled
-ADMIN_SECRET = os.getenv("ADMIN_SECRET", secrets.token_hex(32))
-SESSION_TTL = 8 * 3600  # 8 hours
-_SESSIONS_FILE = Path("data/admin_sessions.json")
-
-
-def _load_sessions() -> Dict[str, float]:
-    try:
-        if _SESSIONS_FILE.exists():
-            raw = _json.loads(_SESSIONS_FILE.read_text())
-            # Auto-clean expired sessions
-            now = time.time()
-            cleaned = {k: v for k, v in raw.items() if v > now}
-            if len(cleaned) != len(raw):
-                _SESSIONS_FILE.write_text(_json.dumps(cleaned))
-            return cleaned
-    except Exception:
-        pass
-    return {}
-
-
-def _save_sessions(sessions: Dict[str, float]):
-    _SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _SESSIONS_FILE.write_text(_json.dumps(sessions))
-
-
-def _set_session(token: str, expiry: float):
-    s = _load_sessions()
-    s[token] = expiry
-    _save_sessions(s)
-
-
-def _remove_session(token: str):
-    s = _load_sessions()
-    s.pop(token, None)
-    _save_sessions(s)
+# ── Admin auth (Phase 4c: Keycloak realm role `platform_admin`) ────────────────
+# Legacy opaque-session admin (/admin/login + admin_sessions.json file) removed
+# 2026-05-14 — admin now authenticates via standard Keycloak SSO flow, then
+# `_require_admin` checks JWT for realm role `platform_admin`.
 
 
 def _require_admin(request: Request):
+    """Validate Keycloak JWT + check realm role `platform_admin`.
+
+    Returns claims dict on success (caller can ignore). Raises 401/403 otherwise.
+    """
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(401, "Unauthorized")
     token = auth[7:]
-    sessions = _load_sessions()
-    exp = sessions.get(token)
-    if not exp or time.time() > exp:
-        _remove_session(token)
-        raise HTTPException(401, "Session expired or invalid")
+    claims = decode_token(token)
+    realm_roles = (claims.get("realm_access") or {}).get("roles", [])
+    if "platform_admin" not in realm_roles:
+        raise HTTPException(403, "Admin access required (Keycloak realm role `platform_admin`)")
+    return claims
 
 
 # ── Halal document type registry ───────────────────────────────────────────────
@@ -414,11 +379,6 @@ class AuditorReview(BaseModel):
     reviewed_at: str = ""
 
 
-class AdminLoginRequest(BaseModel):
-    username: str
-    password: str
-
-
 class TemplateCriterion(BaseModel):
     id: str
     name: str
@@ -458,23 +418,6 @@ class TemplateConfig(BaseModel):
 
 
 # ── Admin endpoints ────────────────────────────────────────────────────────────
-
-
-@app.post("/admin/login")
-def admin_login(req: AdminLoginRequest, _: None = Depends(rate_limit_api)):
-    if req.username != ADMIN_USERNAME or req.password != ADMIN_PASSWORD:
-        raise HTTPException(401, "Sai tên đăng nhập hoặc mật khẩu")
-    token = secrets.token_hex(32)
-    _set_session(token, time.time() + SESSION_TTL)
-    return {"token": token, "expires_in": SESSION_TTL}
-
-
-@app.post("/admin/logout")
-def admin_logout(request: Request):
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        _remove_session(auth[7:])
-    return {"message": "Logged out"}
 
 
 @app.get("/admin/verify")
@@ -721,16 +664,21 @@ def list_template_files_lang(doc_type: str, request: Request):
 
 
 def _verify_admin_token_string(token: str) -> bool:
-    """Validate a legacy admin opaque token without going through Bearer header.
-    Used for query-param auth on file preview links opened in new browser tabs.
+    """Validate a Keycloak JWT passed via `?token=` query string + check
+    `platform_admin` realm role.
+
+    Used for file preview links opened in new browser tabs where setting a
+    Bearer header isn't possible. Post-Phase-4c the legacy opaque admin
+    session is gone — only Keycloak tokens are accepted.
     """
     if not token:
         return False
-    sessions = _load_sessions()
-    exp = sessions.get(token)
-    if not exp or time.time() > exp:
+    try:
+        claims = decode_token(token)
+    except HTTPException:
         return False
-    return True
+    realm_roles = (claims.get("realm_access") or {}).get("roles", [])
+    return "platform_admin" in realm_roles
 
 
 def _require_admin_or_token(request: Request, token: Optional[str]):

@@ -113,7 +113,7 @@ export default function AdminIndustriesPage() {
     const t = readAdminToken();
     setToken(t);
     if (!t) {
-      setError("Cần đăng nhập admin (mở /admin/login hoặc /provider/login)");
+      setError("Cần đăng nhập tài khoản admin qua Keycloak SSO (mở /admin).");
       setLoading(false);
       return;
     }

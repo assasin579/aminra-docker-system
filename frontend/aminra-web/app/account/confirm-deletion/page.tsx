@@ -33,7 +33,6 @@ export default function ConfirmDeletionPage() {
       [
         "aminra_user_token",
         "aminra_user_profile",
-        "aminra_admin_token",
       ].forEach((k) => {
         localStorage.removeItem(k);
         sessionStorage.removeItem(k);

@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef } from "react";
 import { useAdminAuth } from "./AdminAuthContext";
 import { useUserAuth } from "./UserAuthContext";
-import AdminLoginModal from "./AdminLoginModal";
 import NotificationBell from "./NotificationBell";
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -14,9 +13,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const [clientReady, setClientReady] = useState(false);
-  const { isAdmin, logout: logoutAdmin } = useAdminAuth();
+  const { isAdmin, login: adminLogin, logout: logoutAdmin } = useAdminAuth();
   const { user, isAuthenticated, logout: logoutUser, token } = useUserAuth();
-  const [showLogin, setShowLogin] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
 
@@ -683,7 +681,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 Đăng nhập Tổ chức
               </Link>
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => void adminLogin("/admin")}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0A1F44]/20 hover:text-white transition-colors"
               >
                 <svg
@@ -718,17 +716,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </p>
       </div>
 
-      {showLogin && (
-        <AdminLoginModal
-          onClose={(loggedIn) => {
-            setShowLogin(false);
-            if (loggedIn) {
-              router.push("/admin");
-              onClose?.();
-            }
-          }}
-        />
-      )}
     </aside>
   );
 }
