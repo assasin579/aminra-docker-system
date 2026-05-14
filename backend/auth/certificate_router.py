@@ -257,7 +257,7 @@ async def list_certificates(
 @router.get("/certificates/registry")
 async def cert_registry(
     status: Optional[str] = Query(None),
-    expiring_days: int = Query(0),
+    expiring_days: int = Query(0, ge=0, le=365),
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):

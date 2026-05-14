@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from asyncpg import Connection
 from pydantic import BaseModel
 from typing import Optional
@@ -72,7 +72,7 @@ async def approve_provider(
 
 @router.get("/admin/overdue-submissions")
 async def admin_overdue_submissions(
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     admin: dict = Depends(require_admin),
     db: Connection = Depends(get_db),
 ):
