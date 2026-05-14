@@ -30,6 +30,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_admin
 
 log = logging.getLogger("aminra.standard_type")
@@ -233,13 +234,15 @@ async def admin_create(
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            RETURNING *""",
         req.code, req.name_vi, req.name_en, req.organization, req.scheme_version,
-        req.description, req.full_text_url, req.enabled, req.display_order, user["sub"],
+        req.description, req.full_text_url, req.enabled, req.display_order,
+        await resolve_canonical_user_id(user, db),
     )
     log.info("[standard] admin %s created %s", user["email"], req.code)
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
         "VALUES ($1, 'standard_type_created', 'standard_type', $2, $3::jsonb)",
-        user["sub"], row["id"], f'{{"code":"{req.code}"}}',
+        actor_id, row["id"], f'{{"code":"{req.code}"}}',
     )
     return await _row_to_public(db, row)
 

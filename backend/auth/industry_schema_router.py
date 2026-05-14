@@ -27,6 +27,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_admin
 
 log = logging.getLogger("aminra.industry_schema")
@@ -258,11 +259,12 @@ async def select_industry(
     log.info("[industry] user %s (%s) assigned to %s",
              target_user_id, user["email"], schema_row["code"])
 
-    # Audit log
+    # Audit log — `target_user_id` (AMINRA users.id) already resolved above,
+    # so reuse it. user["sub"] is the Keycloak UUID and would FK-violate.
     await db.execute(
         "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
         "VALUES ($1, 'tenant_industry_assigned', 'tenant_industry_schema', $2, $3::jsonb)",
-        user["sub"], req.schema_id,
+        target_user_id, req.schema_id,
         f'{{"schema_code":"{schema_row["code"]}","schema_name":"{schema_row["name_vi"]}"}}',
     )
 
@@ -309,6 +311,8 @@ async def admin_create(
     if existing:
         raise HTTPException(status.HTTP_409_CONFLICT, f"Code '{req.code}' already exists")
 
+    actor_id = await resolve_canonical_user_id(user, db)
+
     row = await db.fetchrow(
         """INSERT INTO industry_schemas
            (code, name_vi, name_en, description, jakim_scheme, icon,
@@ -317,14 +321,14 @@ async def admin_create(
            RETURNING *""",
         req.code, req.name_vi, req.name_en, req.description,
         req.jakim_scheme, req.icon, req.enabled, req.display_order,
-        user["sub"],
+        actor_id,
     )
     log.info("[industry] admin %s created schema %s", user["email"], req.code)
 
     await db.execute(
         "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
         "VALUES ($1, 'industry_schema_created', 'industry_schema', $2, $3::jsonb)",
-        user["sub"], row["id"], f'{{"code":"{req.code}"}}',
+        actor_id, row["id"], f'{{"code":"{req.code}"}}',
     )
     return await _row_to_public(db, row)
 
@@ -355,10 +359,11 @@ async def admin_update(
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Schema not found")
 
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
         "VALUES ($1, 'industry_schema_updated', 'industry_schema', $2, $3::jsonb)",
-        user["sub"], schema_id,
+        actor_id, schema_id,
         '{"fields":' + str(list(req.model_dump(exclude_unset=True).keys())).replace("'", '"') + '}',
     )
     return await _row_to_public(db, row)
@@ -380,10 +385,11 @@ async def admin_disable(
     if result.endswith("0"):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Schema not found")
 
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         "INSERT INTO audit_logs (user_id, action, entity_type, entity_id) "
         "VALUES ($1, 'industry_schema_disabled', 'industry_schema', $2)",
-        user["sub"], schema_id,
+        actor_id, schema_id,
     )
 
 
@@ -413,10 +419,11 @@ async def admin_replace_doc_types(
                 schema_id, dt.doc_type, dt.required, dt.display_order,
             )
 
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
         "VALUES ($1, 'industry_schema_doc_types_replaced', 'industry_schema', $2, $3::jsonb)",
-        user["sub"], schema_id,
+        actor_id, schema_id,
         f'{{"count":{len(req.doc_types)}}}',
     )
     return {"ok": True, "count": len(req.doc_types)}

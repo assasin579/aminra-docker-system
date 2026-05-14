@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from uuid import uuid4 as _uuid4
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, decode_token
 from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
@@ -1009,6 +1010,9 @@ async def _audit_strict(
     ua = request.headers.get("user-agent") if request else None
     if ua:
         enriched.setdefault("user_agent", ua)
+    # Resolve canonical AMINRA users.id — `user["sub"]` is the Keycloak UUID
+    # under SSO and would FK-violate audit_logs.user_id.
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         """
         INSERT INTO audit_logs
@@ -1016,7 +1020,7 @@ async def _audit_strict(
              action, entity_type, entity_id, changes, metadata)
         VALUES ($1,$2,$3,$4,$5,'document',$6,NULL,$7::jsonb)
         """,
-        user.get("sub"),
+        actor_id,
         user.get("email"),
         user.get("role"),
         user.get("tenant_id"),
