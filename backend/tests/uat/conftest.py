@@ -21,10 +21,19 @@ import subprocess
 import time
 import uuid
 
+import httpx
 import pytest
 
 DB_CONTAINER = os.getenv("AMINRA_DB_CONTAINER", "aminra-docker-system-postgres-db-1")
 BACKEND_CONTAINER = os.getenv("AMINRA_BACKEND_CONTAINER", "aminra-docker-system-aminra-backend-1")
+
+# Phase 4c-7: Keycloak SSO is the sole auth path. UAT provisions test users
+# via /admin/users (which mirrors a Keycloak account with emailVerified=True)
+# so the password grant works without an email round-trip. Both the admin
+# token and individual user tokens come straight from the realm.
+KC_PUBLIC_URL = os.getenv("KEYCLOAK_PUBLIC_URL", "https://auth.silvergem.org")
+KC_REALM = os.getenv("KEYCLOAK_REALM", "aminra")
+KC_CLIENT_ID = os.getenv("KEYCLOAK_PUBLIC_CLIENT_ID", "aminra-frontend")
 
 
 # ── Backend reachability ────────────────────────────────────────────────────
@@ -83,34 +92,102 @@ def set_feature_flag(name: str, enabled: bool) -> None:
             continue
 
 
-# ── Business owner registration ─────────────────────────────────────────────
+# ── Keycloak auth helpers (Phase 4c-7) ──────────────────────────────────────
+
+
+def kc_password_grant(email: str, password: str) -> httpx.Response:
+    """OAuth password grant directly against the Keycloak realm.
+
+    Replaces the legacy `POST /auth/login` removed in Phase 4b. Returns the
+    raw httpx.Response so callers can assert both happy (200 + access_token)
+    and error paths (400/401) without changing structure.
+    """
+    return httpx.post(
+        f"{KC_PUBLIC_URL}/realms/{KC_REALM}/protocol/openid-connect/token",
+        data={
+            "grant_type": "password",
+            "client_id": KC_CLIENT_ID,
+            "username": email,
+            "password": password,
+        },
+        timeout=10,
+    )
+
+
+_ADMIN_TOKEN_CACHE: dict[str, object] = {"token": None, "expires_at": 0.0}
+
+
+def _get_platform_admin_token() -> str | None:
+    """Cached platform_admin token (or None when test admin creds aren't configured).
+
+    Set `TEST_ADMIN_EMAIL` + `TEST_ADMIN_PASSWORD` to a Keycloak user with the
+    `platform_admin` realm role to enable UAT user provisioning. Without them
+    register_business skips cleanly — the rest of the suite still runs against
+    pre-seeded users.
+    """
+    email = os.getenv("TEST_ADMIN_EMAIL")
+    password = os.getenv("TEST_ADMIN_PASSWORD")
+    if not email or not password:
+        return None
+    now = time.time()
+    if _ADMIN_TOKEN_CACHE["token"] and now < float(_ADMIN_TOKEN_CACHE["expires_at"]) - 30:
+        return _ADMIN_TOKEN_CACHE["token"]  # type: ignore[return-value]
+    r = kc_password_grant(email, password)
+    if r.status_code != 200:
+        return None
+    data = r.json()
+    _ADMIN_TOKEN_CACHE["token"] = data["access_token"]
+    _ADMIN_TOKEN_CACHE["expires_at"] = now + int(data.get("expires_in", 60))
+    return data["access_token"]
+
+
+# ── Business owner provisioning ─────────────────────────────────────────────
 
 
 def register_business(client, *, suffix: str = "") -> dict:
-    """Register a fresh business owner. Returns full credentials dict.
+    """Provision a fresh business owner via the admin path so the user lands
+    with `emailVerified=True` and is immediately usable for password grant.
 
-    Skips test if registration fails (rate-limit, validation, or backend down).
+    Skips the test when the admin creds are missing or any step fails — UAT
+    must not silently fall back to broken auth paths.
     """
+    admin_token = _get_platform_admin_token()
+    if not admin_token:
+        pytest.skip(
+            "UAT register_business needs TEST_ADMIN_EMAIL + TEST_ADMIN_PASSWORD "
+            "for a Keycloak user with realm role `platform_admin`."
+        )
+
     rid = uuid.uuid4().hex[:8]
     email = f"uat-{rid}{suffix}@aminra-qa.com"
     password = "UATPass2026!"
     r = client.post(
-        "/auth/business/register",
+        "/admin/users",
+        headers={"Authorization": f"Bearer {admin_token}"},
         json={
-            "email": email, "password": password,
+            "email": email,
+            "password": password,
             "company_name": f"UAT-{rid}",
             "company_code": f"UAT-{rid}",
+            "role": "business",
         },
         timeout=10,
     )
-    if r.status_code != 201:
-        pytest.skip(f"Cannot register business (HTTP {r.status_code}): {r.text[:200]}")
+    if r.status_code != 200:
+        pytest.skip(f"Cannot provision business via /admin/users (HTTP {r.status_code}): {r.text[:200]}")
     body = r.json()
+
+    grant = kc_password_grant(email, password)
+    if grant.status_code != 200:
+        pytest.skip(f"KC password grant failed for new business (HTTP {grant.status_code}): {grant.text[:200]}")
+    token = grant.json()["access_token"]
+
     return {
-        "email": email, "password": password,
-        "token": body["access_token"],
-        "user_id": body["user"]["id"],
-        "tenant_id": body["user"]["tenant_id"],
+        "email": email,
+        "password": password,
+        "token": token,
+        "user_id": body["id"],
+        "tenant_id": body["tenant_id"],
     }
 
 

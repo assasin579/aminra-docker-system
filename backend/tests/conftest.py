@@ -189,12 +189,30 @@ def admin_credentials() -> tuple[str, str] | None:
 
 
 @pytest.fixture(scope="session")
-def admin_token(client, admin_credentials):
-    """Live JWT for admin_credentials, or None if credentials aren't configured."""
+def admin_token(admin_credentials):
+    """Keycloak access_token for `admin_credentials`, or None when creds
+    aren't configured.
+
+    Phase 4c-7: /auth/login is gone. Credentials must be a Keycloak user with
+    the `platform_admin` realm role assigned (via the KC admin console or the
+    `aminra-admin-cli` service account).
+    """
     if admin_credentials is None:
         return None
     email, password = admin_credentials
-    resp = client.post("/auth/login", json={"email": email, "password": password})
+    kc_public = os.getenv("KEYCLOAK_PUBLIC_URL", "https://auth.silvergem.org")
+    kc_realm = os.getenv("KEYCLOAK_REALM", "aminra")
+    kc_client = os.getenv("KEYCLOAK_PUBLIC_CLIENT_ID", "aminra-frontend")
+    resp = httpx.post(
+        f"{kc_public}/realms/{kc_realm}/protocol/openid-connect/token",
+        data={
+            "grant_type": "password",
+            "client_id": kc_client,
+            "username": email,
+            "password": password,
+        },
+        timeout=10,
+    )
     if resp.status_code == 200:
         return resp.json()["access_token"]
     return None

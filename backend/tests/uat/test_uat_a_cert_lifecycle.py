@@ -25,6 +25,7 @@ from .conftest import (
     backend_unreachable,
     delete_doc,
     insert_doc,
+    kc_password_grant,
     register_business,
     set_approval,
     skip_if_not_implemented,
@@ -55,12 +56,11 @@ class TestHappyPath:
     def test_a02_business_can_login_after_register(self, client):
         """UAT-A-02
         Given: a registered business
-        When: they POST /auth/login with same credentials
-        Then: they receive a fresh JWT
+        When: they request a Keycloak token via password grant
+        Then: they receive a fresh access_token
         """
         creds = register_business(client, suffix=f"-a02-{uuid.uuid4().hex[:4]}")
-        r = client.post("/auth/login",
-                        json={"email": creds["email"], "password": creds["password"]})
+        r = kc_password_grant(creds["email"], creds["password"])
         assert r.status_code == 200
         assert r.json().get("access_token")
 
@@ -175,16 +175,16 @@ class TestErrorCases:
         assert r.status_code in (400, 409, 422)
 
     def test_a12_login_with_wrong_password_rejected(self, client, biz_a):
-        """UAT-A-12: wrong password → 401."""
-        r = client.post("/auth/login",
-                        json={"email": biz_a["email"], "password": "WRONG-Pass-123!"})
+        """UAT-A-12: wrong password → 401 (KC: invalid_grant)."""
+        r = kc_password_grant(biz_a["email"], "WRONG-Pass-123!")
         assert r.status_code in (401, 400)
 
     def test_a13_login_with_unknown_email_rejected(self, client):
-        """UAT-A-13: unknown email → 401."""
-        r = client.post("/auth/login",
-                        json={"email": f"never-{uuid.uuid4().hex[:8]}@aminra-qa.com",
-                              "password": "Anything123!"})
+        """UAT-A-13: unknown email → 401 (KC: invalid_grant)."""
+        r = kc_password_grant(
+            f"never-{uuid.uuid4().hex[:8]}@aminra-qa.com",
+            "Anything123!",
+        )
         assert r.status_code in (401, 400, 404)
 
     def test_a14_unauthenticated_documents_list_blocked(self, client):
@@ -431,9 +431,8 @@ class TestNegativeSecurity:
         assert r.status_code in (401, 403)
 
     def test_a42_sql_injection_in_login_rejected(self, client):
-        """UAT-A-42: SQLi attempt in email field doesn't crash backend."""
-        r = client.post("/auth/login",
-                        json={"email": "x' OR '1'='1", "password": "anything"})
+        """UAT-A-42: SQLi attempt in username field doesn't crash Keycloak."""
+        r = kc_password_grant("x' OR '1'='1", "anything")
         assert r.status_code in (400, 401, 422)
 
     def test_a43_xss_in_company_name_stored_safely(self, client):
@@ -494,11 +493,9 @@ class TestNegativeSecurity:
         assert r1.status_code == r2.status_code
 
     def test_a49_double_login_returns_independent_tokens(self, client, biz_a):
-        """UAT-A-49: two logins return tokens that are both valid (no session-cap bug)."""
-        r1 = client.post("/auth/login",
-                         json={"email": biz_a["email"], "password": biz_a["password"]})
-        r2 = client.post("/auth/login",
-                         json={"email": biz_a["email"], "password": biz_a["password"]})
+        """UAT-A-49: two KC grants return tokens that are both valid (no session-cap bug)."""
+        r1 = kc_password_grant(biz_a["email"], biz_a["password"])
+        r2 = kc_password_grant(biz_a["email"], biz_a["password"])
         assert r1.status_code == 200 and r2.status_code == 200
 
     def test_a50_token_for_other_tenant_cannot_be_swapped(self, client, biz_a, biz_b):
