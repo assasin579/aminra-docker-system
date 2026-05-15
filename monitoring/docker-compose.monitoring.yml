@@ -9,11 +9,38 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerting_rules.yml:/etc/prometheus/alerting_rules.yml:ro
       - prometheus-data:/prometheus
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  # ── Docker stats exporter ────────────────────────────────────────────────────
+  # Replaces cAdvisor for this host. Docker 28+ `overlayfs` storage driver
+  # breaks cAdvisor's layerdb lookup → no `name=` label → cannot filter alerts
+  # by container name. This is a ~60-line Python exporter that talks straight
+  # to the Docker socket and exposes per-container memory metrics on :9417.
+  # Added 2026-05-14 (U18). Re-evaluate when cAdvisor upstream fixes
+  # https://github.com/google/cadvisor/issues — overlayfs driver support.
+  docker-stats-exporter:
+    build:
+      context: ./docker-stats-exporter
+      dockerfile: Dockerfile
+    image: aminra/docker-stats-exporter:local
+    container_name: aminra-docker-stats-exporter
+    ports:
+      - "127.0.0.1:9417:9417"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - POLL_INTERVAL=30
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - monitoring-network
     restart: unless-stopped

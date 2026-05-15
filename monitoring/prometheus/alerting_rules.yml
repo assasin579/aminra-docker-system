@@ -80,6 +80,33 @@ groups:
           summary: "Backup chưa chạy thành công > 24h"
           description: "Cron `~/scripts/db_backup.sh` không emit metric trong 24h. Check cron daemon + B2/R2 credentials."
 
+      - alert: FrontendDevHighMemory
+        # U18 — FE dev mode (Next.js + Turbopack) memory leak class.
+        # Incidents: 2026-05-07, 2026-05-11. Replaces manual user complaint.
+        # Metric emitted by docker-stats-exporter (working set = usage − inactive_file).
+        expr: docker_container_memory_usage_pct{name="aminra-docker-system-aminra-frontend-dev-1"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "FE dev container memory > 85% của 2.5G limit"
+          description: "Turbopack leak class. Action: `make fe-prod` để switch sang prod build (no HMR, no leak). Hoặc `docker compose restart aminra-frontend-dev` để mua thêm 1-2h."
+
+      - alert: FrontendDevMemoryGrowth
+        # Early warning — sustained growth rate trước khi chạm 85%.
+        # > 50 MB / 1h trong 30m liên tục = leak signature (steady-state dao động vài MB).
+        expr: |
+          deriv(docker_container_memory_usage_bytes{name="aminra-docker-system-aminra-frontend-dev-1"}[1h])
+          > 50 * 1024 * 1024 / 3600
+        for: 30m
+        labels:
+          severity: info
+          team: ops
+        annotations:
+          summary: "FE dev memory đang grow > 50MB/h sustained 30m"
+          description: "Steady leak signature trước khi page. Plan switch sang `make fe-prod` nếu không actively code FE."
+
       - alert: DiskAlmostFull
         expr: |
           (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"}

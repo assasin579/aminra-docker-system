@@ -21,3 +21,10 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets: ['host.docker.internal:6433']
+
+  # Docker stats exporter — per-container memory (replaces cAdvisor on this host
+  # because Docker 28+ overlayfs storage driver breaks cAdvisor metadata lookup).
+  - job_name: 'docker-stats'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['docker-stats-exporter:9417']
