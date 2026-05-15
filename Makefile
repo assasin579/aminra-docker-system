@@ -79,6 +79,37 @@ keycloak-mfa: ## Configure conditional MFA flow (run after keycloak-bootstrap)
 keycloak-logs: ## Tail keycloak logs
 	@docker compose logs -f keycloak
 
+# ── Frontend dev/prod toggle (U19 — eliminate Turbopack mem leak) ────────────
+#
+# Two services compete on host port 3100:
+#   - aminra-frontend       (prod build, Next.js standalone, no HMR, no leak)
+#   - aminra-frontend-dev   (next dev + Turbopack, HMR on, leaks over time)
+#
+# Default convention post-2026-05-14: run prod (`make fe-prod`).
+# Only switch to dev (`make fe-dev`) when actively editing FE this session.
+
+.PHONY: fe-prod
+fe-prod: ## FE prod build (no HMR, no Turbopack leak) — default
+	@docker compose stop aminra-frontend-dev 2>/dev/null || true
+	@docker compose up -d --build aminra-frontend
+	@echo "→ FE prod at http://localhost:3100  (run 'make fe-dev' if editing FE)"
+
+.PHONY: fe-dev
+fe-dev: ## FE dev mode with HMR — USE ONLY when actively editing FE this session
+	@docker compose stop aminra-frontend 2>/dev/null || true
+	@docker compose --profile dev up -d aminra-frontend-dev
+	@echo "→ FE dev at http://localhost:3100  (memory leaks over time — switch back with 'make fe-prod')"
+
+.PHONY: fe-stop
+fe-stop: ## Stop both FE services
+	@docker compose stop aminra-frontend aminra-frontend-dev 2>/dev/null || true
+
+.PHONY: fe-status
+fe-status: ## Show which FE service is running + memory %
+	@docker compose ps aminra-frontend aminra-frontend-dev 2>/dev/null | tail -n +1
+	@echo
+	@docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}' aminra-frontend aminra-frontend-dev 2>/dev/null || true
+
 # ── Pre-commit ───────────────────────────────────────────────────────────────
 
 .PHONY: pre-commit-install

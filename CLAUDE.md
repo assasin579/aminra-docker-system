@@ -103,9 +103,13 @@ docker compose exec aminra-backend pytest -x
 # Backend test với DB auto-detect
 docker compose exec aminra-backend pytest tests/integration
 
-# Frontend
-cd frontend/aminra-web && npm run dev    # localhost:3100
-cd frontend/aminra-web && npm test        # Vitest
+# Frontend — convention post-2026-05-14 (U19, eliminate Turbopack mem leak):
+#   DEFAULT = prod build (`make fe-prod`). Only run dev when actively editing FE.
+make fe-prod                              # Prod build, no HMR, no leak
+make fe-dev                               # Dev + HMR — only when editing FE this session
+make fe-status                            # Which FE is running + memory %
+make fe-stop                              # Stop both
+cd frontend/aminra-web && npm test        # Vitest (host, fast)
 cd frontend/aminra-web && npm run test:e2e  # Playwright
 
 # PDF preview
