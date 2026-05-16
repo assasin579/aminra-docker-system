@@ -128,12 +128,37 @@ def validate_keycloak_token(token: str) -> dict:
 
 _ROLE_PRIORITY = ("platform_admin", "cb_admin", "auditor", "business")
 
+# Keycloak realm role names → AMINRA `users.role` enum values.
+# Existing route handlers (24+ sites in submission_router, dossier_router,
+# certificate_router, …) check `user["role"] == "provider"` / "business" /
+# "admin"; those values come from the PG enum, not from KC. The fast path
+# below used to return KC realm role names directly, which silently 403'd
+# every CB user (cb_admin ≠ provider). Same class as the tenant_id slug
+# bug fixed in b2487a5 — fix at the auth boundary once, the whole
+# downstream chain self-corrects.
+_KC_TO_PG_ROLE = {
+    "platform_admin": "admin",
+    "cb_admin": "provider",
+    "auditor": "provider",   # auditor is a sub-user under a provider org;
+                              # is_owner distinguishes from cb_admin downstream
+    "business": "business",
+}
+
 
 def _pick_app_role(realm_roles: list[str]) -> Optional[str]:
+    """Pick the most-privileged KC realm role on the token (KC vocabulary)."""
     for r in _ROLE_PRIORITY:
         if r in realm_roles:
             return r
     return None
+
+
+def _normalize_role_to_pg(kc_role: Optional[str]) -> Optional[str]:
+    """Translate KC realm role → AMINRA PG `users.role` enum value.
+    Returns None when no mapping exists (caller decides whether to 401)."""
+    if kc_role is None:
+        return None
+    return _KC_TO_PG_ROLE.get(kc_role, kc_role)
 
 
 _FAST_PATH_REQUIRED = ("email", "tenant_id", "is_owner", "status")
@@ -174,7 +199,7 @@ def _claims_to_user_via_jwt(claims: dict) -> dict:
     return {
         "sub": claims.get("sub"),
         "email": claims["email"],
-        "role": _pick_app_role(realm_roles),
+        "role": _normalize_role_to_pg(_pick_app_role(realm_roles)),
         "is_owner": is_owner,
         "status": claims["status"],
         "tenant_id": str(claims["tenant_id"]),
@@ -215,7 +240,7 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         return {
             "sub": claims.get("sub"),
             "email": email,
-            "role": keycloak_role,
+            "role": _normalize_role_to_pg(keycloak_role),
             "is_owner": False,
             "status": "pending",
             "tenant_id": None,
@@ -223,11 +248,12 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         }
 
     db_role = row["role"]
-    if keycloak_role and db_role and keycloak_role != db_role:
+    kc_role_normalized = _normalize_role_to_pg(keycloak_role)
+    if kc_role_normalized and db_role and kc_role_normalized != db_role:
         import logging
         logging.getLogger(__name__).warning(
-            "Role drift for %s: keycloak=%s db=%s — using db",
-            email, keycloak_role, db_role,
+            "Role drift for %s: keycloak=%s (=%s) db=%s — using db",
+            email, keycloak_role, kc_role_normalized, db_role,
         )
 
     return {
