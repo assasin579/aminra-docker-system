@@ -300,6 +300,8 @@ async def view_certificate(
     token: Optional[str] = Query(None),
 ):
     """View certificate as PDF. Supports ?token= for window.open."""
+    _validate_uuid(sid)
+    _validate_uuid(cid)
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         user = decode_token(auth[7:])
@@ -307,13 +309,21 @@ async def view_certificate(
         user = decode_token(token)
     else:
         raise HTTPException(401)
+    tenant_id = _require_business(user)
 
     from auth.db import get_pool
 
     pool = get_pool()
     async with pool.acquire() as db:
         row = await db.fetchrow(
-            "SELECT file_path, original_filename FROM supplier_certificates WHERE id=$1 AND supplier_id=$2", cid, sid
+            """
+            SELECT file_path, original_filename
+            FROM supplier_certificates
+            WHERE id=$1 AND supplier_id=$2 AND tenant_id=$3
+            """,
+            cid,
+            sid,
+            tenant_id,
         )
     if not row or not row["file_path"]:
         raise HTTPException(404)

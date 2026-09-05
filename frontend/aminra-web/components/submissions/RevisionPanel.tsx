@@ -85,7 +85,7 @@ export default function RevisionPanel({
 
   // Hide panel entirely when nothing actionable + no history (common on
   // freshly-submitted/approved submissions — avoids visually-dead block).
-  if (!loading && !hasAction && !hasHistory) {
+  if (!loading && !error && !hasAction && !hasHistory) {
     return null;
   }
 

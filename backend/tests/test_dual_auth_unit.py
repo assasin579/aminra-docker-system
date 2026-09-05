@@ -185,6 +185,7 @@ async def test_enrich_returns_db_user_shape():
     assert out["is_owner"] is True
     assert out["status"] == "active"
     assert out["tenant_id"] == "22222222-2222-2222-2222-222222222222"
+    assert out["realm_roles"] == ["business"]
     assert out["_keycloak"] is True
 
 
@@ -198,9 +199,10 @@ async def test_enrich_handles_missing_db_row():
         pool,
     )
     assert out["email"] == "newuser@example.com"
-    assert out["role"] == "auditor"
+    assert out["role"] == "provider"
     assert out["status"] == "pending"
     assert out["tenant_id"] is None
+    assert out["realm_roles"] == ["auditor"]
     assert out["_keycloak"] is True
 
 

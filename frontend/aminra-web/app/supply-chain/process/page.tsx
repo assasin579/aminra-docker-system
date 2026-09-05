@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import {
@@ -60,13 +60,49 @@ interface FlowEdge {
   type: "sequential" | "parallel";
 }
 
+type ProcessNodeData = Record<string, unknown> & {
+  label?: string;
+  nodeType?: "main" | "sub";
+  order?: number;
+  description?: string;
+  standard?: string;
+  responsible?: string;
+  duration?: string;
+  equipment?: string;
+  conditions?: string;
+  checklist?: string[];
+  notes?: string;
+  children?: string[];
+  parent?: string;
+};
+
+type ProcessReactNode = Node<ProcessNodeData, "stepNode">;
+
+function asNodeType(value: unknown): "main" | "sub" {
+  return value === "sub" ? "sub" : "main";
+}
+
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? value
+    : [];
+}
+
 // ── Custom Node ──────────────────────────────────────────────────────────────
 
 function StepNode({
   data,
   selected,
 }: {
-  data: { label: string; nodeType: string; order?: number };
+  data: ProcessNodeData;
   selected: boolean;
 }) {
   const isMain = data.nodeType === "main";
@@ -120,8 +156,8 @@ const nodeTypes: NodeTypes = { stepNode: StepNode };
 function flowToReact(
   nodes: FlowNode[],
   edges: FlowEdge[],
-): { rfNodes: Node[]; rfEdges: Edge[] } {
-  const rfNodes: Node[] = nodes.map((n, i) => ({
+): { rfNodes: ProcessReactNode[]; rfEdges: Edge[] } {
+  const rfNodes: ProcessReactNode[] = nodes.map((n, i) => ({
     id: n.id,
     type: "stepNode",
     position: { x: n.x || 100, y: n.y || i * 120 },
@@ -143,26 +179,26 @@ function flowToReact(
 }
 
 function reactToFlow(
-  rfNodes: Node[],
+  rfNodes: ProcessReactNode[],
   rfEdges: Edge[],
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const nodes: FlowNode[] = rfNodes.map((n, i) => ({
     id: n.id,
-    type: n.data?.nodeType || "main",
-    order: n.data?.order ?? i + 1,
-    label: n.data?.label || "Bước mới",
-    description: n.data?.description || "",
-    standard: n.data?.standard || "",
-    responsible: n.data?.responsible || "",
-    duration: n.data?.duration || "",
-    equipment: n.data?.equipment || "",
-    conditions: n.data?.conditions || "",
-    checklist: n.data?.checklist || [],
-    notes: n.data?.notes || "",
+    type: asNodeType(n.data?.nodeType),
+    order: asNumber(n.data?.order, i + 1),
+    label: asString(n.data?.label, "Bước mới"),
+    description: asString(n.data?.description),
+    standard: asString(n.data?.standard),
+    responsible: asString(n.data?.responsible),
+    duration: asString(n.data?.duration),
+    equipment: asString(n.data?.equipment),
+    conditions: asString(n.data?.conditions),
+    checklist: asStringArray(n.data?.checklist),
+    notes: asString(n.data?.notes),
     x: Math.round(n.position.x),
     y: Math.round(n.position.y),
-    children: n.data?.children || [],
-    parent: n.data?.parent || undefined,
+    children: asStringArray(n.data?.children),
+    parent: asString(n.data?.parent) || undefined,
   }));
   const edges: FlowEdge[] = rfEdges.map((e) => ({
     from: e.source,
@@ -188,9 +224,9 @@ export default function ProcessPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Editor
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ProcessReactNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selectedNode, setSelectedNode] = useState<ProcessReactNode | null>(null);
   const [processName, setProcessName] = useState("");
   const [processDesc, setProcessDesc] = useState("");
   const [saving, setSaving] = useState(false);
@@ -350,7 +386,7 @@ export default function ProcessPage() {
 
   const addNode = (type: "main" | "sub") => {
     const id = `n_${Date.now()}`;
-    const newNode: Node = {
+    const newNode: ProcessReactNode = {
       id,
       type: "stepNode",
       position: { x: 250, y: (nodes.length + 1) * 120 },
@@ -383,7 +419,8 @@ export default function ProcessPage() {
 
   // ── Node click → select ────────────────────────────────────────────────────
 
-  const onNodeClick = (_: any, node: Node) => setSelectedNode(node);
+  const onNodeClick = (_: MouseEvent, node: ProcessReactNode) =>
+    setSelectedNode(node);
 
   // ── Update selected node data ──────────────────────────────────────────────
 
@@ -700,7 +737,7 @@ export default function ProcessPage() {
                 </label>
                 {f.type === "textarea" ? (
                   <textarea
-                    value={selectedNode.data?.[f.key] || ""}
+                    value={asString(selectedNode.data?.[f.key])}
                     onChange={(e) => updateNodeData(f.key, e.target.value)}
                     rows={2}
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-none"
@@ -708,7 +745,7 @@ export default function ProcessPage() {
                   />
                 ) : (
                   <input
-                    value={selectedNode.data?.[f.key] || ""}
+                    value={asString(selectedNode.data?.[f.key])}
                     onChange={(e) => updateNodeData(f.key, e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                     style={inputStyle}
@@ -724,7 +761,7 @@ export default function ProcessPage() {
               >
                 Checklist Halal
               </label>
-              {(selectedNode.data?.checklist || []).map(
+              {asStringArray(selectedNode.data?.checklist).map(
                 (item: string, i: number) => (
                   <div key={i} className="flex items-center gap-1 mb-1">
                     <span className="text-xs" style={{ color: "#9CA3AF" }}>
@@ -733,7 +770,7 @@ export default function ProcessPage() {
                     <input
                       value={item}
                       onChange={(e) => {
-                        const list = [...(selectedNode.data?.checklist || [])];
+                        const list = asStringArray(selectedNode.data?.checklist);
                         list[i] = e.target.value;
                         updateNodeData("checklist", list);
                       }}
@@ -742,9 +779,9 @@ export default function ProcessPage() {
                     />
                     <button
                       onClick={() => {
-                        const list = (
-                          selectedNode.data?.checklist || []
-                        ).filter((_: any, j: number) => j !== i);
+                        const list = asStringArray(
+                          selectedNode.data?.checklist,
+                        ).filter((_, j) => j !== i);
                         updateNodeData("checklist", list);
                       }}
                       className="text-xs"
@@ -758,7 +795,7 @@ export default function ProcessPage() {
               <button
                 onClick={() =>
                   updateNodeData("checklist", [
-                    ...(selectedNode.data?.checklist || []),
+                    ...asStringArray(selectedNode.data?.checklist),
                     "",
                   ])
                 }

@@ -993,17 +993,44 @@ async def upload_step_photo(
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_upload")
 
+    # Tenant boundary: the step must belong to a batch owned by the caller's tenant.
+    # Checking only (step_id, batch_id) lets a tenant overwrite another tenant's
+    # evidence path when IDs are leaked from trace/PDF/QR workflows.
+    step = await db.fetchrow(
+        """
+        SELECT s.id, b.integrity_hash
+        FROM batch_steps s
+        JOIN production_batches b ON b.id = s.batch_id
+        WHERE s.id=$1 AND s.batch_id=$2 AND b.tenant_id=$3
+        """,
+        step_id,
+        bid,
+        tenant_id,
+    )
+    if not step:
+        raise HTTPException(404, "Bước sản xuất không tồn tại")
+    if step.get("integrity_hash"):
+        raise HTTPException(403, "Lô hàng đã được seal — không thể thay đổi")
+
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(413, "Ảnh quá lớn (tối đa 5MB)")
 
     save_dir = Path("docs") / tenant_id / "batch_photos" / bid
     save_dir.mkdir(parents=True, exist_ok=True)
-    fname = f"{step_id}_{file.filename or 'photo.jpg'}"
+    safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in (file.filename or "photo.jpg")).strip()
+    fname = f"{step_id}_{safe_name or 'photo.jpg'}"
     save_path = save_dir / fname
     save_path.write_bytes(content)
 
-    await db.execute("UPDATE batch_steps SET photo_path=$1 WHERE id=$2 AND batch_id=$3", str(save_path), step_id, bid)
+    result = await db.execute(
+        "UPDATE batch_steps SET photo_path=$1 WHERE id=$2 AND batch_id=$3",
+        str(save_path),
+        step_id,
+        bid,
+    )
+    if result == "UPDATE 0":
+        raise HTTPException(404, "Bước sản xuất không tồn tại")
     return {"message": "Đã upload ảnh"}
 
 
@@ -1012,6 +1039,8 @@ async def view_step_photo(bid: str, step_id: str, request: Request, token: Optio
     """View step photo. Supports ?token= for window.open."""
     from auth.jwt_utils import decode_token
 
+    _validate_uuid(bid)
+    _validate_uuid(step_id)
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         user = decode_token(auth[7:])
@@ -1019,12 +1048,23 @@ async def view_step_photo(bid: str, step_id: str, request: Request, token: Optio
         user = decode_token(token)
     else:
         raise HTTPException(401)
+    tenant_id = _require_business(user)
 
     from auth.db import get_pool
 
     pool = get_pool()
     async with pool.acquire() as db:
-        row = await db.fetchrow("SELECT photo_path FROM batch_steps WHERE id=$1 AND batch_id=$2", step_id, bid)
+        row = await db.fetchrow(
+            """
+            SELECT s.photo_path
+            FROM batch_steps s
+            JOIN production_batches b ON b.id = s.batch_id
+            WHERE s.id=$1 AND s.batch_id=$2 AND b.tenant_id=$3
+            """,
+            step_id,
+            bid,
+            tenant_id,
+        )
     if not row or not row["photo_path"]:
         raise HTTPException(404, "Ảnh không tồn tại")
 

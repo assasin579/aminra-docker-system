@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import RevisionPanel from "@/components/submissions/RevisionPanel";
@@ -93,7 +93,7 @@ function scoreColor(s: number | null) {
   return "#DC2626";
 }
 
-export default function SubmissionsPage() {
+function SubmissionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token, isAuthenticated, loading } = useUserAuth();
@@ -2311,5 +2311,21 @@ export default function SubmissionsPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+export default function SubmissionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6" data-page>
+          <p className="text-sm" style={{ color: "#6B7280" }}>
+            Đang tải hồ sơ...
+          </p>
+        </div>
+      }
+    >
+      <SubmissionsContent />
+    </Suspense>
   );
 }

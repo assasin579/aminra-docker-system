@@ -19,6 +19,7 @@ teardown so the dev DB is never polluted.
 from __future__ import annotations
 
 from uuid import uuid4
+from typing import Any, cast
 
 import pytest
 from fastapi import HTTPException
@@ -30,6 +31,7 @@ from supply_chain.supplier_router import (
     get_supplier,
     list_suppliers,
     update_supplier,
+    view_certificate,
 )
 
 
@@ -427,3 +429,65 @@ class TestNotFound:
         with pytest.raises(HTTPException) as exc:
             await delete_supplier(sid=str(uuid4()), user=biz_a, db=db_tx)
         assert exc.value.status_code == 404
+
+
+class _AuthHeaderRequest:
+    headers = {"Authorization": "Bearer token-for-pytest"}
+
+
+class _PoolAcquire:
+    def __init__(self, db):
+        self.db = db
+
+    async def __aenter__(self):
+        return self.db
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+class _Pool:
+    def __init__(self, db):
+        self.db = db
+
+    def acquire(self):
+        return _PoolAcquire(self.db)
+
+
+class TestCertificateTenantBoundary:
+    async def test_51_cross_tenant_user_cannot_view_supplier_certificate(
+        self, db_tx, biz_a, biz_b, tmp_path, monkeypatch
+    ):
+        supplier_b = await _create(db_tx, biz_b, name="B certificate owner")
+        cert_path = tmp_path / "tenant-b-cert.pdf"
+        cert_path.write_bytes(b"%PDF-1.4\n%pytest tenant boundary\n")
+        cert_id = uuid4()
+        await db_tx.execute(
+            """
+            INSERT INTO supplier_certificates
+                (id, supplier_id, tenant_id, cert_type, file_path, original_filename, file_size)
+            VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7)
+            """,
+            cert_id,
+            supplier_b["id"],
+            biz_b["tenant_id"],
+            "halal_cert",
+            str(cert_path),
+            "tenant-b-cert.pdf",
+            cert_path.stat().st_size,
+        )
+
+        import auth.db as auth_db
+        import supply_chain.supplier_router as supplier_router
+
+        monkeypatch.setattr(supplier_router, "decode_token", lambda _token: biz_a)
+        monkeypatch.setattr(auth_db, "get_pool", lambda: _Pool(db_tx))
+
+        with pytest.raises(HTTPException) as exc:
+            await view_certificate(
+                sid=supplier_b["id"],
+                cid=str(cert_id),
+                request=cast(Any, _AuthHeaderRequest()),
+            )
+
+        assert exc.value.status_code in (403, 404)

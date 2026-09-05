@@ -43,6 +43,33 @@ require() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: $1 required" >&2; 
 require curl
 require jq
 
+env_or_dotenv() {
+  local key="$1"
+  local current="${!key:-}"
+  if [[ -n "$current" ]]; then
+    printf '%s' "$current"
+    return
+  fi
+  if [[ -f .env ]]; then
+    grep -E "^${key}=" .env | tail -n 1 | cut -d= -f2- | sed 's/^"//; s/"$//' || true
+  fi
+}
+
+bool_env_or_default() {
+  local key="$1"
+  local default="$2"
+  local value
+  value="$(env_or_dotenv "$key")"
+  if [[ -z "$value" ]]; then
+    value="$default"
+  fi
+  case "${value,,}" in
+    true|1|yes|y|on) printf 'true' ;;
+    false|0|no|n|off) printf 'false' ;;
+    *) printf '%s' "$default" ;;
+  esac
+}
+
 # ── 0. Ensure postgres has keycloak DB + role (idempotent) ────────────────────
 # When the postgres-data volume already existed (common on dev re-run) the
 # init script `02-keycloak-init.sh` does NOT execute — postgres only runs
@@ -166,6 +193,8 @@ api PUT "/$REALM" -d @- <<'EOF'
   "ssoSessionMaxLifespan": 28800,
   "offlineSessionIdleTimeout": 604800,
   "passwordPolicy": "length(12) and digits(1) and upperCase(1) and lowerCase(1) and specialChars(1) and notUsername(undefined) and notEmail(undefined) and passwordHistory(5) and forceExpiredPasswordChange(180) and hashIterations(210000)",
+  "resetPasswordAllowed": true,
+  "verifyEmail": true,
   "bruteForceProtected": true,
   "permanentLockout": false,
   "maxFailureWaitSeconds": 900,
@@ -183,6 +212,49 @@ api PUT "/$REALM" -d @- <<'EOF'
   "webAuthnPolicyUserVerificationRequirement": "preferred"
 }
 EOF
+
+# ── 3c. Configure SMTP + email-verification delivery (production-safe) ─────────
+# Keycloak verifyEmail/resetPassword need a realm SMTP server. Configure only
+# when host + from address are explicitly supplied; never bake SMTP secrets into
+# the repo or logs. Supported env/.env keys:
+#   KEYCLOAK_SMTP_HOST, KEYCLOAK_SMTP_PORT, KEYCLOAK_SMTP_FROM,
+#   KEYCLOAK_SMTP_FROM_DISPLAY_NAME, KEYCLOAK_SMTP_REPLY_TO,
+#   KEYCLOAK_SMTP_USER, KEYCLOAK_SMTP_PASSWORD,
+#   KEYCLOAK_SMTP_SSL, KEYCLOAK_SMTP_STARTTLS, KEYCLOAK_SMTP_AUTH
+SMTP_HOST="$(env_or_dotenv KEYCLOAK_SMTP_HOST)"
+SMTP_PORT="$(env_or_dotenv KEYCLOAK_SMTP_PORT)"
+SMTP_FROM="$(env_or_dotenv KEYCLOAK_SMTP_FROM)"
+SMTP_FROM_DISPLAY_NAME="$(env_or_dotenv KEYCLOAK_SMTP_FROM_DISPLAY_NAME)"
+SMTP_REPLY_TO="$(env_or_dotenv KEYCLOAK_SMTP_REPLY_TO)"
+SMTP_USER="$(env_or_dotenv KEYCLOAK_SMTP_USER)"
+SMTP_PASS="$(env_or_dotenv KEYCLOAK_SMTP_PASSWORD)"
+SMTP_SSL="$(bool_env_or_default KEYCLOAK_SMTP_SSL false)"
+SMTP_STARTTLS="$(bool_env_or_default KEYCLOAK_SMTP_STARTTLS true)"
+SMTP_AUTH="$(bool_env_or_default KEYCLOAK_SMTP_AUTH true)"
+SMTP_PORT="${SMTP_PORT:-587}"
+
+if [[ -n "$SMTP_HOST" && -n "$SMTP_FROM" ]]; then
+  log "Configuring realm SMTP server for verify-email/reset-password delivery (host=$SMTP_HOST port=$SMTP_PORT from=$SMTP_FROM)"
+  SMTP_JSON=$(jq -n \
+    --arg host "$SMTP_HOST" \
+    --arg port "$SMTP_PORT" \
+    --arg from "$SMTP_FROM" \
+    --arg fromDisplayName "$SMTP_FROM_DISPLAY_NAME" \
+    --arg replyTo "$SMTP_REPLY_TO" \
+    --arg user "$SMTP_USER" \
+    --arg password "$SMTP_PASS" \
+    --arg ssl "$SMTP_SSL" \
+    --arg starttls "$SMTP_STARTTLS" \
+    --arg auth "$SMTP_AUTH" \
+    '{smtpServer:{host:$host, port:$port, from:$from, ssl:$ssl, starttls:$starttls, auth:$auth}}
+     | if $fromDisplayName != "" then .smtpServer.fromDisplayName=$fromDisplayName else . end
+     | if $replyTo != "" then .smtpServer.replyTo=$replyTo else . end
+     | if $user != "" then .smtpServer.user=$user else . end
+     | if $password != "" then .smtpServer.password=$password else . end')
+  api PUT "/$REALM" -d "$SMTP_JSON" >/dev/null
+else
+  log "WARN: Keycloak SMTP not configured — set KEYCLOAK_SMTP_HOST + KEYCLOAK_SMTP_FROM (+ credentials) before production email verification"
+fi
 
 # ── 4. Create clients if missing ──────────────────────────────────────────────
 

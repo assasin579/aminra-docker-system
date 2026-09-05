@@ -357,7 +357,7 @@ function TemplateEditor({
 
   // Template DOCX (VI/EN)
   const [tplFiles, setTplFiles] = useState<
-    Record<string, { filename: string; size: number }>
+    Record<string, { filename: string; size: number; updated_at?: string }>
   >({});
   const [tplUploading, setTplUploading] = useState<string | null>(null);
   const [tplLang, setTplLang] = useState<"vi" | "en">("vi");

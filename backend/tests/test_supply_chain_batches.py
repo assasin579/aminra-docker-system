@@ -15,6 +15,7 @@ role gating, edge cases.
 from __future__ import annotations
 
 from uuid import uuid4
+from typing import Any, cast
 
 import pytest
 from fastapi import HTTPException
@@ -28,6 +29,8 @@ from supply_chain.batch_router import (
     get_batch,
     list_batches,
     update_batch,
+    upload_step_photo,
+    view_step_photo,
 )
 from supply_chain.material_router import create_material
 from supply_chain.process_router import create_process
@@ -572,3 +575,82 @@ class TestSpecialAndEdge:
         # Sanity: at least one identifying field surfaces
         as_str = str(result)
         assert "full get" in as_str or "GetStep" in as_str or r["id"] in as_str
+
+
+class _BytesUpload:
+    def __init__(self, content: bytes, filename: str = "evidence.png"):
+        self._content = content
+        self.filename = filename
+
+    async def read(self) -> bytes:
+        return self._content
+
+
+class _AuthHeaderRequest:
+    headers = {"Authorization": "Bearer token-for-pytest"}
+
+
+class _PoolAcquire:
+    def __init__(self, db):
+        self.db = db
+
+    async def __aenter__(self):
+        return self.db
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+class _Pool:
+    def __init__(self, db):
+        self.db = db
+
+    def acquire(self):
+        return _PoolAcquire(self.db)
+
+
+class TestPhotoTenantBoundary:
+    async def _batch_with_one_step(self, db_tx, user):
+        proc = await _new_process(
+            db_tx, user,
+            flowchart={"nodes": [{"id": "n1", "label": "PhotoStep"}], "edges": []},
+        )
+        batch = await _new_batch(db_tx, user, product_name="photo boundary", process_template_id=proc)
+        step_id = await db_tx.fetchval(
+            "SELECT id FROM batch_steps WHERE batch_id=$1::uuid LIMIT 1", batch["id"]
+        )
+        return batch["id"], str(step_id)
+
+    async def test_51_cross_tenant_user_cannot_upload_step_photo(self, db_tx, biz_a, biz_b):
+        bid_b, step_b = await self._batch_with_one_step(db_tx, biz_b)
+
+        with pytest.raises(HTTPException) as exc:
+            await upload_step_photo(
+                bid=bid_b,
+                step_id=step_b,
+                file=cast(Any, _BytesUpload(b"not-a-real-png-but-small")),
+                user=biz_a,
+                db=db_tx,
+            )
+
+        assert exc.value.status_code in (403, 404)
+        photo_path = await db_tx.fetchval("SELECT photo_path FROM batch_steps WHERE id=$1::uuid", step_b)
+        assert photo_path is None
+
+    async def test_52_cross_tenant_user_cannot_view_step_photo(self, db_tx, biz_a, biz_b, tmp_path, monkeypatch):
+        bid_b, step_b = await self._batch_with_one_step(db_tx, biz_b)
+        photo = tmp_path / "tenant-b-evidence.png"
+        # Minimal PNG header + bytes. FileResponse creation is enough for the old leak.
+        photo.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 32)
+        await db_tx.execute("UPDATE batch_steps SET photo_path=$1 WHERE id=$2::uuid", str(photo), step_b)
+
+        import auth.db as auth_db
+        import auth.jwt_utils as jwt_utils
+
+        monkeypatch.setattr(jwt_utils, "decode_token", lambda _token: biz_a)
+        monkeypatch.setattr(auth_db, "get_pool", lambda: _Pool(db_tx))
+
+        with pytest.raises(HTTPException) as exc:
+            await view_step_photo(bid=bid_b, step_id=step_b, request=cast(Any, _AuthHeaderRequest()))
+
+        assert exc.value.status_code in (403, 404)

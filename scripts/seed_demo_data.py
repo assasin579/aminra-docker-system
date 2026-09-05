@@ -5,7 +5,8 @@ Idempotent: cleans up old `*@demo.aminra.vn` users + their data first
 (only when `--reset` flag is passed), then inserts a fresh, predictable
 seed:
 
-    1× admin (admin@aminra.com — uses Vault password if set)
+    Optional platform admin — demo-platform-admin@demo.aminra.vn / ADMIN_DEMO_PW
+      (only created when ADMIN_DEMO_PW is explicitly provided)
     1× provider owner   — cb-demo@demo.aminra.vn / DemoP@ss2026
     2× business owners  — biz-demo-{1,2}@demo.aminra.vn / DemoP@ss2026
     1× auditor          — auditor-demo@demo.aminra.vn / DemoP@ss2026
@@ -40,6 +41,7 @@ from auth import keycloak_admin  # noqa: E402
 
 
 DEMO_PASSWORD = "DemoP@ss2026"
+ADMIN_DEMO_PASSWORD = os.environ.get("ADMIN_DEMO_PW")
 DEMO_DOMAIN = "@demo.aminra.vn"
 
 
@@ -91,6 +93,22 @@ DEMO_USERS = [
     },
 ]
 
+if ADMIN_DEMO_PASSWORD:
+    DEMO_USERS.insert(0, {
+        "email":        f"demo-platform-admin{DEMO_DOMAIN}",
+        # AMINRA DB enum only supports business/provider; platform_admin power
+        # lives in Keycloak realm roles. Keep a provider sentinel row like
+        # migration 037/admin@aminra.com, but grant KC `platform_admin`.
+        # Require an explicit password env var; never create a platform_admin
+        # account with the shared low-privilege demo password.
+        "password":     ADMIN_DEMO_PASSWORD,
+        "role":         "provider",
+        "kc_role":      "platform_admin",
+        "is_owner":     True,
+        "company_name": "AMINRA Platform Admin (Demo)",
+        "company_code": "ADMIN-DEMO-001",
+    })
+
 
 async def _connect():
     import asyncpg
@@ -140,6 +158,7 @@ async def reset_demo_data(conn):
         "DELETE FROM audit_visits WHERE business_tenant = ANY($1::uuid[]) OR provider_id = ANY($2::uuid[])",
         tenant_ids or [uuid4()], user_ids,
     )
+    await conn.execute("DELETE FROM audit_checklist_templates WHERE provider_id = ANY($1::uuid[])", user_ids)
     # Submission revision requests
     await conn.execute(
         "DELETE FROM submission_revision_requests WHERE submission_id IN ("
@@ -169,10 +188,13 @@ async def reset_demo_data(conn):
     # password reset flows now). self_assessments was superseded by dossiers.
     await conn.execute("DELETE FROM deletion_tokens WHERE user_id = ANY($1::uuid[])", user_ids)
     await conn.execute("DELETE FROM notifications WHERE user_id = ANY($1::uuid[])", user_ids)
-    # Suppliers / materials / batches
+    # Supply-chain demo data. Delete parent/child rows in FK-safe order; this
+    # matters now that the demo seed creates batch_materials and public trace
+    # batches for clean demo walkthroughs.
+    await conn.execute("DELETE FROM production_batches WHERE tenant_id = ANY($1::uuid[])", tenant_ids or [uuid4()])
     await conn.execute("DELETE FROM materials WHERE tenant_id = ANY($1::uuid[])", tenant_ids or [uuid4()])
     await conn.execute("DELETE FROM suppliers WHERE tenant_id = ANY($1::uuid[])", tenant_ids or [uuid4()])
-    await conn.execute("DELETE FROM production_batches WHERE tenant_id = ANY($1::uuid[])", tenant_ids or [uuid4()])
+    await conn.execute("DELETE FROM process_templates WHERE tenant_id = ANY($1::uuid[])", tenant_ids or [uuid4()])
     # Audit logs (denormalized — SET NULL on delete; safe to keep)
     # Finally users
     await conn.execute("DELETE FROM users WHERE id = ANY($1::uuid[])", user_ids)
@@ -231,8 +253,8 @@ async def seed_users(conn) -> dict:
         # below — KC just doesn't need a human-formatted display label.
         kc_sub = keycloak_admin.create_user(
             email=u["email"],
-            password=DEMO_PASSWORD,
-            role=_kc_role_for(u["role"], u["is_owner"]),
+            password=u.get("password", DEMO_PASSWORD),
+            role=u.get("kc_role") or _kc_role_for(u["role"], u["is_owner"]),
             tenant_id=str(tenant_id),
             is_owner=u["is_owner"],
             user_status="active",
@@ -281,6 +303,110 @@ async def seed_documents(conn, biz_user_id, biz_tenant_id) -> list:
         )
         out.append(doc_id)
     return out
+
+
+async def seed_supply_chain(conn, users: dict):
+    """Seed a complete traceability path for demo smoke tests.
+
+    The public demo needs more than login + certs: it needs a supplier,
+    material, process, and production batch that can be listed by the business
+    user and opened via the public QR/trace endpoint. Keep the objects under
+    biz-demo-1's tenant so `--reset` wipes them deterministically.
+    """
+    biz1 = users[f"biz-demo-1{DEMO_DOMAIN}"]
+
+    supplier_id = uuid4()
+    await conn.execute(
+        """
+        INSERT INTO suppliers (id, tenant_id, name, address, phone, email,
+                               contact_person, supplier_type, tax_code, status, notes)
+        VALUES ($1, $2, 'Demo Halal Ingredients Supplier', 'KCN VSIP, Bình Dương',
+                '0901234567', 'qa@demo-supplier.vn', 'Nguyễn Halal',
+                'ingredient', '0312345678', 'verified',
+                'Demo supplier with valid JAKIM certificate')
+        """,
+        supplier_id, biz1,
+    )
+
+    await conn.execute(
+        """
+        INSERT INTO supplier_certificates (id, supplier_id, tenant_id, cert_type,
+                                           cert_number, issuing_body, issued_date,
+                                           expiry_date, original_filename, file_size)
+        VALUES ($1, $2, $3, 'Halal', 'JAKIM-DEMO-2026', 'JAKIM', $4, $5,
+                'jakim-demo-certificate.pdf', 102400)
+        """,
+        uuid4(), supplier_id, biz1,
+        date.today() - timedelta(days=45), date.today() + timedelta(days=320),
+    )
+
+    material_id = uuid4()
+    await conn.execute(
+        """
+        INSERT INTO materials (id, tenant_id, supplier_id, name, sku, category,
+                               halal_risk, description, unit)
+        VALUES ($1, $2, $3, 'Bột mì Halal demo', 'FLOUR-HALAL-DEMO',
+                'ingredient', 'requires_cert',
+                'Nguyên liệu demo có chứng nhận Halal hợp lệ', 'kg')
+        """,
+        material_id, biz1, supplier_id,
+    )
+
+    flowchart = {
+        "nodes": [
+            {"id": "prep", "label": "Kiểm tra nguyên liệu", "order": 1, "checklist": ["COA hợp lệ", "Halal cert còn hạn"]},
+            {"id": "mix", "label": "Trộn bột", "order": 2, "checklist": ["Dụng cụ đã vệ sinh", "Không nhiễm chéo"]},
+            {"id": "pack", "label": "Đóng gói", "order": 3, "checklist": ["Tem lô đúng", "Khu đóng gói sạch"]},
+        ],
+        "edges": [{"from": "prep", "to": "mix"}, {"from": "mix", "to": "pack"}],
+    }
+    process_id = uuid4()
+    await conn.execute(
+        """
+        INSERT INTO process_templates (id, tenant_id, name, description, flowchart)
+        VALUES ($1, $2, 'Demo Halal Bakery Process',
+                'Quy trình demo cho lô bánh halal có trace QR', $3::jsonb)
+        """,
+        process_id, biz1, json.dumps(flowchart),
+    )
+
+    batch_id = uuid4()
+    batch_code = "LOT-2026-DEMO-TRACE"
+    await conn.execute(
+        """
+        INSERT INTO production_batches (id, tenant_id, batch_code, product_name,
+                                        process_template_id, status, started_at,
+                                        completed_at, compliance_score, qr_code_url, notes)
+        VALUES ($1, $2, $3, 'Demo Halal Sandwich Bread', $4, 'completed',
+                NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', 100,
+                'http://localhost:3100/trace/LOT-2026-DEMO-TRACE',
+                'Demo trace batch with supplier/material/process linkage')
+        """,
+        batch_id, biz1, batch_code, process_id,
+    )
+    await conn.execute(
+        """
+        INSERT INTO batch_materials (batch_id, material_id, quantity, unit)
+        VALUES ($1, $2, 25.000, 'kg')
+        """,
+        batch_id, material_id,
+    )
+
+    for node in flowchart["nodes"]:
+        await conn.execute(
+            """
+            INSERT INTO batch_steps (id, batch_id, node_id, step_name, performed_by,
+                                     started_at, completed_at, status, notes,
+                                     approved_by, approved_at, checklist)
+            VALUES ($1, $2, $3, $4, 'qa@demo.aminra.vn',
+                    NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day',
+                    'completed', 'Demo step completed for smoke path',
+                    'biz-demo-1@demo.aminra.vn', NOW() - INTERVAL '1 day', $5::jsonb)
+            """,
+            uuid4(), batch_id, node["id"], node["label"],
+            json.dumps([{"text": item, "checked": True} for item in node["checklist"]]),
+        )
+    print(f"[seed] supply-chain trace batch {batch_code} created")
 
 
 async def seed_submissions(conn, users: dict) -> dict:
@@ -464,6 +590,7 @@ async def main():
         if args.reset:
             await reset_demo_data(conn)
         users = await seed_users(conn)
+        await seed_supply_chain(conn, users)
         submissions = await seed_submissions(conn, users)
         await seed_certs(conn, users, submissions)
         await seed_audit_visit(conn, users, submissions)
@@ -472,15 +599,21 @@ async def main():
         print("=" * 70)
         print("  DEMO DATA READY")
         print("=" * 70)
-        print(f"  Password (all):  {DEMO_PASSWORD}")
+        print(f"  Password (business/provider/auditor): {DEMO_PASSWORD}")
+        if ADMIN_DEMO_PASSWORD:
+            print("  Platform admin:  demo-platform-admin@demo.aminra.vn (password from ADMIN_DEMO_PW)")
+        else:
+            print("  Platform admin:  skipped (set ADMIN_DEMO_PW to seed one)")
         print(f"  Provider login:  cb-demo{DEMO_DOMAIN}")
         print(f"  Business 1:      biz-demo-1{DEMO_DOMAIN}")
         print(f"  Business 2:      biz-demo-2{DEMO_DOMAIN}")
         print(f"  Auditor:         auditor-demo{DEMO_DOMAIN}")
         print(f"  Demo cert:       HALAL-2026-DEMO  (active)")
         print(f"  Expiring cert:   HALAL-2025-EXPIRING  (25 days left)")
+        print(f"  Trace batch:     LOT-2026-DEMO-TRACE")
         print()
         print(f"  Verify URL:      http://localhost:3100/verify/HALAL-2026-DEMO")
+        print(f"  Trace URL:       http://localhost:3100/trace/LOT-2026-DEMO-TRACE")
         print()
     finally:
         await conn.close()

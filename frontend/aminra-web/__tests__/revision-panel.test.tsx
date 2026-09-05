@@ -56,15 +56,18 @@ describe("RevisionPanel — initial fetch", () => {
     });
   });
 
-  test("shows empty state when no rounds yet", async () => {
+  test("hides panel when no action is available and no rounds exist", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       respond(200, { history: [] }),
     );
 
-    render(<RevisionPanel {...baseProps} role="business" status="reviewing" />);
-    expect(
-      await screen.findByText(/Chưa có vòng sửa nào/i),
-    ).toBeInTheDocument();
+    const { container } = render(
+      <RevisionPanel {...baseProps} role="business" status="reviewing" />,
+    );
+
+    await waitFor(() => {
+      expect(container.firstChild).toBeNull();
+    });
   });
 
   test("shows error message when fetch fails", async () => {

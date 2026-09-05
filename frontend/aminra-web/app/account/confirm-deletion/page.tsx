@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function ConfirmDeletionPage() {
+function ConfirmDeletionContent() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
@@ -127,5 +127,21 @@ export default function ConfirmDeletionPage() {
         </>
       )}
     </article>
+  );
+}
+
+export default function ConfirmDeletionPage() {
+  return (
+    <Suspense
+      fallback={
+        <article className="max-w-xl mx-auto px-6 py-12" data-page>
+          <p className="text-sm" style={{ color: "#6B7280" }}>
+            Đang tải liên kết xác nhận...
+          </p>
+        </article>
+      }
+    >
+      <ConfirmDeletionContent />
+    </Suspense>
   );
 }

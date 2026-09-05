@@ -75,6 +75,10 @@ keycloak-bootstrap: ## Idempotent: realm + clients + roles
 keycloak-mfa: ## Configure conditional MFA flow (run after keycloak-bootstrap)
 	@bash scripts/keycloak-configure-mfa.sh
 
+.PHONY: keycloak-email-check
+keycloak-email-check: ## Read-only check: verifyEmail/resetPassword + SMTP configured
+	@bash scripts/keycloak-email-config-check.sh
+
 .PHONY: keycloak-logs
 keycloak-logs: ## Tail keycloak logs
 	@docker compose logs -f keycloak
@@ -109,6 +113,10 @@ fe-status: ## Show which FE service is running + memory %
 	@docker compose ps aminra-frontend aminra-frontend-dev 2>/dev/null | tail -n +1
 	@echo
 	@docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}' aminra-frontend aminra-frontend-dev 2>/dev/null || true
+
+.PHONY: runtime-smoke
+runtime-smoke: ## Read-only runtime smoke: backend, FE, Keycloak, public URL, fresh logs
+	@bash scripts/qa/runtime-smoke.sh
 
 # ── Pre-commit ───────────────────────────────────────────────────────────────
 

@@ -21,8 +21,10 @@ DEMO_PW="${DEMO_PW:-DemoP@ss2026}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.silvergem.org}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-aminra}"
 KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-aminra-frontend}"
-ADMIN_DEMO_EMAIL="${ADMIN_DEMO_EMAIL:-demo-platform-admin@aminra.vn}"
+ADMIN_DEMO_EMAIL="${ADMIN_DEMO_EMAIL:-demo-platform-admin@demo.aminra.vn}"
 ADMIN_DEMO_PW="${ADMIN_DEMO_PW:-}"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/aminra-pre-demo.XXXXXX")"
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 # kc_token <email> <password> → prints access_token on stdout (empty on failure).
 kc_token() {
@@ -89,9 +91,9 @@ fi
 section "Tier 1 — Public flows (1-5)"
 
 # Flow 1: Public verify cert
-RESP=$(curl -s -w "%{http_code}" "${BACKEND_URL}/api/submissions/certificates/public/HALAL-2026-DEMO" -o /tmp/cert_verify.json)
+RESP=$(curl -s -w "%{http_code}" "${BACKEND_URL}/api/submissions/certificates/public/HALAL-2026-DEMO" -o "${TMP_DIR}/cert_verify.json")
 if [ "$RESP" = "200" ]; then
-  IS_VALID=$(python3 -c "import json; print(json.load(open('/tmp/cert_verify.json')).get('valid'))" 2>/dev/null)
+  IS_VALID=$(CERT_VERIFY_JSON="${TMP_DIR}/cert_verify.json" python3 -c "import json, os; print(json.load(open(os.environ['CERT_VERIFY_JSON'])).get('valid'))" 2>/dev/null)
   if [ "$IS_VALID" = "True" ]; then
     ok "Flow 1: Public verify HALAL-2026-DEMO → valid=true"
   else
@@ -164,14 +166,16 @@ if [ -n "$BIZ_TOKEN" ]; then
   fi
 fi
 
-# Flow 9: Self-assessment templates
+# Flow 9: Dossiers replaced the removed self-assessment feature. Smoke the
+# current business onboarding dossier list instead of the historical endpoint.
 if [ -n "$BIZ_TOKEN" ]; then
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $BIZ_TOKEN" \
-           "${BACKEND_URL}/api/assessments/templates")
-  if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ] || [ "$STATUS" = "401" ]; then
-    ok "Flow 9: Self-assessment templates endpoint up"
+  STATUS=$(curl -s -o "${TMP_DIR}/dossiers.json" -w "%{http_code}" \
+           -H "Authorization: Bearer ${BIZ_TOKEN}" \
+           "${BACKEND_URL}/dossiers")
+  if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ]; then
+    ok "Flow 9: Dossiers endpoint accessible (self-assessment successor)"
   else
-    warn "Flow 9: Self-assessment endpoint returned HTTP $STATUS"
+    warn "Flow 9: Dossiers endpoint returned HTTP $STATUS"
   fi
 fi
 
@@ -182,6 +186,40 @@ if [ "$STATUS" = "401" ]; then
   ok "Flow 10: Revisions endpoint mounted (expects auth)"
 else
   warn "Flow 10: Revisions endpoint returned HTTP $STATUS"
+fi
+
+# Flow 11: Supply-chain traceability path seeded for demos.
+if [ -n "$BIZ_TOKEN" ]; then
+  for endpoint in suppliers materials processes batches; do
+    STATUS=$(curl -s -o "${TMP_DIR}/supply_${endpoint}.json" -w "%{http_code}" \
+             -H "Authorization: Bearer ${BIZ_TOKEN}" \
+             "${BACKEND_URL}/api/supply-chain/${endpoint}")
+    if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ]; then
+      ok "Flow 11: supply-chain/${endpoint} list accessible"
+    else
+      fail "Flow 11: supply-chain/${endpoint} returned HTTP $STATUS"
+    fi
+  done
+fi
+TRACE_STATUS=$(curl -s -o "${TMP_DIR}/demo_trace.json" -w "%{http_code}" \
+               "${BACKEND_URL}/api/supply-chain/batches/trace/LOT-2026-DEMO-TRACE")
+if [ "$TRACE_STATUS" = "200" ]; then
+  if DEMO_TRACE_JSON="${TMP_DIR}/demo_trace.json" python3 - <<'PY' >/dev/null 2>&1
+import json
+import os
+with open(os.environ['DEMO_TRACE_JSON']) as f:
+    d = json.load(f)
+batch = d.get('batch') or {}
+assert batch.get('batch_code') == 'LOT-2026-DEMO-TRACE'
+assert batch.get('product_name')
+PY
+  then
+    ok "Flow 11: public trace LOT-2026-DEMO-TRACE returns demo batch"
+  else
+    fail "Flow 11: public trace response missing demo batch fields"
+  fi
+else
+  fail "Flow 11: public trace LOT-2026-DEMO-TRACE returned HTTP $TRACE_STATUS (run seed_demo_data.py --reset)"
 fi
 
 # ── Tier 3 — Provider flows ────────────────────────────────────────────────
@@ -260,8 +298,32 @@ if [ -n "$ADMIN_TOKEN" ]; then
     warn "Flow 18: Admin analytics returned HTTP $STATUS"
   fi
 
+  # Flow 19: Pending provider approval queue. This must be a distinct admin
+  # assertion, not hidden under Flow 18/20, because provider onboarding is a
+  # separate platform-admin demo capability.
+  STATUS=$(curl -s -o "${TMP_DIR}/admin_pending_providers.json" -w "%{http_code}" -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+           "${BACKEND_URL}/auth/admin/pending-providers")
+  if [ "$STATUS" = "200" ]; then
+    if ADMIN_PENDING_PROVIDERS_JSON="${TMP_DIR}/admin_pending_providers.json" python3 - <<'PY' >/dev/null 2>&1
+import json
+import os
+with open(os.environ['ADMIN_PENDING_PROVIDERS_JSON']) as f:
+    d = json.load(f)
+assert isinstance(d.get('providers'), list)
+assert isinstance(d.get('count'), int)
+assert d.get('count') == len(d.get('providers'))
+PY
+    then
+      ok "Flow 19: Admin pending provider queue returns providers[] + count"
+    else
+      warn "Flow 19: Pending provider queue response shape invalid"
+    fi
+  else
+    warn "Flow 19: Pending provider queue returned HTTP $STATUS"
+  fi
+
   # Flow 20: Overdue queue
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ADMIN_TOKEN}" \
            "${BACKEND_URL}/auth/admin/overdue-submissions")
   if [ "$STATUS" = "200" ]; then
     ok "Flow 20: Overdue submissions queue OK"
@@ -269,7 +331,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     warn "Flow 20: Overdue queue returned HTTP $STATUS"
   fi
 else
-  warn "Flow 18-20: Admin smoke skipped — set ADMIN_DEMO_PW (and optionally ADMIN_DEMO_EMAIL, default demo-platform-admin@aminra.vn) to enable"
+  warn "Flow 18-20: Admin smoke skipped — set ADMIN_DEMO_PW (and optionally ADMIN_DEMO_EMAIL, default demo-platform-admin@demo.aminra.vn) to enable"
 fi
 
 # ── Frontend pages reachable ───────────────────────────────────────────────

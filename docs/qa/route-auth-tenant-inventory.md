@@ -1,0 +1,527 @@
+# AMINRA Route/Auth/Tenant Inventory — static first pass
+
+Generated/started: 2026-09-02
+
+This is a static scan of backend route decorators. It is **not** proof that authorization is correct; every P0 route still needs code review + negative tests.
+
+## Route counts by file
+
+- `backend/app.py`: 38
+- `backend/auth/admin_analytics_router.py`: 1
+- `backend/auth/admin_router.py`: 4
+- `backend/auth/audit_log_router.py`: 1
+- `backend/auth/audit_router.py`: 35
+- `backend/auth/certificate_router.py`: 7
+- `backend/auth/document_router.py`: 16
+- `backend/auth/dossier_router.py`: 5
+- `backend/auth/feature_flags_router.py`: 1
+- `backend/auth/gdpr_router.py`: 3
+- `backend/auth/industry_schema_router.py`: 3
+- `backend/auth/notification_router.py`: 7
+- `backend/auth/pdf_render_router.py`: 3
+- `backend/auth/router.py`: 31
+- `backend/auth/standard_type_router.py`: 3
+- `backend/auth/submission_router.py`: 22
+- `backend/services/observability.py`: 1
+- `backend/supply_chain/batch_router.py`: 17
+- `backend/supply_chain/material_router.py`: 4
+- `backend/supply_chain/process_router.py`: 6
+- `backend/supply_chain/supplier_router.py`: 14
+
+## High-risk route first-pass list
+
+- `GET /admin/verify` → `admin_verify` in `backend/app.py:424`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/doc-types` → `list_doc_types` in `backend/app.py:433`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates` → `list_templates` in `backend/app.py:439`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates/{doc_type}` → `get_template` in `backend/app.py:460`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `PUT /admin/templates/{doc_type}` → `save_template` in `backend/app.py:477`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates/{doc_type}/files` → `list_template_files` in `backend/app.py:490`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /admin/templates/{doc_type}/files` → `upload_template_file` in `backend/app.py:547`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `DELETE /admin/templates/{doc_type}/files/{filename}` → `delete_template_file` in `backend/app.py:568`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates/{doc_type}/revisions` → `get_template_revisions` in `backend/app.py:589`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /admin/templates/{doc_type}/template-file` → `upload_template_file_lang` in `backend/app.py:604`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `DELETE /admin/templates/{doc_type}/template-file` → `delete_template_file_lang` in `backend/app.py:630`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates/{doc_type}/template-files` → `list_template_files_lang` in `backend/app.py:646`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates/{doc_type}/template-file/view` → `view_template_file` in `backend/app.py:775`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/templates/{doc_type}/files/{filename}/view` → `view_reference_file` in `backend/app.py:796`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/placeholders` → `list_placeholders` in `backend/app.py:949`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /admin/placeholders` → `create_placeholder` in `backend/app.py:960`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `PUT /admin/placeholders/{key}` → `update_placeholder` in `backend/app.py:997`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `DELETE /admin/placeholders/{key}` → `delete_placeholder` in `backend/app.py:1030`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/users` → `admin_list_users` in `backend/app.py:1081`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /admin/users` → `admin_create_user` in `backend/app.py:1118`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `PUT /admin/users/{user_id}` → `admin_update_user` in `backend/app.py:1194`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `DELETE /admin/users/{user_id}` → `admin_delete_user` in `backend/app.py:1232`
+  - auth signal: require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /generate-document` → `generate_document` in `backend/app.py:1647`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: unknown
+- `POST /generate-document/export-docx` → `export_docx` in `backend/app.py:1777`
+  - auth signal: public/unknown
+  - tenant note: unknown
+- `GET /admin/analytics` → `admin_analytics` in `backend/auth/admin_analytics_router.py:24`
+  - auth signal: Depends(require_admin), require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/pending-providers` → `pending_providers` in `backend/auth/admin_router.py:20`
+  - auth signal: Depends(require_admin), require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /admin/providers/{provider_id}/approve` → `approve_provider` in `backend/auth/admin_router.py:41`
+  - auth signal: Depends(require_admin), require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/overdue-submissions` → `admin_overdue_submissions` in `backend/auth/admin_router.py:73`
+  - auth signal: Depends(require_admin), require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `POST /admin/providers/{provider_id}/reject` → `reject_provider` in `backend/auth/admin_router.py:89`
+  - auth signal: Depends(require_admin), require_admin
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /admin/audit-logs` → `list_audit_logs` in `backend/auth/audit_log_router.py:39`
+  - auth signal: public/unknown
+  - tenant note: admin path — verify admin-only and file/path safety
+- `GET /businesses` → `list_businesses` in `backend/auth/audit_router.py:67`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /businesses/{business_id}/dossier` → `business_dossier` in `backend/auth/audit_router.py:125`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /businesses/{business_id}/score` → `business_score` in `backend/auth/audit_router.py:248`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /stats` → `audit_stats` in `backend/auth/audit_router.py:376`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /templates` → `list_templates` in `backend/auth/audit_router.py:419`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /templates` → `create_template` in `backend/auth/audit_router.py:445`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /templates/{tid}` → `update_template` in `backend/auth/audit_router.py:461`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /templates/{tid}` → `delete_template` in `backend/auth/audit_router.py:490`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /` → `list_visits` in `backend/auth/audit_router.py:502`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /` → `create_visit` in `backend/auth/audit_router.py:537`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /{vid}` → `get_visit` in `backend/auth/audit_router.py:570`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /{vid}` → `update_visit` in `backend/auth/audit_router.py:654`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /{vid}` → `delete_visit` in `backend/auth/audit_router.py:688`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /{vid}/assign` → `assign_visit_auditor` in `backend/auth/audit_router.py:704`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /{vid}/status` → `update_visit_status` in `backend/auth/audit_router.py:747`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{vid}/populate-checklist` → `populate_checklist` in `backend/auth/audit_router.py:775`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `GET /{vid}/items` → `list_items` in `backend/auth/audit_router.py:819`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `POST /{vid}/items` → `add_item` in `backend/auth/audit_router.py:842`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `DELETE /{vid}/items/{item_id}` → `delete_item` in `backend/auth/audit_router.py:866`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `PUT /{vid}/items/{item_id}` → `update_item` in `backend/auth/audit_router.py:875`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `POST /{vid}/items/{item_id}/photo` → `upload_item_photo` in `backend/auth/audit_router.py:901`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `GET /{vid}/ncr` → `list_ncr` in `backend/auth/audit_router.py:935`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `POST /{vid}/ncr` → `create_ncr` in `backend/auth/audit_router.py:962`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: unknown
+- `PUT /{vid}/ncr/{ncr_id}` → `update_ncr` in `backend/auth/audit_router.py:981`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{vid}/ncr/{ncr_id}/photo` → `upload_ncr_photo` in `backend/auth/audit_router.py:1003`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{vid}/generate-report` → `generate_report` in `backend/auth/audit_router.py:1037`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /{vid}/report-pdf` → `download_report` in `backend/auth/audit_router.py:1346`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /history/{business_tenant}` → `visit_history` in `backend/auth/audit_router.py:1380`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{vid}/decision` → `cert_decision` in `backend/auth/audit_router.py:1410`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{vid}/signature` → `upload_signature` in `backend/auth/audit_router.py:1495`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /{vid}/gps` → `save_gps` in `backend/auth/audit_router.py:1523`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /ncr/pending` → `pending_ncr` in `backend/auth/audit_router.py:1541`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /ncr/{ncr_id}/evidence` → `upload_ncr_evidence` in `backend/auth/audit_router.py:1574`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /ncr/{ncr_id}/verify` → `verify_ncr` in `backend/auth/audit_router.py:1630`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{vid}/follow-up` → `create_follow_up` in `backend/auth/audit_router.py:1666`
+  - auth signal: Depends(get_current_user), get_current_user, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /received/{submission_id}/issue-certificate` → `issue_certificate_legacy` in `backend/auth/certificate_router.py:40`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /issue-certificate/{business_tenant_id}` → `issue_certificate_for_company` in `backend/auth/certificate_router.py:56`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /certificates` → `list_certificates` in `backend/auth/certificate_router.py:222`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /certificates/registry` → `cert_registry` in `backend/auth/certificate_router.py:257`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /certificates/public/{cert_number}` → `public_verify_cert` in `backend/auth/certificate_router.py:342`
+  - auth signal: public/unknown
+  - tenant note: public endpoint — verify field filtering/no private leak
+- `PUT /certificates/{cert_id}/status` → `update_cert_status` in `backend/auth/certificate_router.py:440`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /certificates/{cert_id}/pdf` → `download_certificate_pdf` in `backend/auth/certificate_router.py:515`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents` → `list_documents` in `backend/auth/document_router.py:160`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents/revisions/{doc_type_id}` → `list_revisions` in `backend/auth/document_router.py:264`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/{doc_id}/promote` → `promote_document` in `backend/auth/document_router.py:318`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents/{doc_id}` → `get_document` in `backend/auth/document_router.py:348`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents/{doc_id}/preview` → `preview_document` in `backend/auth/document_router.py:412`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents/{doc_id}/file` → `get_document_file` in `backend/auth/document_router.py:529`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/upload` → `upload_document` in `backend/auth/document_router.py:575`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/{doc_id}/evaluate` → `evaluate_existing_document` in `backend/auth/document_router.py:713`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /documents/{doc_id}` → `delete_document` in `backend/auth/document_router.py:756`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /dashboard/stats` → `dashboard_stats` in `backend/auth/document_router.py:808`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/{doc_id}/submit-for-approval` → `submit_for_approval` in `backend/auth/document_router.py:1036`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/{doc_id}/approve` → `approve_document` in `backend/auth/document_router.py:1078`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/{doc_id}/reject` → `reject_document` in `backend/auth/document_router.py:1149`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /documents/{doc_id}/supersede` → `supersede_document` in `backend/auth/document_router.py:1189`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents/{doc_id}/versions` → `get_versions` in `backend/auth/document_router.py:1256`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /documents/{doc_id}/approval-status` → `get_approval_status` in `backend/auth/document_router.py:1318`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /me/export-data` → `export_my_data` in `backend/auth/gdpr_router.py:37`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: unknown
+- `POST /me/request-deletion` → `request_deletion` in `backend/auth/gdpr_router.py:99`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: unknown
+- `POST /me/confirm-deletion` → `confirm_deletion` in `backend/auth/gdpr_router.py:146`
+  - auth signal: public/unknown
+  - tenant note: unknown
+- `POST /provider/auditors` → `invite_auditor` in `backend/auth/router.py:722`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /provider/auditors` → `list_auditors` in `backend/auth/router.py:785`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /provider/auditors/{auditor_id}` → `update_auditor` in `backend/auth/router.py:813`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /provider/auditors/{auditor_id}` → `remove_auditor` in `backend/auth/router.py:858`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /provider/auditors/{auditor_id}/certificates` → `list_auditor_certificates` in `backend/auth/router.py:877`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /provider/auditors/{auditor_id}/certificates` → `upload_auditor_certificate` in `backend/auth/router.py:916`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /provider/auditors/{auditor_id}/certificates/{cert_id}/view` → `view_auditor_certificate` in `backend/auth/router.py:964`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /provider/auditors/{auditor_id}/certificates/{cert_id}` → `delete_auditor_certificate` in `backend/auth/router.py:1061`
+  - auth signal: Depends(require_provider, require_provider
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /cb-stats` → `cb_stats` in `backend/auth/submission_router.py:112`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /stats` → `provider_stats` in `backend/auth/submission_router.py:241`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /overdue` → `provider_overdue` in `backend/auth/submission_router.py:313`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /providers` → `list_providers` in `backend/auth/submission_router.py:343`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /submit` → `submit_documents` in `backend/auth/submission_router.py:355`
+  - auth signal: Depends(require_business, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /cert-timeline` → `cert_timeline` in `backend/auth/submission_router.py:436`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /request-renewal/{cert_id}` → `request_renewal` in `backend/auth/submission_router.py:482`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /my-submissions` → `my_submissions` in `backend/auth/submission_router.py:558`
+  - auth signal: Depends(require_business, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /received` → `received_submissions` in `backend/auth/submission_router.py:599`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /received/{submission_id}/documents` → `submission_documents` in `backend/auth/submission_router.py:651`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /received/{submission_id}/status` → `update_submission_status` in `backend/auth/submission_router.py:723`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /received/{submission_id}/request-revision` → `provider_request_revision` in `backend/auth/submission_router.py:794`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /{submission_id}/resubmit` → `business_resubmit` in `backend/auth/submission_router.py:898`
+  - auth signal: Depends(require_business, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /{submission_id}/revisions` → `get_revision_history` in `backend/auth/submission_router.py:985`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /received/{submission_id}/assign` → `assign_auditor` in `backend/auth/submission_router.py:1031`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /received/{submission_id}/evaluation` → `get_evaluation` in `backend/auth/submission_router.py:1144`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /received/{submission_id}/evaluation` → `save_evaluation` in `backend/auth/submission_router.py:1171`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /received/{submission_id}/approve-final` → `approve_final` in `backend/auth/submission_router.py:1248`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /received/{submission_id}/replace-document` → `replace_submission_document` in `backend/auth/submission_router.py:1382`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /received/{submission_id}/doc-revisions/{doc_type_id}` → `submission_doc_revisions` in `backend/auth/submission_router.py:1476`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /received/{submission_id}/finalize` → `finalize_submission` in `backend/auth/submission_router.py:1528`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /received/{submission_id}/deadline` → `set_deadline` in `backend/auth/submission_router.py:1569`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches` → `list_batches` in `backend/supply_chain/batch_router.py:64`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /batches` → `create_batch` in `backend/supply_chain/batch_router.py:131`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/stats` → `batch_stats` in `backend/supply_chain/batch_router.py:213`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/members` → `list_tenant_members` in `backend/supply_chain/batch_router.py:229`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/trace/{batch_code}` → `public_trace` in `backend/supply_chain/batch_router.py:251`
+  - auth signal: public/unknown
+  - tenant note: public endpoint — verify field filtering/no private leak
+- `PUT /batches/{bid}/assign-member` → `assign_member_to_batch` in `backend/supply_chain/batch_router.py:391`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/{bid}` → `get_batch` in `backend/supply_chain/batch_router.py:432`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /batches/{bid}` → `update_batch` in `backend/supply_chain/batch_router.py:493`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /batches/{bid}` → `delete_batch` in `backend/supply_chain/batch_router.py:537`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /batches/{bid}/steps/{step_id}` → `update_step` in `backend/supply_chain/batch_router.py:551`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /batches/{bid}/steps/{step_id}/approve` → `approve_step` in `backend/supply_chain/batch_router.py:602`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /batches/{bid}/approve` → `approve_batch` in `backend/supply_chain/batch_router.py:627`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/{bid}/verify` → `verify_batch_integrity` in `backend/supply_chain/batch_router.py:730`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /batches/{bid}/export-pdf` → `export_batch_pdf` in `backend/supply_chain/batch_router.py:763`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /batches/{bid}/steps/{step_id}/photo` → `upload_step_photo` in `backend/supply_chain/batch_router.py:987`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/{bid}/steps/{step_id}/photo/view` → `view_step_photo` in `backend/supply_chain/batch_router.py:1010`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /batches/{bid}/qr` → `generate_qr` in `backend/supply_chain/batch_router.py:1046`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /materials` → `list_materials` in `backend/supply_chain/material_router.py:31`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /materials` → `create_material` in `backend/supply_chain/material_router.py:88`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /materials/{mid}` → `update_material` in `backend/supply_chain/material_router.py:118`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /materials/{mid}` → `delete_material` in `backend/supply_chain/material_router.py:150`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /processes` → `list_processes` in `backend/supply_chain/process_router.py:33`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /processes` → `create_process` in `backend/supply_chain/process_router.py:54`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /processes/{pid}` → `get_process` in `backend/supply_chain/process_router.py:73`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /processes/{pid}` → `update_process` in `backend/supply_chain/process_router.py:95`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /processes/{pid}` → `delete_process` in `backend/supply_chain/process_router.py:128`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /processes/{pid}/export-docx` → `export_process_docx` in `backend/supply_chain/process_router.py:139`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /suppliers` → `list_suppliers` in `backend/supply_chain/supplier_router.py:51`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /suppliers` → `create_supplier` in `backend/supply_chain/supplier_router.py:85`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /suppliers/{sid}` → `get_supplier` in `backend/supply_chain/supplier_router.py:112`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `PUT /suppliers/{sid}` → `update_supplier` in `backend/supply_chain/supplier_router.py:148`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /suppliers/{sid}` → `delete_supplier` in `backend/supply_chain/supplier_router.py:174`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /suppliers/{sid}/certificates` → `list_certificates` in `backend/supply_chain/supplier_router.py:188`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /suppliers/{sid}/certificates` → `upload_certificate` in `backend/supply_chain/supplier_router.py:215`
+  - auth signal: Depends(get_current_user), get_current_user
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /suppliers/{sid}/certificates/{cid}/view` → `view_certificate` in `backend/supply_chain/supplier_router.py:295`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `DELETE /suppliers/{sid}/certificates/{cid}` → `delete_certificate` in `backend/supply_chain/supplier_router.py:384`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /suppliers/{sid}/invite` → `generate_invite` in `backend/supply_chain/supplier_router.py:408`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /supplier-portal/{token}` → `get_portal_info` in `backend/supply_chain/supplier_router.py:434`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /supplier-portal/{token}/upload` → `portal_upload` in `backend/supply_chain/supplier_router.py:485`
+  - auth signal: public/unknown
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `GET /suppliers/{sid}/verification-status` → `verification_status` in `backend/supply_chain/supplier_router.py:542`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+- `POST /suppliers/{sid}/verify` → `verify_supplier` in `backend/supply_chain/supplier_router.py:574`
+  - auth signal: Depends(get_current_user), get_current_user, require_business
+  - tenant note: uses owner/resource identifiers nearby — verify scoped query
+
+## Manual review checklist per route
+
+- Is the route public, authenticated, role-scoped, or admin-only?
+- If the entity is tenant-owned, does the SQL/ORM query scope by owning tenant/business/provider before returning/mutating?
+- Does the route return 403/404 consistently without leaking existence where sensitive?
+- Are file paths derived from DB-owned rows rather than untrusted IDs/path fragments?
+- Does the route write audit logs for sensitive actions?
+- Is there a negative cross-tenant test for every read/write/delete/file-download path?

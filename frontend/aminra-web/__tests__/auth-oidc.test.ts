@@ -80,6 +80,7 @@ describe("signinRedirect", () => {
     await signinRedirect("/dashboard/business");
     expect(mockSigninRedirect).toHaveBeenCalledWith({
       state: "/dashboard/business",
+      extraQueryParams: { prompt: "login" },
     });
     vi.unstubAllEnvs();
   });
@@ -88,7 +89,10 @@ describe("signinRedirect", () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED", "true");
     const { signinRedirect } = await import("@/lib/auth-oidc");
     await signinRedirect();
-    expect(mockSigninRedirect).toHaveBeenCalledWith({ state: "/" });
+    expect(mockSigninRedirect).toHaveBeenCalledWith({
+      state: "/",
+      extraQueryParams: { prompt: "login" },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -270,9 +274,8 @@ describe("signoutRedirect edge cases", () => {
     mockSignoutRedirect.mockRejectedValue(new Error("rp-init failed"));
     mockRemoveUser.mockRejectedValue(new Error("storage failed"));
     const { signoutRedirect } = await import("@/lib/auth-oidc");
-    // Current behaviour: error in fallback propagates. This test
-    // documents the current behaviour so future hardening notices.
-    await expect(signoutRedirect()).rejects.toThrow();
+    await expect(signoutRedirect()).resolves.toBeUndefined();
+    expect(mockRemoveUser).toHaveBeenCalledOnce();
     vi.unstubAllEnvs();
   });
 });

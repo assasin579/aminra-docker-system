@@ -1775,7 +1775,11 @@ class ExportDocxRequest(BaseModel):
 
 
 @app.post("/generate-document/export-docx")
-async def export_docx(req: ExportDocxRequest):
+async def export_docx(
+    req: ExportDocxRequest,
+    _rate_limit: None = Depends(rate_limit_upload),
+    user: dict = Depends(get_current_user),
+):
     from templates_docx._registry import build_docx
     import io as _io
 

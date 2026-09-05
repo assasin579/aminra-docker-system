@@ -203,6 +203,7 @@ def _claims_to_user_via_jwt(claims: dict) -> dict:
         "is_owner": is_owner,
         "status": claims["status"],
         "tenant_id": str(claims["tenant_id"]),
+        "realm_roles": realm_roles,
         "_keycloak": True,
         "_from_jwt_claims": True,
     }
@@ -244,6 +245,7 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
             "is_owner": False,
             "status": "pending",
             "tenant_id": None,
+            "realm_roles": realm_roles,
             "_keycloak": True,
         }
 
@@ -263,6 +265,7 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         "is_owner": bool(row["is_owner"]),
         "status": row["status"],
         "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
+        "realm_roles": realm_roles,
         "company_name": row["company_name"],
         "_keycloak": True,
     }
