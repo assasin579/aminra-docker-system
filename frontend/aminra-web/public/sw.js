@@ -1,9 +1,11 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v5";
+const CACHE_NAME = "aminra-v6";
 const OFFLINE_URL = "/audits";
 // URLs the SW must NEVER serve from cache (always go to network).
 // Admin rotates template content; serving stale = wrong file delivered.
 const NEVER_CACHE_PATTERNS = [
+  /\/auth(?:\/|$)/,
+  /\/admin(?:\/|$)/,
   /\/api\/templates\//,
   /\/api\/admin\/templates\/.*\/template-file\/view/,
   /\/api\/admin\/templates\/.*\/files\/.*\/view/,
@@ -33,6 +35,12 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 // Network-first strategy for API calls, cache-first for pages
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -47,11 +55,19 @@ self.addEventListener("fetch", (event) => {
   // JSON-expecting clients (oidc-client-ts metadata fetch).
   if (url.origin !== self.location.origin) return;
 
+  // Auth/admin pages must never be served from the offline page cache.
+  // Stale cached Next.js routes or chunks can resurrect old auth guards and
+  // look like an "immediate logout" after the Keycloak callback.
+  const skipCache = NEVER_CACHE_PATTERNS.some((re) => re.test(url.pathname));
+  if (skipCache) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // API calls: network-first, fallback to cache
   if (url.pathname.startsWith("/api/")) {
     // Some endpoints (template downloads) MUST never be served from cache —
     // admin rotates content, stale = wrong template delivered to business.
-    const skipCache = NEVER_CACHE_PATTERNS.some((re) => re.test(url.pathname));
     event.respondWith(
       fetch(request)
         .then((response) => {

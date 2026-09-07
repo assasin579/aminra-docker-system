@@ -31,9 +31,12 @@ test.describe("PWA + web push", () => {
     }
 
     const sw = await (await request.get("/sw.js")).text();
-    expect(sw).toContain("addEventListener('push'");
-    expect(sw).toContain("addEventListener('notificationclick'");
+    expect(sw).toMatch(/addEventListener\(["']push["']/);
+    expect(sw).toMatch(/addEventListener\(["']notificationclick["']/);
     expect(sw).toContain("showNotification");
+    expect(sw).toContain('CACHE_NAME = "aminra-v6"');
+    expect(sw).toContain("/\\/auth(?:\\/|$)/");
+    expect(sw).toContain("/\\/admin(?:\\/|$)/");
 
     const manifest = await (await request.get("/manifest.json")).json();
     expect(manifest.name).toContain("AMINRA");

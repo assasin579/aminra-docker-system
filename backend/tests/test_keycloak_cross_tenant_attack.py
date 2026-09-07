@@ -162,7 +162,8 @@ async def test_attacker_claims_platform_admin_role_picks_highest():
         "business", "auditor", "cb_admin", "platform_admin",
     ]})
     out = await kv.enrich_keycloak_claims(claims, pool)
-    assert out["role"] == "platform_admin"
+    assert out["role"] == "provider"
+    assert "platform_admin" in out["realm_roles"]
 
 
 @pytest.mark.asyncio

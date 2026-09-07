@@ -21,7 +21,7 @@ DEMO_PW="${DEMO_PW:-DemoP@ss2026}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.silvergem.org}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-aminra}"
 KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-aminra-frontend}"
-ADMIN_DEMO_EMAIL="${ADMIN_DEMO_EMAIL:-demo-platform-admin@demo.aminra.vn}"
+ADMIN_DEMO_EMAIL="${ADMIN_DEMO_EMAIL:-admin}"
 ADMIN_DEMO_PW="${ADMIN_DEMO_PW:-}"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/aminra-pre-demo.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -298,6 +298,14 @@ if [ -n "$ADMIN_TOKEN" ]; then
     warn "Flow 18: Admin analytics returned HTTP $STATUS"
   fi
 
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $ADMIN_TOKEN" \
+           "${BACKEND_URL}/auth/admin/feature-flags")
+  if [ "$STATUS" = "200" ]; then
+    ok "Flow 18b: Admin feature-flags endpoint OK"
+  else
+    warn "Flow 18b: Admin feature-flags returned HTTP $STATUS"
+  fi
+
   # Flow 19: Pending provider approval queue. This must be a distinct admin
   # assertion, not hidden under Flow 18/20, because provider onboarding is a
   # separate platform-admin demo capability.
@@ -331,7 +339,7 @@ PY
     warn "Flow 20: Overdue queue returned HTTP $STATUS"
   fi
 else
-  warn "Flow 18-20: Admin smoke skipped — set ADMIN_DEMO_PW (and optionally ADMIN_DEMO_EMAIL, default demo-platform-admin@demo.aminra.vn) to enable"
+  warn "Flow 18-20: Admin smoke skipped — set ADMIN_DEMO_PW (and optionally ADMIN_DEMO_EMAIL, default admin) to enable"
 fi
 
 # ── Frontend pages reachable ───────────────────────────────────────────────

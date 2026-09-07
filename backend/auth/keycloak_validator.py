@@ -129,15 +129,13 @@ def validate_keycloak_token(token: str) -> dict:
 _ROLE_PRIORITY = ("platform_admin", "cb_admin", "auditor", "business")
 
 # Keycloak realm role names → AMINRA `users.role` enum values.
-# Existing route handlers (24+ sites in submission_router, dossier_router,
-# certificate_router, …) check `user["role"] == "provider"` / "business" /
-# "admin"; those values come from the PG enum, not from KC. The fast path
-# below used to return KC realm role names directly, which silently 403'd
-# every CB user (cb_admin ≠ provider). Same class as the tenant_id slug
-# bug fixed in b2487a5 — fix at the auth boundary once, the whole
-# downstream chain self-corrects.
+# AMINRA PG `users.role` currently has only `business` / `provider`; platform
+# admin authority is represented by the Keycloak `platform_admin` realm role
+# and checked via `realm_roles` (see `require_admin`). Do not invent an `admin`
+# app role at the auth boundary: it creates noisy false "role drift" warnings
+# and breaks routers that enrich from the DB row.
 _KC_TO_PG_ROLE = {
-    "platform_admin": "admin",
+    "platform_admin": "provider",
     "cb_admin": "provider",
     "auditor": "provider",   # auditor is a sub-user under a provider org;
                               # is_owner distinguishes from cb_admin downstream

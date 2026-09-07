@@ -76,6 +76,13 @@ const UserAuthContext = createContext<UserAuthState>({
 
 const TOKEN_KEY = "aminra_user_token";
 const PROFILE_KEY = "aminra_user_profile";
+const AUTH_SESSION_EVENT = "aminra:auth-session-changed";
+
+function notifyAuthSessionChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
+  }
+}
 
 async function apiLogin(email: string, password: string, role?: string) {
   const { parseApiError } = await import("@/lib/apiError");
@@ -149,6 +156,10 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       other.removeItem(PROFILE_KEY);
       // Clear admin session — user and admin sessions must not coexist
       localStorage.removeItem("aminra_admin_token");
+      // Notify same-tab consumers. Browser `storage` events only fire in other
+      // tabs, so AdminAuthContext would otherwise keep a stale `isAdmin=false`
+      // after the OIDC callback stores a fresh platform_admin token.
+      notifyAuthSessionChanged();
       // Set cookie for middleware redirect check
       document.cookie =
         "aminra_session=1; path=/; max-age=31536000; SameSite=Lax";
@@ -245,6 +256,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
             sessionStorage.removeItem(TOKEN_KEY);
             sessionStorage.removeItem(PROFILE_KEY);
             localStorage.removeItem("aminra_admin_token");
+            notifyAuthSessionChanged();
             document.cookie = "aminra_session=; path=/; max-age=0";
             await signoutRedirect();
             return;
@@ -262,6 +274,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(PROFILE_KEY);
     // Cross-context cleanup: never leave a stale admin token after user logout
     localStorage.removeItem("aminra_admin_token");
+    notifyAuthSessionChanged();
     document.cookie = "aminra_session=; path=/; max-age=0";
     try {
       sessionStorage.clear();

@@ -41,7 +41,18 @@ class OverrideSetRequest(BaseModel):
 
 
 def _require_admin(user: dict) -> None:
-    if user.get("role") != "admin":
+    """Feature-flag admin guard.
+
+    Post-Keycloak cutover, `users.role` only contains app-domain values
+    (`business` / `provider`). Platform admin authority comes from the
+    Keycloak realm role, so checking only `user["role"] == "admin"` locks out
+    the real admin account while still letting tests pass with legacy fixtures.
+    """
+    realm_roles = user.get("realm_roles") or []
+    if "platform_admin" not in realm_roles and user.get("role") not in (
+        "admin",
+        "platform_admin",
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin role required")
 
 

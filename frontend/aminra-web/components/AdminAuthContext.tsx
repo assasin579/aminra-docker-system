@@ -34,6 +34,7 @@ const AdminAuthContext = createContext<AdminAuthState>({
 });
 
 const USER_TOKEN_KEY = "aminra_user_token";
+const AUTH_SESSION_EVENT = "aminra:auth-session-changed";
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -70,14 +71,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setToken(readUserToken());
+    const refreshToken = () => setToken(readUserToken());
+    refreshToken();
     const onStorage = (e: StorageEvent) => {
-      if (e.key === USER_TOKEN_KEY || e.key === null) {
-        setToken(readUserToken());
-      }
+      if (e.key === USER_TOKEN_KEY || e.key === null) refreshToken();
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(AUTH_SESSION_EVENT, refreshToken);
+    window.addEventListener("focus", refreshToken);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(AUTH_SESSION_EVENT, refreshToken);
+      window.removeEventListener("focus", refreshToken);
+    };
   }, []);
 
   const login = useCallback(async (returnTo?: string) => {

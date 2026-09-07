@@ -27,6 +27,34 @@ from services.feature_flags import (
 pytestmark = pytest.mark.asyncio
 
 
+class TestFeatureFlagAdminGuard:
+    def test_platform_admin_realm_role_passes_even_when_db_role_is_provider(self):
+        """Real admin account shape after Keycloak cutover.
+
+        AMINRA PG `users.role` currently has only business/provider values;
+        platform-admin authority comes from Keycloak `realm_roles`.
+        """
+        from auth.feature_flags_router import _require_admin
+
+        _require_admin({"role": "provider", "realm_roles": ["platform_admin"]})
+
+    def test_business_realm_role_is_rejected(self):
+        from fastapi import HTTPException
+        from auth.feature_flags_router import _require_admin
+
+        with pytest.raises(HTTPException) as exc:
+            _require_admin({"role": "business", "realm_roles": ["business"]})
+        assert exc.value.status_code == 403
+
+    def test_provider_without_platform_admin_realm_role_is_rejected(self):
+        from fastapi import HTTPException
+        from auth.feature_flags_router import _require_admin
+
+        with pytest.raises(HTTPException) as exc:
+            _require_admin({"role": "provider", "realm_roles": ["cb_admin"]})
+        assert exc.value.status_code == 403
+
+
 # ── Fake DB ─────────────────────────────────────────────────────────────────
 
 

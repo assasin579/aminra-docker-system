@@ -46,7 +46,41 @@ export default function RootLayout({
             __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-              navigator.serviceWorker.register('/sw.js').catch(() => {});
+              const isAuthCriticalRoute = new RegExp('^/(auth|admin)(/|$)').test(window.location.pathname);
+
+              navigator.serviceWorker
+                .register('/sw.js', { updateViaCache: 'none' })
+                .then((registration) => {
+                  registration.update().catch(() => {});
+
+                  if (registration.waiting && isAuthCriticalRoute) {
+                    // Make auth/admin fixes take over immediately instead of waiting
+                    // for the user to close every old tab controlled by the stale SW.
+                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                })
+                .catch(() => {});
+
+              if (isAuthCriticalRoute && window.caches) {
+                caches
+                  .keys()
+                  .then((keys) =>
+                    Promise.all(
+                      keys
+                        .filter((key) => key.startsWith('aminra-') && key !== 'aminra-v6')
+                        .map((key) => caches.delete(key)),
+                    ),
+                  )
+                  .catch(() => {});
+              }
+
+              let refreshing = false;
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!isAuthCriticalRoute || refreshing) return;
+                if (window.location.pathname.startsWith('/auth/callback')) return;
+                refreshing = true;
+                window.location.reload();
+              });
             });
           }
         `,
