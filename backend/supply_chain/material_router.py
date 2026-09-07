@@ -9,6 +9,7 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user
 from auth.permissions import check_permission_db
 from .models import MaterialCreate, MaterialUpdate, MaterialOut
+from .eligibility_service import assert_supplier_eligible
 
 log = logging.getLogger("aminra.supply_chain.materials")
 router = APIRouter()
@@ -95,6 +96,7 @@ async def create_material(req: MaterialCreate, user=Depends(get_current_user), d
     s = await db.fetchrow("SELECT id FROM suppliers WHERE id=$1 AND tenant_id=$2", req.supplier_id, tenant_id)
     if not s:
         raise HTTPException(400, "Nhà cung cấp không tồn tại")
+    await assert_supplier_eligible(db, tenant_id, req.supplier_id, req.category)
 
     row = await db.fetchrow(
         """
@@ -122,6 +124,17 @@ async def update_material(mid: str, req: MaterialUpdate, user=Depends(get_curren
     await check_permission_db(user, "can_edit")
 
     updates, params, idx = [], [mid, tenant_id], 3
+    current = await db.fetchrow(
+        "SELECT supplier_id, category FROM materials WHERE id=$1 AND tenant_id=$2",
+        mid,
+        tenant_id,
+    )
+    if not current:
+        raise HTTPException(404)
+    next_supplier_id = str(current["supplier_id"])
+    next_category = current["category"]
+    supplier_changed = False
+    category_changed = False
     for field in ["name", "supplier_id", "sku", "category", "halal_risk", "description", "unit"]:
         val = getattr(req, field, None)
         if val is not None:
@@ -136,11 +149,18 @@ async def update_material(mid: str, req: MaterialUpdate, user=Depends(get_curren
                 )
                 if not owns:
                     raise HTTPException(400, "Nhà cung cấp không tồn tại")
+                next_supplier_id = val
+                supplier_changed = True
+            if field == "category":
+                next_category = val
+                category_changed = True
             updates.append(f"{field} = ${idx}")
             params.append(val)
             idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
+    if supplier_changed or category_changed:
+        await assert_supplier_eligible(db, tenant_id, next_supplier_id, next_category)
     result = await db.execute(f"UPDATE materials SET {', '.join(updates)} WHERE id=$1 AND tenant_id=$2", *params)
     if result == "UPDATE 0":
         raise HTTPException(404)

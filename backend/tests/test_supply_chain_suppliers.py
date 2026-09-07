@@ -341,15 +341,26 @@ class TestStatusLifecycle:
         row = await db_tx.fetchrow("SELECT status FROM suppliers WHERE id=$1", r["id"])
         assert row["status"] == "pending"
 
-    @pytest.mark.parametrize("status", ["verified", "suspended"])
-    async def test_41_42_valid_status_transition(self, db_tx, biz_a, status):
-        r = await _create(db_tx, biz_a, name=f"st {status}")
+    async def test_41_business_cannot_self_mark_supplier_verified(self, db_tx, biz_a):
+        r = await _create(db_tx, biz_a, name="st verified")
+        with pytest.raises(HTTPException) as exc:
+            await update_supplier(
+                sid=r["id"], req=SupplierUpdate(status="verified"),
+                user=biz_a, db=db_tx,
+            )
+        assert exc.value.status_code == 400
+        assert "CB" in str(exc.value.detail)
+        row = await db_tx.fetchrow("SELECT status FROM suppliers WHERE id=$1", r["id"])
+        assert row["status"] == "pending"
+
+    async def test_42_business_can_mark_supplier_suspended_as_local_operational_hold(self, db_tx, biz_a):
+        r = await _create(db_tx, biz_a, name="st suspended")
         await update_supplier(
-            sid=r["id"], req=SupplierUpdate(status=status),
+            sid=r["id"], req=SupplierUpdate(status="suspended"),
             user=biz_a, db=db_tx,
         )
         row = await db_tx.fetchrow("SELECT status FROM suppliers WHERE id=$1", r["id"])
-        assert row["status"] == status
+        assert row["status"] == "suspended"
 
     async def test_43_invalid_status_rejected_by_db_enum(self, db_tx, biz_a):
         r = await _create(db_tx, biz_a, name="bad st")

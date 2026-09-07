@@ -21,6 +21,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Modal from "@/components/Modal";
+import { ApiClientError, apiFetch, apiJson } from "@/lib/apiClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -280,21 +281,22 @@ export default function ProcessPage() {
   // ── Create process ─────────────────────────────────────────────────────────
 
   const createProcess = async () => {
-    if (!newName.trim()) return;
-    const res = await fetch("/api/api/supply-chain/processes", {
-      method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName }),
-    });
-    if (res.ok) {
-      const d = await res.json();
+    const name = newName.trim();
+    if (!name) return;
+    try {
+      const d = await apiJson<{ id: string; message?: string }>("/api/api/supply-chain/processes", {
+        method: "POST",
+        token,
+        json: { name },
+        fallbackError: "Tạo quy trình thất bại",
+      });
       setShowCreate(false);
       setNewName("");
       await fetchProcesses();
-      // Auto-load the new one
+      // Auto-load the new one immediately; do not depend on async list refresh.
       const newP = {
         id: d.id,
-        name: newName,
+        name,
         description: null,
         flowchart: { nodes: [], edges: [] },
         version: 1,
@@ -303,28 +305,35 @@ export default function ProcessPage() {
         updated_at: "",
       };
       loadProcess(newP);
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Không thể tạo quy trình");
     }
   };
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
-  const saveProcess = async () => {
-    if (!activeId) return;
+  const saveProcess = async (): Promise<boolean> => {
+    if (!activeId) return false;
     setSaving(true);
     const { nodes: flowNodes, edges: flowEdges } = reactToFlow(nodes, edges);
     try {
-      await fetch(`/api/api/supply-chain/processes/${activeId}`, {
+      await apiFetch(`/api/api/supply-chain/processes/${activeId}`, {
         method: "PUT",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
+        token,
+        json: {
           name: processName,
           description: processDesc,
           flowchart: { nodes: flowNodes, edges: flowEdges },
-        }),
+        },
+        fallbackError: "Lưu quy trình thất bại",
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      fetchProcesses();
+      await fetchProcesses();
+      return true;
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Không thể lưu quy trình");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -334,19 +343,18 @@ export default function ProcessPage() {
 
   const deleteProcess = async (id: string) => {
     if (!confirm("Xác nhận xoá quy trình này?")) return;
-    const res = await fetch(`/api/api/supply-chain/processes/${id}`, {
-      method: "DELETE",
-      headers,
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      const { parseApiError } = await import("@/lib/apiError");
-      // Most common case: FK from production_batches → user-friendly hint.
-      const detail = parseApiError(body, `Lỗi ${res.status}`);
+    try {
+      await apiFetch(`/api/api/supply-chain/processes/${id}`, {
+        method: "DELETE",
+        token,
+        fallbackError: "Xoá quy trình thất bại",
+      });
+    } catch (err) {
+      const message = err instanceof ApiClientError ? err.message : "Xoá quy trình thất bại";
       alert(
-        res.status === 500 || /foreign key|violates|reference/i.test(detail)
+        err instanceof ApiClientError && (err.status === 500 || /foreign key|violates|reference/i.test(message))
           ? "Không thể xoá quy trình vì đang được tham chiếu bởi 1 lô hàng. Hãy xoá / hoàn tất lô hàng đó trước."
-          : detail,
+          : message,
       );
       return;
     }
@@ -363,13 +371,16 @@ export default function ProcessPage() {
   const exportDocx = async () => {
     if (!activeId) return;
     // Save first
-    await saveProcess();
-    const res = await fetch(
-      `/api/api/supply-chain/processes/${activeId}/export-docx`,
-      { method: "POST", headers },
-    );
-    if (!res.ok) {
-      alert("Xuất file thất bại");
+    const savedOk = await saveProcess();
+    if (!savedOk) return;
+    let res: Response;
+    try {
+      res = await apiFetch(
+        `/api/api/supply-chain/processes/${activeId}/export-docx`,
+        { method: "POST", token, fallbackError: "Xuất file thất bại" },
+      );
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xuất file thất bại");
       return;
     }
     const blob = await res.blob();

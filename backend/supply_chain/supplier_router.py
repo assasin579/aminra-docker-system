@@ -1,5 +1,6 @@
 """Supplier CRUD + certificate management."""
 
+import json
 import logging
 import magic
 from uuid import UUID as _UUID, uuid4
@@ -12,7 +13,32 @@ from fastapi.responses import FileResponse
 from auth.db import get_db
 from auth.jwt_utils import get_current_user, decode_token
 from auth.permissions import check_permission_db
-from .models import SupplierCreate, SupplierUpdate, SupplierOut, CertificateOut
+from .models import (
+    CertificateOut,
+    CertificateRiskAlertOut,
+    CertificateRiskAlertUpdate,
+    EligibleSupplierOut,
+    SupplierCertificateEligibilityOut,
+    SupplierCertificateEligibilityUpsert,
+    SupplierCreate,
+    SupplierOut,
+    SupplierUpdate,
+)
+from .eligibility_service import create_certificate_status_alerts, list_eligible_suppliers
+
+
+def _json_object(value):
+    if value in (None, ""):
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            decoded = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return decoded if isinstance(decoded, dict) else {}
+    return {}
 
 log = logging.getLogger("aminra.supply_chain.suppliers")
 router = APIRouter()
@@ -33,6 +59,56 @@ def _require_business(user: dict):
     if user.get("role") != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     return user.get("tenant_id")
+
+
+def _require_provider(user: dict) -> str:
+    if user.get("role") != "provider" or not user.get("sub"):
+        raise HTTPException(403, "Chỉ CB/provider được cập nhật hiệu lực chứng nhận NCC")
+    return str(user.get("sub"))
+
+
+async def _provider_authority_for_supplier(db, provider_id: str, supplier, target_status: str) -> str:
+    """Return source halal_certificate.id proving this provider may authorise supplier eligibility.
+
+    Active eligibility requires an active, unexpired source certificate. Negative
+    statuses (expired/suspended/revoked) only require a historical certificate so
+    the issuing CB can still downgrade after the certificate has lapsed.
+    """
+    status_clause = "AND status = 'active' AND expiry_date >= CURRENT_DATE" if target_status == "active" else ""
+    cert_id = await db.fetchval(
+        f"""
+        SELECT id
+          FROM halal_certificates
+         WHERE issued_by = $1
+           AND business_tenant = $2
+           {status_clause}
+         ORDER BY issue_date DESC, created_at DESC
+         LIMIT 1
+        """,
+        provider_id,
+        str(supplier["tenant_id"]),
+    )
+    if not cert_id:
+        raise HTTPException(403, "CB/provider chưa có chứng nhận nguồn hợp lệ cho tenant NCC này")
+    return str(cert_id)
+
+
+def _supplier_out_from_row(r) -> SupplierOut:
+    return SupplierOut(
+        id=str(r["id"]),
+        name=r["name"],
+        address=r["address"],
+        phone=r["phone"],
+        email=r["email"],
+        contact_person=r["contact_person"],
+        supplier_type=r["supplier_type"],
+        tax_code=r.get("tax_code"),
+        status=r["status"],
+        notes=r["notes"],
+        material_count=r["material_count"],
+        cert_count=r["cert_count"],
+        created_at=r["created_at"],
+    )
 
 
 # ── CRUD Suppliers ───────────────────────────────────────────────────────────
@@ -61,8 +137,21 @@ async def list_suppliers(
         rows = await db.fetch(_LIST_SUPPLIERS_ALL, tenant_id)
 
     return {
+        "suppliers": [_supplier_out_from_row(r) for r in rows]
+    }
+
+
+@router.get("/suppliers/eligible")
+async def list_eligible_suppliers_route(
+    material_category: Optional[str] = Query(None),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    tenant_id = _require_business(user)
+    rows = await list_eligible_suppliers(db, tenant_id, material_category)
+    return {
         "suppliers": [
-            SupplierOut(
+            EligibleSupplierOut(
                 id=str(r["id"]),
                 name=r["name"],
                 address=r["address"],
@@ -76,10 +165,179 @@ async def list_suppliers(
                 material_count=r["material_count"],
                 cert_count=r["cert_count"],
                 created_at=r["created_at"],
+                eligibility_id=str(r["eligibility_id"]),
+                certificate_no=r["certificate_no"],
+                issuer_name=r["issuer_name"],
+                certificate_status=r["certificate_status"],
+                valid_from=r["valid_from"],
+                valid_until=r["valid_until"],
+                eligibility_scope=_json_object(r["scope"]),
+                provider_id=str(r["provider_id"]) if r.get("provider_id") else None,
+                source_certificate_id=str(r["source_certificate_id"]) if r.get("source_certificate_id") else None,
             )
+            for r in rows
+        ],
+        "policy": "Chỉ hiển thị NCC có chứng nhận CB đang active, còn hiệu lực và đúng phạm vi.",
+    }
+
+
+@router.get("/certificate-risk-alerts")
+async def list_certificate_risk_alerts(
+    status: Optional[str] = Query(None),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    tenant_id = _require_business(user)
+    params: list = [tenant_id]
+    cond = "WHERE a.impacted_tenant_id = $1"
+    if status:
+        cond += " AND a.status = $2"
+        params.append(status)
+    rows = await db.fetch(
+        f"""
+        SELECT a.*, s.name AS supplier_name
+          FROM certificate_risk_alerts a
+          JOIN suppliers s ON s.id = a.supplier_id
+          {cond}
+         ORDER BY a.created_at DESC
+        """,
+        *params,
+    )
+    return {
+        "alerts": [
+            CertificateRiskAlertOut(
+                id=str(r["id"]),
+                impacted_tenant_id=str(r["impacted_tenant_id"]),
+                supplier_id=str(r["supplier_id"]),
+                supplier_name=r["supplier_name"],
+                certificate_id=str(r["certificate_id"]),
+                event_type=r["event_type"],
+                severity=r["severity"],
+                message=r["message"],
+                status=r["status"],
+                created_at=r["created_at"],
+                updated_at=r["updated_at"],
+            ).model_dump()
             for r in rows
         ]
     }
+
+
+@router.put("/certificate-risk-alerts/{alert_id}")
+async def update_certificate_risk_alert(
+    alert_id: str,
+    req: CertificateRiskAlertUpdate,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    _validate_uuid(alert_id)
+    tenant_id = _require_business(user)
+    row = await db.fetchrow(
+        """
+        UPDATE certificate_risk_alerts
+           SET status = $3, updated_at = NOW()
+         WHERE id = $1 AND impacted_tenant_id = $2
+         RETURNING *
+        """,
+        alert_id,
+        tenant_id,
+        req.status,
+    )
+    if not row:
+        raise HTTPException(404, "Cảnh báo không tồn tại")
+    return {"id": str(row["id"]), "status": row["status"], "message": "Đã cập nhật cảnh báo"}
+
+
+@router.put("/suppliers/{sid}/cb-certificate")
+async def upsert_supplier_eligibility(
+    sid: str,
+    req: SupplierCertificateEligibilityUpsert,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    _validate_uuid(sid)
+    provider_id = _require_provider(user)
+    supplier = await db.fetchrow("SELECT id, tenant_id, name FROM suppliers WHERE id=$1", sid)
+    if not supplier:
+        raise HTTPException(404, "Nhà cung cấp không tồn tại")
+    source_certificate_id = await _provider_authority_for_supplier(db, provider_id, supplier, req.status)
+    prior = await db.fetchrow("SELECT id, status, provider_id FROM supplier_eligibilities WHERE supplier_id=$1", sid)
+    if prior and prior["provider_id"] and str(prior["provider_id"]) != provider_id:
+        raise HTTPException(403, "Chỉ CB/provider đã cấp eligibility hiện tại mới được cập nhật NCC này")
+    row = await db.fetchrow(
+        """
+        INSERT INTO supplier_eligibilities
+          (supplier_id, tenant_id, certificate_no, issuer_name, status,
+           valid_from, valid_until, scope, source_of_truth, changed_by, reason,
+           provider_id, source_certificate_id, changed_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,NOW())
+        ON CONFLICT (supplier_id) DO UPDATE SET
+          tenant_id=EXCLUDED.tenant_id,
+          certificate_no=EXCLUDED.certificate_no,
+          issuer_name=EXCLUDED.issuer_name,
+          status=EXCLUDED.status,
+          valid_from=EXCLUDED.valid_from,
+          valid_until=EXCLUDED.valid_until,
+          scope=EXCLUDED.scope,
+          source_of_truth=EXCLUDED.source_of_truth,
+          changed_by=EXCLUDED.changed_by,
+          reason=EXCLUDED.reason,
+          provider_id=EXCLUDED.provider_id,
+          source_certificate_id=EXCLUDED.source_certificate_id,
+          changed_at=NOW()
+        RETURNING *
+        """,
+        sid,
+        str(supplier["tenant_id"]),
+        req.certificate_no,
+        req.issuer_name,
+        req.status,
+        req.valid_from,
+        req.valid_until,
+        json.dumps(req.scope),
+        req.source_of_truth,
+        provider_id,
+        req.reason,
+        provider_id,
+        source_certificate_id,
+    )
+    if req.status in {"expired", "suspended", "revoked"} and (not prior or prior["status"] != req.status):
+        await create_certificate_status_alerts(
+            db,
+            sid,
+            str(row["id"]),
+            req.status,
+            f"Chứng nhận CB của NCC {supplier['name']} đã {req.status}.",
+        )
+    return SupplierCertificateEligibilityOut(
+        id=str(row["id"]),
+        supplier_id=str(row["supplier_id"]),
+        tenant_id=str(row["tenant_id"]),
+        certificate_no=row["certificate_no"],
+        issuer_name=row["issuer_name"],
+        status=row["status"],
+        valid_from=row["valid_from"],
+        valid_until=row["valid_until"],
+        scope=_json_object(row["scope"]),
+        source_of_truth=row["source_of_truth"],
+        provider_id=str(row["provider_id"]) if row["provider_id"] else None,
+        source_certificate_id=str(row["source_certificate_id"]) if row["source_certificate_id"] else None,
+        changed_at=row["changed_at"],
+        changed_by=str(row["changed_by"]) if row["changed_by"] else None,
+        reason=row["reason"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    ).model_dump()
+
+
+@router.post("/suppliers/{sid}/cb-certificate")
+async def create_supplier_eligibility(
+    sid: str,
+    req: SupplierCertificateEligibilityUpsert,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    return await upsert_supplier_eligibility(sid, req, user, db)
 
 
 @router.post("/suppliers")
@@ -150,6 +408,8 @@ async def update_supplier(sid: str, req: SupplierUpdate, user=Depends(get_curren
     _validate_uuid(sid)
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_edit")
+    if req.status == "verified":
+        raise HTTPException(400, "Doanh nghiệp không thể tự xác nhận đủ điều kiện CB; chỉ CB/provider được cập nhật chứng nhận.")
     if all(getattr(req, f, None) is None for f in _UPDATE_SUPPLIER_FIELDS):
         return {"message": "Không có thay đổi"}
     result = await db.execute(

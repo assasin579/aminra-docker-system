@@ -1,7 +1,7 @@
 """Pydantic models for Supply Chain modules."""
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import date, datetime
 import re
 
@@ -90,6 +90,93 @@ class CertificateOut(BaseModel):
     original_filename: Optional[str]
     file_size: Optional[int]
     created_at: datetime
+
+
+class SupplierCertificateEligibilityUpsert(BaseModel):
+    certificate_no: str = Field(..., min_length=1, max_length=255)
+    issuer_name: str = Field(..., min_length=1, max_length=255)
+    status: str = "pending_review"
+    valid_from: date
+    valid_until: date
+    scope: dict[str, Any] = Field(default_factory=dict)
+    source_of_truth: str = "cb"
+    reason: Optional[str] = None
+
+    _certificate_nonblank = field_validator("certificate_no")(lambda cls, v: _validate_non_blank(v))
+    _issuer_nonblank = field_validator("issuer_name")(lambda cls, v: _validate_non_blank(v))
+
+    @field_validator("status")
+    @classmethod
+    def _valid_status(cls, v: str) -> str:
+        allowed = {"active", "expired", "suspended", "revoked", "pending_review"}
+        if v not in allowed:
+            raise ValueError("Trạng thái chứng nhận CB không hợp lệ")
+        return v
+
+    @field_validator("source_of_truth")
+    @classmethod
+    def _cb_only(cls, v: str) -> str:
+        if v != "cb":
+            raise ValueError("Chỉ CB/provider được là nguồn xác thực")
+        return v
+
+
+class SupplierCertificateEligibilityOut(BaseModel):
+    id: str
+    supplier_id: str
+    tenant_id: str
+    certificate_no: str
+    issuer_name: str
+    status: str
+    valid_from: date
+    valid_until: date
+    scope: dict[str, Any]
+    source_of_truth: str
+    provider_id: Optional[str] = None
+    source_certificate_id: Optional[str] = None
+    changed_at: Optional[datetime]
+    changed_by: Optional[str]
+    reason: Optional[str]
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+class EligibleSupplierOut(SupplierOut):
+    eligibility_id: str
+    certificate_no: str
+    issuer_name: str
+    certificate_status: str
+    valid_from: date
+    valid_until: date
+    eligibility_scope: dict[str, Any] = Field(default_factory=dict)
+    provider_id: Optional[str] = None
+    source_certificate_id: Optional[str] = None
+
+
+class CertificateRiskAlertOut(BaseModel):
+    id: str
+    impacted_tenant_id: str
+    supplier_id: str
+    supplier_name: Optional[str] = None
+    certificate_id: str
+    event_type: str
+    severity: str
+    message: str
+    status: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+class CertificateRiskAlertUpdate(BaseModel):
+    status: str
+
+    @field_validator("status")
+    @classmethod
+    def _valid_alert_status(cls, v: str) -> str:
+        allowed = {"open", "acknowledged", "resolved"}
+        if v not in allowed:
+            raise ValueError("Trạng thái cảnh báo không hợp lệ")
+        return v
 
 
 # ── Materials ────────────────────────────────────────────────────────────────

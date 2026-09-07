@@ -15,6 +15,7 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user
 from auth.permissions import check_permission_db
 from .models import BatchCreate, BatchUpdate, BatchStepUpdate, BatchOut
+from .eligibility_service import assert_supplier_eligible
 
 log = logging.getLogger("aminra.supply_chain.batches")
 router = APIRouter()
@@ -147,15 +148,31 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
             raise HTTPException(400, "Quy trình không tồn tại")
 
     # Pre-validate materials before inserting batch (fail fast, no orphan rows).
+    material_eligibility: dict[str, dict] = {}
     if req.materials:
         for m in req.materials:
             _validate_uuid(m["material_id"])
-            owns_mat = await db.fetchval(
-                "SELECT 1 FROM materials WHERE id=$1 AND tenant_id=$2",
+            mat = await db.fetchrow(
+                "SELECT id, supplier_id, category FROM materials WHERE id=$1 AND tenant_id=$2",
                 m["material_id"], tenant_id,
             )
-            if not owns_mat:
+            if not mat:
                 raise HTTPException(400, f"Nguyên liệu không tồn tại: {m['material_id']}")
+            eligibility = await assert_supplier_eligible(db, str(tenant_id), str(mat["supplier_id"]), mat["category"])
+            material_eligibility[m["material_id"]] = {
+                "supplier_id": str(mat["supplier_id"]),
+                "eligibility_id": eligibility.certificate_id,
+                "eligibility_snapshot": {
+                    "supplier_id": str(mat["supplier_id"]),
+                    "eligibility_id": eligibility.certificate_id,
+                    "status": eligibility.status,
+                    "valid_from": eligibility.valid_from.isoformat() if eligibility.valid_from else None,
+                    "valid_until": eligibility.valid_until.isoformat() if eligibility.valid_until else None,
+                    "source_of_truth": eligibility.source_of_truth,
+                    "scope": eligibility.scope,
+                    "checked_at": datetime.utcnow().isoformat() + "Z",
+                },
+            }
 
     row = await db.fetchrow(
         """
@@ -176,13 +193,16 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
         for m in req.materials:
             await db.execute(
                 """
-                INSERT INTO batch_materials (batch_id, material_id, quantity, unit)
-                VALUES ($1,$2,$3,$4)
+                INSERT INTO batch_materials (batch_id, material_id, quantity, unit, supplier_id, eligibility_id, eligibility_snapshot)
+                VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)
             """,
                 batch_id,
                 m["material_id"],
                 m.get("quantity"),
                 m.get("unit"),
+                material_eligibility[m["material_id"]]["supplier_id"],
+                material_eligibility[m["material_id"]]["eligibility_id"],
+                _json.dumps(material_eligibility[m["material_id"]]["eligibility_snapshot"]),
             )
 
     # Auto-create steps from process template

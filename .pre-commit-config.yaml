@@ -99,6 +99,13 @@ repos:
         language: system
         files: ^backend/.*\.py$
 
+      - id: frontend-supply-chain-guardrails
+        name: frontend supply-chain API guardrails
+        entry: bash -c 'cd frontend/aminra-web && npm run test:guardrails:supply-chain'
+        language: system
+        files: ^frontend/aminra-web/(app/supply-chain/|lib/api(Client|Error)\.ts|__tests__/supply-chain-|__tests__/apiClient\.test\.ts)
+        pass_filenames: false
+
       - id: mypy-fast
         name: mypy (manual — backend services + auth only)
         entry: bash -c 'docker run --rm -v "$PWD/backend:/src:ro" python:3.11-slim sh -c "pip install --quiet mypy 2>/dev/null && mypy /src/services /src/auth --ignore-missing-imports --no-strict-optional --follow-imports=silent"'

@@ -6,6 +6,9 @@ run inside an outer transaction (db_tx) and roll back on teardown.
 """
 from __future__ import annotations
 
+import importlib.util
+from datetime import date, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -20,8 +23,23 @@ from supply_chain.material_router import (
 )
 from supply_chain.supplier_router import create_supplier
 
+_MIGRATION_PATH = Path(__file__).resolve().parents[1] / "alembic/versions/038_cb_supplier_certificate_eligibility.py"
+_SPEC = importlib.util.spec_from_file_location("p0a_supplier_eligibility_migration", _MIGRATION_PATH)
+assert _SPEC and _SPEC.loader
+MIGRATION = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(MIGRATION)
+
 
 HALAL_RISK_VALID = ["safe", "requires_cert", "prohibited", "unknown"]
+
+
+@pytest.fixture(autouse=True)
+async def _p0a_schema(db_tx):
+    await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    for sql in MIGRATION.DOWN_SQL:
+        await db_tx.execute(sql)
+    for sql in MIGRATION.UP_SQL:
+        await db_tx.execute(sql)
 
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
@@ -30,7 +48,32 @@ HALAL_RISK_VALID = ["safe", "requires_cert", "prohibited", "unknown"]
 async def _new_supplier(db, user, name=None):
     name = name or f"Sup {uuid4().hex[:6]}"
     r = await create_supplier(req=SupplierCreate(name=name), user=user, db=db)
+    await _authorize_supplier(db, r["id"], user["tenant_id"])
     return r["id"]
+
+
+async def _authorize_supplier(db, supplier_id, tenant_id, *, status="active", scope=None, valid_from=None, valid_until=None):
+    today = date.today()
+    await db.execute(
+        """
+        INSERT INTO supplier_eligibilities
+          (supplier_id, tenant_id, certificate_no, issuer_name, status, valid_from, valid_until, scope, source_of_truth)
+        VALUES ($1,$2,$3,'Test CB',$4,$5,$6,$7::jsonb,'cb')
+        ON CONFLICT (supplier_id) DO UPDATE SET
+          status=EXCLUDED.status,
+          valid_from=EXCLUDED.valid_from,
+          valid_until=EXCLUDED.valid_until,
+          scope=EXCLUDED.scope,
+          source_of_truth='cb'
+        """,
+        supplier_id,
+        tenant_id,
+        f"CB-{uuid4().hex[:8]}",
+        status,
+        valid_from or today - timedelta(days=1),
+        valid_until or today + timedelta(days=30),
+        scope or '{"material_categories":["*"]}',
+    )
 
 
 async def _new_material(db, user, supplier_id, **kw):
@@ -423,6 +466,48 @@ class TestBusinessLogic:
             user=biz_a, db=db_tx,
         )
         assert "Không có thay đổi" in result.get("message", "")
+
+
+class TestCBEligibilityPolicy:
+    async def test_46a_missing_cb_eligibility_blocks_material_create(self, db_tx, biz_a):
+        raw = await create_supplier(req=SupplierCreate(name="No CB"), user=biz_a, db=db_tx)
+
+        with pytest.raises(HTTPException) as exc:
+            await _new_material(db_tx, biz_a, raw["id"], name="blocked", category="meat")
+
+        assert exc.value.status_code == 400
+        assert "CB" in str(exc.value.detail)
+
+    @pytest.mark.parametrize("status", ["expired", "suspended", "revoked", "pending_review"])
+    async def test_46b_non_active_cb_status_blocks_material_create(self, db_tx, biz_a, status):
+        sup = await _new_supplier(db_tx, biz_a)
+        await _authorize_supplier(db_tx, sup, biz_a["tenant_id"], status=status)
+
+        with pytest.raises(HTTPException) as exc:
+            await _new_material(db_tx, biz_a, sup, name=f"blocked-{status}", category="meat")
+
+        assert exc.value.status_code == 400
+        assert "CB" in str(exc.value.detail)
+
+    async def test_46c_scope_mismatch_blocks_create_and_update_category(self, db_tx, biz_a):
+        sup = await _new_supplier(db_tx, biz_a)
+        await _authorize_supplier(db_tx, sup, biz_a["tenant_id"], scope='{"material_categories":["meat"]}')
+        mat = await _new_material(db_tx, biz_a, sup, name="ok meat", category="meat")
+
+        with pytest.raises(HTTPException) as exc:
+            await create_material(
+                req=MaterialCreate(name="bad dairy", supplier_id=sup, category="dairy"),
+                user=biz_a,
+                db=db_tx,
+            )
+        assert exc.value.status_code == 400
+
+        with pytest.raises(HTTPException) as update_exc:
+            await update_material(mid=mat["id"], req=MaterialUpdate(category="dairy"), user=biz_a, db=db_tx)
+        assert update_exc.value.status_code == 400
+
+        row = await db_tx.fetchrow("SELECT category FROM materials WHERE id=$1", mat["id"])
+        assert row["category"] == "meat"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -14,6 +14,9 @@ role gating, edge cases.
 """
 from __future__ import annotations
 
+import importlib.util
+from datetime import date, timedelta
+from pathlib import Path
 from uuid import uuid4
 from typing import Any, cast
 
@@ -36,6 +39,33 @@ from supply_chain.material_router import create_material
 from supply_chain.process_router import create_process
 from supply_chain.supplier_router import create_supplier
 
+_MIGRATION_PATHS = [
+    Path(__file__).resolve().parents[1] / "alembic/versions/038_cb_supplier_certificate_eligibility.py",
+    Path(__file__).resolve().parents[1] / "alembic/versions/039_supplier_authority_batch_snapshot.py",
+]
+
+
+def _load_migration(path: Path):
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    assert spec and spec.loader
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    return migration
+
+
+MIGRATIONS = [_load_migration(path) for path in _MIGRATION_PATHS]
+
+
+@pytest.fixture(autouse=True)
+async def _p0a_schema(db_tx):
+    await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    for migration in reversed(MIGRATIONS):
+        for sql in migration.DOWN_SQL:
+            await db_tx.execute(sql)
+    for migration in MIGRATIONS:
+        for sql in migration.UP_SQL:
+            await db_tx.execute(sql)
+
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -45,7 +75,31 @@ async def _new_supplier(db, user, name=None):
         req=SupplierCreate(name=name or f"S {uuid4().hex[:6]}"),
         user=user, db=db,
     )
+    await _authorize_supplier(db, r["id"], user["tenant_id"])
     return r["id"]
+
+
+async def _authorize_supplier(db, supplier_id, tenant_id, *, status="active", valid_from=None, valid_until=None):
+    today = date.today()
+    await db.execute(
+        """
+        INSERT INTO supplier_eligibilities
+          (supplier_id, tenant_id, certificate_no, issuer_name, status, valid_from, valid_until, scope, source_of_truth)
+        VALUES ($1,$2,$3,'Test CB',$4,$5,$6,'{"material_categories":["*"]}'::jsonb,'cb')
+        ON CONFLICT (supplier_id) DO UPDATE SET
+          status=EXCLUDED.status,
+          valid_from=EXCLUDED.valid_from,
+          valid_until=EXCLUDED.valid_until,
+          scope=EXCLUDED.scope,
+          source_of_truth='cb'
+        """,
+        supplier_id,
+        tenant_id,
+        f"CB-{uuid4().hex[:8]}",
+        status,
+        valid_from or today - timedelta(days=1),
+        valid_until or today + timedelta(days=30),
+    )
 
 
 async def _new_material(db, user, supplier_id, name=None):
@@ -118,6 +172,38 @@ class TestHappyPath:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Group 2: REQUIRED FIELDS (3)
 # ═══════════════════════════════════════════════════════════════════════════════
+
+
+    async def test_15a_batch_material_stores_cb_eligibility_snapshot(self, db_tx, biz_a):
+        sup = await _new_supplier(db_tx, biz_a)
+        mat = await _new_material(db_tx, biz_a, sup)
+        r = await _new_batch(
+            db_tx, biz_a, product_name="snapshot", materials=[{"material_id": mat, "quantity": 1, "unit": "kg"}]
+        )
+
+        row = await db_tx.fetchrow(
+            "SELECT supplier_id, eligibility_id, eligibility_snapshot FROM batch_materials WHERE batch_id=$1 AND material_id=$2",
+            r["id"],
+            mat,
+        )
+        snapshot = row["eligibility_snapshot"] if isinstance(row["eligibility_snapshot"], dict) else __import__("json").loads(row["eligibility_snapshot"])
+        assert str(row["supplier_id"]) == sup
+        assert row["eligibility_id"] is not None
+        assert snapshot["status"] == "active"
+        assert snapshot["source_of_truth"] == "cb"
+
+    async def test_15b_batch_create_rechecks_current_supplier_eligibility(self, db_tx, biz_a):
+        sup = await _new_supplier(db_tx, biz_a)
+        mat = await _new_material(db_tx, biz_a, sup)
+        await _authorize_supplier(db_tx, sup, biz_a["tenant_id"], status="revoked")
+
+        with pytest.raises(HTTPException) as exc:
+            await _new_batch(
+                db_tx, biz_a, product_name="revoked source", materials=[{"material_id": mat, "quantity": 1, "unit": "kg"}]
+            )
+
+        assert exc.value.status_code == 400
+        assert "CB" in str(exc.value.detail)
 
 
 class TestRequiredFields:

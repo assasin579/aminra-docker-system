@@ -7,6 +7,7 @@ import ExpiryUrgency from "@/components/certificates/ExpiryUrgency";
 import { openAuthed } from "@/lib/authedOpen";
 import RevealOnScroll from "@/components/RevealOnScroll";
 import Modal from "@/components/Modal";
+import { apiFetch } from "@/lib/apiClient";
 
 interface CertStats {
   active: number;
@@ -131,20 +132,20 @@ export default function CertificatesPage() {
     if (!confirmAction || !reason.trim()) return;
     setActionLoading(true);
     try {
-      await fetch(
+      await apiFetch(
         `/api/api/submissions/certificates/${confirmAction.id}/status`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: confirmAction.action, reason }),
+          token,
+          json: { status: confirmAction.action, reason },
+          fallbackError: "Không thể cập nhật trạng thái chứng nhận",
         },
       );
       setConfirmAction(null);
       setReason("");
       fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Không thể cập nhật trạng thái chứng nhận");
     } finally {
       setActionLoading(false);
     }
