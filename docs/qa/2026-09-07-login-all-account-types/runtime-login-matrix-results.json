@@ -1,0 +1,381 @@
+{
+  "started_at": "2026-09-07T23:38:10.114010+00:00",
+  "backend_url": "http://localhost:8100",
+  "kc_url": "http://localhost:8180",
+  "accounts": [
+    {
+      "label": "platform_admin_username",
+      "username": "admin",
+      "expected_login": true,
+      "login_status": 401,
+      "realm_roles": [],
+      "auth_me": null,
+      "routes": [],
+      "login_error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    },
+    {
+      "label": "platform_admin_email",
+      "username": "admin@aminra.com",
+      "expected_login": true,
+      "login_status": 401,
+      "realm_roles": [],
+      "auth_me": null,
+      "routes": [],
+      "login_error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    },
+    {
+      "label": "cb_provider",
+      "username": "cb-demo@demo.aminra.vn",
+      "expected_login": true,
+      "login_status": 200,
+      "realm_roles": [
+        "cb_admin"
+      ],
+      "auth_me": {
+        "status": "active",
+        "email": "cb-demo@demo.aminra.vn",
+        "role": "provider",
+        "is_owner": true
+      },
+      "routes": [
+        {
+          "path": "/api/audits/",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/submissions/cb-stats",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/submissions/certificates/registry",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/submissions/my-submissions",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/received",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/supply-chain/batches",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/materials",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/processes",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/suppliers",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/analytics",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/feature-flags",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/overdue-submissions",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/pending-providers",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/me",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/dossiers",
+          "status": 200,
+          "expected": "allow"
+        }
+      ]
+    },
+    {
+      "label": "business",
+      "username": "biz-demo-1@demo.aminra.vn",
+      "expected_login": true,
+      "login_status": 200,
+      "realm_roles": [
+        "business"
+      ],
+      "auth_me": {
+        "status": "active",
+        "email": "biz-demo-1@demo.aminra.vn",
+        "role": "business",
+        "is_owner": true
+      },
+      "routes": [
+        {
+          "path": "/api/audits/",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/cb-stats",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/certificates/registry",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/my-submissions",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/submissions/received",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/batches",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/supply-chain/materials",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/supply-chain/processes",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/supply-chain/suppliers",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/auth/admin/analytics",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/feature-flags",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/overdue-submissions",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/pending-providers",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/me",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/dossiers",
+          "status": 200,
+          "expected": "allow"
+        }
+      ]
+    },
+    {
+      "label": "auditor",
+      "username": "auditor-demo@demo.aminra.vn",
+      "expected_login": true,
+      "login_status": 200,
+      "realm_roles": [
+        "auditor"
+      ],
+      "auth_me": {
+        "status": "active",
+        "email": "auditor-demo@demo.aminra.vn",
+        "role": "provider",
+        "is_owner": false
+      },
+      "routes": [
+        {
+          "path": "/api/audits/",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/api/submissions/cb-stats",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/certificates/registry",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/my-submissions",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/submissions/received",
+          "status": 200,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/batches",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/materials",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/processes",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/api/supply-chain/suppliers",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/analytics",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/feature-flags",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/overdue-submissions",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/admin/pending-providers",
+          "status": 403,
+          "expected": "deny"
+        },
+        {
+          "path": "/auth/me",
+          "status": 200,
+          "expected": "allow"
+        },
+        {
+          "path": "/dossiers",
+          "status": 200,
+          "expected": "deny"
+        }
+      ]
+    },
+    {
+      "label": "disabled_surplus_business_negative",
+      "username": "biz-demo-2@demo.aminra.vn",
+      "expected_login": false,
+      "login_status": 400,
+      "realm_roles": [],
+      "auth_me": null,
+      "routes": [],
+      "login_error": {
+        "error": "invalid_grant",
+        "error_description": "Account disabled"
+      },
+      "negative_passed": true
+    }
+  ],
+  "health": {
+    "status": 200,
+    "database": "connected"
+  },
+  "wrong_password_negatives": [
+    {
+      "label": "platform_admin_username",
+      "status": 401,
+      "passed": true,
+      "error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    },
+    {
+      "label": "platform_admin_email",
+      "status": 401,
+      "passed": true,
+      "error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    },
+    {
+      "label": "cb_provider",
+      "status": 401,
+      "passed": true,
+      "error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    },
+    {
+      "label": "business",
+      "status": 401,
+      "passed": true,
+      "error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    },
+    {
+      "label": "auditor",
+      "status": 401,
+      "passed": true,
+      "error": {
+        "error": "invalid_grant",
+        "error_description": "Invalid user credentials"
+      }
+    }
+  ],
+  "failures": [
+    "platform_admin_username login expected success got HTTP 401 {'error': 'invalid_grant', 'error_description': 'Invalid user credentials'}",
+    "platform_admin_email login expected success got HTTP 401 {'error': 'invalid_grant', 'error_description': 'Invalid user credentials'}",
+    "auditor /auth/me role expected auditor got provider",
+    "auditor expected deny/non-surface /api/submissions/received, got 200",
+    "auditor expected deny/non-surface /dossiers, got 200"
+  ]
+}

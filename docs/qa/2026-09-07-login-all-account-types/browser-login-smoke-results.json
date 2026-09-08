@@ -1,0 +1,72 @@
+{
+  "startedAt": "2026-09-07T23:39:08.361Z",
+  "base": "http://localhost:3100",
+  "results": [
+    {
+      "label": "business",
+      "username": "biz-demo-1@demo.aminra.vn",
+      "start": "/business/login",
+      "status": "PASS",
+      "finalUrl": "http://localhost:3100/business/onboarding/industry-select",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "storage": {
+        "userToken": true,
+        "adminToken": false,
+        "userProfile": true,
+        "adminProfile": false,
+        "bodyText": "D\n\nDemo Foods Co.\n\nbiz-demo-1@demo.aminra.vn\n\nDashboard\nChat với Aminra\nTài liệu\nHồ sơ đã gửi\nThành viên\nNguyên vật liệu\nQuy trình\nLô hàng\nThông báo\n\n© 2026 AMINRA\n\nChọn ngành nghề doanh nghiệp\n\nDoanh nghiệp của bạn thuộc nhóm nào? Chọn để AMINRA tạo bộ tài liệu chuẩn theo ngành.\n\n🐄\nCơ sở chăn nuôi - Giết mổ\n\nHalal animal slaughter\n\nChuẩn: MPPHM\n\n0 loại tài liệu chuẩn\n\n🏨\nNhà hàng - Khách sạn Halal\n\nDịch vụ ăn uống Halal\n\nChuẩn: MS 1500\n\n0 loại tài liệu chuẩn\n\n🏭\nCơ sở sản xuất thực phẩm\n\nHalal"
+      }
+    },
+    {
+      "label": "cb_provider",
+      "username": "cb-demo@demo.aminra.vn",
+      "start": "/provider/login",
+      "status": "PASS",
+      "finalUrl": "http://localhost:3100/dashboard/provider",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "storage": {
+        "userToken": true,
+        "adminToken": false,
+        "userProfile": true,
+        "adminProfile": false,
+        "bodyText": "H\n\nHalal Certification Vietnam (Demo)\n\ncb-demo@demo.aminra.vn\n\nDashboard\nChat với Aminra\nDoanh nghiệp\nChứng nhận\nQuản lý Auditor\nHồ sơ nhận\nKiểm định\nThông báo\n\n© 2026 AMINRA\n\nChào buổi tối,\n\nHalal Certification Vietnam (Demo)\n\ncb-demo@demo.aminra.vn\n\nQuản trị CB\n2\nDoanh nghiệp\n2\nChứng nhận\n1\nSắp hết hạn\n0\nKĐ hoàn thành\n\nĐiểm tuân thủ TB\n\n0%\n\nThời gian phản hồi TB\n\n228h\n\nHồ sơ chờ xử lý\n\n1\n\nChứng nhận sắp hết hạn\nXem tất cả →\n\nDemo Beverages Ltd.\n\nHALAL-2025-EXPIRING\n\n19 ngày\nTải công việc Audit"
+      }
+    },
+    {
+      "label": "auditor",
+      "username": "auditor-demo@demo.aminra.vn",
+      "start": "/provider/login",
+      "status": "PASS",
+      "finalUrl": "http://localhost:3100/dashboard/provider",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "storage": {
+        "userToken": true,
+        "adminToken": false,
+        "userProfile": true,
+        "adminProfile": false,
+        "bodyText": "H\n\nHalal Certification Vietnam (Demo)\n\nauditor-demo@demo.aminra.vn\n\nDashboard\nChat với Aminra\nHồ sơ nhận\nKiểm định\nThông báo\n\n© 2026 AMINRA\n\nChào buổi tối,\n\nHalal Certification Vietnam (Demo)\n\nauditor-demo@demo.aminra.vn\n\nAuditor\n0\nChờ duyệt\n0\nĐang xét\n0\nĐã duyệt\n0\nTrả lại\n\nTổng hồ sơ nhận\n\n0\n\nThời gian phản hồi TB\n\n---\n\nHồ sơ gần đây\nXem tất cả →\n\nChưa có hồ sơ nào\n\nDoanh nghiệp sẽ gửi hồ sơ cho bạn khi sẵn sàng\n\nThao tác nhanh\nHồ sơ nhận\nXem & đánh giá hồ sơ\nHỏi đáp AI\nTra cứu tiêu chuẩn Halal"
+      }
+    },
+    {
+      "label": "platform_admin",
+      "username": "admin",
+      "start": "/admin",
+      "status": "FAIL",
+      "finalUrl": "http://localhost:3100/admin",
+      "consoleErrors": [],
+      "storage": {
+        "userToken": false,
+        "adminToken": false,
+        "userProfile": false,
+        "adminProfile": false,
+        "bodyText": "Chat với Aminra\nĐăng nhập Doanh nghiệp\nĐăng nhập Tổ chức\nĐăng nhập Admin\n\n© 2026 AMINRA\n\nKhu vực dành cho Admin\n\nBạn cần đăng nhập bằng tài khoản admin để truy cập và quản lý template đánh giá.\n\nĐăng nhập Admin (Keycloak SSO)"
+      }
+    }
+  ]
+}
