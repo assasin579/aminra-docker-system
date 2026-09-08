@@ -26,6 +26,10 @@ def _mock_pool(row=None):
     return pool, db
 
 
+TENANT_A = "11111111-1111-1111-1111-111111111111"
+TENANT_B = "22222222-2222-2222-2222-222222222222"
+
+
 def _claims_for_tenant(tenant_id: str, email: str = "user@example.com"):
     return {
         "sub": "kc-1",
@@ -44,12 +48,14 @@ def _claims_for_tenant(tenant_id: str, email: str = "user@example.com"):
 async def test_fast_path_returns_tenant_id_from_jwt_claim_only():
     """When mapper claims present, DB is NOT consulted — tenant_id comes
     purely from the JWT. This is the security promise of Phase 3b: the
-    JWT signature attests to the tenant binding."""
+    JWT signature attests to the tenant binding, but only when tenant_id is
+    AMINRA-canonical UUID format. Slug/non-UUID mapper values are intentionally
+    rejected from fast path and forced through DB enrichment."""
     pool, db = _mock_pool(row=None)  # DB returns nothing
     out = await kv.enrich_keycloak_claims(
-        _claims_for_tenant("tenant-A"), pool,
+        _claims_for_tenant(TENANT_A), pool,
     )
-    assert out["tenant_id"] == "tenant-A"
+    assert out["tenant_id"] == TENANT_A
     db.fetchrow.assert_not_called()
 
 
@@ -58,10 +64,10 @@ async def test_two_tokens_with_different_tenants_yield_different_tenant_ids():
     """Smoke: confirm tenant_id isolation is per-token, not cached."""
     pool_a, _ = _mock_pool()
     pool_b, _ = _mock_pool()
-    a = await kv.enrich_keycloak_claims(_claims_for_tenant("tenant-A"), pool_a)
-    b = await kv.enrich_keycloak_claims(_claims_for_tenant("tenant-B"), pool_b)
-    assert a["tenant_id"] == "tenant-A"
-    assert b["tenant_id"] == "tenant-B"
+    a = await kv.enrich_keycloak_claims(_claims_for_tenant(TENANT_A), pool_a)
+    b = await kv.enrich_keycloak_claims(_claims_for_tenant(TENANT_B), pool_b)
+    assert a["tenant_id"] == TENANT_A
+    assert b["tenant_id"] == TENANT_B
     assert a["sub"] == b["sub"]  # same kc sub but different claim payload
 
 
@@ -138,14 +144,24 @@ async def test_email_mismatch_between_token_and_db_does_not_leak():
 
 
 @pytest.mark.asyncio
-async def test_tenant_id_always_string_after_normalisation():
-    """Even if Keycloak serialises tenant_id as int (defensive), it must
-    come out as string so downstream `SET search_path = "tenant_<uuid>"`
-    consumers don't break on type."""
-    pool, _ = _mock_pool()
+async def test_non_uuid_tenant_mapper_falls_back_instead_of_fast_path():
+    """Non-UUID mapper values must not activate fast path; this prevents stale
+    Keycloak slug attributes from bypassing DB enrichment and mis-targeting
+    tenant-scoped queries."""
+    pool, db = _mock_pool(row={
+        "id": "uid",
+        "email": "user@example.com",
+        "role": "business",
+        "status": "active",
+        "tenant_id": TENANT_A,
+        "is_owner": True,
+        "company_name": "ACME",
+    })
     out = await kv.enrich_keycloak_claims(
         _claims_for_tenant(12345),  # int, defensive
         pool,
     )
-    assert out["tenant_id"] == "12345"
+    assert out["tenant_id"] == TENANT_A
     assert isinstance(out["tenant_id"], str)
+    assert out.get("_from_jwt_claims") is not True
+    db.fetchrow.assert_called_once()

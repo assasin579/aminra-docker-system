@@ -13,6 +13,13 @@ import pytest
 from auth import keycloak_validator as kv
 
 
+TENANT_A = "11111111-1111-1111-1111-111111111111"
+TENANT_B = "22222222-2222-2222-2222-222222222222"
+TENANT_C = "33333333-3333-3333-3333-333333333333"
+TENANT_D = "44444444-4444-4444-4444-444444444444"
+TENANT_E = "55555555-5555-5555-5555-555555555555"
+
+
 def _mock_pool(row=None):
     db = AsyncMock()
     db.fetchrow = AsyncMock(return_value=row)
@@ -42,19 +49,17 @@ def _claims(tenant_id, **overrides):
 
 @pytest.mark.asyncio
 async def test_attacker_cannot_substitute_tenant_in_db_when_jwt_has_tenant():
-    """Fast path: JWT carries tenant_id A, DB row has tenant_id B (drift).
-    JWT WINS because signature attests to tenant binding. This is the
-    Phase 3b security promise — but it means JWT mapper config drift is
-    a HIGH severity incident that needs alerting."""
-    db_tenant = "tenant-DB-version"
+    """Fast path: JWT carries canonical tenant_id A, DB row has tenant_id B.
+    JWT wins only when the mapper value is AMINRA-canonical UUID format."""
+    db_tenant = TENANT_B
     pool, db = _mock_pool(row={
         "id": "u", "email": "user@example.com", "role": "business",
         "status": "active", "tenant_id": db_tenant, "is_owner": True,
         "company_name": "ACME",
     })
-    out = await kv.enrich_keycloak_claims(_claims("tenant-JWT-version"), pool)
+    out = await kv.enrich_keycloak_claims(_claims(TENANT_A), pool)
     # Fast path activated → tenant_id from JWT
-    assert out["tenant_id"] == "tenant-JWT-version"
+    assert out["tenant_id"] == TENANT_A
     # DB never queried in fast path
     db.fetchrow.assert_not_called()
 
@@ -99,7 +104,7 @@ async def test_attacker_strips_is_owner_to_force_db_lookup():
         "is_owner": False,  # DB says non-owner
         "company_name": "Co",
     })
-    claims = _claims("t", is_owner=True)  # JWT lies
+    claims = _claims(TENANT_A, is_owner=True)  # JWT lies
     claims.pop("is_owner")
     out = await kv.enrich_keycloak_claims(claims, pool)
     assert out["is_owner"] is False  # DB authoritative
@@ -119,31 +124,34 @@ async def test_attacker_strips_is_owner_to_force_db_lookup():
     "../../etc/passwd",
     "tenant_a UNION SELECT * FROM tenant_b.users",
 ])
-async def test_sql_injection_payload_in_tenant_id_passes_through_safely(payload):
-    """Validator never builds SQL — only passes string. Schema escape
-    defence is downstream (Postgres `SET search_path = "tenant_<uuid>"`
-    must be parameterised, validated by ADR-001)."""
-    pool, _ = _mock_pool()
+async def test_sql_injection_payload_in_tenant_id_does_not_activate_fast_path(payload):
+    """Non-UUID tenant_id mapper payloads must not bypass DB enrichment.
+    Validator still does not build SQL, but it now fail-closes the JWT-only
+    path unless tenant_id is canonical UUID format."""
+    pool, db = _mock_pool()
     out = await kv.enrich_keycloak_claims(_claims(payload), pool)
-    # Validator stringifies but doesn't sanitise — that's downstream's job
-    assert out["tenant_id"] == payload
+    assert out["tenant_id"] is None
+    assert out.get("_from_jwt_claims") is not True
+    db.fetchrow.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_tenant_id_with_postgres_quote_chars():
     """Postgres identifier quoting: `"` would break identifier escaping
     if downstream forgets to double-quote."""
-    pool, _ = _mock_pool()
+    pool, db = _mock_pool()
     out = await kv.enrich_keycloak_claims(_claims('attacker"'), pool)
-    assert out["tenant_id"] == 'attacker"'
+    assert out["tenant_id"] is None
+    db.fetchrow.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_tenant_id_with_null_byte():
     """\\x00 in tenant_id — Python strings allow but Postgres rejects."""
-    pool, _ = _mock_pool()
+    pool, db = _mock_pool()
     out = await kv.enrich_keycloak_claims(_claims("tenant\x00null"), pool)
-    assert "\x00" in out["tenant_id"]
+    assert out["tenant_id"] is None
+    db.fetchrow.assert_called_once()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -222,7 +230,7 @@ async def test_attacker_forges_is_owner_true_in_jwt_via_fast_path():
     transports the signed claim."""
     pool, _ = _mock_pool()
     out = await kv.enrich_keycloak_claims(
-        _claims("t", is_owner=True),
+        _claims(TENANT_A, is_owner=True),
         pool,
     )
     assert out["is_owner"] is True
@@ -233,11 +241,11 @@ async def test_status_active_from_token_overrides_db_when_fast_path():
     """Trust JWT in fast path. If admin admin-cli attribute change
     propagates with delay, JWT might say active while DB says suspended.
     Currently JWT wins — Phase 6 hardening should add freshness check."""
-    pool, _ = _mock_pool(row={"status": "suspended", "tenant_id": "t",
+    pool, _ = _mock_pool(row={"status": "suspended", "tenant_id": TENANT_B,
                                 "is_owner": True, "id": "u", "email": "u@x",
                                 "role": "business", "company_name": ""})
     out = await kv.enrich_keycloak_claims(
-        _claims("t", status="active"),
+        _claims(TENANT_A, status="active"),
         pool,
     )
     assert out["status"] == "active"  # fast path → JWT wins
@@ -317,13 +325,13 @@ async def test_email_none_value_returns_401():
 async def test_consecutive_calls_different_tenants_no_state_leak():
     """Validator is stateless — each call independent."""
     pool_a, _ = _mock_pool()
-    a = await kv.enrich_keycloak_claims(_claims("tenant-A"), pool_a)
+    a = await kv.enrich_keycloak_claims(_claims(TENANT_A), pool_a)
 
     pool_b, _ = _mock_pool()
-    b = await kv.enrich_keycloak_claims(_claims("tenant-B"), pool_b)
+    b = await kv.enrich_keycloak_claims(_claims(TENANT_B), pool_b)
 
-    assert a["tenant_id"] == "tenant-A"
-    assert b["tenant_id"] == "tenant-B"
+    assert a["tenant_id"] == TENANT_A
+    assert b["tenant_id"] == TENANT_B
 
 
 @pytest.mark.asyncio
@@ -335,6 +343,7 @@ async def test_concurrent_calls_different_tenants_isolated():
         return await kv.enrich_keycloak_claims(_claims(tenant), pool)
 
     results = await asyncio.gather(
-        call("t-1"), call("t-2"), call("t-3"), call("t-4"), call("t-5"),
+        call(TENANT_A), call(TENANT_B), call(TENANT_C), call(TENANT_D), call(TENANT_E),
     )
-    assert [r["tenant_id"] for r in results] == ["t-1", "t-2", "t-3", "t-4", "t-5"]
+    assert [r["tenant_id"] for r in results] == [TENANT_A, TENANT_B, TENANT_C, TENANT_D, TENANT_E]
+

@@ -74,12 +74,31 @@ async def test_fast_path_handles_string_boolean_for_is_owner():
 @pytest.mark.asyncio
 async def test_fast_path_normalises_tenant_id_to_string():
     pool, _ = _mock_pool()
-    # If serialised as int (unlikely but defensive)
     out = await kv.enrich_keycloak_claims(
-        _full_mapper_claims(tenant_id=12345), pool,
+        _full_mapper_claims(tenant_id="22222222-2222-2222-2222-222222222222"), pool,
     )
-    assert out["tenant_id"] == "12345"
+    assert out["tenant_id"] == "22222222-2222-2222-2222-222222222222"
     assert isinstance(out["tenant_id"], str)
+
+
+@pytest.mark.asyncio
+async def test_fast_path_rejects_non_uuid_tenant_id_mapper_value():
+    """Stale Keycloak user attributes used slugs/ints for tenant_id. Those must
+    not activate JWT-only enrichment because downstream tenant queries require
+    AMINRA-canonical UUIDs."""
+    pool, db = _mock_pool(row={
+        "id": "11111111-1111-1111-1111-111111111111",
+        "email": "user@example.com",
+        "role": "business",
+        "status": "active",
+        "tenant_id": "33333333-3333-3333-3333-333333333333",
+        "is_owner": True,
+        "company_name": "ACME",
+    })
+    out = await kv.enrich_keycloak_claims(_full_mapper_claims(tenant_id=12345), pool)
+    assert out.get("_from_jwt_claims") is not True
+    assert out["tenant_id"] == "33333333-3333-3333-3333-333333333333"
+    db.fetchrow.assert_called_once()
 
 
 # ── Fallback path activation ─────────────────────────────────────────────────
@@ -141,9 +160,13 @@ async def test_fallback_treats_explicit_none_as_missing():
 
 def test_has_full_mapper_claims():
     base = {
-        "email": "u@x", "tenant_id": "t", "is_owner": True, "status": "active",
+        "email": "u@x",
+        "tenant_id": "22222222-2222-2222-2222-222222222222",
+        "is_owner": True,
+        "status": "active",
     }
     assert kv._has_full_mapper_claims(base) is True
+    assert kv._has_full_mapper_claims({**base, "tenant_id": "tenant-slug"}) is False
     assert kv._has_full_mapper_claims({**base, "tenant_id": None}) is False
     for missing in ("email", "tenant_id", "is_owner", "status"):
         bad = dict(base)

@@ -357,7 +357,11 @@ def test_audience_empty_array(monkeypatch, kp):
     f"{kv.KEYCLOAK_URL}/realms/other-realm",
     f"{kv.KEYCLOAK_URL}/realms/aminra/extra",
     f"{kv.KEYCLOAK_URL}/realms/aminra/",  # trailing slash
-    kv._ISSUER.replace("http://", "https://"),  # protocol swap
+    (
+        kv._ISSUER.replace("http://", "https://", 1)
+        if kv._ISSUER.startswith("http://")
+        else kv._ISSUER.replace("https://", "http://", 1)
+    ),  # protocol swap, guaranteed mismatch for both local/public test envs
     kv._ISSUER.upper(),
     "",
 ])
