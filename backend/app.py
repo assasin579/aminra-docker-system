@@ -3,6 +3,7 @@ import sys
 import logging
 import json as _json
 import uuid
+import re
 import httpx
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -1068,14 +1069,29 @@ class AdminCreateUserRequest(BaseModel):
 
 
 class AdminUpdateUserRequest(BaseModel):
-    # Phase 4c-2: `password` removed — Keycloak owns credentials. Admin who
-    # needs to reset a user's password does it via the Keycloak admin console
-    # (or future /admin/users/{id}/reset-password proxy endpoint).
+    # Phase 4c-2: profile fields only. Credentials are handled by the dedicated
+    # reset route below so profile updates cannot silently ignore credential
+    # changes and return false success.
     company_name: Optional[str] = None
     company_code: Optional[str] = None
     status: Optional[str] = None  # active | pending | suspended
     role: Optional[str] = None
     is_owner: Optional[bool] = None
+
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+def _validate_admin_reset_password(new_password: str) -> None:
+    if len(new_password) < 10:
+        raise HTTPException(400, "Mật khẩu tối thiểu 10 ký tự")
+    if not re.search(r"[A-Z]", new_password):
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 1 chữ hoa (A-Z)")
+    if not re.search(r"[a-z]", new_password):
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 1 chữ thường (a-z)")
+    if not re.search(r"[0-9]", new_password):
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 1 chữ số (0-9)")
 
 
 @app.get("/admin/users")
@@ -1189,6 +1205,42 @@ async def admin_create_user(request: Request, body: AdminCreateUserRequest):
                 log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
             raise
     return dict(row)
+
+
+@app.post("/admin/users/{user_id}/reset-password")
+async def admin_reset_user_password(
+    user_id: str,
+    request: Request,
+    body: AdminResetPasswordRequest,
+):
+    """Reset a user's Keycloak password from the AMINRA admin UI.
+
+    Keycloak owns credentials; this endpoint is intentionally separate from
+    profile PUT so admins cannot get a false-success response when changing a
+    credential. The local DB is used only to resolve the linked Keycloak user.
+    """
+    _require_admin(request)
+    _validate_admin_reset_password(body.new_password)
+    from auth.db import get_pool
+    from auth import keycloak_admin
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT keycloak_sub, email FROM users WHERE id=$1",
+            user_id,
+        )
+    if not row:
+        raise HTTPException(404, "User không tồn tại")
+
+    kc_sub = row["keycloak_sub"]
+    if not kc_sub and row["email"]:
+        kc_sub = keycloak_admin.find_user_by_email(row["email"])
+    if not kc_sub:
+        raise HTTPException(409, "User chưa được liên kết với Keycloak")
+
+    keycloak_admin.reset_user_password(str(kc_sub), body.new_password)
+    return {"message": "Đã đổi mật khẩu user"}
 
 
 @app.put("/admin/users/{user_id}")

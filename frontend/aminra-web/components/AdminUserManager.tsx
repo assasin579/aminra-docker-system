@@ -185,29 +185,49 @@ export default function AdminUserManager({ token }: { token: string }) {
           );
         }
       } else if (modal === "edit" && editTarget) {
-        const body: Record<string, unknown> = {};
+        const profileBody: Record<string, unknown> = {};
         if (form.company_name !== editTarget.company_name)
-          body.company_name = form.company_name.trim();
+          profileBody.company_name = form.company_name.trim();
         if (form.company_code !== (editTarget.company_code ?? ""))
-          body.company_code = form.company_code.trim() || null;
-        if (form.status !== editTarget.status) body.status = form.status;
-        if (form.role !== editTarget.role) body.role = form.role;
-        if (form.password) body.password = form.password;
-        if (Object.keys(body).length === 0) {
+          profileBody.company_code = form.company_code.trim() || null;
+        if (form.status !== editTarget.status) profileBody.status = form.status;
+        if (form.role !== editTarget.role) profileBody.role = form.role;
+        const passwordChanged = Boolean(form.password);
+        if (Object.keys(profileBody).length === 0 && !passwordChanged) {
           setFormError("Không có thay đổi nào để lưu");
           setSaving(false);
           return;
         }
-        const res = await fetch(`${API}/admin/users/${editTarget.id}`, {
-          method: "PUT",
-          headers: { ...authHdr, "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          const respBody = await res.json().catch(() => ({}));
-          throw new Error(
-            parseApiError(respBody, `Cập nhật thất bại (HTTP ${res.status})`),
+
+        if (Object.keys(profileBody).length > 0) {
+          const res = await fetch(`${API}/admin/users/${editTarget.id}`, {
+            method: "PUT",
+            headers: { ...authHdr, "Content-Type": "application/json" },
+            body: JSON.stringify(profileBody),
+          });
+          if (!res.ok) {
+            const respBody = await res.json().catch(() => ({}));
+            throw new Error(
+              parseApiError(respBody, `Cập nhật thất bại (HTTP ${res.status})`),
+            );
+          }
+        }
+
+        if (passwordChanged) {
+          const pwRes = await fetch(
+            `${API}/admin/users/${editTarget.id}/reset-password`,
+            {
+              method: "POST",
+              headers: { ...authHdr, "Content-Type": "application/json" },
+              body: JSON.stringify({ new_password: form.password }),
+            },
           );
+          if (!pwRes.ok) {
+            const respBody = await pwRes.json().catch(() => ({}));
+            throw new Error(
+              parseApiError(respBody, `Đổi mật khẩu thất bại (HTTP ${pwRes.status})`),
+            );
+          }
         }
       }
       setModal(null);

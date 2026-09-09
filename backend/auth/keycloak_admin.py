@@ -216,6 +216,38 @@ def create_user(
     return user_id
 
 
+def reset_user_password(user_id: str, new_password: str, *, temporary: bool = False) -> None:
+    """Reset an existing Keycloak user's password via the admin API.
+
+    Used by AMINRA admin UI. Do not log or include the password in exception
+    details; callers may surface these messages directly to admins.
+    """
+    resp = httpx.put(
+        f"{_ADMIN_BASE}/users/{user_id}/reset-password",
+        headers=_admin_headers(),
+        json={"type": "password", "value": new_password, "temporary": temporary},
+        timeout=10.0,
+    )
+    if resp.status_code in (200, 204):
+        return
+
+    body = (resp.text or "")[:300]
+    if resp.status_code == 400 and "invalidPasswordHistoryMessage" in body:
+        raise KeycloakAdminError(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Không thể dùng lại mật khẩu gần đây. Vui lòng chọn mật khẩu mới khác.",
+        )
+
+    raise KeycloakAdminError(
+        status_code=(
+            status.HTTP_400_BAD_REQUEST
+            if resp.status_code == 400
+            else status.HTTP_502_BAD_GATEWAY
+        ),
+        detail=f"Keycloak reset_password failed ({resp.status_code})",
+    )
+
+
 def set_required_actions(user_id: str, actions: list[str]) -> None:
     """Replace the user's requiredActions list.
 

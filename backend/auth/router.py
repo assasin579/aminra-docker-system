@@ -4,7 +4,7 @@ from uuid import UUID as _UUID
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from asyncpg import Connection, UniqueViolationError
 
 from .db import get_db
@@ -248,6 +248,10 @@ async def invite_member(
     """Phase 4c-3: provision the member in Keycloak first, mirror into PG.
     Owner vouches → email_verified=True so the new member can log in
     immediately via SSO without an email round-trip."""
+    owner_id = await resolve_canonical_user_id(owner, db)
+    if not owner_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Owner user not found")
+
     tenant_id = owner["tenant_id"]
     current_count = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
@@ -288,7 +292,7 @@ async def invite_member(
             kc_user_id,
             req.display_name,
             tenant_id,
-            owner["sub"],
+            owner_id,
             req.ihc_role or None,
             req.department or None,
         )
@@ -703,6 +707,17 @@ async def remove_member(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(member_id)
+    row = await db.fetchrow(
+        "SELECT keycloak_sub FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
+        member_id,
+        owner["tenant_id"],
+    )
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
+
+    if row.get("keycloak_sub"):
+        keycloak_admin.delete_user(str(row["keycloak_sub"]))
+
     result = await db.execute(
         "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
         member_id,
@@ -726,10 +741,14 @@ async def invite_auditor(
     db: Connection = Depends(get_db),
 ):
     """Provider owner creates an auditor account."""
-    tenant_id = owner["tenant_id"] or owner["sub"]
+    owner_id = await resolve_canonical_user_id(owner, db)
+    if not owner_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Owner user not found")
+
+    tenant_id = owner["tenant_id"] or owner_id
     # Auto-fix: set tenant_id on provider if missing
     if not owner["tenant_id"]:
-        await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", owner["sub"])
+        await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", owner_id)
 
     current = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
@@ -768,7 +787,7 @@ async def invite_auditor(
             kc_user_id,
             req.display_name,
             tenant_id,
-            owner["sub"],
+            owner_id,
             req.specialty or None,
         )
     except Exception:
@@ -862,6 +881,17 @@ async def remove_auditor(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(auditor_id)
+    row = await db.fetchrow(
+        "SELECT keycloak_sub FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
+        auditor_id,
+        owner["tenant_id"] or owner["sub"],
+    )
+    if not row:
+        raise HTTPException(404, "Auditor not found")
+
+    if row.get("keycloak_sub"):
+        keycloak_admin.delete_user(str(row["keycloak_sub"]))
+
     result = await db.execute(
         "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
         auditor_id,
@@ -1380,7 +1410,7 @@ async def get_company_logo(tenant_id: str):
         if path.exists():
             mime = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[ext[1:]]
             return FileResponse(path=str(path), media_type=mime)
-    raise HTTPException(404, "Logo chưa được upload")
+    return Response(status_code=204)
 
 
 # ── Notification preferences ─────────────────────────────────────────────────
