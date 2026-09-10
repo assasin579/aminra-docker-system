@@ -18,7 +18,7 @@ import {
   ReactNode,
 } from "react";
 import { signinRedirect, signoutRedirect } from "@/lib/auth-oidc";
-import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
+import { purgeAuthSessionState, AUTH_SESSION_EVENT } from "@/lib/auth-session-cleanup";
 
 interface AdminAuthState {
   isAdmin: boolean;
@@ -35,7 +35,6 @@ const AdminAuthContext = createContext<AdminAuthState>({
 });
 
 const USER_TOKEN_KEY = "aminra_user_token";
-const AUTH_SESSION_EVENT = "aminra:auth-session-changed";
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -94,7 +93,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setToken(null);
     void (async () => {
-      await purgeAuthSessionState();
+      await purgeAuthSessionState("logout");
       await signoutRedirect();
     })();
   }, []);

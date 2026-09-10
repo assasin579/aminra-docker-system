@@ -1,11 +1,18 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v6";
+const CACHE_NAME = "aminra-v7";
 const OFFLINE_URL = "/audits";
 // URLs the SW must NEVER serve from cache (always go to network).
-// Admin rotates template content; serving stale = wrong file delivered.
+// Auth/admin identity paths are account-switch critical: cached responses/pages
+// can resurrect a prior browser profile after logout/login as another account.
 const NEVER_CACHE_PATTERNS = [
   /\/auth(?:\/|$)/,
   /\/admin(?:\/|$)/,
+  /\/api\/auth(?:\/|$)/,
+  /\/api\/api\/auth(?:\/|$)/,
+  /\/api\/admin(?:\/|$)/,
+  /\/api\/api\/admin(?:\/|$)/,
+  /\/api\/me(?:\/|$)/,
+  /\/api\/users\/me(?:\/|$)/,
   /\/api\/templates\//,
   /\/api\/admin\/templates\/.*\/template-file\/view/,
   /\/api\/admin\/templates\/.*\/files\/.*\/view/,

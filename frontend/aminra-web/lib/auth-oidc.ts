@@ -79,12 +79,24 @@ export function getOidcManager(): UserManager {
   return _manager;
 }
 
+function startLoginTransaction(returnTo: string): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem("aminra_auth_login_started_at", String(Date.now()));
+  window.sessionStorage.setItem("aminra_auth_expected_return_to", returnTo);
+  window.sessionStorage.setItem(
+    "aminra_auth_nonce",
+    `aminra-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
+}
+
 export async function signinRedirect(returnTo?: string): Promise<void> {
+  const safeReturnTo = returnTo ?? "/";
   // Start every interactive SSO login from a clean app/OIDC storage state.
   // Without this, a browser that previously used a different AMINRA account
   // can briefly restore stale `aminra_user_profile` / oidc-client state during
   // the callback and look like it switched back to the old identity.
-  await purgeAuthSessionState();
+  await purgeAuthSessionState("login_start");
+  startLoginTransaction(safeReturnTo);
   const mgr = getOidcManager();
   // `prompt=login` forces Keycloak to show the credentials form even if
   // the realm session cookie is already set. Without it, a user who
@@ -93,7 +105,7 @@ export async function signinRedirect(returnTo?: string): Promise<void> {
   // next signin click. This also lets users on a shared device pick a
   // different account.
   await mgr.signinRedirect({
-    state: returnTo ?? "/",
+    state: safeReturnTo,
     extraQueryParams: { prompt: "login" },
   });
 }

@@ -45,6 +45,17 @@ import OidcCallbackPage from "@/app/auth/callback/page";
 beforeEach(() => {
   vi.clearAllMocks();
   hoisted.isOidcEnabled.mockReturnValue(true);
+  hoisted.loginViaKeycloak.mockResolvedValue({
+    id: "user-1",
+    email: "user@example.com",
+    role: "business",
+    status: "active",
+    company_name: "Demo",
+    company_code: null,
+    is_owner: true,
+    tenant_id: "tenant-1",
+    realm_roles: ["business"],
+  });
 });
 
 afterEach(() => {
@@ -100,7 +111,17 @@ describe("successful callback", () => {
       user: { access_token: "kc-tok-1", state: "/dashboard/business" },
       returnTo: "/dashboard/business",
     });
-    hoisted.loginViaKeycloak.mockResolvedValue(undefined);
+    hoisted.loginViaKeycloak.mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      role: "business",
+      status: "active",
+      company_name: "Demo",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "tenant-1",
+      realm_roles: ["business"],
+    });
     render(<OidcCallbackPage />);
     await waitFor(() => {
       expect(hoisted.loginViaKeycloak).toHaveBeenCalledWith("kc-tok-1");
@@ -112,7 +133,17 @@ describe("successful callback", () => {
       user: { access_token: "x", state: "/dashboard/business" },
       returnTo: "/dashboard/business",
     });
-    hoisted.loginViaKeycloak.mockResolvedValue(undefined);
+    hoisted.loginViaKeycloak.mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      role: "business",
+      status: "active",
+      company_name: "Demo",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "tenant-1",
+      realm_roles: ["business"],
+    });
     render(<OidcCallbackPage />);
     await waitFor(() => {
       expect(hoisted.routerReplace).toHaveBeenCalledWith("/dashboard/business");
@@ -136,22 +167,54 @@ describe("successful callback", () => {
   });
 
   it("does not call router.replace before loginViaKeycloak resolves", async () => {
-    let resolveLogin: () => void = () => {};
+    let resolveLogin: (profile: unknown) => void = () => {};
     hoisted.handleSigninCallback.mockResolvedValue({
       user: { access_token: "x", state: "/" },
       returnTo: "/",
     });
     hoisted.loginViaKeycloak.mockReturnValue(
-      new Promise<void>((r) => { resolveLogin = r; }),
+      new Promise((r) => { resolveLogin = r; }),
     );
     render(<OidcCallbackPage />);
     // Wait for handleSigninCallback to resolve and loginViaKeycloak to start
     await waitFor(() => expect(hoisted.loginViaKeycloak).toHaveBeenCalled());
     expect(hoisted.routerReplace).not.toHaveBeenCalled();
-    resolveLogin();
+    resolveLogin({
+      id: "user-1",
+      email: "user@example.com",
+      role: "business",
+      status: "active",
+      company_name: "Demo",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "tenant-1",
+      realm_roles: ["business"],
+    });
     await waitFor(() =>
       expect(hoisted.routerReplace).toHaveBeenCalled(),
     );
+  });
+
+  it("redirects platform admin away from business dashboard fallback to avoid login loop", async () => {
+    hoisted.handleSigninCallback.mockResolvedValue({
+      user: { access_token: "admin-token", state: "/dashboard/business" },
+      returnTo: "/dashboard/business",
+    });
+    hoisted.loginViaKeycloak.mockResolvedValue({
+      id: "admin-user",
+      email: "admin@aminra.com",
+      role: "provider",
+      status: "active",
+      company_name: "AMINRA",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "admin-tenant",
+      realm_roles: ["platform_admin"],
+    });
+    render(<OidcCallbackPage />);
+    await waitFor(() => {
+      expect(hoisted.routerReplace).toHaveBeenCalledWith("/admin");
+    });
   });
 });
 
@@ -176,7 +239,17 @@ describe("returnTo sanitisation (open-redirect defence)", () => {
       user: { access_token: "x", state: badReturnTo },
       returnTo: badReturnTo,
     });
-    hoisted.loginViaKeycloak.mockResolvedValue(undefined);
+    hoisted.loginViaKeycloak.mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      role: "business",
+      status: "active",
+      company_name: "Demo",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "tenant-1",
+      realm_roles: ["business"],
+    });
     render(<OidcCallbackPage />);
     await waitFor(() => {
       expect(hoisted.routerReplace).toHaveBeenCalledWith(fallback);
@@ -185,7 +258,6 @@ describe("returnTo sanitisation (open-redirect defence)", () => {
 
   it.each([
     "/dashboard/business",
-    "/dashboard/provider",
     "/admin/users",
     "/path/with/dots..",
     "/",
@@ -195,7 +267,17 @@ describe("returnTo sanitisation (open-redirect defence)", () => {
       user: { access_token: "x", state: safeReturnTo },
       returnTo: safeReturnTo,
     });
-    hoisted.loginViaKeycloak.mockResolvedValue(undefined);
+    hoisted.loginViaKeycloak.mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      role: "business",
+      status: "active",
+      company_name: "Demo",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "tenant-1",
+      realm_roles: ["business"],
+    });
     render(<OidcCallbackPage />);
     await waitFor(() => {
       expect(hoisted.routerReplace).toHaveBeenCalledWith(safeReturnTo);
@@ -365,7 +447,17 @@ describe("returnTo defaults", () => {
       user: { access_token: "x", state: "/" },
       returnTo: "/",
     });
-    hoisted.loginViaKeycloak.mockResolvedValue(undefined);
+    hoisted.loginViaKeycloak.mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      role: "business",
+      status: "active",
+      company_name: "Demo",
+      company_code: null,
+      is_owner: true,
+      tenant_id: "tenant-1",
+      realm_roles: ["business"],
+    });
     render(<OidcCallbackPage />);
     // returnTo='/' → starts with '/' → safe → used directly
     await waitFor(() => {

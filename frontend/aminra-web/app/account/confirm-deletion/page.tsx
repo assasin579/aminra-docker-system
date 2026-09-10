@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
 
 function ConfirmDeletionContent() {
   const router = useRouter();
@@ -29,14 +30,7 @@ function ConfirmDeletionContent() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
 
-      // Clear stored credentials so the user is logged out everywhere
-      [
-        "aminra_user_token",
-        "aminra_user_profile",
-      ].forEach((k) => {
-        localStorage.removeItem(k);
-        sessionStorage.removeItem(k);
-      });
+      await purgeAuthSessionState("self_reset");
 
       setDone(true);
       setTimeout(() => router.push("/"), 5000);

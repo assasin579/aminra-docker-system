@@ -67,7 +67,7 @@ export default function RootLayout({
                   .then((keys) =>
                     Promise.all(
                       keys
-                        .filter((key) => key.startsWith('aminra-') && key !== 'aminra-v6')
+                        .filter((key) => key.startsWith('aminra-') && key !== 'aminra-v7')
                         .map((key) => caches.delete(key)),
                     ),
                   )

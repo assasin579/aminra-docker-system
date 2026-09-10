@@ -49,6 +49,13 @@ function _err(status: number, body: Record<string, unknown> = {}) {
 }
 
 
+
+function jwtWithClaims(claims: Record<string, unknown>) {
+  const enc = (obj: Record<string, unknown>) =>
+    btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${enc({ alg: "none", typ: "JWT" })}.${enc(claims)}.sig`;
+}
+
 function wrap() {
   return ({ children }: { children: React.ReactNode }) => (
     <UserAuthProvider>{children}</UserAuthProvider>
@@ -377,5 +384,60 @@ describe("concurrent loginViaKeycloak calls", () => {
     });
     // Last successful save wins
     expect(["first@x", "second@x"]).toContain(result.current.user?.email);
+  });
+});
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 7. IDENTITY CONSISTENCY — account-switch hardening
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe("Keycloak identity consistency", () => {
+  it("rejects and purges when token sub belongs to admin but /auth/me returns stale abc profile", async () => {
+    localStorage.setItem("aminra_user_token", "old-abc-token");
+    localStorage.setItem("aminra_user_profile", JSON.stringify({ email: "abc@demo.com" }));
+    const token = jwtWithClaims({
+      sub: "admin-sub",
+      email: "admin@aminra.com",
+      preferred_username: "admin",
+      realm_access: { roles: ["platform_admin"] },
+    });
+    fetchMock.mockResolvedValue(_ok({
+      id: "abc-user-id", keycloak_sub: "abc-sub", email: "abc@demo.com", role: "business", status: "active",
+      company_name: "Công ty ABC", company_code: null, is_owner: true, tenant_id: "tenant-abc",
+    }));
+
+    const { result } = renderHook(() => useUserAuth(), { wrapper: wrap() });
+    await expect(
+      act(async () => {
+        await result.current.loginViaKeycloak(token);
+      }),
+    ).rejects.toThrow(/Phiên đăng nhập không nhất quán/i);
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.token).toBeNull();
+    expect(localStorage.getItem("aminra_user_token")).toBeNull();
+    expect(localStorage.getItem("aminra_user_profile")).toBeNull();
+  });
+
+  it("allows admin token to save provider-shaped app profile when platform_admin role is present and identity matches", async () => {
+    const token = jwtWithClaims({
+      sub: "admin-sub",
+      email: "admin@aminra.com",
+      preferred_username: "admin",
+      realm_access: { roles: ["platform_admin"] },
+    });
+    fetchMock.mockResolvedValue(_ok({
+      id: "admin-app-id", keycloak_sub: "admin-sub", email: "admin@aminra.com", role: "provider", status: "active",
+      company_name: "AMINRA Platform", company_code: null, is_owner: true, tenant_id: null,
+    }));
+
+    const { result } = renderHook(() => useUserAuth(), { wrapper: wrap() });
+    await act(async () => {
+      await result.current.loginViaKeycloak(token);
+    });
+
+    expect(result.current.user?.email).toBe("admin@aminra.com");
+    expect(localStorage.getItem("aminra_user_token")).toBe(token);
   });
 });

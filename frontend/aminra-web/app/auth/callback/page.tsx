@@ -16,6 +16,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { handleSigninCallback, isOidcEnabled } from "@/lib/auth-oidc";
+import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
+import { resolvePostLoginReturnTo } from "@/lib/auth-post-login-route";
 import { useUserAuth } from "@/components/UserAuthContext";
 
 export default function OidcCallbackPage() {
@@ -35,15 +37,12 @@ export default function OidcCallbackPage() {
       try {
         const { user, returnTo } = await handleSigninCallback();
         if (cancelled) return;
-        await loginViaKeycloak(user.access_token);
-        // Defensive: ensure returnTo is a relative path to prevent open-redirect
-        const safeReturnTo =
-          returnTo.startsWith("/") && !returnTo.startsWith("//")
-            ? returnTo
-            : "/dashboard/business";
+        const profile = await loginViaKeycloak(user.access_token);
+        const safeReturnTo = resolvePostLoginReturnTo(returnTo, profile);
         router.replace(safeReturnTo);
       } catch (e) {
         if (cancelled) return;
+        await purgeAuthSessionState("auth_rejected");
         setError(
           e instanceof Error
             ? e.message
