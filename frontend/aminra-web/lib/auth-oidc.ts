@@ -21,6 +21,7 @@ import {
   WebStorageStateStore,
   type UserManagerSettings,
 } from "oidc-client-ts";
+import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
 
 let _manager: UserManager | null = null;
 
@@ -79,6 +80,11 @@ export function getOidcManager(): UserManager {
 }
 
 export async function signinRedirect(returnTo?: string): Promise<void> {
+  // Start every interactive SSO login from a clean app/OIDC storage state.
+  // Without this, a browser that previously used a different AMINRA account
+  // can briefly restore stale `aminra_user_profile` / oidc-client state during
+  // the callback and look like it switched back to the old identity.
+  await purgeAuthSessionState();
   const mgr = getOidcManager();
   // `prompt=login` forces Keycloak to show the credentials form even if
   // the realm session cookie is already set. Without it, a user who

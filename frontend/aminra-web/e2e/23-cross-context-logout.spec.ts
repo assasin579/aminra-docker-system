@@ -42,7 +42,7 @@ test("AdminAuthContext.logout removes aminra_user_token", async () => {
     "utf8",
   );
   const logoutMatch = src.match(
-    /const logout = useCallback\(\(\) => \{([\s\S]*?)\}, \[token\]\);/,
+    /const logout = useCallback\(\(\) => \{([\s\S]*?)\}, \[[^\]]*\]\);/,
   );
   expect(
     logoutMatch,
@@ -51,6 +51,6 @@ test("AdminAuthContext.logout removes aminra_user_token", async () => {
   const body = logoutMatch![1];
   expect(
     body,
-    "AdminAuthContext.logout must remove 'aminra_user_token'",
-  ).toMatch(/removeItem\(['"]aminra_user_token['"]\)/);
+    "AdminAuthContext.logout must call central auth-session purge",
+  ).toMatch(/purgeAuthSessionState\(\)/);
 });

@@ -96,6 +96,29 @@ describe("signinRedirect", () => {
     vi.unstubAllEnvs();
   });
 
+  it("purges stale AMINRA and OIDC storage before starting a new SSO login", async () => {
+    vi.stubEnv("NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED", "true");
+    localStorage.setItem("aminra_user_token", "old-token");
+    localStorage.setItem("aminra_user_profile", "old-profile");
+    localStorage.setItem("aminra_admin_token", "old-admin");
+    sessionStorage.setItem("oidc.user:https://auth.silvergem.org/realms/aminra:aminra-frontend", "old-oidc");
+    sessionStorage.setItem("aminra_user_profile", "old-session-profile");
+
+    const { signinRedirect } = await import("@/lib/auth-oidc");
+    await signinRedirect("/admin");
+
+    expect(localStorage.getItem("aminra_user_token")).toBeNull();
+    expect(localStorage.getItem("aminra_user_profile")).toBeNull();
+    expect(localStorage.getItem("aminra_admin_token")).toBeNull();
+    expect(sessionStorage.getItem("oidc.user:https://auth.silvergem.org/realms/aminra:aminra-frontend")).toBeNull();
+    expect(sessionStorage.getItem("aminra_user_profile")).toBeNull();
+    expect(mockSigninRedirect).toHaveBeenCalledWith({
+      state: "/admin",
+      extraQueryParams: { prompt: "login" },
+    });
+    vi.unstubAllEnvs();
+  });
+
   it("throws when feature flag is off", async () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED", "false");
     const { signinRedirect } = await import("@/lib/auth-oidc");

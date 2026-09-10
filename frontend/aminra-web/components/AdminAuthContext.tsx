@@ -18,6 +18,7 @@ import {
   ReactNode,
 } from "react";
 import { signinRedirect, signoutRedirect } from "@/lib/auth-oidc";
+import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
 
 interface AdminAuthState {
   isAdmin: boolean;
@@ -92,12 +93,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setToken(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(USER_TOKEN_KEY);
-      sessionStorage.removeItem(USER_TOKEN_KEY);
-      localStorage.removeItem("aminra_user_profile");
-    }
-    void signoutRedirect();
+    void (async () => {
+      await purgeAuthSessionState();
+      await signoutRedirect();
+    })();
   }, []);
 
   const isAdmin = hasPlatformAdminRole(token);
