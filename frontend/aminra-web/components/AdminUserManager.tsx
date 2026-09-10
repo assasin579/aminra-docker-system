@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { parseApiError, validatePassword } from "@/lib/apiError";
+import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
+import { signoutRedirect } from "@/lib/auth-oidc";
 import Modal from "@/components/Modal";
 
 const API = "/api";
@@ -222,11 +224,22 @@ export default function AdminUserManager({ token }: { token: string }) {
               body: JSON.stringify({ new_password: form.password }),
             },
           );
+          let resetBody: { sessions_revoked?: boolean; self_reset?: boolean } | null =
+            null;
           if (!pwRes.ok) {
             const respBody = await pwRes.json().catch(() => ({}));
             throw new Error(
               parseApiError(respBody, `Đổi mật khẩu thất bại (HTTP ${pwRes.status})`),
             );
+          }
+          resetBody = await pwRes.json().catch(() => null);
+          if (resetBody?.self_reset) {
+            setFormError(
+              "Mật khẩu đã đổi. Vui lòng đăng nhập lại bằng mật khẩu mới.",
+            );
+            await purgeAuthSessionState();
+            await signoutRedirect();
+            return;
           }
         }
       }

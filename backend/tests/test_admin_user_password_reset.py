@@ -44,25 +44,47 @@ def _resp(status_code: int, json_body: dict | None = None, text: str = ""):
     return r
 
 
-def test_keycloak_admin_reset_user_password_calls_reset_password_endpoint(monkeypatch):
+def test_keycloak_admin_reset_user_password_calls_reset_password_endpoint_and_revokes_sessions(monkeypatch):
     calls = []
 
     def fake_put(url, **kwargs):
-        calls.append((url, kwargs))
+        calls.append(("PUT", url, kwargs))
+        return _resp(204)
+
+    def fake_post(url, **kwargs):
+        calls.append(("POST", url, kwargs))
         return _resp(204)
 
     monkeypatch.setattr(ka.httpx, "put", fake_put)
+    monkeypatch.setattr(ka.httpx, "post", fake_post)
 
     ka.reset_user_password("kc-user-1", "StrongPass2026!")
 
-    assert len(calls) == 1
-    url, kwargs = calls[0]
+    assert len(calls) == 2
+    method, url, kwargs = calls[0]
+    assert method == "PUT"
     assert url.endswith("/users/kc-user-1/reset-password")
     assert kwargs["json"] == {
         "type": "password",
         "value": "StrongPass2026!",
         "temporary": False,
     }
+    method, url, kwargs = calls[1]
+    assert method == "POST"
+    assert url.endswith("/users/kc-user-1/logout")
+    assert "StrongPass2026!" not in str(kwargs)
+
+
+def test_keycloak_admin_reset_user_password_fails_closed_when_session_revoke_fails(monkeypatch):
+    monkeypatch.setattr(ka.httpx, "put", lambda *a, **kw: _resp(204))
+    monkeypatch.setattr(ka.httpx, "post", lambda *a, **kw: _resp(500, text="boom"))
+
+    with pytest.raises(ka.KeycloakAdminError) as exc:
+        ka.reset_user_password("kc-user-1", "StrongPass2026!")
+
+    assert exc.value.status_code == 502
+    assert "logout" in str(exc.value.detail).lower() or "session" in str(exc.value.detail).lower()
+    assert "StrongPass2026!" not in str(exc.value.detail)
 
 
 def test_keycloak_admin_reset_user_password_maps_password_history_error(monkeypatch):
@@ -88,6 +110,9 @@ def test_admin_backend_exposes_dedicated_reset_password_route():
     assert "new_password: str" in text
     assert "keycloak_admin.reset_user_password" in text
     assert re.search(r"SELECT\s+[^\n]*keycloak_sub[^\n]*email", text, re.IGNORECASE)
+    assert "sessions_revoked" in text
+    assert "self_reset" in text
+    assert "admin_claims" in text
 
 
 def test_admin_profile_update_contract_does_not_accept_password_field():

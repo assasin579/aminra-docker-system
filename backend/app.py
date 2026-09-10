@@ -1219,7 +1219,7 @@ async def admin_reset_user_password(
     profile PUT so admins cannot get a false-success response when changing a
     credential. The local DB is used only to resolve the linked Keycloak user.
     """
-    _require_admin(request)
+    admin_claims = _require_admin(request)
     _validate_admin_reset_password(body.new_password)
     from auth.db import get_pool
     from auth import keycloak_admin
@@ -1239,8 +1239,20 @@ async def admin_reset_user_password(
     if not kc_sub:
         raise HTTPException(409, "User chưa được liên kết với Keycloak")
 
+    admin_sub = str(admin_claims.get("sub") or "")
+    admin_email = str(admin_claims.get("email") or "").lower()
+    target_email = str(row["email"] or "").lower()
+    self_reset = bool(
+        (admin_sub and admin_sub == str(kc_sub))
+        or (admin_email and target_email and admin_email == target_email)
+    )
+
     keycloak_admin.reset_user_password(str(kc_sub), body.new_password)
-    return {"message": "Đã đổi mật khẩu user"}
+    return {
+        "message": "Đã đổi mật khẩu user",
+        "sessions_revoked": True,
+        "self_reset": self_reset,
+    }
 
 
 @app.put("/admin/users/{user_id}")
