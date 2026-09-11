@@ -129,32 +129,55 @@ export async function getOidcUser(): Promise<User | null> {
   return mgr.getUser();
 }
 
-export async function signoutRedirect(): Promise<void> {
+function buildEndSessionUrl(idTokenHint?: string | null): string {
+  const authority =
+    process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? "http://localhost:8180";
+  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM ?? "aminra";
+  const clientId =
+    process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? "aminra-frontend";
+  const postLogout =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/`
+      : process.env.NEXT_PUBLIC_APP_ORIGIN ?? "http://localhost:3100/";
+  const params = new URLSearchParams({
+    post_logout_redirect_uri: postLogout,
+    client_id: clientId,
+  });
+  if (idTokenHint) params.set("id_token_hint", idTokenHint);
+  return `${authority}/realms/${realm}/protocol/openid-connect/logout?${params.toString()}`;
+}
+
+export async function signoutRedirect(preloadedUser?: Pick<User, "id_token"> | null): Promise<void> {
   if (!isOidcEnabled()) return;
   const mgr = getOidcManager();
+  let userForHint = preloadedUser ?? null;
+  if (!userForHint) {
+    try {
+      userForHint = await mgr.getUser();
+    } catch {}
+  }
   try {
-    await mgr.signoutRedirect();
+    await mgr.signoutRedirect({
+      id_token_hint: userForHint?.id_token,
+    });
     return;
   } catch {
     // UserManager.signoutRedirect requires an active stored user. If
     // local state was already cleared (e.g. by a parallel tab), the
-    // call throws — fall back to a direct end-session URL so the
-    // realm cookie is cleared anyway.
+    // call throws — fall back to a direct end-session URL. Preserve the
+    // id_token_hint captured before purge so Keycloak clears the exact realm
+    // session instead of leaving the previous admin SSO cookie alive.
     try {
       await mgr.removeUser();
     } catch {}
     if (typeof window !== "undefined") {
-      const authority =
-        process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? "http://localhost:8180";
-      const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM ?? "aminra";
-      const clientId =
-        process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? "aminra-frontend";
-      const postLogout = encodeURIComponent(`${window.location.origin}/`);
-      window.location.href =
-        `${authority}/realms/${realm}/protocol/openid-connect/logout` +
-        `?post_logout_redirect_uri=${postLogout}&client_id=${clientId}`;
+      window.location.assign(buildEndSessionUrl(userForHint?.id_token));
     }
   }
+}
+
+export function _buildEndSessionUrlForTests(idTokenHint?: string | null): string {
+  return buildEndSessionUrl(idTokenHint);
 }
 
 /** Reset module state. Used by tests only. */

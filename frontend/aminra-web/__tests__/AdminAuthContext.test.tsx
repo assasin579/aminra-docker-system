@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { getOidcUser, signoutRedirect } from "@/lib/auth-oidc";
 import { AdminAuthProvider, useAdminAuth } from "@/components/AdminAuthContext";
 
 vi.mock("@/lib/auth-oidc", () => ({
+  getOidcUser: vi.fn(),
   signinRedirect: vi.fn(),
   signoutRedirect: vi.fn(),
 }));
@@ -14,8 +16,13 @@ function jwtWithRoles(roles: string[]): string {
 }
 
 function Probe() {
-  const { isAdmin } = useAdminAuth();
-  return <div data-testid="admin-state">{isAdmin ? "admin" : "not-admin"}</div>;
+  const { isAdmin, logout } = useAdminAuth();
+  return (
+    <div>
+      <div data-testid="admin-state">{isAdmin ? "admin" : "not-admin"}</div>
+      <button type="button" onClick={logout}>logout</button>
+    </div>
+  );
 }
 
 function renderProbe() {
@@ -28,6 +35,7 @@ function renderProbe() {
 
 describe("AdminAuthProvider token synchronization", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
   });
@@ -60,23 +68,20 @@ describe("AdminAuthProvider token synchronization", () => {
     });
   });
 
-  it("removes admin access in the same tab after logout clears the token", async () => {
+  it("preserves the OIDC id token through local purge so Keycloak admin session is ended", async () => {
+    const oidcUser = { id_token: "admin-id-token" };
+    vi.mocked(getOidcUser).mockResolvedValue(oidcUser as never);
     localStorage.setItem(
       "aminra_user_token",
       jwtWithRoles(["platform_admin"]),
     );
     renderProbe();
-    await waitFor(() => {
-      expect(screen.getByTestId("admin-state")).toHaveTextContent("admin");
-    });
 
-    localStorage.removeItem("aminra_user_token");
-    act(() => {
-      window.dispatchEvent(new Event("aminra:auth-session-changed"));
-    });
+    screen.getByRole("button", { name: "logout" }).click();
 
     await waitFor(() => {
-      expect(screen.getByTestId("admin-state")).toHaveTextContent("not-admin");
+      expect(signoutRedirect).toHaveBeenCalledWith(oidcUser);
     });
+    expect(localStorage.getItem("aminra_user_token")).toBeNull();
   });
 });

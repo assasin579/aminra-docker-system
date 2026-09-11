@@ -659,7 +659,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <button
               onClick={() => {
                 logoutAdmin();
-                router.push("/landing");
                 onClose?.();
               }}
               className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors"

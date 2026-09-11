@@ -176,13 +176,22 @@ describe("getOidcUser", () => {
 });
 
 describe("signoutRedirect", () => {
-  it("falls back to removeUser when end-session fails", async () => {
+  it("falls back to direct end-session with a preserved id_token_hint when local OIDC state was purged first", async () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED", "true");
+    vi.stubEnv("NEXT_PUBLIC_KEYCLOAK_URL", "https://auth.example.com");
+    vi.stubEnv("NEXT_PUBLIC_KEYCLOAK_REALM", "aminra");
+    vi.stubEnv("NEXT_PUBLIC_KEYCLOAK_CLIENT_ID", "aminra-frontend");
     mockSignoutRedirect.mockRejectedValue(new Error("end-session disabled"));
-    const { signoutRedirect } = await import("@/lib/auth-oidc");
-    await signoutRedirect();
+    const { signoutRedirect, _buildEndSessionUrlForTests } = await import("@/lib/auth-oidc");
+    await signoutRedirect({ id_token: "id-token-before-purge" } as never);
     expect(mockSignoutRedirect).toHaveBeenCalledOnce();
     expect(mockRemoveUser).toHaveBeenCalledOnce();
+    const endSessionUrl = _buildEndSessionUrlForTests("id-token-before-purge");
+    expect(endSessionUrl).toContain(
+      "https://auth.example.com/realms/aminra/protocol/openid-connect/logout",
+    );
+    expect(endSessionUrl).toContain("id_token_hint=id-token-before-purge");
+    expect(endSessionUrl).toContain("client_id=aminra-frontend");
     vi.unstubAllEnvs();
   });
 

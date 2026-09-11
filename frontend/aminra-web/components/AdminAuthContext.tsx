@@ -17,7 +17,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { signinRedirect, signoutRedirect } from "@/lib/auth-oidc";
+import { getOidcUser, signinRedirect, signoutRedirect } from "@/lib/auth-oidc";
 import { purgeAuthSessionState, AUTH_SESSION_EVENT } from "@/lib/auth-session-cleanup";
 
 interface AdminAuthState {
@@ -93,8 +93,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setToken(null);
     void (async () => {
+      const oidcUser = await getOidcUser().catch(() => null);
       await purgeAuthSessionState("logout");
-      await signoutRedirect();
+      await signoutRedirect(oidcUser);
     })();
   }, []);
 

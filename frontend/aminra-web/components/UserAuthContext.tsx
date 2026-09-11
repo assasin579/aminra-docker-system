@@ -310,9 +310,10 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
           "@/lib/auth-oidc"
         );
         const shouldEndKeycloakSession = isOidcEnabled() && !!(await getOidcUser());
+        const oidcUser = shouldEndKeycloakSession ? await getOidcUser().catch(() => null) : null;
         await purgeAuthSessionState("logout");
         if (shouldEndKeycloakSession) {
-          await signoutRedirect();
+          await signoutRedirect(oidcUser);
         }
       } catch {
         await purgeAuthSessionState("logout");
