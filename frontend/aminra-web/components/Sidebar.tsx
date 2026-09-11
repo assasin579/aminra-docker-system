@@ -558,7 +558,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                   <button
                     onClick={() => {
                       logoutUser();
-                      router.push("/landing");
                       setAvatarOpen(false);
                       onClose?.();
                     }}

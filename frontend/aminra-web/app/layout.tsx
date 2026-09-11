@@ -46,7 +46,7 @@ export default function RootLayout({
             __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-              const isAuthCriticalRoute = new RegExp('^/(auth|admin)(/|$)').test(window.location.pathname);
+              const isAuthCriticalRoute = new RegExp('^/(auth|admin|dashboard)(/|$)|^/(business|provider)/login(/|$)').test(window.location.pathname);
 
               navigator.serviceWorker
                 .register('/sw.js', { updateViaCache: 'none' })
@@ -67,7 +67,7 @@ export default function RootLayout({
                   .then((keys) =>
                     Promise.all(
                       keys
-                        .filter((key) => key.startsWith('aminra-') && key !== 'aminra-v7')
+                        .filter((key) => key.startsWith('aminra-') && key !== 'aminra-v9')
                         .map((key) => caches.delete(key)),
                     ),
                   )

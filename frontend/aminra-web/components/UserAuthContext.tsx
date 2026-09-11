@@ -309,10 +309,15 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         const { isOidcEnabled, getOidcUser, signoutRedirect } = await import(
           "@/lib/auth-oidc"
         );
-        const shouldEndKeycloakSession = isOidcEnabled() && !!(await getOidcUser());
-        const oidcUser = shouldEndKeycloakSession ? await getOidcUser().catch(() => null) : null;
+        const oidcUser = isOidcEnabled()
+          ? await getOidcUser().catch(() => null)
+          : null;
         await purgeAuthSessionState("logout");
-        if (shouldEndKeycloakSession) {
+        if (isOidcEnabled()) {
+          // Always visit Keycloak end-session for interactive SSO logout.
+          // A valid realm cookie can outlive local oidc-client storage in older
+          // tabs; if we skip Keycloak because getOidcUser() is null, the next
+          // login can silently reuse the previous browser identity.
           await signoutRedirect(oidcUser);
         }
       } catch {

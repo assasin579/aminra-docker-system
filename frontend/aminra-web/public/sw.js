@@ -1,5 +1,5 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v7";
+const CACHE_NAME = "aminra-v9";
 const OFFLINE_URL = "/audits";
 // URLs the SW must NEVER serve from cache (always go to network).
 // Auth/admin identity paths are account-switch critical: cached responses/pages
@@ -7,6 +7,9 @@ const OFFLINE_URL = "/audits";
 const NEVER_CACHE_PATTERNS = [
   /\/auth(?:\/|$)/,
   /\/admin(?:\/|$)/,
+  /\/dashboard(?:\/|$)/,
+  /\/business\/login(?:\/|$)/,
+  /\/provider\/login(?:\/|$)/,
   /\/api\/auth(?:\/|$)/,
   /\/api\/api\/auth(?:\/|$)/,
   /\/api\/admin(?:\/|$)/,
