@@ -1,0 +1,23 @@
+# Domain: 03-supply-chain-trace
+# Step: seed-deterministic-public-trace-fixture
+# Started: 2026-09-12T08:51:10-04:00
+# Command: sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; python scripts/qa/seed-public-trace-fixture.py'
+
+Traceback (most recent call last):
+  File "/app/scripts/qa/seed-public-trace-fixture.py", line 182, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/app/scripts/qa/seed-public-trace-fixture.py", line 172, in main
+    result = subprocess.run(cmd, cwd=args.repo_root, input=sql, text=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/local/lib/python3.11/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+
+# Finished: 2026-09-12T08:51:12-04:00
+# Exit code: 1

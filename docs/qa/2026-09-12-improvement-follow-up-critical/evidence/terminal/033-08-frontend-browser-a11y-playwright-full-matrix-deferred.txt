@@ -1,0 +1,5 @@
+# Domain: 08-frontend-browser-a11y
+# Step: playwright-full-matrix
+# Status: DEFERRED
+# Note: RUN_FULL_E2E=0. Focused critical Playwright set ran; full matrix deferred.
+# Time: 2026-09-12T10:41:04-04:00

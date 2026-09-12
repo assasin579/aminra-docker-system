@@ -1,0 +1,10 @@
+# Domain: 01-auth-session-rbac
+# Step: role-boundaries-live-and-admin-reset
+# Started: 2026-09-12T08:38:32-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_role_boundaries_live_smoke.py tests/test_admin_user_password_reset.py tests/test_demo_account_login_smoke_script.py'
+
+.....................                                                    [100%]
+21 passed in 1.38s
+
+# Finished: 2026-09-12T08:38:37-04:00
+# Exit code: 0

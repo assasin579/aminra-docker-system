@@ -49,10 +49,10 @@ def _rows(rows, *, drop: set[str] = frozenset()) -> list[dict]:
     return [_row_to_dict(r, drop=drop) for r in rows]
 
 
-# Sensitive fields we never export. Empty post-Phase-4c-4 — Keycloak owns
-# credentials so there is no password_hash column to redact. Kept as a hook
-# so future sensitive columns get an obvious place to land.
-SECRET_FIELDS: set[str] = set()
+# Sensitive fields we never export. Keycloak owns credentials post-Phase-4c-4,
+# but keep legacy credential columns in the denylist so stale rows, fixtures,
+# rollback states, or future schema drift cannot leak secrets through exports.
+SECRET_FIELDS: set[str] = {"password_hash"}
 
 
 # ── Main entry point ────────────────────────────────────────────────────────

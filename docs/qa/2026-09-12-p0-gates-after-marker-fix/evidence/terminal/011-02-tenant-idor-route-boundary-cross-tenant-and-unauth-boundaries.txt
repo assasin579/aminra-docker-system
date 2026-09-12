@@ -1,0 +1,52 @@
+# Domain: 02-tenant-idor-route-boundary
+# Step: cross-tenant-and-unauth-boundaries
+# Started: 2026-09-12T09:07:05-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_keycloak_cross_tenant_attack.py tests/test_dual_auth_cross_tenant_unit.py tests/test_unauth_route_boundaries.py tests/test_certificate_pdf_integrity_smoke.py tests/test_generate_document_export_security.py tests/test_kc_sub_fk_smoke.py tests/uat/test_uat_c_tenant_isolation.py'
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 121 items
+
+tests/test_keycloak_cross_tenant_attack.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m    [ 21%][0m
+tests/test_dual_auth_cross_tenant_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                         [ 26%][0m
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m         [ 47%][0m
+tests/test_certificate_pdf_integrity_smoke.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                      [ 52%][0m
+tests/test_generate_document_export_security.py [32m.[0m[31m                        [ 52%][0m
+tests/test_kc_sub_fk_smoke.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31m                                    [ 58%][0m
+tests/uat/test_uat_c_tenant_isolation.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31m [ 84%]
+[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[31mF[0m[31m                                                      [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_ test_intended_public_routes_remain_reachable[/api/supply-chain/batches/trace/LOT-2026-DEMO-TRACE] _[0m
+[1m[31mtests/test_unauth_route_boundaries.py[0m:69: in test_intended_public_routes_remain_reachable
+    [0m[94massert[39;49;00m resp.status_code == [94m200[39;49;00m, [33mf[39;49;00m[33m"[39;49;00m[33m{[39;49;00mpath[33m}[39;49;00m[33m returned [39;49;00m[33m{[39;49;00mresp.status_code[33m}[39;49;00m[33m: [39;49;00m[33m{[39;49;00mresp.text[:[94m300[39;49;00m][33m}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE   AssertionError: /api/supply-chain/batches/trace/LOT-2026-DEMO-TRACE returned 404: {"detail":"Không tìm thấy truy xuất"}[0m
+[1m[31mE   assert 404 == 200[0m
+[1m[31mE    +  where 404 = <Response [404 Not Found]>.status_code[0m
+[31m[1m_____ TestSecurityExploits.test_c50_db_invariant_no_doc_without_tenant_id ______[0m
+[1m[31mtests/uat/test_uat_c_tenant_isolation.py[0m:482: in test_c50_db_invariant_no_doc_without_tenant_id
+    [0mnullable = psql_value([90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:67: in psql_value
+    [0mout = psql(sql, check=[94mFalse[39;49;00m)[90m[39;49;00m
+          ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_unauth_route_boundaries.py::[1mtest_intended_public_routes_remain_reachable[/api/supply-chain/batches/trace/LOT-2026-DEMO-TRACE][0m - AssertionError: /api/supply-chain/batches/trace/LOT-2026-DEMO-TRACE returne...
+[31mFAILED[0m tests/uat/test_uat_c_tenant_isolation.py::[1mTestSecurityExploits::test_c50_db_invariant_no_doc_without_tenant_id[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31m=================== [31m[1m2 failed[0m, [32m65 passed[0m, [33m54 skipped[0m[31m in 2.42s[0m[31m ===================[0m
+
+# Finished: 2026-09-12T09:07:11-04:00
+# Exit code: 1

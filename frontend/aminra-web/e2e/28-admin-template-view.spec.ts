@@ -10,8 +10,7 @@
  * since browsers don't carry custom headers on direct nav).
  */
 import { test, expect } from "@playwright/test";
-
-const ADMIN_LOGIN = { username: "admin", password: "aminra2026" };
+import { requireAdminToken } from "./helpers/admin-token";
 
 test.describe("admin file preview", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -24,9 +23,7 @@ test.describe("admin file preview", () => {
   test("view DOCX template returns PDF for inline preview (LibreOffice conversion)", async ({
     request,
   }) => {
-    const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
-    expect(login.ok()).toBeTruthy();
-    const { token } = await login.json();
+    const token = await requireAdminToken(request);
 
     const r = await request.get(
       "/api/admin/templates/halal_policy/template-file/view?lang=vi",
@@ -51,8 +48,7 @@ test.describe("admin file preview", () => {
   test("view template-file via query-string token (for new-tab UX)", async ({
     request,
   }) => {
-    const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
-    const { token } = await login.json();
+    const token = await requireAdminToken(request);
 
     const r = await request.get(
       `/api/admin/templates/halal_policy/template-file/view?lang=vi&token=${encodeURIComponent(token)}`,
@@ -65,8 +61,7 @@ test.describe("admin file preview", () => {
   test("repeated PDF requests return identical content (cache deterministic)", async ({
     request,
   }) => {
-    const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
-    const { token } = await login.json();
+    const token = await requireAdminToken(request);
     const url = `/api/admin/templates/halal_policy/template-file/view?lang=vi&token=${encodeURIComponent(token)}`;
 
     const r1 = await request.get(url);
@@ -97,8 +92,7 @@ test.describe("admin file preview", () => {
   });
 
   test("view rejects path-traversal in filename", async ({ request }) => {
-    const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
-    const { token } = await login.json();
+    const token = await requireAdminToken(request);
 
     // Backend should sanitize the filename — `..%2F` in path should not escape
     const r = await request.get(

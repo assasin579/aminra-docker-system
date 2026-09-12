@@ -1399,7 +1399,7 @@ async def replace_submission_document(
     _validate_uuid(new_doc_id)
 
     sub = await db.fetchrow(
-        "SELECT id, document_ids, status FROM submissions WHERE id=$1 AND business_tenant=$2",
+        "SELECT id, document_ids, status, archived_at FROM submissions WHERE id=$1 AND business_tenant=$2",
         submission_id,
         user.get("tenant_id"),
     )
@@ -1408,7 +1408,8 @@ async def replace_submission_document(
 
     # C1 fix — never let docs swap on terminal-state submissions; cert may already
     # cover the old set. Business must request a fresh submission instead.
-    if sub["status"] in ("approved", "rejected"):
+    archived_at = sub["archived_at"] if "archived_at" in sub.keys() else None
+    if sub["status"] in ("approved", "rejected") or archived_at is not None:
         raise HTTPException(400, "Hồ sơ đã ở trạng thái cuối — không thể thay tài liệu. Tạo hồ sơ mới nếu cần.")
 
     # Verify new doc belongs to tenant

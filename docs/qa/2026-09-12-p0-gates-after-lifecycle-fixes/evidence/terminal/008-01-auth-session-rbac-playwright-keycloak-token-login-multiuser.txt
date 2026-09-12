@@ -1,0 +1,50 @@
+# Domain: 01-auth-session-rbac
+# Step: playwright-keycloak-token-login-multiuser
+# Started: 2026-09-12T08:38:45-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/keycloak/01-token-validation.spec.ts e2e/keycloak/02-login-ui-flow.spec.ts e2e/keycloak/03-attacker-scenarios.spec.ts e2e/keycloak/04-multi-user.spec.ts --project=desktop-chromium
+
+
+Running 100 tests using 1 worker
+
+  ✘    1 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:17:7 › Valid Keycloak token › business user token validates against BE /auth/me (179ms)
+  ✘    2 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:30:7 › Valid Keycloak token › auditor user token validates (138ms)
+  ✘    3 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:35:7 › Valid Keycloak token › cb_admin user token validates (141ms)
+  ✘    4 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:39:7 › Valid Keycloak token › platform_admin user token validates (237ms)
+  ✘    5 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:43:7 › Valid Keycloak token › token contains email claim (170ms)
+  ✘    6 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:50:7 › Valid Keycloak token › token contains tenant_id mapper claim (134ms)
+  ✘    7 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:57:7 › Valid Keycloak token › token contains is_owner mapper claim (164ms)
+  ✘    8 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:64:7 › Valid Keycloak token › token contains status mapper claim (142ms)
+  ✘    9 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:71:7 › Valid Keycloak token › token contains realm_access.roles claim (135ms)
+  ✘   10 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:78:7 › Valid Keycloak token › token contains aminra-backend in audience (147ms)
+  ✓   11 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:91:7 › Token rejection › BE rejects missing Authorization header (79ms)
+  ✓   12 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:97:7 › Token rejection › BE rejects empty Bearer token (39ms)
+  ✓   13 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:105:7 › Token rejection › BE rejects malformed Bearer token (35ms)
+  ✘   14 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:113:7 › Token rejection › BE rejects token with tampered signature (106ms)
+  ✘   15 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:123:7 › Token rejection › BE rejects token with tampered payload (138ms)
+  ✓   16 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:139:7 › Token rejection › BE rejects garbage token structure (66ms)
+  ✓   17 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:147:7 › Token rejection › BE rejects token issued by wrong realm (132ms)
+  ✓   18 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:168:7 › Token rejection › BE 401 response includes detail field (36ms)
+  ✘   19 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:182:7 › Token lifecycle › access token expires (refresh) after refresh grant produces new token (80ms)
+  ✘   20 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:202:7 › Token lifecycle › refresh token rotation produces new refresh token (172ms)
+  ✓   21 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:218:7 › Token lifecycle › refresh with invalid refresh_token rejected (66ms)
+  ✘   22 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:233:7 › Token lifecycle › token has expires_in within realm policy bounds (96ms)
+  ✘   23 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:242:7 › Token lifecycle › token has iat claim near current time (169ms)
+  ✘   24 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:255:7 › Account state › disabled user cannot direct-grant login (127ms)
+  ✘   25 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:272:7 › Account state › suspended user has accessToken empty in fixture (131ms)
+  ✘   26 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:281:7 › Authentication failures › wrong password rejected (130ms)
+  ✓   27 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:298:7 › Authentication failures › non-existent user rejected (148ms)
+  ✘   28 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:315:7 › Authentication failures › empty password rejected (93ms)
+  ✘   29 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:332:7 › Authentication failures › missing client_id rejected (149ms)
+  ✘   30 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:348:7 › Authentication failures › wrong client_id rejected (144ms)
+  ✓   31 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:18:7 › Business login page UI › renders form fields when page loads (2.6s)
+  ✘   32 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:24:7 › Business login page UI › renders Keycloak SSO button when flag enabled (11.1s)
+  ✘   33 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:29:7 › Business login page UI › renders 'HOẶC' divider (11.4s)
+  ✘   34 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:34:7 › Business login page UI › renders TOTP hint under SSO button (11.2s)
+  ✓   35 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:39:7 › Business login page UI › legacy email+password form remains functional alongside SSO (2.2s)
+  ✓   36 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:44:7 › Business login page UI › forgot password link is present (1.9s)
+  ✘   37 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:54:7 › Provider login page UI › renders Keycloak SSO button (11.1s)
+  ✘   38 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:59:7 › Provider login page UI › renders auditor-specific TOTP hint (11.5s)
+  ✓   39 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:64:7 › Provider login page UI › renders trusted bodies badge (2.5s)
+
+# Finished: 2026-09-12T08:40:49-04:00
+# Exit code: 143

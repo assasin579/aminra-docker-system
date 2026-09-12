@@ -1,0 +1,5 @@
+# Domain: 09-load-chaos-deploy
+# Step: chaos-drills
+# Status: DEFERRED
+# Note: RUN_CHAOS=0 CHAOS_APPROVED=false. Destructive chaos requires explicit opt-in and backup/recovery checks.
+# Time: 2026-09-12T08:55:35-04:00

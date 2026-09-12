@@ -1,0 +1,1585 @@
+# Domain: 05-admin-user-crud
+# Step: playwright-admin-user-flows
+# Started: 2026-09-12T09:16:18-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/05-admin-flow.spec.ts e2e/20-admin-unified-auth.spec.ts e2e/21-admin-pages-token-pattern.spec.ts e2e/30-admin-user-edit-ux.spec.ts --project=desktop-chromium
+
+
+Running 13 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › e2e/05-admin-flow.spec.ts:4:7 › 05. Admin workflow › Admin can list pending providers (101ms)
+  ✓   2 [desktop-chromium] › e2e/05-admin-flow.spec.ts:13:7 › 05. Admin workflow › Admin can list doc types (39ms)
+  ✓   3 [desktop-chromium] › e2e/05-admin-flow.spec.ts:20:7 › 05. Admin workflow › Admin can list templates (46ms)
+  ✓   4 [desktop-chromium] › e2e/05-admin-flow.spec.ts:27:7 › 05. Admin workflow › Admin can list placeholders (39ms)
+  ✘   5 [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:23:7 › admin unified auth › legacy /admin token unlocks analytics + audit-logs + overdue (649ms)
+  -   6 [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:56:7 › admin unified auth › non-admin JWT is rejected by admin endpoints (regression)
+  ✓   7 [desktop-chromium] › e2e/21-admin-pages-token-pattern.spec.ts:32:5 › admin pages use shared readAdminToken helper (60ms)
+  ✓   8 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:26:7 › admin user edit UX › AdminUserManager imports parseApiError + validatePassword (32ms)
+  ✓   9 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:38:7 › admin user edit UX › modal supports ESC + backdrop close + focus first input (24ms)
+  ✓  10 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:53:7 › admin user edit UX › password placeholder + helper text match BE rule (10+ chars upper/lower/digit) (14ms)
+  ✘  11 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:65:7 › admin user edit UX › edit mode shows email as read-only field (not just title) (29ms)
+  ✓  12 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:73:7 › admin user edit UX › role-change confirm + 'Pending' status hidden for business (22ms)
+  ✘  13 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:84:7 › admin user edit UX › save button uses navy disabled bg (not gray-on-gray) (19ms)
+
+
+  1) [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:23:7 › admin unified auth › legacy /admin token unlocks analytics + audit-logs + overdue 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      28 |       data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+      29 |     });
+    > 30 |     expect(loginRes.ok()).toBeTruthy();
+         |                           ^
+      31 |     const { token } = await loginRes.json();
+      32 |     expect(token).toBeTruthy();
+      33 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/20-admin-unified-auth.spec.ts:30:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/20-admin-unified-auth-admi-3966f-nalytics-audit-logs-overdue-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/20-admin-unified-auth-admi-3966f-nalytics-audit-logs-overdue-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/20-admin-unified-auth-admi-3966f-nalytics-audit-logs-overdue-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:65:7 › admin user edit UX › edit mode shows email as read-only field (not just title) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/value=\{editTarget\?\.email \?\? ''\}/[39m
+    Received string:  [31m"\"use client\";·[39m
+    [31mimport { useState, useEffect, useCallback, useRef } from \"react\";[39m
+    [31mimport { parseApiError, validatePassword } from \"@/lib/apiError\";[39m
+    [31mimport { purgeAuthSessionState } from \"@/lib/auth-session-cleanup\";[39m
+    [31mimport { signoutRedirect } from \"@/lib/auth-oidc\";[39m
+    [31mimport Modal from \"@/components/Modal\";·[39m
+    [31mconst API = \"/api\";·[39m
+    [31minterface User {[39m
+    [31m  id: string;[39m
+    [31m  email: string;[39m
+    [31m  role: \"business\" | \"provider\";[39m
+    [31m  company_name: string;[39m
+    [31m  company_code: string | null;[39m
+    [31m  status: \"active\" | \"pending\" | \"suspended\";[39m
+    [31m  is_owner: boolean;[39m
+    [31m  tenant_id: string | null;[39m
+    [31m  created_at: string;[39m
+    [31m}·[39m
+    [31mconst STATUS_CFG = {[39m
+    [31m  active: { label: \"Hoạt động\", bg: \"rgba(10,31,68,0.1)\", color: \"#0A1F44\" },[39m
+    [31m  pending: { label: \"Chờ duyệt\", bg: \"rgba(245,158,11,0.1)\", color: \"#F59E0B\" },[39m
+    [31m  suspended: { label: \"Đình chỉ\", bg: \"rgba(239,68,68,0.1)\", color: \"#f87171\" },[39m
+    [31m};[39m
+    [31mconst ROLE_CFG = {[39m
+    [31m  business: { label: \"Doanh nghiệp\", color: \"#0A1F44\" },[39m
+    [31m  provider: { label: \"Tổ chức\", color: \"#0EA5E9\" },[39m
+    [31m};·[39m
+    [31mfunction timeAgo(iso: string) {[39m
+    [31m  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);[39m
+    [31m  if (d === 0) return \"Hôm nay\";[39m
+    [31m  if (d === 1) return \"Hôm qua\";[39m
+    [31m  if (d < 30) return `${d} ngày trước`;[39m
+    [31m  return new Date(iso).toLocaleDateString(\"vi-VN\");[39m
+    [31m}·[39m
+    [31minterface FormState {[39m
+    [31m  email: string;[39m
+    [31m  password: string;[39m
+    [31m  company_name: string;[39m
+    [31m  company_code: string;[39m
+    [31m  role: string;[39m
+    [31m  status: string;[39m
+    [31m}[39m
+    [31mconst EMPTY_FORM: FormState = {[39m
+    [31m  email: \"\",[39m
+    [31m  password: \"\",[39m
+    [31m  company_name: \"\",[39m
+    [31m  company_code: \"\",[39m
+    [31m  role: \"business\",[39m
+    [31m  status: \"active\",[39m
+    [31m};·[39m
+    [31mexport default function AdminUserManager({ token }: { token: string }) {[39m
+    [31m  const [users, setUsers] = useState<User[]>([]);[39m
+    [31m  const [total, setTotal] = useState(0);[39m
+    [31m  const [fetching, setFetching] = useState(false);·[39m
+    [31m  const [filterRole, setFilterRole] = useState(\"\");[39m
+    [31m  const [filterStatus, setFilterStatus] = useState(\"\");[39m
+    [31m  const [search, setSearch] = useState(\"\");·[39m
+    [31m  const [modal, setModal] = useState<\"create\" | \"edit\" | null>(null);[39m
+    [31m  const [editTarget, setEditTarget] = useState<User | null>(null);[39m
+    [31m  const [form, setForm] = useState<FormState>(EMPTY_FORM);[39m
+    [31m  const [saving, setSaving] = useState(false);[39m
+    [31m  const [formError, setFormError] = useState(\"\");·[39m
+    [31m  const [deleteId, setDeleteId] = useState<string | null>(null);·[39m
+    [31m  const authHdr = { Authorization: `Bearer ${token}` };·[39m
+    [31m  // Close modal on ESC + focus first input when opening.[39m
+    [31m  const firstInputRef = useRef<HTMLInputElement | null>(null);[39m
+    [31m  useEffect(() => {[39m
+    [31m    if (!modal) return;[39m
+    [31m    const onKey = (e: KeyboardEvent) => {[39m
+    [31m      if (e.key === \"Escape\") setModal(null);[39m
+    [31m    };[39m
+    [31m    window.addEventListener(\"keydown\", onKey);[39m
+    [31m    // Defer focus so DOM is mounted.[39m
+    [31m    setTimeout(() => firstInputRef.current?.focus(), 50);[39m
+    [31m    return () => window.removeEventListener(\"keydown\", onKey);[39m
+    [31m  }, [modal]);·[39m
+    [31m  const fetchUsers = useCallback(async () => {[39m
+    [31m    setFetching(true);[39m
+    [31m    try {[39m
+    [31m      const params = new URLSearchParams();[39m
+    [31m      if (filterRole) params.set(\"role\", filterRole);[39m
+    [31m      if (filterStatus) params.set(\"status\", filterStatus);[39m
+    [31m      if (search) params.set(\"q\", search);[39m
+    [31m      const res = await fetch(`${API}/admin/users?${params}`, {[39m
+    [31m        headers: authHdr,[39m
+    [31m      });[39m
+    [31m      if (res.ok) {[39m
+    [31m        const d = await res.json();[39m
+    [31m        setUsers(d.users);[39m
+    [31m        setTotal(d.total);[39m
+    [31m      }[39m
+    [31m    } finally {[39m
+    [31m      setFetching(false);[39m
+    [31m    }[39m
+    [31m  }, [filterRole, filterStatus, search, token]);·[39m
+    [31m  useEffect(() => {[39m
+    [31m    fetchUsers();[39m
+    [31m  }, [fetchUsers]);·[39m
+    [31m  const openCreate = () => {[39m
+    [31m    setForm(EMPTY_FORM);[39m
+    [31m    setFormError(\"\");[39m
+    [31m    setEditTarget(null);[39m
+    [31m    setModal(\"create\");[39m
+    [31m  };·[39m
+    [31m  const openEdit = (u: User) => {[39m
+    [31m    setForm({[39m
+    [31m      email: u.email,[39m
+    [31m      password: \"\",[39m
+    [31m      company_name: u.company_name,[39m
+    [31m      company_code: u.company_code ?? \"\",[39m
+    [31m      role: u.role,[39m
+    [31m      status: u.status,[39m
+    [31m    });[39m
+    [31m    setFormError(\"\");[39m
+    [31m    setEditTarget(u);[39m
+    [31m    setModal(\"edit\");[39m
+    [31m  };·[39m
+    [31m  const handleSave = async () => {[39m
+    [31m    setFormError(\"\");·[39m
+    [31m    // Client-side validation first (fail fast, no wasted request).[39m
+    [31m    if (modal === \"create\") {[39m
+    [31m      if (!form.email || !form.password || !form.company_name) {[39m
+    [31m        setFormError(\"Vui lòng điền đầy đủ thông tin bắt buộc\");[39m
+    [31m        return;[39m
+    [31m      }[39m
+    [31m      const pwErr = validatePassword(form.password);[39m
+    [31m      if (pwErr) {[39m
+    [31m        setFormError(pwErr);[39m
+    [31m        return;[39m
+    [31m      }[39m
+    [31m    } else if (modal === \"edit\" && form.password) {[39m
+    [31m      // Edit: password optional; validate only when admin sets a new one.[39m
+    [31m      const pwErr = validatePassword(form.password);[39m
+    [31m      if (pwErr) {[39m
+    [31m        setFormError(pwErr);[39m
+    [31m        return;[39m
+    [31m      }[39m
+    [31m    }·[39m
+    [31m    // Warn admin if role change risks orphaning historical data.[39m
+    [31m    if (modal === \"edit\" && editTarget && form.role !== editTarget.role) {[39m
+    [31m      if ([39m
+    [31m        !confirm([39m
+    [31m          `Đổi vai trò ${editTarget.role} → ${form.role} có thể gây không nhất quán với hồ sơ + chứng nhận đã tồn tại. Tiếp tục?`,[39m
+    [31m        )[39m
+    [31m      )[39m
+    [31m        return;[39m
+    [31m    }·[39m
+    [31m    setSaving(true);[39m
+    [31m    try {[39m
+    [31m      if (modal === \"create\") {[39m
+    [31m        const res = await fetch(`${API}/admin/users`, {[39m
+    [31m          method: \"POST\",[39m
+    [31m          headers: { ...authHdr, \"Content-Type\": \"application/json\" },[39m
+    [31m          body: JSON.stringify({[39m
+    [31m            email: form.email.trim().toLowerCase(),[39m
+    [31m            password: form.password,[39m
+    [31m            company_name: form.company_name.trim(),[39m
+    [31m            company_code: form.company_code.trim() || undefined,[39m
+    [31m            role: form.role,[39m
+    [31m            status: form.status,[39m
+    [31m          }),[39m
+    [31m        });[39m
+    [31m        if (!res.ok) {[39m
+    [31m          const body = await res.json().catch(() => ({}));[39m
+    [31m          throw new Error([39m
+    [31m            parseApiError(body, `Tạo thất bại (HTTP ${res.status})`),[39m
+    [31m          );[39m
+    [31m        }[39m
+    [31m      } else if (modal === \"edit\" && editTarget) {[39m
+    [31m        const profileBody: Record<string, unknown> = {};[39m
+    [31m        if (form.company_name !== editTarget.company_name)[39m
+    [31m          profileBody.company_name = form.company_name.trim();[39m
+    [31m        if (form.company_code !== (editTarget.company_code ?? \"\"))[39m
+    [31m          profileBody.company_code = form.company_code.trim() || null;[39m
+    [31m        if (form.status !== editTarget.status) profileBody.status = form.status;[39m
+    [31m        if (form.role !== editTarget.role) profileBody.role = form.role;[39m
+    [31m        const passwordChanged = Boolean(form.password);[39m
+    [31m        if (Object.keys(profileBody).length === 0 && !passwordChanged) {[39m
+    [31m          setFormError(\"Không có thay đổi nào để lưu\");[39m
+    [31m          setSaving(false);[39m
+    [31m          return;[39m
+    [31m        }·[39m
+    [31m        if (Object.keys(profileBody).length > 0) {[39m
+    [31m          const res = await fetch(`${API}/admin/users/${editTarget.id}`, {[39m
+    [31m            method: \"PUT\",[39m
+    [31m            headers: { ...authHdr, \"Content-Type\": \"application/json\" },[39m
+    [31m            body: JSON.stringify(profileBody),[39m
+    [31m          });[39m
+    [31m          if (!res.ok) {[39m
+    [31m            const respBody = await res.json().catch(() => ({}));[39m
+    [31m            throw new Error([39m
+    [31m              parseApiError(respBody, `Cập nhật thất bại (HTTP ${res.status})`),[39m
+    [31m            );[39m
+    [31m          }[39m
+    [31m        }·[39m
+    [31m        if (passwordChanged) {[39m
+    [31m          const pwRes = await fetch([39m
+    [31m            `${API}/admin/users/${editTarget.id}/reset-password`,[39m
+    [31m            {[39m
+    [31m              method: \"POST\",[39m
+    [31m              headers: { ...authHdr, \"Content-Type\": \"application/json\" },[39m
+    [31m              body: JSON.stringify({ new_password: form.password }),[39m
+    [31m            },[39m
+    [31m          );[39m
+    [31m          let resetBody: { sessions_revoked?: boolean; self_reset?: boolean } | null =[39m
+    [31m            null;[39m
+    [31m          if (!pwRes.ok) {[39m
+    [31m            const respBody = await pwRes.json().catch(() => ({}));[39m
+    [31m            throw new Error([39m
+    [31m              parseApiError(respBody, `Đổi mật khẩu thất bại (HTTP ${pwRes.status})`),[39m
+    [31m            );[39m
+    [31m          }[39m
+    [31m          resetBody = await pwRes.json().catch(() => null);[39m
+    [31m          if (resetBody?.self_reset) {[39m
+    [31m            setFormError([39m
+    [31m              \"Mật khẩu đã đổi. Vui lòng đăng nhập lại bằng mật khẩu mới.\",[39m
+    [31m            );[39m
+    [31m            await purgeAuthSessionState();[39m
+    [31m            await signoutRedirect();[39m
+    [31m            return;[39m
+    [31m          }[39m
+    [31m        }[39m
+    [31m      }[39m
+    [31m      setModal(null);[39m
+    [31m      fetchUsers();[39m
+    [31m    } catch (e) {[39m
+    [31m      setFormError(e instanceof Error ? e.message : \"Lỗi không xác định\");[39m
+    [31m    } finally {[39m
+    [31m      setSaving(false);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  const handleDelete = async (id: string) => {[39m
+    [31m    if (!confirm(\"Xác nhận xoá user này? Toàn bộ dữ liệu liên quan sẽ bị xoá.\"))[39m
+    [31m      return;[39m
+    [31m    setDeleteId(id);[39m
+    [31m    try {[39m
+    [31m      await fetch(`${API}/admin/users/${id}`, {[39m
+    [31m        method: \"DELETE\",[39m
+    [31m        headers: authHdr,[39m
+    [31m      });[39m
+    [31m      fetchUsers();[39m
+    [31m    } finally {[39m
+    [31m      setDeleteId(null);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  const set =[39m
+    [31m    (k: keyof FormState) =>[39m
+    [31m    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>[39m
+    [31m      setForm((f) => ({ ...f, [k]: e.target.value }));·[39m
+    [31m  const inputCls = \"w-full px-3 py-2.5 rounded-xl text-sm outline-none\";[39m
+    [31m  const inputStyle = {[39m
+    [31m    background: \"#FFFFFF\",[39m
+    [31m    border: \"1px solid #E2E8F0\",[39m
+    [31m    color: \"#0A1F44\",[39m
+    [31m  };·[39m
+    [31m  return ([39m
+    [31m    <div>[39m
+    [31m      {/* Toolbar */}[39m
+    [31m      <div[39m
+    [31m        className=\"grid items-center mb-5 gap-3\"[39m
+    [31m        style={{ gridTemplateColumns: \"1fr auto\" }}[39m
+    [31m      >[39m
+    [31m        <div[39m
+    [31m          className=\"grid gap-2\"[39m
+    [31m          style={{[39m
+    [31m            gridTemplateColumns: \"repeat(auto-fill, minmax(12rem, auto))\",[39m
+    [31m          }}[39m
+    [31m        >[39m
+    [31m          <input[39m
+    [31m            type=\"text\"[39m
+    [31m            placeholder=\"Tìm email, tên...\"[39m
+    [31m            value={search}[39m
+    [31m            onChange={(e) => setSearch(e.target.value)}[39m
+    [31m            className=\"text-sm px-3 py-2 rounded-lg outline-none\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              color: \"#374151\",[39m
+    [31m            }}[39m
+    [31m          />[39m
+    [31m          <select[39m
+    [31m            value={filterRole}[39m
+    [31m            onChange={(e) => setFilterRole(e.target.value)}[39m
+    [31m            className=\"text-sm px-3 py-2 rounded-lg outline-none\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              color: \"#374151\",[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            <option value=\"\">Tất cả loại</option>[39m
+    [31m            <option value=\"business\">Doanh nghiệp</option>[39m
+    [31m            <option value=\"provider\">Tổ chức</option>[39m
+    [31m          </select>[39m
+    [31m          <select[39m
+    [31m            value={filterStatus}[39m
+    [31m            onChange={(e) => setFilterStatus(e.target.value)}[39m
+    [31m            className=\"text-sm px-3 py-2 rounded-lg outline-none\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              color: \"#374151\",[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            <option value=\"\">Tất cả trạng thái</option>[39m
+    [31m            <option value=\"active\">Hoạt động</option>[39m
+    [31m            <option value=\"pending\">Chờ duyệt</option>[39m
+    [31m            <option value=\"suspended\">Đình chỉ</option>[39m
+    [31m          </select>[39m
+    [31m        </div>[39m
+    [31m        <button[39m
+    [31m          onClick={openCreate}[39m
+    [31m          className=\"grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white\"[39m
+    [31m          style={{ gridTemplateColumns: \"auto 1fr\", background: \"#0A1F44\" }}[39m
+    [31m        >[39m
+    [31m          <svg[39m
+    [31m            className=\"w-4 h-4\"[39m
+    [31m            fill=\"none\"[39m
+    [31m            stroke=\"currentColor\"[39m
+    [31m            viewBox=\"0 0 24 24\"[39m
+    [31m          >[39m
+    [31m            <path[39m
+    [31m              strokeLinecap=\"round\"[39m
+    [31m              strokeLinejoin=\"round\"[39m
+    [31m              strokeWidth=\"2\"[39m
+    [31m              d=\"M12 4v16m8-8H4\"[39m
+    [31m            />[39m
+    [31m          </svg>[39m
+    [31m          Thêm user[39m
+    [31m        </button>[39m
+    [31m      </div>·[39m
+    [31m      {/* Table */}[39m
+    [31m      <div[39m
+    [31m        className=\"rounded-xl overflow-hidden\"[39m
+    [31m        style={{ border: \"1px solid #E2E8F0\", background: \"#FFFFFF\" }}[39m
+    [31m      >[39m
+    [31m        {fetching ? ([39m
+    [31m          <div className=\"divide-y\" style={{ borderColor: \"#E2E8F0\" }}>[39m
+    [31m            {[1, 2, 3, 4].map((i) => ([39m
+    [31m              <div key={i} className=\"px-4 py-4 flex items-center gap-4\">[39m
+    [31m                <div className=\"flex-1 space-y-2\">[39m
+    [31m                  <div className=\"shimmer skeleton-text w-48\" />[39m
+    [31m                  <div className=\"shimmer skeleton-text w-32\" />[39m
+    [31m                </div>[39m
+    [31m                <div className=\"shimmer skeleton-text w-20\" />[39m
+    [31m                <div className=\"shimmer skeleton-text w-16\" />[39m
+    [31m              </div>[39m
+    [31m            ))}[39m
+    [31m          </div>[39m
+    [31m        ) : users.length === 0 ? ([39m
+    [31m          <div className=\"px-6 py-12 text-center\">[39m
+    [31m            <svg[39m
+    [31m              className=\"w-12 h-12 mx-auto mb-3\"[39m
+    [31m              fill=\"none\"[39m
+    [31m              stroke=\"#CBD5E1\"[39m
+    [31m              viewBox=\"0 0 24 24\"[39m
+    [31m            >[39m
+    [31m              <path[39m
+    [31m                strokeLinecap=\"round\"[39m
+    [31m                strokeLinejoin=\"round\"[39m
+    [31m                strokeWidth=\"1.5\"[39m
+    [31m                d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"[39m
+    [31m              />[39m
+    [31m            </svg>[39m
+    [31m            <p className=\"font-medium text-sm\" style={{ color: \"#0A1F44\" }}>[39m
+    [31m              Không có user nào[39m
+    [31m            </p>[39m
+    [31m            <p className=\"text-xs mt-1\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m              {filterRole || filterStatus || search[39m
+    [31m                ? \"Thử bỏ bớt filter\"[39m
+    [31m                : \"Chưa có ai đăng ký\"}[39m
+    [31m            </p>[39m
+    [31m          </div>[39m
+    [31m        ) : ([39m
+    [31m          <table className=\"w-full text-sm\">[39m
+    [31m            <thead style={{ background: \"#F5F1E8\" }}>[39m
+    [31m              <tr>[39m
+    [31m                {[\"Email / Tên\", \"Loại\", \"Trạng thái\", \"Ngày tạo\", \"\"].map([39m
+    [31m                  (h) => ([39m
+    [31m                    <th[39m
+    [31m                      key={h}[39m
+    [31m                      className=\"text-left px-4 py-3 text-xs font-medium\"[39m
+    [31m                      style={{ color: \"#6B7280\" }}[39m
+    [31m                    >[39m
+    [31m                      {h}[39m
+    [31m                    </th>[39m
+    [31m                  ),[39m
+    [31m                )}[39m
+    [31m              </tr>[39m
+    [31m            </thead>[39m
+    [31m            <tbody>[39m
+    [31m              {users.map((u, i) => {[39m
+    [31m                const st = STATUS_CFG[u.status] ?? STATUS_CFG.active;[39m
+    [31m                const rl = ROLE_CFG[u.role] ?? ROLE_CFG.business;[39m
+    [31m                return ([39m
+    [31m                  <tr[39m
+    [31m                    key={u.id}[39m
+    [31m                    style={{[39m
+    [31m                      background: i % 2 === 0 ? \"#FFFFFF\" : \"#FFFFFF\",[39m
+    [31m                      borderTop: \"1px solid #E2E8F0\",[39m
+    [31m                    }}[39m
+    [31m                  >[39m
+    [31m                    <td className=\"px-4 py-3\">[39m
+    [31m                      <p className=\"font-medium\" style={{ color: \"#0A1F44\" }}>[39m
+    [31m                        {u.email}[39m
+    [31m                      </p>[39m
+    [31m                      <p[39m
+    [31m                        className=\"text-xs mt-0.5\"[39m
+    [31m                        style={{ color: \"#6B7280\" }}[39m
+    [31m                      >[39m
+    [31m                        {u.company_name}[39m
+    [31m                      </p>[39m
+    [31m                    </td>[39m
+    [31m                    <td className=\"px-4 py-3\">[39m
+    [31m                      <span[39m
+    [31m                        className=\"text-xs font-medium\"[39m
+    [31m                        style={{ color: rl.color }}[39m
+    [31m                      >[39m
+    [31m                        {rl.label}[39m
+    [31m                      </span>[39m
+    [31m                      {!u.is_owner && ([39m
+    [31m                        <span[39m
+    [31m                          className=\"ml-1 text-xs\"[39m
+    [31m                          style={{ color: \"#94A3B8\" }}[39m
+    [31m                        >[39m
+    [31m                          · thành viên[39m
+    [31m                        </span>[39m
+    [31m                      )}[39m
+    [31m                    </td>[39m
+    [31m                    <td className=\"px-4 py-3\">[39m
+    [31m                      <span[39m
+    [31m                        className=\"px-2 py-0.5 rounded-full text-xs\"[39m
+    [31m                        style={{ background: st.bg, color: st.color }}[39m
+    [31m                      >[39m
+    [31m                        {st.label}[39m
+    [31m                      </span>[39m
+    [31m                    </td>[39m
+    [31m                    <td[39m
+    [31m                      className=\"px-4 py-3 text-xs\"[39m
+    [31m                      style={{ color: \"#6B7280\" }}[39m
+    [31m                    >[39m
+    [31m                      {timeAgo(u.created_at)}[39m
+    [31m                    </td>[39m
+    [31m                    <td className=\"px-4 py-3 text-right\">[39m
+    [31m                      <div className=\"grid grid-flow-col items-center gap-3 justify-end\">[39m
+    [31m                        <button[39m
+    [31m                          onClick={() => openEdit(u)}[39m
+    [31m                          className=\"text-xs transition-colors\"[39m
+    [31m                          style={{ color: \"#6B7280\" }}[39m
+    [31m                        >[39m
+    [31m                          Sửa[39m
+    [31m                        </button>[39m
+    [31m                        <button[39m
+    [31m                          onClick={() => handleDelete(u.id)}[39m
+    [31m                          disabled={deleteId === u.id}[39m
+    [31m                          className=\"text-xs hover:text-red-400 transition-colors\"[39m
+    [31m                          style={{ color: \"#6B7280\" }}[39m
+    [31m                        >[39m
+    [31m                          {deleteId === u.id ? \"...\" : \"Xoá\"}[39m
+    [31m                        </button>[39m
+    [31m                      </div>[39m
+    [31m                    </td>[39m
+    [31m                  </tr>[39m
+    [31m                );[39m
+    [31m              })}[39m
+    [31m            </tbody>[39m
+    [31m          </table>[39m
+    [31m        )}[39m
+    [31m      </div>[39m
+    [31m      <p className=\"text-xs mt-2\" style={{ color: \"#6B7280\" }}>[39m
+    [31m        {total} user[39m
+    [31m      </p>·[39m
+    [31m      {/* Modal */}[39m
+    [31m      {modal && ([39m
+    [31m        <Modal onClose={() => setModal(null)}>[39m
+    [31m          <div[39m
+    [31m            className=\"w-full max-w-md rounded-2xl p-6 animate-modal-content\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              boxShadow: \"0 12px 40px rgba(10,31,68,0.18)\",[39m
+    [31m            }}[39m
+    [31m            onClick={(e) => e.stopPropagation()}[39m
+    [31m            onKeyDown={(e) => {[39m
+    [31m              if ((e.metaKey || e.ctrlKey) && e.key === \"Enter\") handleSave();[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            <div className=\"flex items-start justify-between gap-3 mb-5\">[39m
+    [31m              <div className=\"min-w-0\">[39m
+    [31m                <h3[39m
+    [31m                  className=\"text-base font-bold\"[39m
+    [31m                  style={{ color: \"#0A1F44\" }}[39m
+    [31m                >[39m
+    [31m                  {modal === \"create\" ? \"Thêm user mới\" : \"Sửa thông tin user\"}[39m
+    [31m                </h3>[39m
+    [31m                {modal === \"edit\" && editTarget && ([39m
+    [31m                  <p[39m
+    [31m                    className=\"text-xs mt-0.5 truncate font-mono\"[39m
+    [31m                    style={{ color: \"#64748B\" }}[39m
+    [31m                    title={editTarget.email}[39m
+    [31m                  >[39m
+    [31m                    {editTarget.email}[39m
+    [31m                  </p>[39m
+    [31m                )}[39m
+    [31m              </div>[39m
+    [31m              <button[39m
+    [31m                onClick={() => setModal(null)}[39m
+    [31m                aria-label=\"Đóng\"[39m
+    [31m                className=\"w-8 h-8 grid place-items-center rounded-lg flex-shrink-0 transition-colors hover:bg-black/5\"[39m
+    [31m                style={{ color: \"#6B7280\" }}[39m
+    [31m              >[39m
+    [31m                <svg[39m
+    [31m                  className=\"w-4 h-4\"[39m
+    [31m                  fill=\"none\"[39m
+    [31m                  stroke=\"currentColor\"[39m
+    [31m                  viewBox=\"0 0 24 24\"[39m
+    [31m                  strokeWidth=\"2\"[39m
+    [31m                >[39m
+    [31m                  <path[39m
+    [31m                    strokeLinecap=\"round\"[39m
+    [31m                    strokeLinejoin=\"round\"[39m
+    [31m                    d=\"M6 18L18 6M6 6l12 12\"[39m
+    [31m                  />[39m
+    [31m                </svg>[39m
+    [31m              </button>[39m
+    [31m            </div>·[39m
+    [31m            <div className=\"space-y-3\">[39m
+    [31m              {/* Warning for member accounts */}[39m
+    [31m              {modal === \"edit\" &&[39m
+    [31m                editTarget &&[39m
+    [31m                !editTarget.is_owner &&[39m
+    [31m                editTarget.role === \"business\" && ([39m
+    [31m                  <div[39m
+    [31m                    className=\"px-4 py-3 rounded-lg text-xs leading-relaxed\"[39m
+    [31m                    style={{[39m
+    [31m                      background: \"rgba(245,158,11,0.08)\",[39m
+    [31m                      border: \"1px solid rgba(245,158,11,0.2)\",[39m
+    [31m                      color: \"#92400E\",[39m
+    [31m                    }}[39m
+    [31m                  >[39m
+    [31m                    <strong>Tài khoản thành viên.</strong> Được mời bởi chủ tổ[39m
+    [31m                    chức. Thông tin công ty kế thừa từ owner — sửa ở đây có thể[39m
+    [31m                    gây không nhất quán.[39m
+    [31m                  </div>[39m
+    [31m                )}·[39m
+    [31m              {/* Email — editable on create, read-only on edit */}[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  Email {modal === \"create\" && \"*\"}[39m
+    [31m                </label>[39m
+    [31m                {modal === \"create\" ? ([39m
+    [31m                  <input[39m
+    [31m                    ref={firstInputRef}[39m
+    [31m                    type=\"email\"[39m
+    [31m                    required[39m
+    [31m                    value={form.email}[39m
+    [31m                    onChange={set(\"email\")}[39m
+    [31m                    placeholder=\"user@company.vn\"[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={inputStyle}[39m
+    [31m                    autoFocus[39m
+    [31m                  />[39m
+    [31m                ) : ([39m
+    [31m                  <input[39m
+    [31m                    type=\"email\"[39m
+    [31m                    value={editTarget?.email ?? \"\"}[39m
+    [31m                    readOnly[39m
+    [31m                    disabled[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={{[39m
+    [31m                      ...inputStyle,[39m
+    [31m                      background: \"#F5F1E8\",[39m
+    [31m                      cursor: \"not-allowed\",[39m
+    [31m                      color: \"#6B7280\",[39m
+    [31m                    }}[39m
+    [31m                  />[39m
+    [31m                )}[39m
+    [31m              </div>·[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  {modal === \"create\" ? \"Mật khẩu *\" : \"Mật khẩu mới\"}[39m
+    [31m                  {modal === \"edit\" && ([39m
+    [31m                    <span className=\"font-normal\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m                      {\" \"}[39m
+    [31m                      · để trống nếu không đổi[39m
+    [31m                    </span>[39m
+    [31m                  )}[39m
+    [31m                </label>[39m
+    [31m                <input[39m
+    [31m                  ref={modal === \"edit\" ? firstInputRef : undefined}[39m
+    [31m                  type=\"password\"[39m
+    [31m                  value={form.password}[39m
+    [31m                  onChange={set(\"password\")}[39m
+    [31m                  placeholder=\"••••••••••\"[39m
+    [31m                  minLength={modal === \"create\" ? 10 : undefined}[39m
+    [31m                  className={inputCls}[39m
+    [31m                  style={inputStyle}[39m
+    [31m                  autoFocus={modal === \"edit\"}[39m
+    [31m                />[39m
+    [31m                <p className=\"text-xs mt-1\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m                  10+ ký tự, có chữ hoa, chữ thường và số[39m
+    [31m                </p>[39m
+    [31m              </div>·[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  Tên công ty / Tổ chức *[39m
+    [31m                </label>[39m
+    [31m                <input[39m
+    [31m                  type=\"text\"[39m
+    [31m                  required[39m
+    [31m                  value={form.company_name}[39m
+    [31m                  onChange={set(\"company_name\")}[39m
+    [31m                  placeholder=\"Công ty ABC\"[39m
+    [31m                  className={inputCls}[39m
+    [31m                  style={inputStyle}[39m
+    [31m                />[39m
+    [31m              </div>·[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  Mã số thuế / Giấy phép[39m
+    [31m                </label>[39m
+    [31m                <input[39m
+    [31m                  type=\"text\"[39m
+    [31m                  value={form.company_code}[39m
+    [31m                  onChange={set(\"company_code\")}[39m
+    [31m                  placeholder=\"Tuỳ chọn\"[39m
+    [31m                  className={inputCls}[39m
+    [31m                  style={inputStyle}[39m
+    [31m                />[39m
+    [31m              </div>·[39m
+    [31m              <div className=\"grid grid-cols-1 sm:grid-cols-2 gap-3\">[39m
+    [31m                <div>[39m
+    [31m                  <label[39m
+    [31m                    className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                    style={{ color: \"#6B7280\" }}[39m
+    [31m                  >[39m
+    [31m                    Vai trò[39m
+    [31m                  </label>[39m
+    [31m                  <select[39m
+    [31m                    value={form.role}[39m
+    [31m                    onChange={set(\"role\")}[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={inputStyle}[39m
+    [31m                  >[39m
+    [31m                    <option value=\"business\">Doanh nghiệp</option>[39m
+    [31m                    <option value=\"provider\">Tổ chức cấp chứng nhận</option>[39m
+    [31m                  </select>[39m
+    [31m                </div>[39m
+    [31m                <div>[39m
+    [31m                  <label[39m
+    [31m                    className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                    style={{ color: \"#6B7280\" }}[39m
+    [31m                  >[39m
+    [31m                    Trạng thái[39m
+    [31m                  </label>[39m
+    [31m                  <select[39m
+    [31m                    value={form.status}[39m
+    [31m                    onChange={set(\"status\")}[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={inputStyle}[39m
+    [31m                  >[39m
+    [31m                    <option value=\"active\">Hoạt động</option>[39m
+    [31m                    {/* Pending only meaningful for providers (need admin approval) */}[39m
+    [31m                    {form.role === \"provider\" && ([39m
+    [31m                      <option value=\"pending\">Chờ duyệt</option>[39m
+    [31m                    )}[39m
+    [31m                    <option value=\"suspended\">Đình chỉ</option>[39m
+    [31m                  </select>[39m
+    [31m                </div>[39m
+    [31m              </div>·[39m
+    [31m              {formError && ([39m
+    [31m                <div[39m
+    [31m                  role=\"alert\"[39m
+    [31m                  className=\"grid items-start gap-2 px-3 py-2.5 rounded-lg text-xs\"[39m
+    [31m                  style={{[39m
+    [31m                    gridTemplateColumns: \"auto 1fr\",[39m
+    [31m                    background: \"rgba(239,68,68,0.08)\",[39m
+    [31m                    color: \"#991B1B\",[39m
+    [31m                    border: \"1px solid rgba(239,68,68,0.2)\",[39m
+    [31m                  }}[39m
+    [31m                >[39m
+    [31m                  <svg[39m
+    [31m                    className=\"w-4 h-4 mt-0.5\"[39m
+    [31m                    fill=\"none\"[39m
+    [31m                    stroke=\"currentColor\"[39m
+    [31m                    viewBox=\"0 0 24 24\"[39m
+    [31m                    strokeWidth=\"2\"[39m
+    [31m                  >[39m
+    [31m                    <path[39m
+    [31m                      strokeLinecap=\"round\"[39m
+    [31m                      strokeLinejoin=\"round\"[39m
+    [31m                      d=\"M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"[39m
+    [31m                    />[39m
+    [31m                  </svg>[39m
+    [31m                  <span>{formError}</span>[39m
+    [31m                </div>[39m
+    [31m              )}·[39m
+    [31m              <div className=\"flex gap-2 mt-1\">[39m
+    [31m                <button[39m
+    [31m                  type=\"button\"[39m
+    [31m                  onClick={() => setModal(null)}[39m
+    [31m                  disabled={saving}[39m
+    [31m                  className=\"flex-1 py-2.5 rounded-xl font-medium text-sm transition-all\"[39m
+    [31m                  style={{[39m
+    [31m                    background: \"#F5F1E8\",[39m
+    [31m                    color: \"#6B7280\",[39m
+    [31m                    border: \"1px solid #E2E8F0\",[39m
+    [31m                  }}[39m
+    [31m                >[39m
+    [31m                  Huỷ[39m
+    [31m                </button>[39m
+    [31m                <button[39m
+    [31m                  onClick={handleSave}[39m
+    [31m                  disabled={saving}[39m
+    [31m                  className=\"flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all\"[39m
+    [31m                  style={{[39m
+    [31m                    background: saving ? \"rgba(10,31,68,0.4)\" : \"#0A1F44\",[39m
+    [31m                    cursor: saving ? \"wait\" : \"pointer\",[39m
+    [31m                  }}[39m
+    [31m                >[39m
+    [31m                  {saving[39m
+    [31m                    ? \"Đang lưu...\"[39m
+    [31m                    : modal === \"create\"[39m
+    [31m                      ? \"Tạo user\"[39m
+    [31m                      : \"Lưu thay đổi\"}[39m
+    [31m                </button>[39m
+    [31m              </div>[39m
+    [31m            </div>[39m
+    [31m          </div>[39m
+    [31m        </Modal>[39m
+    [31m      )}[39m
+    [31m    </div>[39m
+    [31m  );[39m
+    [31m}[39m
+    [31m"[39m
+
+      67 |     const src = await readFile("components/AdminUserManager.tsx", "utf8");
+      68 |     // The edit branch must render an email input with `readOnly` and `disabled`
+    > 69 |     expect(src).toMatch(/value=\{editTarget\?\.email \?\? ''\}/);
+         |                 ^
+      70 |     expect(src).toMatch(/readOnly/);
+      71 |   });
+      72 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/30-admin-user-edit-ux.spec.ts:69:17
+
+    Error Context: test-results/30-admin-user-edit-ux-admi-0e4e6--only-field-not-just-title--desktop-chromium/error-context.md
+
+  3) [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:84:7 › admin user edit UX › save button uses navy disabled bg (not gray-on-gray) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/rgba\(15,44,74,0\.4\)/[39m
+    Received string:  [31m"\"use client\";·[39m
+    [31mimport { useState, useEffect, useCallback, useRef } from \"react\";[39m
+    [31mimport { parseApiError, validatePassword } from \"@/lib/apiError\";[39m
+    [31mimport { purgeAuthSessionState } from \"@/lib/auth-session-cleanup\";[39m
+    [31mimport { signoutRedirect } from \"@/lib/auth-oidc\";[39m
+    [31mimport Modal from \"@/components/Modal\";·[39m
+    [31mconst API = \"/api\";·[39m
+    [31minterface User {[39m
+    [31m  id: string;[39m
+    [31m  email: string;[39m
+    [31m  role: \"business\" | \"provider\";[39m
+    [31m  company_name: string;[39m
+    [31m  company_code: string | null;[39m
+    [31m  status: \"active\" | \"pending\" | \"suspended\";[39m
+    [31m  is_owner: boolean;[39m
+    [31m  tenant_id: string | null;[39m
+    [31m  created_at: string;[39m
+    [31m}·[39m
+    [31mconst STATUS_CFG = {[39m
+    [31m  active: { label: \"Hoạt động\", bg: \"rgba(10,31,68,0.1)\", color: \"#0A1F44\" },[39m
+    [31m  pending: { label: \"Chờ duyệt\", bg: \"rgba(245,158,11,0.1)\", color: \"#F59E0B\" },[39m
+    [31m  suspended: { label: \"Đình chỉ\", bg: \"rgba(239,68,68,0.1)\", color: \"#f87171\" },[39m
+    [31m};[39m
+    [31mconst ROLE_CFG = {[39m
+    [31m  business: { label: \"Doanh nghiệp\", color: \"#0A1F44\" },[39m
+    [31m  provider: { label: \"Tổ chức\", color: \"#0EA5E9\" },[39m
+    [31m};·[39m
+    [31mfunction timeAgo(iso: string) {[39m
+    [31m  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);[39m
+    [31m  if (d === 0) return \"Hôm nay\";[39m
+    [31m  if (d === 1) return \"Hôm qua\";[39m
+    [31m  if (d < 30) return `${d} ngày trước`;[39m
+    [31m  return new Date(iso).toLocaleDateString(\"vi-VN\");[39m
+    [31m}·[39m
+    [31minterface FormState {[39m
+    [31m  email: string;[39m
+    [31m  password: string;[39m
+    [31m  company_name: string;[39m
+    [31m  company_code: string;[39m
+    [31m  role: string;[39m
+    [31m  status: string;[39m
+    [31m}[39m
+    [31mconst EMPTY_FORM: FormState = {[39m
+    [31m  email: \"\",[39m
+    [31m  password: \"\",[39m
+    [31m  company_name: \"\",[39m
+    [31m  company_code: \"\",[39m
+    [31m  role: \"business\",[39m
+    [31m  status: \"active\",[39m
+    [31m};·[39m
+    [31mexport default function AdminUserManager({ token }: { token: string }) {[39m
+    [31m  const [users, setUsers] = useState<User[]>([]);[39m
+    [31m  const [total, setTotal] = useState(0);[39m
+    [31m  const [fetching, setFetching] = useState(false);·[39m
+    [31m  const [filterRole, setFilterRole] = useState(\"\");[39m
+    [31m  const [filterStatus, setFilterStatus] = useState(\"\");[39m
+    [31m  const [search, setSearch] = useState(\"\");·[39m
+    [31m  const [modal, setModal] = useState<\"create\" | \"edit\" | null>(null);[39m
+    [31m  const [editTarget, setEditTarget] = useState<User | null>(null);[39m
+    [31m  const [form, setForm] = useState<FormState>(EMPTY_FORM);[39m
+    [31m  const [saving, setSaving] = useState(false);[39m
+    [31m  const [formError, setFormError] = useState(\"\");·[39m
+    [31m  const [deleteId, setDeleteId] = useState<string | null>(null);·[39m
+    [31m  const authHdr = { Authorization: `Bearer ${token}` };·[39m
+    [31m  // Close modal on ESC + focus first input when opening.[39m
+    [31m  const firstInputRef = useRef<HTMLInputElement | null>(null);[39m
+    [31m  useEffect(() => {[39m
+    [31m    if (!modal) return;[39m
+    [31m    const onKey = (e: KeyboardEvent) => {[39m
+    [31m      if (e.key === \"Escape\") setModal(null);[39m
+    [31m    };[39m
+    [31m    window.addEventListener(\"keydown\", onKey);[39m
+    [31m    // Defer focus so DOM is mounted.[39m
+    [31m    setTimeout(() => firstInputRef.current?.focus(), 50);[39m
+    [31m    return () => window.removeEventListener(\"keydown\", onKey);[39m
+    [31m  }, [modal]);·[39m
+    [31m  const fetchUsers = useCallback(async () => {[39m
+    [31m    setFetching(true);[39m
+    [31m    try {[39m
+    [31m      const params = new URLSearchParams();[39m
+    [31m      if (filterRole) params.set(\"role\", filterRole);[39m
+    [31m      if (filterStatus) params.set(\"status\", filterStatus);[39m
+    [31m      if (search) params.set(\"q\", search);[39m
+    [31m      const res = await fetch(`${API}/admin/users?${params}`, {[39m
+    [31m        headers: authHdr,[39m
+    [31m      });[39m
+    [31m      if (res.ok) {[39m
+    [31m        const d = await res.json();[39m
+    [31m        setUsers(d.users);[39m
+    [31m        setTotal(d.total);[39m
+    [31m      }[39m
+    [31m    } finally {[39m
+    [31m      setFetching(false);[39m
+    [31m    }[39m
+    [31m  }, [filterRole, filterStatus, search, token]);·[39m
+    [31m  useEffect(() => {[39m
+    [31m    fetchUsers();[39m
+    [31m  }, [fetchUsers]);·[39m
+    [31m  const openCreate = () => {[39m
+    [31m    setForm(EMPTY_FORM);[39m
+    [31m    setFormError(\"\");[39m
+    [31m    setEditTarget(null);[39m
+    [31m    setModal(\"create\");[39m
+    [31m  };·[39m
+    [31m  const openEdit = (u: User) => {[39m
+    [31m    setForm({[39m
+    [31m      email: u.email,[39m
+    [31m      password: \"\",[39m
+    [31m      company_name: u.company_name,[39m
+    [31m      company_code: u.company_code ?? \"\",[39m
+    [31m      role: u.role,[39m
+    [31m      status: u.status,[39m
+    [31m    });[39m
+    [31m    setFormError(\"\");[39m
+    [31m    setEditTarget(u);[39m
+    [31m    setModal(\"edit\");[39m
+    [31m  };·[39m
+    [31m  const handleSave = async () => {[39m
+    [31m    setFormError(\"\");·[39m
+    [31m    // Client-side validation first (fail fast, no wasted request).[39m
+    [31m    if (modal === \"create\") {[39m
+    [31m      if (!form.email || !form.password || !form.company_name) {[39m
+    [31m        setFormError(\"Vui lòng điền đầy đủ thông tin bắt buộc\");[39m
+    [31m        return;[39m
+    [31m      }[39m
+    [31m      const pwErr = validatePassword(form.password);[39m
+    [31m      if (pwErr) {[39m
+    [31m        setFormError(pwErr);[39m
+    [31m        return;[39m
+    [31m      }[39m
+    [31m    } else if (modal === \"edit\" && form.password) {[39m
+    [31m      // Edit: password optional; validate only when admin sets a new one.[39m
+    [31m      const pwErr = validatePassword(form.password);[39m
+    [31m      if (pwErr) {[39m
+    [31m        setFormError(pwErr);[39m
+    [31m        return;[39m
+    [31m      }[39m
+    [31m    }·[39m
+    [31m    // Warn admin if role change risks orphaning historical data.[39m
+    [31m    if (modal === \"edit\" && editTarget && form.role !== editTarget.role) {[39m
+    [31m      if ([39m
+    [31m        !confirm([39m
+    [31m          `Đổi vai trò ${editTarget.role} → ${form.role} có thể gây không nhất quán với hồ sơ + chứng nhận đã tồn tại. Tiếp tục?`,[39m
+    [31m        )[39m
+    [31m      )[39m
+    [31m        return;[39m
+    [31m    }·[39m
+    [31m    setSaving(true);[39m
+    [31m    try {[39m
+    [31m      if (modal === \"create\") {[39m
+    [31m        const res = await fetch(`${API}/admin/users`, {[39m
+    [31m          method: \"POST\",[39m
+    [31m          headers: { ...authHdr, \"Content-Type\": \"application/json\" },[39m
+    [31m          body: JSON.stringify({[39m
+    [31m            email: form.email.trim().toLowerCase(),[39m
+    [31m            password: form.password,[39m
+    [31m            company_name: form.company_name.trim(),[39m
+    [31m            company_code: form.company_code.trim() || undefined,[39m
+    [31m            role: form.role,[39m
+    [31m            status: form.status,[39m
+    [31m          }),[39m
+    [31m        });[39m
+    [31m        if (!res.ok) {[39m
+    [31m          const body = await res.json().catch(() => ({}));[39m
+    [31m          throw new Error([39m
+    [31m            parseApiError(body, `Tạo thất bại (HTTP ${res.status})`),[39m
+    [31m          );[39m
+    [31m        }[39m
+    [31m      } else if (modal === \"edit\" && editTarget) {[39m
+    [31m        const profileBody: Record<string, unknown> = {};[39m
+    [31m        if (form.company_name !== editTarget.company_name)[39m
+    [31m          profileBody.company_name = form.company_name.trim();[39m
+    [31m        if (form.company_code !== (editTarget.company_code ?? \"\"))[39m
+    [31m          profileBody.company_code = form.company_code.trim() || null;[39m
+    [31m        if (form.status !== editTarget.status) profileBody.status = form.status;[39m
+    [31m        if (form.role !== editTarget.role) profileBody.role = form.role;[39m
+    [31m        const passwordChanged = Boolean(form.password);[39m
+    [31m        if (Object.keys(profileBody).length === 0 && !passwordChanged) {[39m
+    [31m          setFormError(\"Không có thay đổi nào để lưu\");[39m
+    [31m          setSaving(false);[39m
+    [31m          return;[39m
+    [31m        }·[39m
+    [31m        if (Object.keys(profileBody).length > 0) {[39m
+    [31m          const res = await fetch(`${API}/admin/users/${editTarget.id}`, {[39m
+    [31m            method: \"PUT\",[39m
+    [31m            headers: { ...authHdr, \"Content-Type\": \"application/json\" },[39m
+    [31m            body: JSON.stringify(profileBody),[39m
+    [31m          });[39m
+    [31m          if (!res.ok) {[39m
+    [31m            const respBody = await res.json().catch(() => ({}));[39m
+    [31m            throw new Error([39m
+    [31m              parseApiError(respBody, `Cập nhật thất bại (HTTP ${res.status})`),[39m
+    [31m            );[39m
+    [31m          }[39m
+    [31m        }·[39m
+    [31m        if (passwordChanged) {[39m
+    [31m          const pwRes = await fetch([39m
+    [31m            `${API}/admin/users/${editTarget.id}/reset-password`,[39m
+    [31m            {[39m
+    [31m              method: \"POST\",[39m
+    [31m              headers: { ...authHdr, \"Content-Type\": \"application/json\" },[39m
+    [31m              body: JSON.stringify({ new_password: form.password }),[39m
+    [31m            },[39m
+    [31m          );[39m
+    [31m          let resetBody: { sessions_revoked?: boolean; self_reset?: boolean } | null =[39m
+    [31m            null;[39m
+    [31m          if (!pwRes.ok) {[39m
+    [31m            const respBody = await pwRes.json().catch(() => ({}));[39m
+    [31m            throw new Error([39m
+    [31m              parseApiError(respBody, `Đổi mật khẩu thất bại (HTTP ${pwRes.status})`),[39m
+    [31m            );[39m
+    [31m          }[39m
+    [31m          resetBody = await pwRes.json().catch(() => null);[39m
+    [31m          if (resetBody?.self_reset) {[39m
+    [31m            setFormError([39m
+    [31m              \"Mật khẩu đã đổi. Vui lòng đăng nhập lại bằng mật khẩu mới.\",[39m
+    [31m            );[39m
+    [31m            await purgeAuthSessionState();[39m
+    [31m            await signoutRedirect();[39m
+    [31m            return;[39m
+    [31m          }[39m
+    [31m        }[39m
+    [31m      }[39m
+    [31m      setModal(null);[39m
+    [31m      fetchUsers();[39m
+    [31m    } catch (e) {[39m
+    [31m      setFormError(e instanceof Error ? e.message : \"Lỗi không xác định\");[39m
+    [31m    } finally {[39m
+    [31m      setSaving(false);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  const handleDelete = async (id: string) => {[39m
+    [31m    if (!confirm(\"Xác nhận xoá user này? Toàn bộ dữ liệu liên quan sẽ bị xoá.\"))[39m
+    [31m      return;[39m
+    [31m    setDeleteId(id);[39m
+    [31m    try {[39m
+    [31m      await fetch(`${API}/admin/users/${id}`, {[39m
+    [31m        method: \"DELETE\",[39m
+    [31m        headers: authHdr,[39m
+    [31m      });[39m
+    [31m      fetchUsers();[39m
+    [31m    } finally {[39m
+    [31m      setDeleteId(null);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  const set =[39m
+    [31m    (k: keyof FormState) =>[39m
+    [31m    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>[39m
+    [31m      setForm((f) => ({ ...f, [k]: e.target.value }));·[39m
+    [31m  const inputCls = \"w-full px-3 py-2.5 rounded-xl text-sm outline-none\";[39m
+    [31m  const inputStyle = {[39m
+    [31m    background: \"#FFFFFF\",[39m
+    [31m    border: \"1px solid #E2E8F0\",[39m
+    [31m    color: \"#0A1F44\",[39m
+    [31m  };·[39m
+    [31m  return ([39m
+    [31m    <div>[39m
+    [31m      {/* Toolbar */}[39m
+    [31m      <div[39m
+    [31m        className=\"grid items-center mb-5 gap-3\"[39m
+    [31m        style={{ gridTemplateColumns: \"1fr auto\" }}[39m
+    [31m      >[39m
+    [31m        <div[39m
+    [31m          className=\"grid gap-2\"[39m
+    [31m          style={{[39m
+    [31m            gridTemplateColumns: \"repeat(auto-fill, minmax(12rem, auto))\",[39m
+    [31m          }}[39m
+    [31m        >[39m
+    [31m          <input[39m
+    [31m            type=\"text\"[39m
+    [31m            placeholder=\"Tìm email, tên...\"[39m
+    [31m            value={search}[39m
+    [31m            onChange={(e) => setSearch(e.target.value)}[39m
+    [31m            className=\"text-sm px-3 py-2 rounded-lg outline-none\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              color: \"#374151\",[39m
+    [31m            }}[39m
+    [31m          />[39m
+    [31m          <select[39m
+    [31m            value={filterRole}[39m
+    [31m            onChange={(e) => setFilterRole(e.target.value)}[39m
+    [31m            className=\"text-sm px-3 py-2 rounded-lg outline-none\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              color: \"#374151\",[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            <option value=\"\">Tất cả loại</option>[39m
+    [31m            <option value=\"business\">Doanh nghiệp</option>[39m
+    [31m            <option value=\"provider\">Tổ chức</option>[39m
+    [31m          </select>[39m
+    [31m          <select[39m
+    [31m            value={filterStatus}[39m
+    [31m            onChange={(e) => setFilterStatus(e.target.value)}[39m
+    [31m            className=\"text-sm px-3 py-2 rounded-lg outline-none\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              color: \"#374151\",[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            <option value=\"\">Tất cả trạng thái</option>[39m
+    [31m            <option value=\"active\">Hoạt động</option>[39m
+    [31m            <option value=\"pending\">Chờ duyệt</option>[39m
+    [31m            <option value=\"suspended\">Đình chỉ</option>[39m
+    [31m          </select>[39m
+    [31m        </div>[39m
+    [31m        <button[39m
+    [31m          onClick={openCreate}[39m
+    [31m          className=\"grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white\"[39m
+    [31m          style={{ gridTemplateColumns: \"auto 1fr\", background: \"#0A1F44\" }}[39m
+    [31m        >[39m
+    [31m          <svg[39m
+    [31m            className=\"w-4 h-4\"[39m
+    [31m            fill=\"none\"[39m
+    [31m            stroke=\"currentColor\"[39m
+    [31m            viewBox=\"0 0 24 24\"[39m
+    [31m          >[39m
+    [31m            <path[39m
+    [31m              strokeLinecap=\"round\"[39m
+    [31m              strokeLinejoin=\"round\"[39m
+    [31m              strokeWidth=\"2\"[39m
+    [31m              d=\"M12 4v16m8-8H4\"[39m
+    [31m            />[39m
+    [31m          </svg>[39m
+    [31m          Thêm user[39m
+    [31m        </button>[39m
+    [31m      </div>·[39m
+    [31m      {/* Table */}[39m
+    [31m      <div[39m
+    [31m        className=\"rounded-xl overflow-hidden\"[39m
+    [31m        style={{ border: \"1px solid #E2E8F0\", background: \"#FFFFFF\" }}[39m
+    [31m      >[39m
+    [31m        {fetching ? ([39m
+    [31m          <div className=\"divide-y\" style={{ borderColor: \"#E2E8F0\" }}>[39m
+    [31m            {[1, 2, 3, 4].map((i) => ([39m
+    [31m              <div key={i} className=\"px-4 py-4 flex items-center gap-4\">[39m
+    [31m                <div className=\"flex-1 space-y-2\">[39m
+    [31m                  <div className=\"shimmer skeleton-text w-48\" />[39m
+    [31m                  <div className=\"shimmer skeleton-text w-32\" />[39m
+    [31m                </div>[39m
+    [31m                <div className=\"shimmer skeleton-text w-20\" />[39m
+    [31m                <div className=\"shimmer skeleton-text w-16\" />[39m
+    [31m              </div>[39m
+    [31m            ))}[39m
+    [31m          </div>[39m
+    [31m        ) : users.length === 0 ? ([39m
+    [31m          <div className=\"px-6 py-12 text-center\">[39m
+    [31m            <svg[39m
+    [31m              className=\"w-12 h-12 mx-auto mb-3\"[39m
+    [31m              fill=\"none\"[39m
+    [31m              stroke=\"#CBD5E1\"[39m
+    [31m              viewBox=\"0 0 24 24\"[39m
+    [31m            >[39m
+    [31m              <path[39m
+    [31m                strokeLinecap=\"round\"[39m
+    [31m                strokeLinejoin=\"round\"[39m
+    [31m                strokeWidth=\"1.5\"[39m
+    [31m                d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"[39m
+    [31m              />[39m
+    [31m            </svg>[39m
+    [31m            <p className=\"font-medium text-sm\" style={{ color: \"#0A1F44\" }}>[39m
+    [31m              Không có user nào[39m
+    [31m            </p>[39m
+    [31m            <p className=\"text-xs mt-1\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m              {filterRole || filterStatus || search[39m
+    [31m                ? \"Thử bỏ bớt filter\"[39m
+    [31m                : \"Chưa có ai đăng ký\"}[39m
+    [31m            </p>[39m
+    [31m          </div>[39m
+    [31m        ) : ([39m
+    [31m          <table className=\"w-full text-sm\">[39m
+    [31m            <thead style={{ background: \"#F5F1E8\" }}>[39m
+    [31m              <tr>[39m
+    [31m                {[\"Email / Tên\", \"Loại\", \"Trạng thái\", \"Ngày tạo\", \"\"].map([39m
+    [31m                  (h) => ([39m
+    [31m                    <th[39m
+    [31m                      key={h}[39m
+    [31m                      className=\"text-left px-4 py-3 text-xs font-medium\"[39m
+    [31m                      style={{ color: \"#6B7280\" }}[39m
+    [31m                    >[39m
+    [31m                      {h}[39m
+    [31m                    </th>[39m
+    [31m                  ),[39m
+    [31m                )}[39m
+    [31m              </tr>[39m
+    [31m            </thead>[39m
+    [31m            <tbody>[39m
+    [31m              {users.map((u, i) => {[39m
+    [31m                const st = STATUS_CFG[u.status] ?? STATUS_CFG.active;[39m
+    [31m                const rl = ROLE_CFG[u.role] ?? ROLE_CFG.business;[39m
+    [31m                return ([39m
+    [31m                  <tr[39m
+    [31m                    key={u.id}[39m
+    [31m                    style={{[39m
+    [31m                      background: i % 2 === 0 ? \"#FFFFFF\" : \"#FFFFFF\",[39m
+    [31m                      borderTop: \"1px solid #E2E8F0\",[39m
+    [31m                    }}[39m
+    [31m                  >[39m
+    [31m                    <td className=\"px-4 py-3\">[39m
+    [31m                      <p className=\"font-medium\" style={{ color: \"#0A1F44\" }}>[39m
+    [31m                        {u.email}[39m
+    [31m                      </p>[39m
+    [31m                      <p[39m
+    [31m                        className=\"text-xs mt-0.5\"[39m
+    [31m                        style={{ color: \"#6B7280\" }}[39m
+    [31m                      >[39m
+    [31m                        {u.company_name}[39m
+    [31m                      </p>[39m
+    [31m                    </td>[39m
+    [31m                    <td className=\"px-4 py-3\">[39m
+    [31m                      <span[39m
+    [31m                        className=\"text-xs font-medium\"[39m
+    [31m                        style={{ color: rl.color }}[39m
+    [31m                      >[39m
+    [31m                        {rl.label}[39m
+    [31m                      </span>[39m
+    [31m                      {!u.is_owner && ([39m
+    [31m                        <span[39m
+    [31m                          className=\"ml-1 text-xs\"[39m
+    [31m                          style={{ color: \"#94A3B8\" }}[39m
+    [31m                        >[39m
+    [31m                          · thành viên[39m
+    [31m                        </span>[39m
+    [31m                      )}[39m
+    [31m                    </td>[39m
+    [31m                    <td className=\"px-4 py-3\">[39m
+    [31m                      <span[39m
+    [31m                        className=\"px-2 py-0.5 rounded-full text-xs\"[39m
+    [31m                        style={{ background: st.bg, color: st.color }}[39m
+    [31m                      >[39m
+    [31m                        {st.label}[39m
+    [31m                      </span>[39m
+    [31m                    </td>[39m
+    [31m                    <td[39m
+    [31m                      className=\"px-4 py-3 text-xs\"[39m
+    [31m                      style={{ color: \"#6B7280\" }}[39m
+    [31m                    >[39m
+    [31m                      {timeAgo(u.created_at)}[39m
+    [31m                    </td>[39m
+    [31m                    <td className=\"px-4 py-3 text-right\">[39m
+    [31m                      <div className=\"grid grid-flow-col items-center gap-3 justify-end\">[39m
+    [31m                        <button[39m
+    [31m                          onClick={() => openEdit(u)}[39m
+    [31m                          className=\"text-xs transition-colors\"[39m
+    [31m                          style={{ color: \"#6B7280\" }}[39m
+    [31m                        >[39m
+    [31m                          Sửa[39m
+    [31m                        </button>[39m
+    [31m                        <button[39m
+    [31m                          onClick={() => handleDelete(u.id)}[39m
+    [31m                          disabled={deleteId === u.id}[39m
+    [31m                          className=\"text-xs hover:text-red-400 transition-colors\"[39m
+    [31m                          style={{ color: \"#6B7280\" }}[39m
+    [31m                        >[39m
+    [31m                          {deleteId === u.id ? \"...\" : \"Xoá\"}[39m
+    [31m                        </button>[39m
+    [31m                      </div>[39m
+    [31m                    </td>[39m
+    [31m                  </tr>[39m
+    [31m                );[39m
+    [31m              })}[39m
+    [31m            </tbody>[39m
+    [31m          </table>[39m
+    [31m        )}[39m
+    [31m      </div>[39m
+    [31m      <p className=\"text-xs mt-2\" style={{ color: \"#6B7280\" }}>[39m
+    [31m        {total} user[39m
+    [31m      </p>·[39m
+    [31m      {/* Modal */}[39m
+    [31m      {modal && ([39m
+    [31m        <Modal onClose={() => setModal(null)}>[39m
+    [31m          <div[39m
+    [31m            className=\"w-full max-w-md rounded-2xl p-6 animate-modal-content\"[39m
+    [31m            style={{[39m
+    [31m              background: \"#FFFFFF\",[39m
+    [31m              border: \"1px solid #E2E8F0\",[39m
+    [31m              boxShadow: \"0 12px 40px rgba(10,31,68,0.18)\",[39m
+    [31m            }}[39m
+    [31m            onClick={(e) => e.stopPropagation()}[39m
+    [31m            onKeyDown={(e) => {[39m
+    [31m              if ((e.metaKey || e.ctrlKey) && e.key === \"Enter\") handleSave();[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            <div className=\"flex items-start justify-between gap-3 mb-5\">[39m
+    [31m              <div className=\"min-w-0\">[39m
+    [31m                <h3[39m
+    [31m                  className=\"text-base font-bold\"[39m
+    [31m                  style={{ color: \"#0A1F44\" }}[39m
+    [31m                >[39m
+    [31m                  {modal === \"create\" ? \"Thêm user mới\" : \"Sửa thông tin user\"}[39m
+    [31m                </h3>[39m
+    [31m                {modal === \"edit\" && editTarget && ([39m
+    [31m                  <p[39m
+    [31m                    className=\"text-xs mt-0.5 truncate font-mono\"[39m
+    [31m                    style={{ color: \"#64748B\" }}[39m
+    [31m                    title={editTarget.email}[39m
+    [31m                  >[39m
+    [31m                    {editTarget.email}[39m
+    [31m                  </p>[39m
+    [31m                )}[39m
+    [31m              </div>[39m
+    [31m              <button[39m
+    [31m                onClick={() => setModal(null)}[39m
+    [31m                aria-label=\"Đóng\"[39m
+    [31m                className=\"w-8 h-8 grid place-items-center rounded-lg flex-shrink-0 transition-colors hover:bg-black/5\"[39m
+    [31m                style={{ color: \"#6B7280\" }}[39m
+    [31m              >[39m
+    [31m                <svg[39m
+    [31m                  className=\"w-4 h-4\"[39m
+    [31m                  fill=\"none\"[39m
+    [31m                  stroke=\"currentColor\"[39m
+    [31m                  viewBox=\"0 0 24 24\"[39m
+    [31m                  strokeWidth=\"2\"[39m
+    [31m                >[39m
+    [31m                  <path[39m
+    [31m                    strokeLinecap=\"round\"[39m
+    [31m                    strokeLinejoin=\"round\"[39m
+    [31m                    d=\"M6 18L18 6M6 6l12 12\"[39m
+    [31m                  />[39m
+    [31m                </svg>[39m
+    [31m              </button>[39m
+    [31m            </div>·[39m
+    [31m            <div className=\"space-y-3\">[39m
+    [31m              {/* Warning for member accounts */}[39m
+    [31m              {modal === \"edit\" &&[39m
+    [31m                editTarget &&[39m
+    [31m                !editTarget.is_owner &&[39m
+    [31m                editTarget.role === \"business\" && ([39m
+    [31m                  <div[39m
+    [31m                    className=\"px-4 py-3 rounded-lg text-xs leading-relaxed\"[39m
+    [31m                    style={{[39m
+    [31m                      background: \"rgba(245,158,11,0.08)\",[39m
+    [31m                      border: \"1px solid rgba(245,158,11,0.2)\",[39m
+    [31m                      color: \"#92400E\",[39m
+    [31m                    }}[39m
+    [31m                  >[39m
+    [31m                    <strong>Tài khoản thành viên.</strong> Được mời bởi chủ tổ[39m
+    [31m                    chức. Thông tin công ty kế thừa từ owner — sửa ở đây có thể[39m
+    [31m                    gây không nhất quán.[39m
+    [31m                  </div>[39m
+    [31m                )}·[39m
+    [31m              {/* Email — editable on create, read-only on edit */}[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  Email {modal === \"create\" && \"*\"}[39m
+    [31m                </label>[39m
+    [31m                {modal === \"create\" ? ([39m
+    [31m                  <input[39m
+    [31m                    ref={firstInputRef}[39m
+    [31m                    type=\"email\"[39m
+    [31m                    required[39m
+    [31m                    value={form.email}[39m
+    [31m                    onChange={set(\"email\")}[39m
+    [31m                    placeholder=\"user@company.vn\"[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={inputStyle}[39m
+    [31m                    autoFocus[39m
+    [31m                  />[39m
+    [31m                ) : ([39m
+    [31m                  <input[39m
+    [31m                    type=\"email\"[39m
+    [31m                    value={editTarget?.email ?? \"\"}[39m
+    [31m                    readOnly[39m
+    [31m                    disabled[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={{[39m
+    [31m                      ...inputStyle,[39m
+    [31m                      background: \"#F5F1E8\",[39m
+    [31m                      cursor: \"not-allowed\",[39m
+    [31m                      color: \"#6B7280\",[39m
+    [31m                    }}[39m
+    [31m                  />[39m
+    [31m                )}[39m
+    [31m              </div>·[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  {modal === \"create\" ? \"Mật khẩu *\" : \"Mật khẩu mới\"}[39m
+    [31m                  {modal === \"edit\" && ([39m
+    [31m                    <span className=\"font-normal\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m                      {\" \"}[39m
+    [31m                      · để trống nếu không đổi[39m
+    [31m                    </span>[39m
+    [31m                  )}[39m
+    [31m                </label>[39m
+    [31m                <input[39m
+    [31m                  ref={modal === \"edit\" ? firstInputRef : undefined}[39m
+    [31m                  type=\"password\"[39m
+    [31m                  value={form.password}[39m
+    [31m                  onChange={set(\"password\")}[39m
+    [31m                  placeholder=\"••••••••••\"[39m
+    [31m                  minLength={modal === \"create\" ? 10 : undefined}[39m
+    [31m                  className={inputCls}[39m
+    [31m                  style={inputStyle}[39m
+    [31m                  autoFocus={modal === \"edit\"}[39m
+    [31m                />[39m
+    [31m                <p className=\"text-xs mt-1\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m                  10+ ký tự, có chữ hoa, chữ thường và số[39m
+    [31m                </p>[39m
+    [31m              </div>·[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  Tên công ty / Tổ chức *[39m
+    [31m                </label>[39m
+    [31m                <input[39m
+    [31m                  type=\"text\"[39m
+    [31m                  required[39m
+    [31m                  value={form.company_name}[39m
+    [31m                  onChange={set(\"company_name\")}[39m
+    [31m                  placeholder=\"Công ty ABC\"[39m
+    [31m                  className={inputCls}[39m
+    [31m                  style={inputStyle}[39m
+    [31m                />[39m
+    [31m              </div>·[39m
+    [31m              <div>[39m
+    [31m                <label[39m
+    [31m                  className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                  style={{ color: \"#6B7280\" }}[39m
+    [31m                >[39m
+    [31m                  Mã số thuế / Giấy phép[39m
+    [31m                </label>[39m
+    [31m                <input[39m
+    [31m                  type=\"text\"[39m
+    [31m                  value={form.company_code}[39m
+    [31m                  onChange={set(\"company_code\")}[39m
+    [31m                  placeholder=\"Tuỳ chọn\"[39m
+    [31m                  className={inputCls}[39m
+    [31m                  style={inputStyle}[39m
+    [31m                />[39m
+    [31m              </div>·[39m
+    [31m              <div className=\"grid grid-cols-1 sm:grid-cols-2 gap-3\">[39m
+    [31m                <div>[39m
+    [31m                  <label[39m
+    [31m                    className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                    style={{ color: \"#6B7280\" }}[39m
+    [31m                  >[39m
+    [31m                    Vai trò[39m
+    [31m                  </label>[39m
+    [31m                  <select[39m
+    [31m                    value={form.role}[39m
+    [31m                    onChange={set(\"role\")}[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={inputStyle}[39m
+    [31m                  >[39m
+    [31m                    <option value=\"business\">Doanh nghiệp</option>[39m
+    [31m                    <option value=\"provider\">Tổ chức cấp chứng nhận</option>[39m
+    [31m                  </select>[39m
+    [31m                </div>[39m
+    [31m                <div>[39m
+    [31m                  <label[39m
+    [31m                    className=\"block text-xs font-medium mb-1.5\"[39m
+    [31m                    style={{ color: \"#6B7280\" }}[39m
+    [31m                  >[39m
+    [31m                    Trạng thái[39m
+    [31m                  </label>[39m
+    [31m                  <select[39m
+    [31m                    value={form.status}[39m
+    [31m                    onChange={set(\"status\")}[39m
+    [31m                    className={inputCls}[39m
+    [31m                    style={inputStyle}[39m
+    [31m                  >[39m
+    [31m                    <option value=\"active\">Hoạt động</option>[39m
+    [31m                    {/* Pending only meaningful for providers (need admin approval) */}[39m
+    [31m                    {form.role === \"provider\" && ([39m
+    [31m                      <option value=\"pending\">Chờ duyệt</option>[39m
+    [31m                    )}[39m
+    [31m                    <option value=\"suspended\">Đình chỉ</option>[39m
+    [31m                  </select>[39m
+    [31m                </div>[39m
+    [31m              </div>·[39m
+    [31m              {formError && ([39m
+    [31m                <div[39m
+    [31m                  role=\"alert\"[39m
+    [31m                  className=\"grid items-start gap-2 px-3 py-2.5 rounded-lg text-xs\"[39m
+    [31m                  style={{[39m
+    [31m                    gridTemplateColumns: \"auto 1fr\",[39m
+    [31m                    background: \"rgba(239,68,68,0.08)\",[39m
+    [31m                    color: \"#991B1B\",[39m
+    [31m                    border: \"1px solid rgba(239,68,68,0.2)\",[39m
+    [31m                  }}[39m
+    [31m                >[39m
+    [31m                  <svg[39m
+    [31m                    className=\"w-4 h-4 mt-0.5\"[39m
+    [31m                    fill=\"none\"[39m
+    [31m                    stroke=\"currentColor\"[39m
+    [31m                    viewBox=\"0 0 24 24\"[39m
+    [31m                    strokeWidth=\"2\"[39m
+    [31m                  >[39m
+    [31m                    <path[39m
+    [31m                      strokeLinecap=\"round\"[39m
+    [31m                      strokeLinejoin=\"round\"[39m
+    [31m                      d=\"M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"[39m
+    [31m                    />[39m
+    [31m                  </svg>[39m
+    [31m                  <span>{formError}</span>[39m
+    [31m                </div>[39m
+    [31m              )}·[39m
+    [31m              <div className=\"flex gap-2 mt-1\">[39m
+    [31m                <button[39m
+    [31m                  type=\"button\"[39m
+    [31m                  onClick={() => setModal(null)}[39m
+    [31m                  disabled={saving}[39m
+    [31m                  className=\"flex-1 py-2.5 rounded-xl font-medium text-sm transition-all\"[39m
+    [31m                  style={{[39m
+    [31m                    background: \"#F5F1E8\",[39m
+    [31m                    color: \"#6B7280\",[39m
+    [31m                    border: \"1px solid #E2E8F0\",[39m
+    [31m                  }}[39m
+    [31m                >[39m
+    [31m                  Huỷ[39m
+    [31m                </button>[39m
+    [31m                <button[39m
+    [31m                  onClick={handleSave}[39m
+    [31m                  disabled={saving}[39m
+    [31m                  className=\"flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all\"[39m
+    [31m                  style={{[39m
+    [31m                    background: saving ? \"rgba(10,31,68,0.4)\" : \"#0A1F44\",[39m
+    [31m                    cursor: saving ? \"wait\" : \"pointer\",[39m
+    [31m                  }}[39m
+    [31m                >[39m
+    [31m                  {saving[39m
+    [31m                    ? \"Đang lưu...\"[39m
+    [31m                    : modal === \"create\"[39m
+    [31m                      ? \"Tạo user\"[39m
+    [31m                      : \"Lưu thay đổi\"}[39m
+    [31m                </button>[39m
+    [31m              </div>[39m
+    [31m            </div>[39m
+    [31m          </div>[39m
+    [31m        </Modal>[39m
+    [31m      )}[39m
+    [31m    </div>[39m
+    [31m  );[39m
+    [31m}[39m
+    [31m"[39m
+
+      86 |     const src = await readFile("components/AdminUserManager.tsx", "utf8");
+      87 |     // Saving state: rgba(15,44,74,0.4) navy translucent — not the old #E2E8F0 with #5B6B7D text
+    > 88 |     expect(src).toMatch(/rgba\(15,44,74,0\.4\)/);
+         |                 ^
+      89 |     expect(src, "old gray disabled state must be removed").not.toMatch(
+      90 |       /saving \? '#E2E8F0' : '#0F2C4A'/,
+      91 |     );
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/30-admin-user-edit-ux.spec.ts:88:17
+
+    Error Context: test-results/30-admin-user-edit-ux-admi-8eeea-sabled-bg-not-gray-on-gray--desktop-chromium/error-context.md
+
+  3 failed
+    [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:23:7 › admin unified auth › legacy /admin token unlocks analytics + audit-logs + overdue 
+    [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:65:7 › admin user edit UX › edit mode shows email as read-only field (not just title) 
+    [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:84:7 › admin user edit UX › save button uses navy disabled bg (not gray-on-gray) 
+  1 skipped
+  9 passed (6.6s)
+
+# Finished: 2026-09-12T09:16:27-04:00
+# Exit code: 1

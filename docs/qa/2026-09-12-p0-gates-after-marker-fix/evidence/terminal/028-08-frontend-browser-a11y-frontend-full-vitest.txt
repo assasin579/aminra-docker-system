@@ -1,0 +1,12 @@
+# Domain: 08-frontend-browser-a11y
+# Step: frontend-full-vitest
+# Started: 2026-09-12T09:10:22-04:00
+# Command: cd frontend/aminra-web && npm test
+
+
+> aminra-web@0.1.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+

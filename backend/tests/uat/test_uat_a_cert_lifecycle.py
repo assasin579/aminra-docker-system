@@ -245,7 +245,7 @@ class TestBoundaryValues:
         rid = uuid.uuid4().hex[:6]
         r = client.post(
             "/auth/business/register",
-            json={"email": f"long-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            json={"email": f"long-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
                   "company_name": long, "company_code": f"LN-{rid}"},
         )
         assert r.status_code in (201, 400, 422)
@@ -259,7 +259,7 @@ class TestBoundaryValues:
         rid = uuid.uuid4().hex[:6]
         r = client.post(
             "/auth/business/register",
-            json={"email": f"too-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            json={"email": f"too-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
                   "company_name": long, "company_code": f"TL-{rid}"},
         )
         assert r.status_code == 422
@@ -272,7 +272,7 @@ class TestBoundaryValues:
         rid = uuid.uuid4().hex[:6]
         r = client.post(
             "/auth/business/register",
-            json={"email": f"empty-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            json={"email": f"empty-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
                   "company_name": "", "company_code": f"E-{rid}"},
         )
         assert r.status_code == 422
@@ -282,7 +282,7 @@ class TestBoundaryValues:
         rid = uuid.uuid4().hex[:6]
         r = client.post(
             "/auth/business/register",
-            json={"email": f"vn-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            json={"email": f"vn-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
                   "company_name": "Công ty TNHH Halal Việt 越南", "company_code": f"VN-{rid}"},
         )
         assert r.status_code in (201, 400, 422)
@@ -335,7 +335,7 @@ class TestBoundaryValues:
         rid = uuid.uuid4().hex[:6]
         r = client.post(
             "/auth/business/register",
-            json={"email": f"code-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            json={"email": f"code-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
                   "company_name": "Halal", "company_code": f"CODE-AB-12-{rid}"},
         )
         assert r.status_code in (201, 400, 422)
@@ -440,7 +440,7 @@ class TestNegativeSecurity:
         rid = uuid.uuid4().hex[:6]
         r = client.post(
             "/auth/business/register",
-            json={"email": f"xss-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            json={"email": f"xss-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
                   "company_name": "<script>alert(1)</script>", "company_code": f"XS-{rid}"},
         )
         assert r.status_code in (201, 400, 422)
@@ -449,7 +449,7 @@ class TestNegativeSecurity:
         """UAT-A-44: same register payload twice — second is idempotent or 409."""
         rid = uuid.uuid4().hex[:6]
         payload = {
-            "email": f"replay-{rid}@aminra-qa.com", "password": "P@ss12345!",
+            "email": f"replay-{rid}@aminra-qa.com", "password": "StrongP@ss2026",
             "company_name": "Replay", "company_code": f"RP-{rid}",
         }
         r1 = client.post("/auth/business/register", json=payload)

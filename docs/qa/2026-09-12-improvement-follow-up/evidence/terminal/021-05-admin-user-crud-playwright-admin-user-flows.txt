@@ -1,0 +1,27 @@
+# Domain: 05-admin-user-crud
+# Step: playwright-admin-user-flows
+# Started: 2026-09-12T10:25:37-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/05-admin-flow.spec.ts e2e/20-admin-unified-auth.spec.ts e2e/21-admin-pages-token-pattern.spec.ts e2e/30-admin-user-edit-ux.spec.ts --project=desktop-chromium
+
+
+Running 13 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › e2e/05-admin-flow.spec.ts:4:7 › 05. Admin workflow › Admin can list pending providers (145ms)
+  ✓   2 [desktop-chromium] › e2e/05-admin-flow.spec.ts:13:7 › 05. Admin workflow › Admin can list doc types (47ms)
+  ✓   3 [desktop-chromium] › e2e/05-admin-flow.spec.ts:20:7 › 05. Admin workflow › Admin can list templates (54ms)
+  ✓   4 [desktop-chromium] › e2e/05-admin-flow.spec.ts:27:7 › 05. Admin workflow › Admin can list placeholders (52ms)
+  ✓   5 [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:21:7 › admin unified auth › Keycloak platform_admin token unlocks analytics + audit-logs + overdue (3.8s)
+  -   6 [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:49:7 › admin unified auth › non-admin JWT is rejected by admin endpoints (regression)
+  ✓   7 [desktop-chromium] › e2e/21-admin-pages-token-pattern.spec.ts:32:5 › admin pages use shared readAdminToken helper (27ms)
+  ✓   8 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:26:7 › admin user edit UX › AdminUserManager imports parseApiError + validatePassword (14ms)
+  ✓   9 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:38:7 › admin user edit UX › modal supports ESC + backdrop close + focus first input (27ms)
+  ✓  10 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:53:7 › admin user edit UX › password placeholder + helper text match BE rule (10+ chars upper/lower/digit) (16ms)
+  ✓  11 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:65:7 › admin user edit UX › edit mode shows email as read-only field (not just title) (8ms)
+  ✓  12 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:73:7 › admin user edit UX › role-change confirm + 'Pending' status hidden for business (8ms)
+  ✓  13 [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:84:7 › admin user edit UX › save button uses navy disabled bg (not gray-on-gray) (6ms)
+
+  1 skipped
+  12 passed (6.6s)
+
+# Finished: 2026-09-12T10:25:46-04:00
+# Exit code: 0

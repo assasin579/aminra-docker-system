@@ -1,0 +1,27 @@
+# Domain: 00-env
+# Step: date-and-git-boundary
+# Started: 2026-09-12T08:38:09-04:00
+# Command: date -Is; git branch --show-current; git rev-parse --short HEAD; git status --short; git diff --stat
+
+2026-09-12T08:38:09-04:00
+dev
+34d0f33
+ M backend/auth/submission_router.py
+ M backend/services/cert_lifecycle.py
+ M docs/qa/2026-09-12-customer-ready-full-system-rerun-report-fixed/evidence/terminal/032-08-frontend-browser-a11y-playwright-full-matrix.txt
+ M scripts/qa/run-customer-ready-full-system-qa.sh
+?? backend/tests/test_certificate_lifecycle_scope.py
+?? backend/tests/test_certificate_number_concurrency.py
+?? backend/tests/test_submission_document_lock.py
+?? backend/tests/test_submission_state_machine.py
+?? docs/qa/2026-09-12-p0-auth-after-demo-repair/
+?? docs/qa/2026-09-12-p0-gates-after-lifecycle-fixes/
+?? scripts/qa/repair-demo-accounts.sh
+ backend/auth/submission_router.py                      |  5 +++--
+ backend/services/cert_lifecycle.py                     |  7 ++++++-
+ ...08-frontend-browser-a11y-playwright-full-matrix.txt |  1 +
+ scripts/qa/run-customer-ready-full-system-qa.sh        | 18 +++++++++++++++---
+ 4 files changed, 25 insertions(+), 6 deletions(-)
+
+# Finished: 2026-09-12T08:38:09-04:00
+# Exit code: 0

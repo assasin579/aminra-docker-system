@@ -1,0 +1,30 @@
+# Domain: 09-load-chaos-deploy
+# Step: public-trace-load-profile
+# Started: 2026-09-12T10:41:04-04:00
+# Command: python3 - <<'PY'
+import concurrent.futures, pathlib, re, statistics, subprocess, time
+term=pathlib.Path('docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal')
+ids=[]
+for f in term.glob('*seed-deterministic-public-trace-fixture*.txt'):
+    ids += re.findall(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', f.read_text(errors='ignore'))
+if not ids:
+    raise SystemExit('no public_trace_id found')
+url=f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{ids[0]}'
+def one(_):
+    t=time.perf_counter()
+    cp=subprocess.run(['curl','-sS','-o','/dev/null','-w','%{http_code}',url], text=True, capture_output=True, timeout=20)
+    return (time.perf_counter()-t)*1000, cp.stdout.strip()
+with concurrent.futures.ThreadPoolExecutor(max_workers=50) as ex:
+    results=list(ex.map(one, range(200)))
+lats=[x[0] for x in results]
+errs=[x for x in results if x[1] != '200']
+p95=statistics.quantiles(lats,n=100)[94]
+print({'requests':len(results),'errors':len(errs),'p95_ms':round(p95,1),'target_ms':800})
+if errs or p95 >= 800:
+    raise SystemExit(1)
+PY
+
+{'requests': 200, 'errors': 0, 'p95_ms': 2688.4, 'target_ms': 800}
+
+# Finished: 2026-09-12T10:41:12-04:00
+# Exit code: 1

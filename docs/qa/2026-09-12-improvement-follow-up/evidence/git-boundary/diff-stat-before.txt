@@ -1,0 +1,21 @@
+ backend/auth/jwt_utils.py                          |  7 +++++
+ backend/auth/models.py                             | 17 ++++++++++
+ backend/auth/submission_router.py                  |  5 +--
+ backend/pytest.ini                                 |  3 ++
+ backend/services/cert_lifecycle.py                 |  7 ++++-
+ backend/services/data_export.py                    |  8 ++---
+ backend/tests/test_audit_log_integration.py        |  3 +-
+ backend/tests/test_data_deletion_unit.py           |  3 +-
+ backend/tests/test_unauth_route_boundaries.py      |  5 ++-
+ backend/tests/uat/conftest.py                      |  3 ++
+ backend/tests/uat/test_uat_a_cert_lifecycle.py     | 14 ++++-----
+ ...rontend-browser-a11y-playwright-full-matrix.txt |  1 +
+ frontend/aminra-web/e2e/10-supply-chain.spec.ts    |  5 ++-
+ .../aminra-web/e2e/14-cuj-cert-lifecycle.spec.ts   | 10 +++---
+ .../aminra-web/e2e/20-admin-unified-auth.spec.ts   | 25 ++++++---------
+ .../aminra-web/e2e/23-cross-context-logout.spec.ts |  8 ++---
+ .../aminra-web/e2e/28-admin-template-view.spec.ts  | 16 +++-------
+ .../aminra-web/e2e/30-admin-user-edit-ux.spec.ts   |  6 ++--
+ .../e2e/31-revision-panel-visibility.spec.ts       |  2 +-
+ scripts/qa/run-customer-ready-full-system-qa.sh    | 36 ++++++++++++++++++----
+ 20 files changed, 120 insertions(+), 64 deletions(-)

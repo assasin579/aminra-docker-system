@@ -183,11 +183,12 @@ class TestCertStatusChangeEmitsAuditLog:
                  business_tenant=uuid4(),
              )),
             # revoke_cert() preflight check
-            ("SELECT id, cert_number, business_tenant, status, revoked_at",
+            ("SELECT id, cert_number, business_tenant, issued_by, status, revoked_at",
              FakeRecord(
                  id=cert_id,
                  cert_number="HALAL-2026-0001",
                  business_tenant=uuid4(),
+                 issued_by=provider_user["sub"],
                  status="active",
                  revoked_at=None,
              )),

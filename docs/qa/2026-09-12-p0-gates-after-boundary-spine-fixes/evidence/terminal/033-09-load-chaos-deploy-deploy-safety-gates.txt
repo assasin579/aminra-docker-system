@@ -1,0 +1,27 @@
+# Domain: 09-load-chaos-deploy
+# Step: deploy-safety-gates
+# Started: 2026-09-12T09:19:40-04:00
+# Command: bash -n scripts/deploy-from-registry.sh; set +e; DRY_RUN=true scripts/deploy-from-registry.sh >/tmp/aminra-deploy-default.txt 2>&1; ec1=$?; DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true DRY_RUN=true scripts/deploy-from-registry.sh >/tmp/aminra-deploy-maint.txt 2>&1; ec2=$?; DEPLOY_STRATEGY=rolling DEPLOY_WINDOW_APPROVED=true DRY_RUN=true scripts/deploy-from-registry.sh >/tmp/aminra-deploy-rolling.txt 2>&1; ec3=$?; set -e; echo default_exit=$ec1 maintenance_exit=$ec2 rolling_exit=$ec3; cat /tmp/aminra-deploy-default.txt /tmp/aminra-deploy-maint.txt /tmp/aminra-deploy-rolling.txt; test $ec1 -ne 0; test $ec2 -eq 0; test $ec3 -ne 0
+
+default_exit=64 maintenance_exit=0 rolling_exit=65
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+ERROR: set DEPLOY_STRATEGY=maintenance with an approved window, or use an external rolling/blue-green deploy path.
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+==> DRY_RUN passed deploy safety gate for tag: latest
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+ERROR: rolling/blue-green is not implemented by this Docker Compose script; use an orchestrator/runbook that proves overlap + health-gated cutover.
+
+# Finished: 2026-09-12T09:19:40-04:00
+# Exit code: 0

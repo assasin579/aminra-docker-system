@@ -1,0 +1,68 @@
+# Domain: 04-submission-cert-lifecycle
+# Step: submission-revisions-sla-and-cert-lifecycle
+# Started: 2026-09-12T09:15:38-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_submission_revisions_unit.py tests/test_submission_revisions_integration.py tests/test_submission_sla_unit.py tests/test_submission_sla_integration.py tests/uat/test_uat_a_cert_lifecycle.py tests/uat/test_uat_d_cert_verify_recall.py tests/test_cert_lifecycle_unit.py tests/test_cert_lifecycle_integration.py tests/test_certificate_lifecycle_scope.py tests/test_submission_state_machine.py tests/test_submission_document_lock.py tests/test_certificate_number_concurrency.py tests/test_certificate_pdf_unit.py tests/test_certificate_pdf_integration.py tests/test_certificate_pdf_integrity_smoke.py tests/test_public_verify_blockchain.py'
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 193 items
+
+tests/test_submission_revisions_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                      [  5%][0m
+tests/test_submission_revisions_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                  [  9%][0m
+tests/test_submission_sla_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                [ 13%][0m
+tests/test_submission_sla_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                        [ 17%][0m
+tests/uat/test_uat_a_cert_lifecycle.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[31mF[0m[32m.[0m[32m.[0m[31mF[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31mF[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[31m [ 34%]
+[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[31m                                                        [ 43%][0m
+tests/uat/test_uat_d_cert_verify_recall.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31m [ 58%]
+[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31m                                                    [ 69%][0m
+tests/test_cert_lifecycle_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                             [ 74%][0m
+tests/test_cert_lifecycle_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                           [ 77%][0m
+tests/test_certificate_lifecycle_scope.py [32m.[0m[32m.[0m[31m                             [ 78%][0m
+tests/test_submission_state_machine.py [32m.[0m[32m.[0m[32m.[0m[31m                               [ 79%][0m
+tests/test_submission_document_lock.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                              [ 81%][0m
+tests/test_certificate_number_concurrency.py [32m.[0m[31m                           [ 82%][0m
+tests/test_certificate_pdf_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                     [ 91%][0m
+tests/test_certificate_pdf_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                          [ 93%][0m
+tests/test_certificate_pdf_integrity_smoke.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                      [ 96%][0m
+tests/test_public_verify_blockchain.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                           [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_ TestBoundaryValues.test_a21_company_name_at_max_length_accepted_or_rejected __[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:251: in test_a21_company_name_at_max_length_accepted_or_rejected
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m__________ TestBoundaryValues.test_a24_unicode_company_name_accepted ___________[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:288: in test_a24_unicode_company_name_accepted
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m_______ TestBoundaryValues.test_a29_company_code_alphanumeric_with_dash ________[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:341: in test_a29_company_code_alphanumeric_with_dash
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m_______ TestNegativeSecurity.test_a43_xss_in_company_name_stored_safely ________[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:446: in test_a43_xss_in_company_name_stored_safely
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m_______ TestNegativeSecurity.test_a44_replay_register_same_request_twice _______[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:457: in test_a44_replay_register_same_request_twice
+    [0m[94massert[39;49;00m r1.status_code == [94m201[39;49;00m[90m[39;49;00m
+[1m[31mE   assert 502 == 201[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestBoundaryValues::test_a21_company_name_at_max_length_accepted_or_rejected[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestBoundaryValues::test_a24_unicode_company_name_accepted[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestBoundaryValues::test_a29_company_code_alphanumeric_with_dash[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestNegativeSecurity::test_a43_xss_in_company_name_stored_safely[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestNegativeSecurity::test_a44_replay_register_same_request_twice[0m - assert 502 == 201
+[31m================== [31m[1m5 failed[0m, [32m105 passed[0m, [33m83 skipped[0m[31m in 13.54s[0m[31m ==================[0m
+
+# Finished: 2026-09-12T09:15:56-04:00
+# Exit code: 1

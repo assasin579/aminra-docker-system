@@ -1,0 +1,423 @@
+# Domain: 06-pdf-doc-versioning
+# Step: pdf-renderer-document-versioning
+# Started: 2026-09-12T08:52:27-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/integration/test_pdf_full_pipeline.py tests/test_schema_aware_data_unit.py tests/test_pdf_filter_pipeline_unit.py tests/test_pdf_data_aggregator_unit.py tests/test_document_versioning_unit.py tests/test_document_versioning_integration.py tests/test_document_versioning_sec.py tests/test_document_versioning_func.py tests/test_document_versioning_regression.py'
+
+EEEEEEEEEEEEE.....................................................FFFFFF [ 20%]
+FFFFFFFFFF.............................................................. [ 41%]
+...sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 62%]
+ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 82%]
+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssss              [100%]
+==================================== ERRORS ====================================
+___ ERROR at setup of test_full_pipeline_renders_valid_pdf[company_profile] ____
+'test_full_pipeline_renders_valid_pdf[company_profile]' requested an async fixture 'renderer', with no plugin or hook that handled it. This is an error, as pytest does not natively support it.
+See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+_____ ERROR at setup of test_full_pipeline_renders_valid_pdf[halal_policy] _____
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[halal_policy]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+______ ERROR at setup of test_full_pipeline_renders_valid_pdf[has_manual] ______
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[has_manual]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[internal_halal_committee] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[internal_halal_committee]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[ingredient_raw_material] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[ingredient_raw_material]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+__ ERROR at setup of test_full_pipeline_renders_valid_pdf[process_flow_chart] __
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[process_flow_chart]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_______ ERROR at setup of test_full_pipeline_renders_valid_pdf[generic] ________
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[generic]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[sop_raw_material_receiving] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[sop_raw_material_receiving]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[sop_storage_segregation] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[sop_storage_segregation]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[sop_production_operation] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[sop_production_operation]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[sop_cleaning_sanitation] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[sop_cleaning_sanitation]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[sop_handling_nonconformances] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[sop_handling_nonconformances]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+_ ERROR at setup of test_full_pipeline_renders_valid_pdf[sop_complaint_recall] _
+
+self = <Coroutine test_full_pipeline_renders_valid_pdf[sop_complaint_recall]>
+
+    def setup(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        if runner_fixture_id not in self.fixturenames:
+            self.fixturenames.append(runner_fixture_id)
+        # When loop factories are configured, resolve the loop factory
+        # fixture early so that a factory variant change cascades cache
+        # invalidation before any async fixture checks its cache.
+        hook_caller = self.config.hook.pytest_asyncio_loop_factories
+        if hook_caller.get_hookimpls():
+            _ = self._request.getfixturevalue(_asyncio_loop_factory.__name__)
+>       return super().setup()
+               ^^^^^^^^^^^^^^^
+E       AssertionError
+
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: AssertionError
+=================================== FAILURES ===================================
+____________________ test_fetch_returns_bundle_with_company ____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_______________ test_tenant_isolation_passes_tenant_id_to_query ________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+____________________ test_no_owner_row_returns_none_company ____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_____________________ test_blank_tenant_id_short_circuits ______________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______________________ test_admin_cfg_loads_when_present _______________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_____________________ test_admin_cfg_missing_returns_empty _____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________________ test_admin_cfg_invalid_json_does_not_crash __________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________________ test_docx_text_extracted ___________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______________________ test_extra_assets_indexed_by_stem _______________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+____________________ test_assets_dir_missing_returns_empty _____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________________ test_cache_hit_within_ttl_reuses_db_query ___________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________ test_cache_returns_fresh_payload_on_hit ____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+________________________ test_cache_isolates_per_tenant ________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______________________ test_invalidate_cache_forces_fetch ______________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_______________________ test_versions_hash_deterministic _______________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________________ test_versions_change_when_company_changes ___________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+=============================== warnings summary ===============================
+tests/test_document_versioning_integration.py:25
+  /app/tests/test_document_versioning_integration.py:25: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.integration
+
+tests/test_document_versioning_sec.py:24
+  /app/tests/test_document_versioning_sec.py:24: PytestUnknownMarkWarning: Unknown pytest.mark.security - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.security
+
+tests/test_document_versioning_func.py:24
+  /app/tests/test_document_versioning_func.py:24: PytestUnknownMarkWarning: Unknown pytest.mark.functional - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.functional
+
+tests/test_document_versioning_regression.py:23
+  /app/tests/test_document_versioning_regression.py:23: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_pdf_data_aggregator_unit.py::test_fetch_returns_bundle_with_company
+FAILED tests/test_pdf_data_aggregator_unit.py::test_tenant_isolation_passes_tenant_id_to_query
+FAILED tests/test_pdf_data_aggregator_unit.py::test_no_owner_row_returns_none_company
+FAILED tests/test_pdf_data_aggregator_unit.py::test_blank_tenant_id_short_circuits
+FAILED tests/test_pdf_data_aggregator_unit.py::test_admin_cfg_loads_when_present
+FAILED tests/test_pdf_data_aggregator_unit.py::test_admin_cfg_missing_returns_empty
+FAILED tests/test_pdf_data_aggregator_unit.py::test_admin_cfg_invalid_json_does_not_crash
+FAILED tests/test_pdf_data_aggregator_unit.py::test_docx_text_extracted - Fai...
+FAILED tests/test_pdf_data_aggregator_unit.py::test_extra_assets_indexed_by_stem
+FAILED tests/test_pdf_data_aggregator_unit.py::test_assets_dir_missing_returns_empty
+FAILED tests/test_pdf_data_aggregator_unit.py::test_cache_hit_within_ttl_reuses_db_query
+FAILED tests/test_pdf_data_aggregator_unit.py::test_cache_returns_fresh_payload_on_hit
+FAILED tests/test_pdf_data_aggregator_unit.py::test_cache_isolates_per_tenant
+FAILED tests/test_pdf_data_aggregator_unit.py::test_invalidate_cache_forces_fetch
+FAILED tests/test_pdf_data_aggregator_unit.py::test_versions_hash_deterministic
+FAILED tests/test_pdf_data_aggregator_unit.py::test_versions_change_when_company_changes
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[company_profile]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[halal_policy]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[has_manual]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[internal_halal_committee]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[ingredient_raw_material]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[process_flow_chart]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[generic]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[sop_raw_material_receiving]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[sop_storage_segregation]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[sop_production_operation]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[sop_cleaning_sanitation]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[sop_handling_nonconformances]
+ERROR tests/integration/test_pdf_full_pipeline.py::test_full_pipeline_renders_valid_pdf[sop_complaint_recall]
+16 failed, 118 passed, 200 skipped, 4 warnings, 13 errors in 2.85s
+
+# Finished: 2026-09-12T08:52:34-04:00
+# Exit code: 1

@@ -1,0 +1,49 @@
+# Domain: 08-frontend-browser-a11y
+# Step: playwright-accessibility-mobile-critical
+# Started: 2026-09-12T08:55:01-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/accessibility.spec.ts e2e/19-mobile-responsive-audit.spec.ts --project=desktop-chromium
+
+
+Running 19 tests using 1 worker
+
+  -   1 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › landing: mobile responsive checks
+  -   2 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-login: mobile responsive checks
+  -   3 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-register: mobile responsive checks
+  -   4 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-login: mobile responsive checks
+  -   5 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-register: mobile responsive checks
+  -   6 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › forgot-password: mobile responsive checks
+  -   7 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › reset-password: mobile responsive checks
+  -   8 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › privacy: mobile responsive checks
+  -   9 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › terms: mobile responsive checks
+  -  10 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › chat: mobile responsive checks
+  -  11 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-active: mobile responsive checks
+  -  12 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-404: mobile responsive checks
+[a11y:landing] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+  ✓  13 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations (6.8s)
+  ✓  14 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations (4.2s)
+[a11y:provider-login] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+  ✓  15 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations (3.9s)
+  ✓  16 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › forgot-password — no critical a11y violations (3.4s)
+  ✓  17 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › privacy — no critical a11y violations (3.7s)
+  ✓  18 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › terms — no critical a11y violations (3.6s)
+  ✓  19 [desktop-chromium] › e2e/accessibility.spec.ts:55:7 › Layer 3 — Accessibility (public pages) › verify page (404 state) — no critical a11y violations (3.3s)
+
+  12 skipped
+  7 passed (31.3s)
+
+# Finished: 2026-09-12T08:55:35-04:00
+# Exit code: 0

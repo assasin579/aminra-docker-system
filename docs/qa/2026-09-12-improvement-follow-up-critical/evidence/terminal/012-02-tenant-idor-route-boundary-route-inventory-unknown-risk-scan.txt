@@ -1,0 +1,18 @@
+# Domain: 02-tenant-idor-route-boundary
+# Step: route-inventory-unknown-risk-scan
+# Started: 2026-09-12T10:34:45-04:00
+# Command: python3 - <<'PY'
+from pathlib import Path
+p=Path('docs/qa/route-auth-tenant-inventory.md')
+text=p.read_text() if p.exists() else ''
+print('public_unknown_count=', text.count('auth signal: public/unknown'))
+print('tenant_unknown_count=', text.count('tenant note: unknown'))
+print('NOTE: counts > 0 require executable negative tests before production GO')
+PY
+
+public_unknown_count= 15
+tenant_unknown_count= 13
+NOTE: counts > 0 require executable negative tests before production GO
+
+# Finished: 2026-09-12T10:34:46-04:00
+# Exit code: 0

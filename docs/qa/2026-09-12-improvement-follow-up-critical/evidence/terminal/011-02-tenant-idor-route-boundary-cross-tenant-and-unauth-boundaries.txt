@@ -1,0 +1,26 @@
+# Domain: 02-tenant-idor-route-boundary
+# Step: cross-tenant-and-unauth-boundaries
+# Started: 2026-09-12T10:34:40-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_keycloak_cross_tenant_attack.py tests/test_dual_auth_cross_tenant_unit.py tests/test_unauth_route_boundaries.py tests/test_certificate_pdf_integrity_smoke.py tests/test_generate_document_export_security.py tests/test_kc_sub_fk_smoke.py tests/uat/test_uat_c_tenant_isolation.py'
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 120 items
+
+tests/test_keycloak_cross_tenant_attack.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m    [ 21%][0m
+tests/test_dual_auth_cross_tenant_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                         [ 26%][0m
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m          [ 47%][0m
+tests/test_certificate_pdf_integrity_smoke.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                      [ 51%][0m
+tests/test_generate_document_export_security.py [32m.[0m[32m                        [ 52%][0m
+tests/test_kc_sub_fk_smoke.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m                                    [ 58%][0m
+tests/uat/test_uat_c_tenant_isolation.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m [ 84%]
+[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[32m                                                      [100%][0m
+
+[32m======================== [32m[1m65 passed[0m, [33m55 skipped[0m[32m in 1.94s[0m[32m ========================[0m
+
+# Finished: 2026-09-12T10:34:45-04:00
+# Exit code: 0

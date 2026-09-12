@@ -17,6 +17,7 @@ Design principles:
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import time
 import uuid
@@ -53,6 +54,8 @@ def backend_unreachable(client) -> bool:
 def psql(sql: str, *, check: bool = True) -> subprocess.CompletedProcess:
     """Run a parameterless psql command. Use only with constant SQL — never
     with user-controlled input (this helper does not parameterize)."""
+    if shutil.which("docker") is None:
+        pytest.skip("docker CLI not available in this runtime; DB invariant must run from host QA context")
     return subprocess.run(
         [
             "docker", "exec", DB_CONTAINER,

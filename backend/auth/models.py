@@ -31,6 +31,16 @@ class BusinessRegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one digit")
         return v
 
+    @field_validator("company_name")
+    @classmethod
+    def company_name_rejects_markup(cls, v):
+        # Keycloak stores company_name in profile fields. Reject obvious HTML/
+        # script markup before calling the IdP so hostile input cannot turn
+        # into a 502 from Keycloak validation or be persisted unsafely.
+        if "<" in v or ">" in v:
+            raise ValueError("Company name must not contain HTML markup")
+        return v
+
 
 class ProviderRegisterRequest(BaseModel):
     email: EmailStr
@@ -49,6 +59,13 @@ class ProviderRegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one lowercase letter")
         if not re.search(r"[0-9]", v):
             raise ValueError("Password must contain at least one digit")
+        return v
+
+    @field_validator("company_name")
+    @classmethod
+    def company_name_rejects_markup(cls, v):
+        if "<" in v or ">" in v:
+            raise ValueError("Company name must not contain HTML markup")
         return v
 
 

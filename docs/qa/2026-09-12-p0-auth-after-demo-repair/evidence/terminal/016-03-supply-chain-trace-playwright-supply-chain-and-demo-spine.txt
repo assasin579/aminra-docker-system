@@ -1,0 +1,48 @@
+# Domain: 03-supply-chain-trace
+# Step: playwright-supply-chain-and-demo-spine
+# Started: 2026-09-12T08:29:09-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/10-supply-chain.spec.ts e2e/33-batch1-workflow-integrity.spec.ts e2e/40-supply-chain-create-contracts.spec.ts e2e/38-demo-spine-keycloak.spec.ts --project=desktop-chromium
+
+
+Running 13 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers (1.6s)
+  ✓   2 [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials (2.0s)
+  ✓   3 [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches (1.9s)
+  ✓   4 [desktop-chromium] › e2e/10-supply-chain.spec.ts:25:7 › 10. Supply chain + Certificate verification › Public verify bogus cert number → 404 (38ms)
+  ✘   5 [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible (1.8s)
+  ✓   6 [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:39:7 › Phase 1 Batch 1 — workflow integrity › static guards — code reflects all batch 1 fixes (80ms)
+  -   7 [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:76:7 › Phase 1 Batch 1 — workflow integrity › DB-level: status CHECK constraint blocks garbage values
+  -   8 [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:103:7 › Phase 1 Batch 1 — workflow integrity › approve-final rejects when no evaluation saved (W3-M11)
+  ✓   9 [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:132:7 › Phase 1 Batch 1 — workflow integrity › audit_logs trigger blocks UPDATE/DELETE (decision #4) (376ms)
+  ✓  10 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (4.4s)
+  ✓  11 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.0s)
+  -  12 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+  ✓  13 [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:32:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api (508ms)
+
+
+  1) [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected value: [32m401[39m
+    Received array: [31m[200, 307][39m
+
+      34 |       headers: { Authorization: `Bearer ${biz.token}` },
+      35 |     });
+    > 36 |     expect([200, 307]).toContain(r.status());
+         |                        ^
+      37 |   });
+      38 | });
+      39 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/10-supply-chain.spec.ts:36:24
+
+    Error Context: test-results/10-supply-chain-10-Supply--a65d9-cations-endpoint-accessible-desktop-chromium/error-context.md
+
+  1 failed
+    [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible 
+  3 skipped
+  9 passed (20.1s)
+
+# Finished: 2026-09-12T08:29:32-04:00
+# Exit code: 1

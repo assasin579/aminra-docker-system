@@ -1,0 +1,63 @@
+# Domain: 07-jobs-audit-data-security
+# Step: jobs-audit-data-upload
+# Started: 2026-09-12T09:10:14-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_jobs_unit.py tests/test_jobs_integration.py tests/test_anchor_job_unit.py tests/test_data_export_unit.py tests/test_data_export_integration.py tests/test_data_deletion_unit.py tests/test_data_deletion_integration.py tests/test_audit_log_unit.py tests/test_audit_log_integration.py tests/test_audit_log_coverage.py tests/test_upload_validation.py tests/test_config_tunables.py'
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 92 items
+
+tests/test_jobs_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                    [ 14%][0m
+tests/test_jobs_integration.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m                                      [ 18%][0m
+tests/test_anchor_job_unit.py [33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                      [ 23%][0m
+tests/test_data_export_unit.py [32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                               [ 35%][0m
+tests/test_data_export_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                               [ 40%][0m
+tests/test_data_deletion_unit.py [32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                                 [ 47%][0m
+tests/test_data_deletion_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                             [ 52%][0m
+tests/test_audit_log_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                      [ 76%][0m
+tests/test_audit_log_integration.py [32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                                 [ 80%][0m
+tests/test_audit_log_coverage.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[32m.[0m[31m                                  [ 86%][0m
+tests/test_upload_validation.py [33ms[0m[32m.[0m[31m                                       [ 89%][0m
+tests/test_config_tunables.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31m                                 [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_____________ TestSecretFiltering.test_password_hash_never_appears _____________[0m
+[1m[31mtests/test_data_export_unit.py[0m:140: in test_password_hash_never_appears
+    [0m[94massert[39;49;00m [33m"[39;49;00m[33mpassword_hash[39;49;00m[33m"[39;49;00m [95mnot[39;49;00m [95min[39;49;00m as_text[90m[39;49;00m
+[1m[31mE   assert 'password_hash' not in '{"export_fo... 5 years)."}'[0m
+[1m[31mE     [0m
+[1m[31mE     'password_hash' is contained here:[0m
+[1m[31mE     ?           ^^[0m
+[1m[31mE       . Tuan", "password_hash": "$2b$12$NEVER_SHOW_THIS", "created_at": "2026-01-01T00:00:00+00:00", "updated_at": "2026-04-01T00:00:00+00:00", "approved_at": null, "approved_by": null}, "notifications": [{"id": "bb4f1517-96c3-428a-b64d-27de0963263e", "type": "cert", "title": "Cert issued", "message": "\u2026", "link": "/dashboard", "read": false, "created_at": "2026-04-20T00:00:00+00:00"}], "audit_logs": [{"id": "d18b50c9-0c92-4d5b-b24a-057da4f9e621", "action": "login.success", "entity_type": "user", "entity_id": "dc30f464-b45f-492c-a245-...[0m
+[1m[31mE     [0m
+[1m[31mE     ...Full output truncated (2 lines hidden), use '-vv' to show[0m
+[31m[1m_______ TestConfirmAndAnonymize.test_anonymizes_user_pii_on_valid_token ________[0m
+[1m[31mtests/test_data_deletion_unit.py[0m:70: in test_anonymizes_user_pii_on_valid_token
+    [0mnew_email, new_hash, uid = user_updates[[94m0[39;49;00m][90m[39;49;00m
+    ^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE   ValueError: not enough values to unpack (expected 3, got 2)[0m
+[31m[1m______ TestCertStatusChangeEmitsAuditLog.test_revoke_records_status_diff _______[0m
+[1m[31mtests/test_audit_log_integration.py[0m:200: in test_revoke_records_status_diff
+    [0m[94mawait[39;49;00m update_cert_status([90m[39;49;00m
+[1m[31mauth/certificate_router.py[0m:469: in update_cert_status
+    [0m[94mawait[39;49;00m revoke_cert([90m[39;49;00m
+[1m[31mservices/cert_lifecycle.py[0m:70: in revoke_cert
+    [0mrow = [94mawait[39;49;00m db.fetchrow([90m[39;49;00m
+[1m[31mtests/test_certificate_pdf_integration.py[0m:54: in fetchrow
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._match(sql, [96mself[39;49;00m.fetchrow_responses)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_certificate_pdf_integration.py[0m:44: in _match
+    [0m[94mraise[39;49;00m [96mAssertionError[39;49;00m([33mf[39;49;00m[33m"[39;49;00m[33mNo FakeConn response configured for: [39;49;00m[33m{[39;49;00msql[:[94m80[39;49;00m][33m!r}[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+[1m[31mE   AssertionError: No FakeConn response configured for: '\n        SELECT id, cert_number, business_tenant, issued_by, status, revoked_at\n'[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_data_export_unit.py::[1mTestSecretFiltering::test_password_hash_never_appears[0m - assert 'password_hash' not in '{"export_fo... 5 years)."}'
+[31mFAILED[0m tests/test_data_deletion_unit.py::[1mTestConfirmAndAnonymize::test_anonymizes_user_pii_on_valid_token[0m - ValueError: not enough values to unpack (expected 3, got 2)
+[31mFAILED[0m tests/test_audit_log_integration.py::[1mTestCertStatusChangeEmitsAuditLog::test_revoke_records_status_diff[0m - AssertionError: No FakeConn response configured for: '\n        SELECT id, ...
+[31m=================== [31m[1m3 failed[0m, [32m72 passed[0m, [33m17 skipped[0m[31m in 3.29s[0m[31m ===================[0m
+
+# Finished: 2026-09-12T09:10:21-04:00
+# Exit code: 1

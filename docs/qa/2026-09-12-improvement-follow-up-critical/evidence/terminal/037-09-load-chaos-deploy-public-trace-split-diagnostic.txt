@@ -1,0 +1,3 @@
+# Split diagnostic after public-trace-load-profile failure
+{"profile": "local_backend", "requests": 200, "errors": 0, "p95_ms": 693.8, "target_ms": 800}
+{"profile": "public_proxy", "requests": 200, "errors": 0, "p95_ms": 2651.8, "target_ms": 800}

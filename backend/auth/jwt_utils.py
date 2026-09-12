@@ -58,6 +58,13 @@ async def get_current_user(
     from auth.db import get_pool
 
     token = creds.credentials
+    # Security hardening: do not silently normalize malformed bearer values.
+    # Starlette's HTTPBearer may trim/collapse whitespace before exposing
+    # credentials, so also validate the raw header shape. Accept exactly
+    # `Bearer <token>` and reject leading/trailing/extra whitespace.
+    raw_auth = request.headers.get("authorization") or request.headers.get("Authorization") or ""
+    if raw_auth != f"Bearer {token}" or token != token.strip():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
     if not keycloak_validator.looks_like_keycloak_token(token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
 

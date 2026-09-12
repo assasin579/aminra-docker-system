@@ -1,16 +1,14 @@
 /**
  * Admin auth unification (Option 2):
- * Verify that after logging in via the legacy /admin flow (opaque token in
- * `aminra_admin_token`), the analytics + audit-logs + overdue-submissions
- * pages can call their /api/auth/admin/* endpoints successfully.
+ * Verify that after storing a Keycloak platform_admin token in
+ * `aminra_user_token`, the analytics + audit-logs + overdue-submissions pages
+ * can call their /api/auth/admin/* endpoints successfully.
  *
  * This is the regression gate for the bug where these 3 pages only read
- * `aminra_user_token`, leaving an admin who logged in via /admin stranded.
+ * the frontend accidentally looked for the retired opaque admin session.
  */
 import { test, expect } from "@playwright/test";
-
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "aminra2026";
+import { requireAdminToken } from "./helpers/admin-token";
 
 test.describe("admin unified auth", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -20,20 +18,15 @@ test.describe("admin unified auth", () => {
     );
   });
 
-  test("legacy /admin token unlocks analytics + audit-logs + overdue", async ({
+  test("Keycloak platform_admin token unlocks analytics + audit-logs + overdue", async ({
     page,
     request,
   }) => {
-    const loginRes = await request.post("/api/admin/login", {
-      data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
-    });
-    expect(loginRes.ok()).toBeTruthy();
-    const { token } = await loginRes.json();
-    expect(token).toBeTruthy();
+    const token = await requireAdminToken(request);
 
     await page.addInitScript((t) => {
-      localStorage.setItem("aminra_admin_token", t);
-      localStorage.removeItem("aminra_user_token");
+      localStorage.setItem("aminra_user_token", t);
+      localStorage.removeItem("aminra_admin_token");
     }, token);
 
     await page.goto("/admin/analytics");

@@ -1,0 +1,21 @@
+# Domain: 04-submission-cert-lifecycle
+# Step: playwright-cert-and-state-scoring
+# Started: 2026-09-12T10:25:19-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/14-cuj-cert-lifecycle.spec.ts e2e/35-batch5-state-scoring.spec.ts --project=desktop-chromium
+
+
+Running 7 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert (65ms)
+  ✓  2 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert (1.3s)
+  ✓  3 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) (2.3s)
+  ✓  4 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible (1.1s)
+  -  5 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider
+  ✓  6 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:20:7 › Phase 1 Batch 5 — state + scoring › static guards — code reflects all batch 5 fixes (43ms)
+  ✓  7 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:68:7 › Phase 1 Batch 5 — state + scoring › transition matrix is sane: terminal states cannot transition out (8ms)
+
+  1 skipped
+  6 passed (10.5s)
+
+# Finished: 2026-09-12T10:25:32-04:00
+# Exit code: 0

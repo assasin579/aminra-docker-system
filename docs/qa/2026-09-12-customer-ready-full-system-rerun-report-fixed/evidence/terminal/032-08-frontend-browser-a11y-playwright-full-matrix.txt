@@ -382,3 +382,4 @@ Running 2076 tests using 1 worker
   ✘   358 [desktop-firefox] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile (1.7s)
   ✘   359 [desktop-firefox] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business can list assessment templates (1.5s)
   ✘   360 [desktop-firefox] › e2e/03-business-flow.spec.ts:35:7 › 03. Business user workflow › Business can list documents (1.7s)
+  ✓   361 [desktop-firefox] › e2e/03-business-flow.spec.ts:42:7 › 03. Business user workflow › Business blocked from admin users endpoint (1.6s)

@@ -1,0 +1,10 @@
+# Domain: 06-pdf-doc-versioning
+# Step: template-files-repair-guard
+# Started: 2026-09-12T10:38:03-04:00
+# Command: sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && python3 scripts/qa/repair-template-files.py --root /app/admin_templates/files --apply'
+
+root=/app/admin_templates/files
+apply=True finding_count=0 remaining_count=0
+
+# Finished: 2026-09-12T10:38:05-04:00
+# Exit code: 0

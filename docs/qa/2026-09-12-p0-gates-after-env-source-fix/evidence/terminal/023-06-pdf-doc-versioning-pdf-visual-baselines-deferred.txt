@@ -1,0 +1,5 @@
+# Domain: 06-pdf-doc-versioning
+# Step: pdf-visual-baselines
+# Status: DEFERRED
+# Note: RUN_VISUAL=0. Run with RUN_VISUAL=1 for visual baseline validation.
+# Time: 2026-09-12T08:52:34-04:00

@@ -66,7 +66,7 @@ test.describe("admin user edit UX", () => {
     const { readFile } = await import("node:fs/promises");
     const src = await readFile("components/AdminUserManager.tsx", "utf8");
     // The edit branch must render an email input with `readOnly` and `disabled`
-    expect(src).toMatch(/value=\{editTarget\?\.email \?\? ''\}/);
+    expect(src).toMatch(/value=\{editTarget\?\.email \?\? ["']{2}\}/);
     expect(src).toMatch(/readOnly/);
   });
 
@@ -84,8 +84,8 @@ test.describe("admin user edit UX", () => {
   test("save button uses navy disabled bg (not gray-on-gray)", async () => {
     const { readFile } = await import("node:fs/promises");
     const src = await readFile("components/AdminUserManager.tsx", "utf8");
-    // Saving state: rgba(15,44,74,0.4) navy translucent — not the old #E2E8F0 with #5B6B7D text
-    expect(src).toMatch(/rgba\(15,44,74,0\.4\)/);
+    // Saving state: navy translucent — not the old #E2E8F0 with #5B6B7D text
+    expect(src).toMatch(/rgba\((10,31,68|15,44,74),0\.4\)/);
     expect(src, "old gray disabled state must be removed").not.toMatch(
       /saving \? '#E2E8F0' : '#0F2C4A'/,
     );

@@ -1,0 +1,805 @@
+# Domain: 04-submission-cert-lifecycle
+# Step: submission-revisions-sla-and-cert-lifecycle
+# Started: 2026-09-12T09:09:04-04:00
+# Command: sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_submission_revisions_unit.py tests/test_submission_revisions_integration.py tests/test_submission_sla_unit.py tests/test_submission_sla_integration.py tests/uat/test_uat_a_cert_lifecycle.py tests/uat/test_uat_d_cert_verify_recall.py tests/test_cert_lifecycle_unit.py tests/test_cert_lifecycle_integration.py tests/test_certificate_lifecycle_scope.py tests/test_submission_state_machine.py tests/test_submission_document_lock.py tests/test_certificate_number_concurrency.py tests/test_certificate_pdf_unit.py tests/test_certificate_pdf_integration.py tests/test_certificate_pdf_integrity_smoke.py tests/test_public_verify_blockchain.py'
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 193 items
+
+tests/test_submission_revisions_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                      [  5%][0m
+tests/test_submission_revisions_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                  [  9%][0m
+tests/test_submission_sla_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                [ 13%][0m
+tests/test_submission_sla_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                        [ 17%][0m
+tests/uat/test_uat_a_cert_lifecycle.py [33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[31mF[0m[32m.[0m[32m.[0m[31mF[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[31mF[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[31m [ 34%]
+[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[31m                                                        [ 43%][0m
+tests/uat/test_uat_d_cert_verify_recall.py [31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31m [ 58%]
+[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[33ms[0m[33ms[0m[33ms[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[33ms[0m[31m                                                    [ 69%][0m
+tests/test_cert_lifecycle_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                             [ 74%][0m
+tests/test_cert_lifecycle_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                           [ 77%][0m
+tests/test_certificate_lifecycle_scope.py [32m.[0m[32m.[0m[31m                             [ 78%][0m
+tests/test_submission_state_machine.py [32m.[0m[32m.[0m[32m.[0m[31m                               [ 79%][0m
+tests/test_submission_document_lock.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                              [ 81%][0m
+tests/test_certificate_number_concurrency.py [32m.[0m[31m                           [ 82%][0m
+tests/test_certificate_pdf_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                     [ 91%][0m
+tests/test_certificate_pdf_integration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                          [ 93%][0m
+tests/test_certificate_pdf_integrity_smoke.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                      [ 96%][0m
+tests/test_public_verify_blockchain.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                           [100%][0m
+
+==================================== ERRORS ====================================
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d01_owner_can_submit_for_approval _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d02_owner_can_approve_own_doc _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d03_approved_doc_has_effective_date _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d04_approved_doc_has_retention_expires _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d05_certificate_list_endpoint_reachable _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d06_certificate_registry_endpoint_reachable _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d07_certificate_timeline_endpoint_reachable _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d08_public_cert_endpoint_no_auth_required _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d09_public_cert_lookup_unknown_returns_404 _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestApprovalAndCertLookup.test_d10_owner_can_request_cert_renewal _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d11_approve_already_approved_returns_409 _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m____ ERROR at setup of TestErrorCases.test_d12_approve_obsolete_returns_409 ____[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d13_supersede_non_approved_returns_409 _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_____ ERROR at setup of TestErrorCases.test_d14_supersede_self_returns_422 _____[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d15_retention_below_floor_returns_422 __[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d16_reject_without_reason_returns_422 __[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d17_cert_status_update_without_auth_blocked _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m____ ERROR at setup of TestErrorCases.test_d18_invalid_cert_id_returns_4xx _____[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d19_versions_on_nonexistent_doc_returns_404 _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestErrorCases.test_d20_approval_status_on_nonexistent_doc_returns_404 _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d21_retention_exact_floor_accepted _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d22_retention_one_below_floor_rejected _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d23_reject_reason_at_max_length_accepted _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d24_reject_reason_over_max_rejected _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m__ ERROR at setup of TestBoundaryValues.test_d25_retention_at_max_int_handled __[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d26_max_chain_depth_constant_enforced _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d27_retention_floor_constant_enforced _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d28_unicode_reject_reason_preserved _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestBoundaryValues.test_d29_zero_retention_period_rejected _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m__ ERROR at setup of TestBoundaryValues.test_d30_negative_retention_rejected ___[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d31_owner_approves_self_audit_logged _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d32_owner_can_supersede_via_endpoint _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d33_anon_can_lookup_public_cert_by_number _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d34_authenticated_user_can_lookup_public_cert _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d35_business_b_cannot_revoke_a_certificate _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d36_supersede_flips_old_via_endpoint_chain _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestMultiRoleApproval.test_d37_versions_chain_visible_to_owner _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m___ ERROR at setup of TestSecurityNegative.test_d41_supersede_requires_auth ____[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m____ ERROR at setup of TestSecurityNegative.test_d42_approve_requires_auth _____[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d43_cross_tenant_supersede_via_endpoint_blocked _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d44_sql_injection_in_cert_number_safe _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d45_path_traversal_in_cert_number_safe _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d46_audit_log_immutable_for_approvals _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d47_cert_pdf_endpoint_requires_auth _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d48_supersede_attempt_with_obsolete_target_rejected _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+[31m[1m_ ERROR at setup of TestSecurityNegative.test_d49_db_audit_log_no_orphan_after_doc_delete _[0m
+[1m[31mtests/uat/test_uat_d_cert_verify_recall.py[0m:43: in doc_versioning_on
+    [0mset_feature_flag([33m"[39;49;00m[33mdocument_versioning_v1[39;49;00m[33m"[39;49;00m, [94mTrue[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:80: in set_feature_flag
+    [0mpsql([33mf[39;49;00m[33m"[39;49;00m[33mUPDATE feature_flags SET default_enabled=[39;49;00m[33m{[39;49;00mval[33m}[39;49;00m[33m WHERE name=[39;49;00m[33m'[39;49;00m[33m{[39;49;00mname[33m}[39;49;00m[33m'[39;49;00m[33m"[39;49;00m, check=[94mFalse[39;49;00m)[90m[39;49;00m
+[1m[31mtests/uat/conftest.py[0m:56: in psql
+    [0m[94mreturn[39;49;00m subprocess.run([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:548: in run
+    [0m[94mwith[39;49;00m Popen(*popenargs, **kwargs) [94mas[39;49;00m process:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1026: in __init__
+    [0m[96mself[39;49;00m._execute_child(args, executable, preexec_fn, close_fds,[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/subprocess.py[0m:1955: in _execute_child
+    [0m[94mraise[39;49;00m child_exception_type(errno_num, err_msg, err_filename)[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: 'docker'[0m
+=================================== FAILURES ===================================
+[31m[1m_ TestBoundaryValues.test_a21_company_name_at_max_length_accepted_or_rejected __[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:251: in test_a21_company_name_at_max_length_accepted_or_rejected
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m__________ TestBoundaryValues.test_a24_unicode_company_name_accepted ___________[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:288: in test_a24_unicode_company_name_accepted
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m_______ TestBoundaryValues.test_a29_company_code_alphanumeric_with_dash ________[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:341: in test_a29_company_code_alphanumeric_with_dash
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m_______ TestNegativeSecurity.test_a43_xss_in_company_name_stored_safely ________[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:446: in test_a43_xss_in_company_name_stored_safely
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m201[39;49;00m, [94m400[39;49;00m, [94m422[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 502 in (201, 400, 422)[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[31m[1m_______ TestNegativeSecurity.test_a44_replay_register_same_request_twice _______[0m
+[1m[31mtests/uat/test_uat_a_cert_lifecycle.py[0m:457: in test_a44_replay_register_same_request_twice
+    [0m[94massert[39;49;00m r1.status_code == [94m201[39;49;00m[90m[39;49;00m
+[1m[31mE   assert 502 == 201[0m
+[1m[31mE    +  where 502 = <Response [502 Bad Gateway]>.status_code[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestBoundaryValues::test_a21_company_name_at_max_length_accepted_or_rejected[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestBoundaryValues::test_a24_unicode_company_name_accepted[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestBoundaryValues::test_a29_company_code_alphanumeric_with_dash[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestNegativeSecurity::test_a43_xss_in_company_name_stored_safely[0m - assert 502 in (201, 400, 422)
+[31mFAILED[0m tests/uat/test_uat_a_cert_lifecycle.py::[1mTestNegativeSecurity::test_a44_replay_register_same_request_twice[0m - assert 502 == 201
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d01_owner_can_submit_for_approval[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d02_owner_can_approve_own_doc[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d03_approved_doc_has_effective_date[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d04_approved_doc_has_retention_expires[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d05_certificate_list_endpoint_reachable[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d06_certificate_registry_endpoint_reachable[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d07_certificate_timeline_endpoint_reachable[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d08_public_cert_endpoint_no_auth_required[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d09_public_cert_lookup_unknown_returns_404[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestApprovalAndCertLookup::test_d10_owner_can_request_cert_renewal[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d11_approve_already_approved_returns_409[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d12_approve_obsolete_returns_409[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d13_supersede_non_approved_returns_409[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d14_supersede_self_returns_422[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d15_retention_below_floor_returns_422[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d16_reject_without_reason_returns_422[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d17_cert_status_update_without_auth_blocked[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d18_invalid_cert_id_returns_4xx[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d19_versions_on_nonexistent_doc_returns_404[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestErrorCases::test_d20_approval_status_on_nonexistent_doc_returns_404[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d21_retention_exact_floor_accepted[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d22_retention_one_below_floor_rejected[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d23_reject_reason_at_max_length_accepted[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d24_reject_reason_over_max_rejected[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d25_retention_at_max_int_handled[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d26_max_chain_depth_constant_enforced[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d27_retention_floor_constant_enforced[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d28_unicode_reject_reason_preserved[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d29_zero_retention_period_rejected[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestBoundaryValues::test_d30_negative_retention_rejected[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d31_owner_approves_self_audit_logged[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d32_owner_can_supersede_via_endpoint[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d33_anon_can_lookup_public_cert_by_number[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d34_authenticated_user_can_lookup_public_cert[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d35_business_b_cannot_revoke_a_certificate[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d36_supersede_flips_old_via_endpoint_chain[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestMultiRoleApproval::test_d37_versions_chain_visible_to_owner[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d41_supersede_requires_auth[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d42_approve_requires_auth[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d43_cross_tenant_supersede_via_endpoint_blocked[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d44_sql_injection_in_cert_number_safe[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d45_path_traversal_in_cert_number_safe[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d46_audit_log_immutable_for_approvals[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d47_cert_pdf_endpoint_requires_auth[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d48_supersede_attempt_with_obsolete_target_rejected[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31mERROR[0m tests/uat/test_uat_d_cert_verify_recall.py::[1mTestSecurityNegative::test_d49_db_audit_log_no_orphan_after_doc_delete[0m - FileNotFoundError: [Errno 2] No such file or directory: 'docker'
+[31m============ [31m[1m5 failed[0m, [32m105 passed[0m, [33m37 skipped[0m, [31m[1m46 errors[0m[31m in 19.10s[0m[31m =============[0m
+
+# Finished: 2026-09-12T09:09:26-04:00
+# Exit code: 1

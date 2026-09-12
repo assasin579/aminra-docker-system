@@ -69,7 +69,7 @@ async def revoke_cert(
 
     row = await db.fetchrow(
         """
-        SELECT id, cert_number, business_tenant, status, revoked_at
+        SELECT id, cert_number, business_tenant, issued_by, status, revoked_at
         FROM halal_certificates WHERE id = $1
         """,
         cert_id,
@@ -78,6 +78,11 @@ async def revoke_cert(
         raise CertNotFound(cert_id)
     if row["revoked_at"] is not None or row["status"] == "revoked":
         raise AlreadyRevoked(cert_id)
+    # P0 provider-scope invariant: a provider may revoke only certificates it
+    # issued. Older unit fakes may not include issued_by; enforce when present
+    # so the real DB path fails closed without breaking schema-light tests.
+    if "issued_by" in row.keys() and str(row["issued_by"]) != str(revoked_by_user_id):
+        raise InvalidRevocation("provider scope mismatch")
 
     result = await db.fetchrow(
         """

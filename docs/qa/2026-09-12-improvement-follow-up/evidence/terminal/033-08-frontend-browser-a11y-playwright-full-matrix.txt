@@ -1,0 +1,35 @@
+# Domain: 08-frontend-browser-a11y
+# Step: playwright-full-matrix
+# Started: 2026-09-12T10:29:18-04:00
+# Command: cd frontend/aminra-web && npx playwright test
+
+
+Running 2076 tests using 1 worker
+
+  ✓     1 [desktop-chromium] › e2e/01-health.spec.ts:4:7 › 01. Infrastructure health › Backend /health returns ok + db + qdrant (136ms)
+  ✓     2 [desktop-chromium] › e2e/01-health.spec.ts:13:7 › 01. Infrastructure health › Frontend landing renders with expected title (1.7s)
+  ✓     3 [desktop-chromium] › e2e/01-health.spec.ts:18:7 › 01. Infrastructure health › OpenAPI spec has ≥100 paths (840ms)
+  ✘     4 [desktop-chromium] › e2e/02-auth.spec.ts:4:7 › 02. Authentication flows › Business register + login returns JWT (3.7s)
+  ✘     5 [desktop-chromium] › e2e/02-auth.spec.ts:9:7 › 02. Authentication flows › /auth/me returns correct email for business token (5.9s)
+  ✘     6 [desktop-chromium] › e2e/02-auth.spec.ts:22:7 › 02. Authentication flows › Wrong password rejected 401 (3.1s)
+  ✓     7 [desktop-chromium] › e2e/02-auth.spec.ts:29:7 › 02. Authentication flows › Nonexistent email rejected (84ms)
+  ✓     8 [desktop-chromium] › e2e/02-auth.spec.ts:36:7 › 02. Authentication flows › Duplicate email returns 409/422 (2.4s)
+  ✘     9 [desktop-chromium] › e2e/02-auth.spec.ts:43:7 › 02. Authentication flows › Admin login returns token (45ms)
+  ✘    10 [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list (4.2s)
+  ✘    11 [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile (2.1s)
+  ✘    12 [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile (2.4s)
+  ✘    13 [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business can list assessment templates (3.7s)
+  ✘    14 [desktop-chromium] › e2e/03-business-flow.spec.ts:35:7 › 03. Business user workflow › Business can list documents (2.6s)
+  ✓    15 [desktop-chromium] › e2e/03-business-flow.spec.ts:42:7 › 03. Business user workflow › Business blocked from admin users endpoint (6.5s)
+  -    16 [desktop-chromium] › e2e/04-provider-flow.spec.ts:4:7 › 04. Provider user workflow › Provider can list received submissions
+  -    17 [desktop-chromium] › e2e/04-provider-flow.spec.ts:12:7 › 04. Provider user workflow › Provider can view audit list
+  -    18 [desktop-chromium] › e2e/04-provider-flow.spec.ts:20:7 › 04. Provider user workflow › Provider can view audit templates
+  -    19 [desktop-chromium] › e2e/04-provider-flow.spec.ts:28:7 › 04. Provider user workflow › Provider can view pending NCR
+  -    20 [desktop-chromium] › e2e/04-provider-flow.spec.ts:36:7 › 04. Provider user workflow › Provider can view certificate registry
+  -    21 [desktop-chromium] › e2e/04-provider-flow.spec.ts:44:7 › 04. Provider user workflow › Provider can view auditor list
+  ✓    22 [desktop-chromium] › e2e/05-admin-flow.spec.ts:4:7 › 05. Admin workflow › Admin can list pending providers (48ms)
+  ✓    23 [desktop-chromium] › e2e/05-admin-flow.spec.ts:13:7 › 05. Admin workflow › Admin can list doc types (33ms)
+  ✓    24 [desktop-chromium] › e2e/05-admin-flow.spec.ts:20:7 › 05. Admin workflow › Admin can list templates (26ms)
+  ✓    25 [desktop-chromium] › e2e/05-admin-flow.spec.ts:27:7 › 05. Admin workflow › Admin can list placeholders (26ms)
+  ✓    26 [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › / renders with title (1.4s)
+  ✓    27 [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /landing renders with title (1.4s)

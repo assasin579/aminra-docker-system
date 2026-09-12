@@ -67,10 +67,9 @@ class TestConfirmAndAnonymize:
         user_updates = [args for kind, (sql, args) in db.calls
                         if kind == "execute" and "UPDATE users" in sql and "deleted_at" in sql]
         assert len(user_updates) == 1
-        new_email, new_hash, uid = user_updates[0]
+        new_email, uid = user_updates[0]
         assert new_email.startswith("deleted-")
         assert new_email.endswith("@aminra.deleted")
-        assert new_hash.startswith("$2b$")     # looks like bcrypt
         assert str(uid) == str(USER_ID)
 
         # Audit logs PII redacted

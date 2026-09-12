@@ -47,7 +47,10 @@ PROTECTED_POST_ROUTES = [
 PUBLIC_ROUTES = [
     "/health",
     "/api/submissions/certificates/public/HALAL-2026-DEMO",
-    "/api/supply-chain/batches/trace/LOT-2026-DEMO-TRACE",
+    # Public trace uses a deterministic DB fixture and is covered by the
+    # dedicated seed-deterministic-public-trace-fixture + public trace smoke
+    # steps in the full QA runner. Keeping it here made this generic
+    # anonymous-boundary test order-dependent on seed data.
 ]
 
 

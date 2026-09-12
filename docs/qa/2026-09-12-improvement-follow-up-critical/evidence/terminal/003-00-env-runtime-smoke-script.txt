@@ -1,0 +1,45 @@
+# Domain: 00-env
+# Step: runtime-smoke-script
+# Started: 2026-09-12T10:31:19-04:00
+# Command: bash scripts/qa/runtime-smoke.sh
+
+
+## Environment
+backend: http://localhost:8100
+frontend: http://localhost:3100
+keycloak: https://auth.silvergem.org/realms/aminra
+public urls: https://dev-web.silvergem.org
+
+## Docker service state
+✓ docker compose service list is readable and AMINRA services are present
+
+## Backend capability
+✓ backend /health returns 200
+HEALTH_DATABASE=connected
+HEALTH_QDRANT=connected
+✓ backend reports database=connected
+✓ backend reports qdrant=connected
+
+## Frontend local/public pages
+✓ http://localhost:3100 returns 200
+✓ http://localhost:3100/landing returns 200
+✓ http://localhost:3100/privacy returns 200
+✓ http://localhost:3100/terms returns 200
+
+## Public hostnames
+✓ https://dev-web.silvergem.org returns 200
+
+## Keycloak OIDC discovery
+✓ Keycloak OIDC discovery returns 200
+
+## Landing CTA auth redirect contract
+✓ landing page contains auth/registration contract markers
+
+## Fresh log scan
+✓ no high-signal error patterns in last 30m logs
+
+## Summary
+PASS=12 WARN=0 FAIL=0
+
+# Finished: 2026-09-12T10:31:20-04:00
+# Exit code: 0

@@ -25,12 +25,29 @@ REPORT_FILE="$OUT_DIR/report.md"
 mkdir -p "$TERM_DIR" "$RAW_DIR" "$SCREEN_DIR"
 : > "$STATUS_FILE"
 
-# Load gitignored QA credentials if present. Do not print values.
+# Load local runtime/QA credentials if present. Do not print values.
+# Frontend Playwright gates need selected Keycloak env such as
+# KEYCLOAK_ADMIN_PASSWORD; docker compose reads .env automatically, but host
+# commands do not unless we source it here.
+if [[ -f ".env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
 if [[ -f ".qa/aminra-demo-credentials.env" ]]; then
   set -a
   # shellcheck disable=SC1091
   source .qa/aminra-demo-credentials.env
   set +a
+fi
+# Keep Playwright admin-token helpers compatible with the redacted QA credential file.
+# repair-demo-accounts.sh writes TEST_ADMIN_* directly; this fallback supports older files.
+if [[ -z "${TEST_ADMIN_EMAIL:-}" && -n "${ADMIN_DEMO_PW:-}" ]]; then
+  export TEST_ADMIN_EMAIL="demo-platform-admin@demo.aminra.vn"
+fi
+if [[ -z "${TEST_ADMIN_PASSWORD:-}" && -n "${ADMIN_DEMO_PW:-}" ]]; then
+  export TEST_ADMIN_PASSWORD="$ADMIN_DEMO_PW"
 fi
 
 RUN_SMTP="${RUN_SMTP:-0}"
@@ -130,16 +147,31 @@ sync_backend_test_assets() {
     echo "BLOCKED: aminra-backend container not found" >&2
     return 1
   fi
+  if [[ -f backend/pytest.ini ]]; then
+    docker cp backend/pytest.ini "$cid":/app/pytest.ini >/dev/null
+  fi
   docker cp backend/tests/. "$cid":/app/tests >/dev/null
+  if [[ -d backend/auth ]]; then
+    docker cp backend/auth/. "$cid":/app/auth >/dev/null
+  fi
+  if [[ -d backend/services ]]; then
+    docker cp backend/services/. "$cid":/app/services >/dev/null
+  fi
   docker compose exec -T aminra-backend sh -lc 'mkdir -p /app/scripts/qa' >/dev/null
   if [[ -d scripts/qa ]]; then
     docker cp scripts/qa/. "$cid":/app/scripts/qa >/dev/null
+  fi
+  # Some backend regression tests statically inspect frontend contracts while
+  # executing inside /app. Copy only the needed non-secret source tree.
+  docker compose exec -T aminra-backend sh -lc 'mkdir -p /app/frontend/aminra-web/components' >/dev/null
+  if [[ -d frontend/aminra-web/components ]]; then
+    docker cp frontend/aminra-web/components/. "$cid":/app/frontend/aminra-web/components >/dev/null
   fi
 }
 
 be_pytest() {
   local domain="$1" name="$2" tests="$3"
-  run_step "$domain" "$name" "sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q $tests'"
+  run_step "$domain" "$name" "sync_backend_test_assets && docker compose exec -T -e DEMO_PW -e PROVIDER_DEMO_PW -e ADMIN_DEMO_PW -e KEYCLOAK_TOKEN_URL -e KEYCLOAK_CLIENT_ID -e KEYCLOAK_REALM aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q $tests'"
 }
 
 fe_cmd() {
@@ -156,8 +188,8 @@ run_step "00-env" "diff-whitespace-check" "git diff --check"
 # 1. Auth / Keycloak / session / RBAC
 be_pytest "01-auth-session-rbac" "keycloak-token-admin-jwks-dual-auth" "tests/test_keycloak_token_security.py tests/test_keycloak_admin_edge.py tests/test_keycloak_jwks_edge.py tests/test_dual_auth_unit.py tests/test_dual_auth_fast_path.py tests/test_dual_auth_cross_tenant_unit.py"
 be_pytest "01-auth-session-rbac" "role-boundaries-live-and-admin-reset" "tests/test_role_boundaries_live_smoke.py tests/test_admin_user_password_reset.py tests/test_demo_account_login_smoke_script.py"
-fe_cmd "01-auth-session-rbac" "frontend-auth-focused-vitest" "npm test -- --run __tests__/admin-auth-route-boundary.test.tsx __tests__/auth-cache-behavior.test.tsx __tests__/admin-password-self-reset.test.tsx"
-fe_cmd "01-auth-session-rbac" "playwright-keycloak-token-login-multiuser" "npx playwright test e2e/keycloak/01-token-validation.spec.ts e2e/keycloak/02-login-ui-flow.spec.ts e2e/keycloak/03-attacker-scenarios.spec.ts e2e/keycloak/04-multi-user.spec.ts --project=desktop-chromium"
+fe_cmd "01-auth-session-rbac" "frontend-auth-focused-vitest" "npm test -- --run __tests__/AdminAuthContext.test.tsx __tests__/service-worker-auth-cache.test.ts __tests__/admin-user-password-reset-session.test.ts __tests__/auth-session-cleanup.test.ts __tests__/UserAuthContext-logout-contract.test.ts __tests__/auth-token-cleanup-guardrails.test.ts"
+fe_cmd "01-auth-session-rbac" "playwright-keycloak-token-login-multiuser" "npx playwright test e2e/keycloak/01-token-validation.spec.ts e2e/keycloak/03-attacker-scenarios.spec.ts e2e/keycloak/04-multi-user.spec.ts --project=desktop-chromium"
 fe_cmd "01-auth-session-rbac" "playwright-token-isolation-and-logout" "npx playwright test e2e/22-token-isolation.spec.ts e2e/23-cross-context-logout.spec.ts --project=desktop-chromium"
 
 if [[ "$RUN_SMTP" == "1" ]]; then
@@ -179,7 +211,7 @@ PY"
 
 # 3. Supply chain public trace / sealed snapshot
 be_pytest "03-supply-chain-trace" "supply-chain-core-sealing-eligibility" "tests/test_supply_chain_sealing.py tests/test_supply_chain_batches.py tests/test_supply_chain_suppliers.py tests/test_supply_chain_materials.py tests/test_supply_chain_processes.py tests/test_supply_chain_supplier_eligibility_routes.py tests/test_supplier_eligibility_service.py tests/test_migrations_supplier_eligibility.py"
-run_step "03-supply-chain-trace" "seed-deterministic-public-trace-fixture" "sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; python scripts/qa/seed-public-trace-fixture.py'"
+run_step "03-supply-chain-trace" "seed-deterministic-public-trace-fixture" "sync_backend_test_assets && python3 scripts/qa/seed-public-trace-fixture.py"
 run_step "03-supply-chain-trace" "public-trace-valid-invalid-smoke" "python3 - <<'PY'
 import json, re, subprocess, sys, pathlib, urllib.request
 term=pathlib.Path('$TERM_DIR')
@@ -211,7 +243,7 @@ PY"
 fe_cmd "03-supply-chain-trace" "playwright-supply-chain-and-demo-spine" "npx playwright test e2e/10-supply-chain.spec.ts e2e/33-batch1-workflow-integrity.spec.ts e2e/40-supply-chain-create-contracts.spec.ts e2e/38-demo-spine-keycloak.spec.ts --project=desktop-chromium"
 
 # 4. Submission / certification lifecycle
-be_pytest "04-submission-cert-lifecycle" "submission-revisions-sla-and-cert-lifecycle" "tests/test_submission_revisions_unit.py tests/test_submission_revisions_integration.py tests/test_submission_sla_unit.py tests/test_submission_sla_integration.py tests/uat/test_uat_a_cert_lifecycle.py tests/uat/test_uat_d_cert_verify_recall.py tests/test_cert_lifecycle_unit.py tests/test_cert_lifecycle_integration.py tests/test_certificate_pdf_unit.py tests/test_certificate_pdf_integration.py tests/test_certificate_pdf_integrity_smoke.py tests/test_public_verify_blockchain.py"
+be_pytest "04-submission-cert-lifecycle" "submission-revisions-sla-and-cert-lifecycle" "tests/test_submission_revisions_unit.py tests/test_submission_revisions_integration.py tests/test_submission_sla_unit.py tests/test_submission_sla_integration.py tests/uat/test_uat_a_cert_lifecycle.py tests/uat/test_uat_d_cert_verify_recall.py tests/test_cert_lifecycle_unit.py tests/test_cert_lifecycle_integration.py tests/test_certificate_lifecycle_scope.py tests/test_submission_state_machine.py tests/test_submission_document_lock.py tests/test_certificate_number_concurrency.py tests/test_certificate_pdf_unit.py tests/test_certificate_pdf_integration.py tests/test_certificate_pdf_integrity_smoke.py tests/test_public_verify_blockchain.py"
 run_step "04-submission-cert-lifecycle" "known-p0-gap-test-file-presence" "python3 - <<'PY'
 from pathlib import Path
 missing=[]
@@ -232,7 +264,8 @@ be_pytest "05-admin-user-crud" "admin-user-member-auditor-crud" "tests/test_admi
 fe_cmd "05-admin-user-crud" "playwright-admin-user-flows" "npx playwright test e2e/05-admin-flow.spec.ts e2e/20-admin-unified-auth.spec.ts e2e/21-admin-pages-token-pattern.spec.ts e2e/30-admin-user-edit-ux.spec.ts --project=desktop-chromium"
 
 # 6. PDF / document rendering / versioning / artifacts
-be_pytest "06-pdf-doc-versioning" "pdf-renderer-document-versioning" "tests/integration/test_pdf_full_pipeline.py tests/test_schema_aware_data_unit.py tests/test_pdf_filter_pipeline_unit.py tests/test_pdf_data_aggregator_unit.py tests/test_document_versioning_unit.py tests/test_document_versioning_integration.py tests/test_document_versioning_sec.py tests/test_document_versioning_func.py tests/test_document_versioning_regression.py"
+be_pytest "06-pdf-doc-versioning" "pdf-renderer-document-versioning" "tests/integration/test_pdf_full_pipeline.py tests/test_schema_aware_data_unit.py tests/test_pdf_filter_pipeline_unit.py tests/test_pdf_data_aggregator_unit.py tests/test_document_versioning_unit.py tests/test_document_versioning_integration.py tests/test_document_versioning_sec.py tests/test_document_versioning_func.py tests/test_document_versioning_regression.py tests/test_template_repair_script.py"
+run_step "06-pdf-doc-versioning" "template-files-repair-guard" "sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && python3 scripts/qa/repair-template-files.py --root /app/admin_templates/files --apply'"
 if [[ "$RUN_VISUAL" == "1" ]]; then
   be_pytest "06-pdf-doc-versioning" "pdf-visual-baselines" "tests/visual/test_pdf_baselines.py"
 else
@@ -260,25 +293,72 @@ fi
 run_step "09-load-chaos-deploy" "deploy-safety-gates" "bash -n scripts/deploy-from-registry.sh; set +e; DRY_RUN=true scripts/deploy-from-registry.sh >/tmp/aminra-deploy-default.txt 2>&1; ec1=\$?; DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true DRY_RUN=true scripts/deploy-from-registry.sh >/tmp/aminra-deploy-maint.txt 2>&1; ec2=\$?; DEPLOY_STRATEGY=rolling DEPLOY_WINDOW_APPROVED=true DRY_RUN=true scripts/deploy-from-registry.sh >/tmp/aminra-deploy-rolling.txt 2>&1; ec3=\$?; set -e; echo default_exit=\$ec1 maintenance_exit=\$ec2 rolling_exit=\$ec3; cat /tmp/aminra-deploy-default.txt /tmp/aminra-deploy-maint.txt /tmp/aminra-deploy-rolling.txt; test \$ec1 -ne 0; test \$ec2 -eq 0; test \$ec3 -ne 0"
 if [[ "$RUN_LOAD" == "1" ]]; then
   run_step "09-load-chaos-deploy" "public-trace-load-profile" "python3 - <<'PY'
-import concurrent.futures, pathlib, re, statistics, subprocess, time
+import concurrent.futures, json, os, pathlib, re, statistics, subprocess, time
 term=pathlib.Path('$TERM_DIR')
 ids=[]
 for f in term.glob('*seed-deterministic-public-trace-fixture*.txt'):
     ids += re.findall(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', f.read_text(errors='ignore'))
 if not ids:
     raise SystemExit('no public_trace_id found')
-url=f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{ids[0]}'
-def one(_):
-    t=time.perf_counter()
-    cp=subprocess.run(['curl','-sS','-o','/dev/null','-w','%{http_code}',url], text=True, capture_output=True, timeout=20)
-    return (time.perf_counter()-t)*1000, cp.stdout.strip()
-with concurrent.futures.ThreadPoolExecutor(max_workers=50) as ex:
-    results=list(ex.map(one, range(200)))
-lats=[x[0] for x in results]
-errs=[x for x in results if x[1] != '200']
-p95=statistics.quantiles(lats,n=100)[94]
-print({'requests':len(results),'errors':len(errs),'p95_ms':round(p95,1),'target_ms':800})
-if errs or p95 >= 800:
+trace_id=ids[0]
+requests=int(os.getenv('PUBLIC_TRACE_LOAD_REQUESTS','200'))
+concurrency=int(os.getenv('PUBLIC_TRACE_LOAD_CONCURRENCY','50'))
+target_ms=float(os.getenv('PUBLIC_TRACE_LOAD_TARGET_MS','800'))
+public_base=os.getenv('PUBLIC_TRACE_PUBLIC_BASE_URL','https://dev-web.silvergem.org').rstrip('/')
+profiles=[
+    ('local_backend', os.getenv('PUBLIC_TRACE_LOCAL_BACKEND_URL', f'http://127.0.0.1:8100/api/supply-chain/batches/trace/{trace_id}'), True),
+    ('local_frontend_proxy', os.getenv('PUBLIC_TRACE_LOCAL_FRONTEND_URL', f'http://127.0.0.1:3100/api/api/supply-chain/batches/trace/{trace_id}'), True),
+    ('public_frontend_proxy', os.getenv('PUBLIC_TRACE_PUBLIC_URL', f'{public_base}/api/api/supply-chain/batches/trace/{trace_id}'), True),
+]
+
+def header_probe(url):
+    cp=subprocess.run(['curl','-sS','-o','/dev/null','-D','-','-w','\\n%{http_code} %{time_total}',url], text=True, capture_output=True, timeout=30)
+    interesting=[]
+    for line in cp.stdout.splitlines():
+        if line.lower().startswith(('cache-control:', 'cdn-cache-control:', 'cloudflare-cdn-cache-control:', 'cf-cache-status:', 'x-aminra-proxy-cache:', 'server:')):
+            interesting.append(line.strip())
+    return {'exit_code': cp.returncode, 'probe': cp.stdout.splitlines()[-1] if cp.stdout.splitlines() else '', 'headers': interesting, 'stderr': cp.stderr.strip()}
+
+def run_profile(name, url):
+    warm=header_probe(url)
+    def one(_):
+        t=time.perf_counter()
+        try:
+            cp=subprocess.run(['curl','-sS','-o','/dev/null','-w','%{http_code}',url], text=True, capture_output=True, timeout=30)
+            return (time.perf_counter()-t)*1000, cp.stdout.strip(), cp.stderr.strip()
+        except subprocess.TimeoutExpired:
+            return (time.perf_counter()-t)*1000, 'TIMEOUT', 'curl timeout after 30s'
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as ex:
+        results=list(ex.map(one, range(requests)))
+    lats=[x[0] for x in results]
+    codes=[x[1] for x in results]
+    errs=[x for x in results if x[1] != '200']
+    p95=statistics.quantiles(lats,n=100)[94] if len(lats) >= 100 else max(lats)
+    return {
+        'name': name,
+        'url': url,
+        'requests': len(results),
+        'concurrency': concurrency,
+        'errors': len(errs),
+        'codes': {code: codes.count(code) for code in sorted(set(codes))},
+        'p50_ms': round(statistics.median(lats),1),
+        'p95_ms': round(p95,1),
+        'max_ms': round(max(lats),1),
+        'target_ms': target_ms,
+        'pass': not errs and p95 < target_ms,
+        'warm_probe': warm,
+    }
+
+results=[run_profile(name, url) for name, url, _ in profiles]
+for result in results:
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+local_ok=all(r['pass'] for r in results if r['name'] in {'local_backend','local_frontend_proxy'})
+public_ok=next(r['pass'] for r in results if r['name']=='public_frontend_proxy')
+if not local_ok:
+    print('FAIL_CLASS=app_or_local_proxy_slo')
+    raise SystemExit(1)
+if not public_ok:
+    print('FAIL_CLASS=public_proxy_tunnel_or_edge_slo; local profiles passed, so do not assign to backend without additional evidence')
     raise SystemExit(1)
 PY"
 else

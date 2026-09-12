@@ -1,0 +1,28 @@
+# Domain: 06-pdf-doc-versioning
+# Step: playwright-template-document-ui
+# Started: 2026-09-12T10:38:05-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/27-template-content-integrity.spec.ts e2e/28-admin-template-view.spec.ts e2e/31-revision-panel-visibility.spec.ts e2e/34-batch4-file-llm-safety.spec.ts --project=desktop-chromium
+
+
+Running 15 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:38:7 › template content integrity › no two doc_types serve the same template content (539ms)
+  ✓   2 [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:86:7 › template content integrity › template download returns no-store headers (prevent stale browser cache) (298ms)
+  ✓   3 [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:117:7 › template content integrity › backend _find_template_file uses exact canonical filename (19ms)
+  ✓   4 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:23:7 › admin file preview › view DOCX template returns PDF for inline preview (LibreOffice conversion) (302ms)
+  ✓   5 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:48:7 › admin file preview › view template-file via query-string token (for new-tab UX) (296ms)
+  ✓   6 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:61:7 › admin file preview › repeated PDF requests return identical content (cache deterministic) (301ms)
+  ✓   7 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:77:7 › admin file preview › view rejects missing/garbage auth (55ms)
+  ✓   8 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:94:7 › admin file preview › view rejects path-traversal in filename (278ms)
+  ✓   9 [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:21:7 › revision panel visibility logic › source: panel returns null when no action + no history (13ms)
+  ✓  10 [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:45:7 › revision panel visibility logic › source: form conditions still align with backend ALLOWED_FROM_STATUSES (7ms)
+  ✓  11 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:24:7 › Phase 1 Batch 4 — file + LLM safety › static guards — code reflects all batch 4 fixes (53ms)
+  ✓  12 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:59:7 › Phase 1 Batch 4 — file + LLM safety › /ingest rejects unauthenticated (20ms)
+  ✓  13 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:74:7 › Phase 1 Batch 4 — file + LLM safety › /evaluate rejects unauthenticated (22ms)
+  ✓  14 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:89:7 › Phase 1 Batch 4 — file + LLM safety › /rewrite rejects unauthenticated (18ms)
+  ✓  15 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:98:7 › Phase 1 Batch 4 — file + LLM safety › /generate-document rejects unauthenticated (13ms)
+
+  15 passed (4.2s)
+
+# Finished: 2026-09-12T10:38:11-04:00
+# Exit code: 0

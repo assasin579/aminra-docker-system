@@ -17,7 +17,7 @@ import { join } from "node:path";
 
 const ROOT = process.cwd();
 
-test("UserAuthContext.logout removes aminra_admin_token", async () => {
+test("UserAuthContext.logout purges cross-context session state", async () => {
   const src = await readFile(
     join(ROOT, "components/UserAuthContext.tsx"),
     "utf8",
@@ -32,8 +32,8 @@ test("UserAuthContext.logout removes aminra_admin_token", async () => {
   const body = logoutMatch![1];
   expect(
     body,
-    "UserAuthContext.logout must remove 'aminra_admin_token'",
-  ).toMatch(/removeItem\(['"]aminra_admin_token['"]\)/);
+    "UserAuthContext.logout must call central auth-session purge",
+  ).toMatch(/purgeAuthSessionState\([^)]*\)/);
 });
 
 test("AdminAuthContext.logout removes aminra_user_token", async () => {
@@ -52,5 +52,5 @@ test("AdminAuthContext.logout removes aminra_user_token", async () => {
   expect(
     body,
     "AdminAuthContext.logout must call central auth-session purge",
-  ).toMatch(/purgeAuthSessionState\(\)/);
+  ).toMatch(/purgeAuthSessionState\([^)]*\)/);
 });

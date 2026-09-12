@@ -1,0 +1,17 @@
+# Domain: 01-auth-session-rbac
+# Step: playwright-token-isolation-and-logout
+# Started: 2026-09-12T10:22:48-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/22-token-isolation.spec.ts e2e/23-cross-context-logout.spec.ts --project=desktop-chromium
+
+
+Running 4 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/22-token-isolation.spec.ts:56:5 › no page reads aminra_admin_token outside the allowed central files (98ms)
+  ✓  2 [desktop-chromium] › e2e/22-token-isolation.spec.ts:77:5 › no page reads aminra_user_token outside the allowed central files (94ms)
+  ✓  3 [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout purges cross-context session state (9ms)
+  ✓  4 [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token (5ms)
+
+  4 passed (1.7s)
+
+# Finished: 2026-09-12T10:22:52-04:00
+# Exit code: 0

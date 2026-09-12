@@ -1,0 +1,35 @@
+## dev...origin/dev [ahead 13]
+ M backend/auth/jwt_utils.py
+ M backend/auth/models.py
+ M backend/auth/submission_router.py
+ M backend/pytest.ini
+ M backend/services/cert_lifecycle.py
+ M backend/services/data_export.py
+ M backend/tests/test_audit_log_integration.py
+ M backend/tests/test_data_deletion_unit.py
+ M backend/tests/test_unauth_route_boundaries.py
+ M backend/tests/uat/conftest.py
+ M backend/tests/uat/test_uat_a_cert_lifecycle.py
+ M docs/qa/2026-09-12-customer-ready-full-system-rerun-report-fixed/evidence/terminal/032-08-frontend-browser-a11y-playwright-full-matrix.txt
+ M frontend/aminra-web/e2e/10-supply-chain.spec.ts
+ M frontend/aminra-web/e2e/14-cuj-cert-lifecycle.spec.ts
+ M frontend/aminra-web/e2e/20-admin-unified-auth.spec.ts
+ M frontend/aminra-web/e2e/23-cross-context-logout.spec.ts
+ M frontend/aminra-web/e2e/28-admin-template-view.spec.ts
+ M frontend/aminra-web/e2e/30-admin-user-edit-ux.spec.ts
+ M frontend/aminra-web/e2e/31-revision-panel-visibility.spec.ts
+ M scripts/qa/run-customer-ready-full-system-qa.sh
+?? backend/tests/test_certificate_lifecycle_scope.py
+?? backend/tests/test_certificate_number_concurrency.py
+?? backend/tests/test_submission_document_lock.py
+?? backend/tests/test_submission_state_machine.py
+?? docs/qa/2026-09-12-improvement-follow-up/
+?? docs/qa/2026-09-12-p0-auth-after-demo-repair/
+?? docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/
+?? docs/qa/2026-09-12-p0-gates-after-env-source-fix/
+?? docs/qa/2026-09-12-p0-gates-after-lifecycle-fixes/
+?? docs/qa/2026-09-12-p0-gates-after-marker-fix/
+?? docs/qa/2026-09-12-p0-gates-after-pytestini-seed-auth-fixes/
+?? docs/qa/backups/
+?? frontend/aminra-web/e2e/helpers/
+?? scripts/qa/repair-demo-accounts.sh
