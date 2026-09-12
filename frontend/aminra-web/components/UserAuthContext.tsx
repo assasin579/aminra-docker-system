@@ -313,11 +313,11 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
           ? await getOidcUser().catch(() => null)
           : null;
         await purgeAuthSessionState("logout");
-        if (isOidcEnabled()) {
-          // Always visit Keycloak end-session for interactive SSO logout.
-          // A valid realm cookie can outlive local oidc-client storage in older
-          // tabs; if we skip Keycloak because getOidcUser() is null, the next
-          // login can silently reuse the previous browser identity.
+        if (oidcUser) {
+          // Only browser-initiated SSO sessions need Keycloak end-session.
+          // Normal business/provider logins use the AMINRA form plus a
+          // server-side token exchange, so redirecting them to Keycloak on
+          // logout would expose the identity-provider UI unnecessarily.
           await signoutRedirect(oidcUser);
         }
       } catch {

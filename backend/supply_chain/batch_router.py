@@ -24,8 +24,12 @@ router = APIRouter()
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "").rstrip("/")
 
 
-def _trace_url(batch_code: str, request: Request | None = None) -> str:
-    """Build public trace URL from env or request origin."""
+def _trace_url(public_trace_id: str, request: Request | None = None) -> str:
+    """Build public trace URL from env or request origin.
+
+    Public URLs must use the opaque globally-unique trace id, never tenant-local
+    `batch_code`; batch_code is a business label and can collide by tenant.
+    """
     base = _FRONTEND_URL
     if not base and request:
         origin = request.headers.get("origin") or request.headers.get("referer", "")
@@ -37,7 +41,7 @@ def _trace_url(batch_code: str, request: Request | None = None) -> str:
             base = f"{p.scheme}://{p.netloc}" if p.netloc else ""
     if not base:
         base = "https://aminra.app"
-    return f"{base}/trace/{batch_code}"
+    return f"{base}/trace/{public_trace_id}"
 
 
 def _validate_uuid(v: str) -> str:
@@ -57,6 +61,68 @@ def _require_business(user: dict):
 def _generate_batch_code() -> str:
     now = datetime.utcnow()
     return f"LOT-{now.strftime('%Y%m%d')}-{str(uuid4())[:6].upper()}"
+
+
+def _json_obj(value):
+    if value in (None, ""):
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        return _json.loads(value)
+    return dict(value)
+
+
+def _json_list(value):
+    if value in (None, ""):
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        return _json.loads(value)
+    return list(value)
+
+
+def _record_get(row, key: str, default=None):
+    return row[key] if row is not None and key in row.keys() else default
+
+
+def _canonical_json(data: dict) -> str:
+    return _json.dumps(data, sort_keys=True, ensure_ascii=False)
+
+
+def _integrity_hash(data: dict) -> str:
+    import hashlib
+
+    return hashlib.sha256(_canonical_json(data).encode("utf-8")).hexdigest()
+
+
+async def assert_batch_mutable(db, batch_id: str, tenant_id: str) -> None:
+    row = await db.fetchrow(
+        "SELECT integrity_hash FROM production_batches WHERE id=$1 AND tenant_id=$2",
+        batch_id,
+        tenant_id,
+    )
+    if not row:
+        raise HTTPException(404)
+    if _record_get(row, "integrity_hash"):
+        raise HTTPException(403, "Lô hàng đã được seal — không thể thay đổi")
+
+
+def _checklist_complete(checklist) -> bool:
+    for item in _json_list(checklist):
+        if isinstance(item, dict) and item.get("checked") is not True:
+            return False
+    return True
+
+
+def _checklist_requires_photo(checklist) -> bool:
+    for item in _json_list(checklist):
+        if isinstance(item, dict) and (
+            item.get("requires_photo") or item.get("photo_required") or item.get("requires_evidence") or item.get("evidence_required")
+        ):
+            return True
+    return False
 
 
 # ── CRUD Batches ──────────────────────────────────────────────────────────────
@@ -110,6 +176,8 @@ async def list_batches(
             BatchOut(
                 id=str(r["id"]),
                 batch_code=r["batch_code"],
+                public_trace_id=str(r["public_trace_id"]) if _record_get(r, "public_trace_id") else None,
+                public_trace_enabled=bool(_record_get(r, "public_trace_enabled")),
                 product_name=r["product_name"],
                 process_template_id=str(r["process_template_id"]) if r["process_template_id"] else None,
                 process_name=r["process_name"],
@@ -177,7 +245,7 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
     row = await db.fetchrow(
         """
         INSERT INTO production_batches (tenant_id, batch_code, product_name, process_template_id, notes)
-        VALUES ($1,$2,$3,$4,$5) RETURNING id
+        VALUES ($1,$2,$3,$4,$5) RETURNING id, public_trace_id
     """,
         tenant_id,
         batch_code,
@@ -199,7 +267,7 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
                 batch_id,
                 m["material_id"],
                 m.get("quantity"),
-                m.get("unit"),
+                _record_get(m, "unit"),
                 material_eligibility[m["material_id"]]["supplier_id"],
                 material_eligibility[m["material_id"]]["eligibility_id"],
                 _json.dumps(material_eligibility[m["material_id"]]["eligibility_snapshot"]),
@@ -227,7 +295,12 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
                 )
 
     log.info(f"[batches] Created {batch_code}")
-    return {"id": batch_id, "batch_code": batch_code, "message": "Đã tạo lô hàng"}
+    return {
+        "id": batch_id,
+        "batch_code": batch_code,
+        "public_trace_id": str(row["public_trace_id"]),
+        "message": "Đã tạo lô hàng",
+    }
 
 
 @router.get("/batches/stats")
@@ -268,101 +341,74 @@ async def list_tenant_members(user=Depends(get_current_user), db=Depends(get_db)
     }
 
 
-@router.get("/batches/trace/{batch_code}")
-async def public_trace(batch_code: str, db=Depends(get_db)):
-    """Public endpoint — no auth. Returns traceability info for a sealed batch."""
+@router.get("/batches/trace/{trace_id}")
+async def public_trace(trace_id: str, db=Depends(get_db)):
+    """Public endpoint — no auth. Returns verified trace info for a sealed batch.
+
+    `trace_id` is the opaque public_trace_id. Business `batch_code` is not a
+    public lookup key because it is only tenant-scoped.
+    """
+    try:
+        _UUID(trace_id)
+    except ValueError:
+        raise HTTPException(404, "Không tìm thấy truy xuất")
+
     row = await db.fetchrow(
         """
-        SELECT b.*, p.name AS process_name, p.description AS process_description,
-               u.company_name
+        SELECT b.public_trace_id, b.batch_code, b.status, b.integrity_hash,
+               b.sealed_data::text AS sealed_text, b.public_trace_enabled,
+               b.approved_at, b.approved_by
         FROM production_batches b
-        LEFT JOIN process_templates p ON p.id = b.process_template_id
-        LEFT JOIN users u ON u.id = b.tenant_id
-        WHERE b.batch_code = $1
+        WHERE b.public_trace_id = $1
     """,
-        batch_code,
+        trace_id,
     )
     if not row:
-        raise HTTPException(404, "Không tìm thấy lô hàng")
+        raise HTTPException(404, "Không tìm thấy truy xuất")
 
-    # Only show completed or sealed batches publicly
-    if row["status"] not in ("completed", "in_progress") and not row.get("integrity_hash"):
+    if (
+        row["status"] != "completed"
+        or not _record_get(row, "integrity_hash")
+        or not _record_get(row, "sealed_text")
+        or not _record_get(row, "public_trace_enabled")
+    ):
         raise HTTPException(404, "Lô hàng chưa sẵn sàng để truy xuất")
 
-    bid = str(row["id"])
+    sealed = _json.loads(row["sealed_text"])
+    computed = _integrity_hash(sealed)
+    integrity = {
+        "sealed": True,
+        "verified": computed == row["integrity_hash"],
+        "hash": row["integrity_hash"],
+        "computed_hash": computed,
+        "sealed_at": sealed.get("approved_at") or str(_record_get(row, "approved_at") or ""),
+        "sealed_by": sealed.get("approved_by") or _record_get(row, "approved_by") or "",
+        "algorithm": sealed.get("hash_algorithm", "sha256"),
+        "snapshot_version": sealed.get("snapshot_version", 1),
+    }
 
-    steps = await db.fetch(
-        """
-        SELECT step_name, performed_by, started_at, completed_at, status,
-               approved_by, approved_at
-        FROM batch_steps WHERE batch_id=$1 ORDER BY created_at
-    """,
-        bid,
-    )
-
-    mats = await db.fetch(
-        """
-        SELECT m.name AS material_name, m.sku, m.category, m.halal_risk,
-               s.name AS supplier_name, s.status AS supplier_status,
-               bm.quantity, bm.unit
-        FROM batch_materials bm
-        JOIN materials m ON m.id = bm.material_id
-        LEFT JOIN suppliers s ON s.id = m.supplier_id
-        WHERE bm.batch_id=$1
-    """,
-        bid,
-    )
-
-    # Supplier certificates for materials in this batch
-    certs = await db.fetch(
-        """
-        SELECT DISTINCT sc.cert_type, sc.cert_number, sc.issuing_body,
-               sc.issued_date, sc.expiry_date, s.name AS supplier_name
-        FROM batch_materials bm
-        JOIN materials m ON m.id = bm.material_id
-        JOIN suppliers s ON s.id = m.supplier_id
-        JOIN supplier_certificates sc ON sc.supplier_id = s.id
-        WHERE bm.batch_id=$1
-        ORDER BY sc.expiry_date DESC
-    """,
-        bid,
-    )
-
-    # Verify integrity if sealed
-    integrity = None
-    if row.get("integrity_hash"):
-        import hashlib
-
-        # Fetch raw sealed_data as text to avoid JSONB re-serialization differences
-        raw = await db.fetchval("SELECT sealed_data::text FROM production_batches WHERE id=$1", bid)
-        if raw:
-            # Re-parse and re-serialize identically to seal time
-            parsed = _json.loads(raw)
-            sealed_json = _json.dumps(parsed, sort_keys=True, ensure_ascii=False)
-            computed = hashlib.sha256(sealed_json.encode("utf-8")).hexdigest()
-        integrity = {
-            "sealed": True,
-            "verified": computed == row["integrity_hash"],
-            "hash": row["integrity_hash"],
-            "sealed_at": str(row.get("approved_at") or ""),
-            "sealed_by": row.get("approved_by") or "",
-        }
-
+    steps = sealed.get("steps") or []
+    materials = sealed.get("materials") or []
+    certificates = sealed.get("certificates") or []
     total_steps = len(steps)
-    completed_steps = sum(1 for s in steps if s["status"] == "completed")
+    completed_steps = sum(1 for s in steps if s.get("status") == "completed")
+    batch = sealed.get("batch") or {}
+    process = sealed.get("process") or {}
+    company = sealed.get("company") or {}
 
     return {
         "batch": {
-            "batch_code": row["batch_code"],
-            "product_name": row["product_name"],
-            "status": row["status"],
-            "company_name": row["company_name"] or "N/A",
-            "process_name": row.get("process_name") or None,
-            "process_description": row.get("process_description") or None,
-            "started_at": str(row["started_at"]) if row["started_at"] else None,
-            "completed_at": str(row["completed_at"]) if row["completed_at"] else None,
-            "compliance_score": row["compliance_score"],
-            "created_at": str(row["created_at"]),
+            "batch_code": batch.get("batch_code") or sealed.get("batch_code") or row["batch_code"],
+            "product_name": batch.get("product_name") or sealed.get("product_name"),
+            "status": batch.get("status") or row["status"],
+            "company_name": company.get("name") or sealed.get("company_name") or "N/A",
+            "process_name": process.get("name"),
+            "process_description": process.get("description"),
+            "started_at": batch.get("started_at") or sealed.get("started_at"),
+            "completed_at": batch.get("completed_at") or sealed.get("completed_at"),
+            "compliance_score": batch.get("compliance_score", sealed.get("compliance_score")),
+            "created_at": batch.get("created_at") or sealed.get("created_at"),
+            "public_trace_id": str(row["public_trace_id"]),
         },
         "integrity": integrity,
         "progress": {
@@ -372,39 +418,29 @@ async def public_trace(batch_code: str, db=Depends(get_db)):
         },
         "steps": [
             {
-                "name": s["step_name"],
-                "performed_by": s["performed_by"] or None,
-                "started_at": str(s["started_at"]) if s["started_at"] else None,
-                "completed_at": str(s["completed_at"]) if s["completed_at"] else None,
-                "status": s["status"],
-                "approved_by": s["approved_by"] or None,
+                "name": s.get("step_name") or s.get("name"),
+                "performed_by": s.get("performed_by"),
+                "started_at": s.get("started_at"),
+                "completed_at": s.get("completed_at"),
+                "status": s.get("status"),
+                "approved_by": s.get("approved_by"),
             }
             for s in steps
         ],
         "materials": [
             {
-                "name": m["material_name"],
-                "sku": m["sku"] or None,
-                "category": m["category"] or None,
-                "halal_risk": m["halal_risk"] or "unknown",
-                "supplier_name": m["supplier_name"] or None,
-                "supplier_verified": m["supplier_status"] == "verified" if m["supplier_status"] else False,
-                "quantity": str(m["quantity"]) if m["quantity"] else None,
-                "unit": m["unit"] or None,
+                "name": m.get("material_name") or m.get("name"),
+                "sku": _record_get(m, "sku"),
+                "category": _record_get(m, "category"),
+                "halal_risk": _record_get(m, "halal_risk") or "unknown",
+                "supplier_name": _record_get(m, "supplier_name"),
+                "supplier_verified": (_record_get(m, "eligibility_snapshot") or {}).get("status") == "active",
+                "quantity": str(m.get("quantity")) if m.get("quantity") is not None else None,
+                "unit": _record_get(m, "unit"),
             }
-            for m in mats
+            for m in materials
         ],
-        "certificates": [
-            {
-                "supplier_name": c["supplier_name"],
-                "cert_type": c["cert_type"],
-                "cert_number": c["cert_number"],
-                "issuing_body": c["issuing_body"],
-                "issued_date": str(c["issued_date"]) if c["issued_date"] else None,
-                "expiry_date": str(c["expiry_date"]) if c["expiry_date"] else None,
-            }
-            for c in certs
-        ],
+        "certificates": certificates,
     }
 
 
@@ -416,13 +452,7 @@ async def assign_member_to_batch(bid: str, request: Request, user=Depends(get_cu
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tài khoản mới có thể ủy quyền")
 
-    batch = await db.fetchrow(
-        "SELECT id, integrity_hash FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id
-    )
-    if not batch:
-        raise HTTPException(404)
-    if batch.get("integrity_hash"):
-        raise HTTPException(400, "Lô hàng đã sealed")
+    await assert_batch_mutable(db, bid, tenant_id)
 
     body = await request.json()
     member_id = body.get("member_id")
@@ -515,6 +545,7 @@ async def update_batch(bid: str, req: BatchUpdate, user=Depends(get_current_user
     _validate_uuid(bid)
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_edit")
+    await assert_batch_mutable(db, bid, tenant_id)
     updates, params, idx = [], [bid, tenant_id], 3
 
     if req.product_name is not None:
@@ -559,6 +590,7 @@ async def delete_batch(bid: str, user=Depends(get_current_user), db=Depends(get_
     _validate_uuid(bid)
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_delete")
+    await assert_batch_mutable(db, bid, tenant_id)
     result = await db.execute("DELETE FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id)
     if result == "DELETE 0":
         raise HTTPException(404)
@@ -576,13 +608,7 @@ async def update_step(bid: str, step_id: str, req: BatchStepUpdate, user=Depends
     await check_permission_db(user, "can_edit")
 
     # Verify batch belongs to tenant + not sealed
-    b = await db.fetchrow(
-        "SELECT id, integrity_hash FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id
-    )
-    if not b:
-        raise HTTPException(404)
-    if b.get("integrity_hash"):
-        raise HTTPException(403, "Lô hàng đã được seal — không thể thay đổi")
+    await assert_batch_mutable(db, bid, tenant_id)
 
     updates, params, idx = [], [step_id, bid], 3
     if req.status is not None:
@@ -626,11 +652,13 @@ async def approve_step(bid: str, step_id: str, user=Depends(get_current_user), d
     _validate_uuid(step_id)
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_approve")
-    b = await db.fetchrow("SELECT id, assigned_to FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id)
+    b = await db.fetchrow("SELECT id, assigned_to, integrity_hash FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id)
     if not b:
         raise HTTPException(404)
+    if _record_get(b, "integrity_hash"):
+        raise HTTPException(403, "Lô hàng đã được seal — không thể thay đổi")
     # Allow: owner OR assigned member
-    if not user.get("is_owner") and str(b.get("assigned_to")) != user.get("sub"):
+    if not user.get("is_owner") and str(_record_get(b, "assigned_to")) != user.get("sub"):
         raise HTTPException(403, "Bạn chưa được ủy quyền xác nhận lô hàng này")
 
     step = await db.fetchrow("SELECT status FROM batch_steps WHERE id=$1 AND batch_id=$2", step_id, bid)
@@ -650,41 +678,143 @@ async def approve_batch(bid: str, user=Depends(get_current_user), db=Depends(get
     _validate_uuid(bid)
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_approve")
-    row = await db.fetchrow("SELECT * FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id)
+    row = await db.fetchrow(
+        """
+        SELECT b.*, p.name AS process_name, p.description AS process_description,
+               p.version AS process_version, u.company_name
+        FROM production_batches b
+        LEFT JOIN process_templates p ON p.id = b.process_template_id
+        LEFT JOIN users u ON u.id = b.tenant_id
+        WHERE b.id=$1 AND b.tenant_id=$2
+        """,
+        bid,
+        tenant_id,
+    )
     if not row:
         raise HTTPException(404)
     # Allow: owner OR assigned member
-    if not user.get("is_owner") and str(row.get("assigned_to")) != user.get("sub"):
+    if not user.get("is_owner") and str(_record_get(row, "assigned_to")) != user.get("sub"):
         raise HTTPException(403, "Bạn chưa được ủy quyền xác nhận lô hàng này")
     if row["status"] != "completed":
         raise HTTPException(400, "Lô hàng chưa hoàn thành")
-    if row.get("integrity_hash"):
+    if _record_get(row, "integrity_hash"):
         raise HTTPException(400, "Lô hàng đã được seal — không thể thay đổi")
 
     # Collect all data for sealing
     steps = await db.fetch("SELECT * FROM batch_steps WHERE batch_id=$1 ORDER BY created_at", bid)
     materials = await db.fetch(
         """
-        SELECT bm.*, m.name AS material_name, m.sku, s.name AS supplier_name
+        SELECT bm.*, m.name AS material_name, m.sku, m.category, m.halal_risk,
+               COALESCE(bm.supplier_id, m.supplier_id) AS effective_supplier_id,
+               s.name AS supplier_name
         FROM batch_materials bm
         JOIN materials m ON m.id = bm.material_id
-        LEFT JOIN suppliers s ON s.id = m.supplier_id
+        LEFT JOIN suppliers s ON s.id = COALESCE(bm.supplier_id, m.supplier_id)
         WHERE bm.batch_id=$1
     """,
         bid,
     )
+    certs = await db.fetch(
+        """
+        SELECT DISTINCT sc.cert_type, sc.cert_number, sc.issuing_body,
+               sc.issued_date, sc.expiry_date, s.name AS supplier_name
+        FROM batch_materials bm
+        JOIN materials m ON m.id = bm.material_id
+        JOIN suppliers s ON s.id = COALESCE(bm.supplier_id, m.supplier_id)
+        JOIN supplier_certificates sc ON sc.supplier_id = s.id
+        WHERE bm.batch_id=$1
+        ORDER BY sc.expiry_date DESC
+        """,
+        bid,
+    )
+
+    readiness_errors: list[str] = []
+    for s in steps:
+        if s["status"] != "completed":
+            readiness_errors.append(f"Bước '{s['step_name']}' chưa hoàn thành")
+        if not _record_get(s, "approved_by") or not _record_get(s, "approved_at"):
+            readiness_errors.append(f"Bước '{s['step_name']}' chưa được xác nhận")
+        if not _checklist_complete(_record_get(s, "checklist")):
+            readiness_errors.append(f"Checklist của bước '{s['step_name']}' chưa hoàn tất")
+        if _checklist_requires_photo(_record_get(s, "checklist")) and not _record_get(s, "photo_path"):
+            readiness_errors.append(f"Bước '{s['step_name']}' thiếu bằng chứng/ảnh bắt buộc")
+
+    material_snapshots: list[dict] = []
+    for m in materials:
+        supplier_id = str(m["effective_supplier_id"]) if _record_get(m, "effective_supplier_id") else None
+        if not supplier_id:
+            readiness_errors.append(f"Nguyên liệu '{m['material_name']}' thiếu nhà cung cấp")
+            eligibility_snapshot = _json_obj(_record_get(m, "eligibility_snapshot"))
+        else:
+            try:
+                eligibility = await assert_supplier_eligible(db, str(tenant_id), supplier_id, _record_get(m, "category"))
+                eligibility_snapshot = {
+                    "supplier_id": supplier_id,
+                    "eligibility_id": eligibility.certificate_id,
+                    "status": eligibility.status,
+                    "valid_from": eligibility.valid_from.isoformat() if eligibility.valid_from else None,
+                    "valid_until": eligibility.valid_until.isoformat() if eligibility.valid_until else None,
+                    "source_of_truth": eligibility.source_of_truth,
+                    "scope": eligibility.scope,
+                    "checked_at": datetime.utcnow().isoformat() + "Z",
+                }
+            except HTTPException as exc:
+                readiness_errors.append(f"Nguyên liệu '{m['material_name']}' không còn đủ điều kiện CB: {exc.detail}")
+                eligibility_snapshot = _json_obj(_record_get(m, "eligibility_snapshot"))
+
+        material_snapshots.append(
+            {
+                "material_name": m["material_name"],
+                "sku": _record_get(m, "sku"),
+                "category": _record_get(m, "category"),
+                "halal_risk": _record_get(m, "halal_risk") or "unknown",
+                "supplier_name": _record_get(m, "supplier_name"),
+                "supplier_id": supplier_id,
+                "quantity": float(m["quantity"]) if m["quantity"] is not None else None,
+                "unit": _record_get(m, "unit"),
+                "eligibility_snapshot": eligibility_snapshot,
+            }
+        )
+
+    if readiness_errors:
+        raise HTTPException(
+            400,
+            {"message": "Lô hàng chưa đủ điều kiện seal", "reasons": readiness_errors},
+        )
 
     approver = user.get("email", "admin")
+    approved_at = datetime.utcnow().isoformat()
 
-    # Build sealed data snapshot
+    # Build sealed data snapshot. Keep legacy top-level keys for older verify/tests,
+    # but also include normalized nested payload for public trace rendering.
     sealed = {
+        "snapshot_version": 2,
+        "hash_algorithm": "sha256",
         "batch_code": row["batch_code"],
         "product_name": row["product_name"],
         "started_at": row["started_at"].isoformat() if row["started_at"] else None,
         "completed_at": row["completed_at"].isoformat() if row["completed_at"] else None,
         "approved_by": approver,
-        "approved_at": datetime.utcnow().isoformat(),
+        "approved_at": approved_at,
         "compliance_score": row["compliance_score"],
+        "company_name": _record_get(row, "company_name") or "N/A",
+        "batch": {
+            "id": bid,
+            "batch_code": row["batch_code"],
+            "product_name": row["product_name"],
+            "status": row["status"],
+            "started_at": row["started_at"].isoformat() if row["started_at"] else None,
+            "completed_at": row["completed_at"].isoformat() if row["completed_at"] else None,
+            "created_at": row["created_at"].isoformat() if _record_get(row, "created_at") else None,
+            "compliance_score": row["compliance_score"],
+        },
+        "company": {"name": _record_get(row, "company_name") or "N/A"},
+        "process": {
+            "id": str(row["process_template_id"]) if _record_get(row, "process_template_id") else None,
+            "name": _record_get(row, "process_name"),
+            "description": _record_get(row, "process_description"),
+            "version": _record_get(row, "process_version"),
+        },
         "steps": [
             {
                 "step_name": s["step_name"],
@@ -695,39 +825,39 @@ async def approve_batch(bid: str, user=Depends(get_current_user), db=Depends(get
                 "approved_by": s["approved_by"],
                 "approved_at": s["approved_at"].isoformat() if s["approved_at"] else None,
                 "notes": s["notes"],
+                "checklist": _json_list(_record_get(s, "checklist")),
                 "has_photo": bool(s["photo_path"]),
             }
             for s in steps
         ],
-        "materials": [
+        "materials": material_snapshots,
+        "certificates": [
             {
-                "material_name": m["material_name"],
-                "sku": m.get("sku"),
-                "supplier_name": m["supplier_name"],
-                "quantity": float(m["quantity"]) if m["quantity"] else None,
-                "unit": m.get("unit"),
+                "supplier_name": c["supplier_name"],
+                "cert_type": c["cert_type"],
+                "cert_number": c["cert_number"],
+                "issuing_body": c["issuing_body"],
+                "issued_date": c["issued_date"].isoformat() if c["issued_date"] else None,
+                "expiry_date": c["expiry_date"].isoformat() if c["expiry_date"] else None,
             }
-            for m in materials
+            for c in certs
         ],
     }
 
-    # Compute SHA-256 hash (blockchain-style integrity)
-    import hashlib
-
-    sealed_json = _json.dumps(sealed, sort_keys=True, ensure_ascii=False)
-    integrity_hash = hashlib.sha256(sealed_json.encode("utf-8")).hexdigest()
+    integrity_hash = _integrity_hash(sealed)
 
     # Also hash each step individually
     for i, s in enumerate(steps):
-        step_data = _json.dumps(sealed["steps"][i], sort_keys=True, ensure_ascii=False)
-        step_hash = hashlib.sha256(step_data.encode("utf-8")).hexdigest()
+        step_hash = _integrity_hash(sealed["steps"][i])
         await db.execute("UPDATE batch_steps SET step_hash=$1 WHERE id=$2", step_hash, s["id"])
 
-    # Seal the batch — after this, data is immutable
+    # Seal the batch — after this, data is immutable and public trace can be served.
+    sealed_json = _canonical_json(sealed)
     await db.execute(
         """
         UPDATE production_batches
-        SET approved_by=$1, approved_at=NOW(), integrity_hash=$2, sealed_data=$3::jsonb
+        SET approved_by=$1, approved_at=NOW(), integrity_hash=$2,
+            sealed_data=$3::jsonb, public_trace_enabled=true
         WHERE id=$4
     """,
         approver,
@@ -736,13 +866,11 @@ async def approve_batch(bid: str, user=Depends(get_current_user), db=Depends(get
         bid,
     )
 
-    unapproved = sum(1 for s in sealed["steps"] if s["status"] == "completed" and not s["approved_by"])
-
     log.info(f"[batches] Sealed {bid} hash={integrity_hash[:16]}...")
     return {
         "message": "Lô hàng đã được seal và xác nhận",
         "integrity_hash": integrity_hash,
-        "unapproved_steps": unapproved,
+        "unapproved_steps": 0,
         "sealed": True,
     }
 
@@ -762,13 +890,9 @@ async def verify_batch_integrity(bid: str, user=Depends(get_current_user), db=De
     if not row["integrity_hash"]:
         return {"verified": False, "reason": "Lô hàng chưa được seal"}
 
-    import hashlib
-
     # Parse raw text then re-serialize identically to seal time
     sealed = _json.loads(row["sealed_text"])
-    sealed_json = _json.dumps(sealed, sort_keys=True, ensure_ascii=False)
-
-    computed_hash = hashlib.sha256(sealed_json.encode("utf-8")).hexdigest()
+    computed_hash = _integrity_hash(sealed)
     is_valid = computed_hash == row["integrity_hash"]
 
     return {
@@ -815,7 +939,7 @@ async def export_batch_pdf(bid: str, user=Depends(get_current_user), db=Depends(
     company_name = company["company_name"] if company else "N/A"
 
     # Generate QR
-    qr_url = _trace_url(row["batch_code"])
+    qr_url = _trace_url(str(row["public_trace_id"]))
     qr_img_bytes = None
     try:
         import qrcode
@@ -884,16 +1008,16 @@ async def export_batch_pdf(bid: str, user=Depends(get_current_user), db=Depends(
         ["Mã lô", row["batch_code"]],
         ["Sản phẩm", row["product_name"]],
         ["Công ty", company_name],
-        ["Quy trình", row.get("process_name") or "N/A"],
+        ["Quy trình", _record_get(row, "process_name") or "N/A"],
         ["Trạng thái", status_map.get(row["status"], row["status"])],
         ["Bắt đầu", str(row["started_at"] or "Chưa bắt đầu")],
         ["Hoàn thành", str(row["completed_at"] or "Chưa hoàn thành")],
         ["Điểm tuân thủ", f"{row['compliance_score']}%" if row["compliance_score"] is not None else "N/A"],
     ]
-    if row.get("approved_by"):
+    if _record_get(row, "approved_by"):
         info_data.append(["Xác nhận bởi", row["approved_by"]])
         info_data.append(["Ngày xác nhận", str(row.get("approved_at", ""))])
-    if row.get("integrity_hash"):
+    if _record_get(row, "integrity_hash"):
         info_data.append(["Hash toàn vẹn", row["integrity_hash"][:32] + "..."])
 
     info_table = Table(info_data, colWidths=[45 * mm, 125 * mm])
@@ -923,10 +1047,10 @@ async def export_batch_pdf(bid: str, user=Depends(get_current_user), db=Depends(
             mat_data.append(
                 [
                     m["material_name"],
-                    m.get("sku") or "",
+                    _record_get(m, "sku") or "",
                     m["supplier_name"] or "",
                     str(m["quantity"] or ""),
-                    m.get("unit") or "",
+                    _record_get(m, "unit") or "",
                 ]
             )
         mat_table = Table(mat_data, colWidths=[50 * mm, 25 * mm, 40 * mm, 25 * mm, 25 * mm])
@@ -956,11 +1080,11 @@ async def export_batch_pdf(bid: str, user=Depends(get_current_user), db=Depends(
                 [
                     str(i),
                     s["step_name"],
-                    s.get("performed_by") or "",
-                    s["started_at"].strftime("%d/%m %H:%M") if s.get("started_at") else "",
-                    s["completed_at"].strftime("%d/%m %H:%M") if s.get("completed_at") else "",
+                    _record_get(s, "performed_by") or "",
+                    s["started_at"].strftime("%d/%m %H:%M") if _record_get(s, "started_at") else "",
+                    s["completed_at"].strftime("%d/%m %H:%M") if _record_get(s, "completed_at") else "",
                     "Xong" if s["status"] == "completed" else "Chưa",
-                    s.get("approved_by") or "",
+                    _record_get(s, "approved_by") or "",
                 ]
             )
         step_table = Table(step_data, colWidths=[8 * mm, 40 * mm, 30 * mm, 22 * mm, 22 * mm, 18 * mm, 30 * mm])
@@ -1108,11 +1232,11 @@ async def generate_qr(bid: str, request: Request, user=Depends(get_current_user)
     """Generate QR code PNG for a batch."""
     _validate_uuid(bid)
     tenant_id = _require_business(user)
-    row = await db.fetchrow("SELECT batch_code FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id)
+    row = await db.fetchrow("SELECT batch_code, public_trace_id FROM production_batches WHERE id=$1 AND tenant_id=$2", bid, tenant_id)
     if not row:
         raise HTTPException(404)
 
-    url = _trace_url(row["batch_code"], request)
+    url = _trace_url(str(row["public_trace_id"]), request)
 
     try:
         import qrcode

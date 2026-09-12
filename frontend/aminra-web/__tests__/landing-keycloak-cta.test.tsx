@@ -43,7 +43,7 @@ class MockIntersectionObserver implements IntersectionObserver {
   unobserve = vi.fn();
 }
 
-describe("landing Keycloak CTA", () => {
+describe("landing normal-user CTA", () => {
   beforeEach(() => {
     auth.isOidcEnabled.mockReset();
     auth.signinRedirect.mockReset();
@@ -84,7 +84,7 @@ describe("landing Keycloak CTA", () => {
     });
   });
 
-  it("starts the Keycloak OIDC redirect directly from the hero CTA when SSO is enabled", () => {
+  it("keeps the hero CTA inside AMINRA auth even when OIDC is enabled", () => {
     auth.isOidcEnabled.mockReturnValue(true);
 
     render(<LandingPage />);
@@ -94,25 +94,11 @@ describe("landing Keycloak CTA", () => {
 
     const clickWasNotCancelled = fireEvent.click(heroCta);
 
-    expect(clickWasNotCancelled).toBe(false);
-    expect(auth.signinRedirect).toHaveBeenCalledTimes(1);
-    expect(auth.signinRedirect).toHaveBeenCalledWith("/dashboard/business");
-  });
-
-  it("keeps /business/register as a fallback when SSO is disabled", () => {
-    auth.isOidcEnabled.mockReturnValue(false);
-
-    render(<LandingPage />);
-
-    const [heroCta] = screen.getAllByRole("link", { name: /bắt đầu ngay/i });
-    const clickWasNotCancelled = fireEvent.click(heroCta);
-
-    expect(heroCta).toHaveAttribute("href", "/business/register");
     expect(clickWasNotCancelled).toBe(true);
     expect(auth.signinRedirect).not.toHaveBeenCalled();
   });
 
-  it("also wires the lower-page CTA to the same Keycloak redirect", () => {
+  it("also keeps the lower-page CTA inside AMINRA auth", () => {
     auth.isOidcEnabled.mockReturnValue(true);
 
     render(<LandingPage />);
@@ -122,7 +108,8 @@ describe("landing Keycloak CTA", () => {
 
     const clickWasNotCancelled = fireEvent.click(ctas[1]);
 
-    expect(clickWasNotCancelled).toBe(false);
-    expect(auth.signinRedirect).toHaveBeenCalledWith("/dashboard/business");
+    expect(ctas[1]).toHaveAttribute("href", "/business/register");
+    expect(clickWasNotCancelled).toBe(true);
+    expect(auth.signinRedirect).not.toHaveBeenCalled();
   });
 });

@@ -1,9 +1,8 @@
 "use client";
 
-import { type MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { isOidcEnabled, signinRedirect } from "@/lib/auth-oidc";
 
 // ── Floating particles ──────────────────────────────────────────────────────
 
@@ -519,18 +518,6 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const [scrollY, setScrollY] = useState(0);
 
-  const redirectToKeycloak = (event: ReactMouseEvent<HTMLAnchorElement>) => {
-    if (!isOidcEnabled()) return;
-
-    // Do not rely on the intermediate /business/register page hydration.
-    // The landing CTA is the user's primary auth entrypoint, so initiate
-    // the OIDC PKCE redirect directly and keep href as a no-JS fallback.
-    event.preventDefault();
-    void signinRedirect("/dashboard/business").catch(() => {
-      window.location.assign("/business/register");
-    });
-  };
-
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -724,7 +711,6 @@ export default function LandingPage() {
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link
                 href="/business/register"
-                onClick={redirectToKeycloak}
                 className="px-8 py-4 rounded-2xl font-bold text-base text-white btn-lift"
                 style={{
                   background: "linear-gradient(135deg, #0A1F44, #102A5C)",
@@ -1037,7 +1023,6 @@ export default function LandingPage() {
               </h2>
               <Link
                 href="/business/register"
-                onClick={redirectToKeycloak}
                 className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base btn-lift"
                 style={{
                   background: "linear-gradient(135deg, #F0D070 0%, #C9A24A 100%)",

@@ -286,6 +286,8 @@ class BatchStepUpdate(BaseModel):
 class BatchOut(BaseModel):
     id: str
     batch_code: str
+    public_trace_id: Optional[str] = None
+    public_trace_enabled: bool = False
     product_name: str
     process_template_id: Optional[str]
     process_name: Optional[str] = None

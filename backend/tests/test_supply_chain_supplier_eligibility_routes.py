@@ -21,6 +21,7 @@ from supply_chain.supplier_router import (
 _MIGRATION_PATHS = [
     Path(__file__).resolve().parents[1] / "alembic/versions/038_cb_supplier_certificate_eligibility.py",
     Path(__file__).resolve().parents[1] / "alembic/versions/039_supplier_authority_batch_snapshot.py",
+    Path(__file__).resolve().parents[1] / "alembic/versions/040_public_trace_id.py",
 ]
 
 

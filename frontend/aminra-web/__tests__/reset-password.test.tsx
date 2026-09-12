@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import ResetPasswordPage from "@/app/(auth)/reset-password/page";
 
 const oidcMock = vi.hoisted(() => ({
@@ -15,20 +15,20 @@ beforeEach(() => {
 });
 
 describe("ResetPasswordPage", () => {
-  test("shows Keycloak-owned reset handoff copy", () => {
+  test("keeps reset handoff inside AMINRA UI", () => {
     render(<ResetPasswordPage />);
 
-    expect(screen.getByText(/Đang chuyển hướng/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Khôi phục mật khẩu được xử lý bởi Keycloak/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Đặt lại mật khẩu/i)).toBeInTheDocument();
+    expect(screen.getByText(/không bị chuyển/i)).toBeInTheDocument();
+    expect(screen.getByText(/Về trang đăng nhập/i)).toHaveAttribute(
+      "href",
+      "/business/login",
+    );
   });
 
-  test("redirects to Keycloak login/reset flow", async () => {
+  test("does not redirect to the identity provider", () => {
     render(<ResetPasswordPage />);
 
-    await waitFor(() => {
-      expect(oidcMock.signinRedirect).toHaveBeenCalledWith("/");
-    });
+    expect(oidcMock.signinRedirect).not.toHaveBeenCalled();
   });
 });

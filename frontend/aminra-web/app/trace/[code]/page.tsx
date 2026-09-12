@@ -14,13 +14,17 @@ interface TraceData {
     completed_at: string | null;
     compliance_score: number | null;
     created_at: string;
+    public_trace_id?: string;
   };
   integrity: {
     sealed: boolean;
     verified: boolean;
     hash: string;
+    computed_hash?: string;
     sealed_at: string;
     sealed_by: string;
+    algorithm?: string;
+    snapshot_version?: number;
   } | null;
   progress: { total: number; completed: number; percent: number };
   steps: Array<{

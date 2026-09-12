@@ -10,6 +10,8 @@ import { ApiClientError, apiFetch } from "@/lib/apiClient";
 interface Batch {
   id: string;
   batch_code: string;
+  public_trace_id?: string | null;
+  public_trace_enabled?: boolean;
   product_name: string;
   process_template_id: string | null;
   process_name: string | null;

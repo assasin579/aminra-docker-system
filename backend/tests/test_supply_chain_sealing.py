@@ -17,7 +17,10 @@ These tests cover the full lifecycle the demo will exercise:
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+from datetime import date, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -25,11 +28,14 @@ from fastapi import HTTPException
 
 from supply_chain.batch_router import (
     approve_batch,
+    approve_step,
+    assign_member_to_batch,
     create_batch,
+    delete_batch,
+    public_trace,
     update_batch,
     update_step,
     verify_batch_integrity,
-    assign_member_to_batch,
 )
 from supply_chain.models import (
     BatchCreate, BatchStepUpdate, BatchUpdate,
@@ -42,8 +48,59 @@ from supply_chain.supplier_router import create_supplier
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
 
+_MIGRATION_PATHS = [
+    Path(__file__).resolve().parents[1] / "alembic/versions/038_cb_supplier_certificate_eligibility.py",
+    Path(__file__).resolve().parents[1] / "alembic/versions/039_supplier_authority_batch_snapshot.py",
+    Path(__file__).resolve().parents[1] / "alembic/versions/040_public_trace_id.py",
+]
 
-async def _seed_full_batch(db, user, *, status_completed=True):
+
+def _load_migration(path: Path):
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    assert spec and spec.loader
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    return migration
+
+
+MIGRATIONS = [_load_migration(path) for path in _MIGRATION_PATHS]
+
+
+@pytest.fixture(autouse=True)
+async def _p0_trace_schema(db_tx):
+    await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    for migration in reversed(MIGRATIONS):
+        for sql in migration.DOWN_SQL:
+            await db_tx.execute(sql)
+    for migration in MIGRATIONS:
+        for sql in migration.UP_SQL:
+            await db_tx.execute(sql)
+
+
+async def _authorize_supplier(db, supplier_id, tenant_id, *, status="active", valid_from=None, valid_until=None):
+    today = date.today()
+    await db.execute(
+        """
+        INSERT INTO supplier_eligibilities
+          (supplier_id, tenant_id, certificate_no, issuer_name, status, valid_from, valid_until, scope, source_of_truth)
+        VALUES ($1,$2,$3,'Test CB',$4,$5,$6,'{"material_categories":["*"]}'::jsonb,'cb')
+        ON CONFLICT (supplier_id) DO UPDATE SET
+          status=EXCLUDED.status,
+          valid_from=EXCLUDED.valid_from,
+          valid_until=EXCLUDED.valid_until,
+          scope=EXCLUDED.scope,
+          source_of_truth='cb'
+        """,
+        supplier_id,
+        tenant_id,
+        f"CB-{uuid4().hex[:8]}",
+        status,
+        valid_from or today - timedelta(days=1),
+        valid_until or today + timedelta(days=30),
+    )
+
+
+async def _seed_full_batch(db, user, *, status_completed=True, approve_steps=True):
     """Build supplier → material → process(2 steps) → batch with materials.
     Optionally drive every step to 'completed' and the batch to status='completed'
     so it's eligible for sealing.
@@ -51,6 +108,7 @@ async def _seed_full_batch(db, user, *, status_completed=True):
     sup = (await create_supplier(
         req=SupplierCreate(name=f"S {uuid4().hex[:6]}"), user=user, db=db,
     ))["id"]
+    await _authorize_supplier(db, sup, user["tenant_id"])
     mat = (await create_material(
         req=MaterialCreate(name=f"M {uuid4().hex[:6]}", supplier_id=sup),
         user=user, db=db,
@@ -83,11 +141,14 @@ async def _seed_full_batch(db, user, *, status_completed=True):
         await update_batch(bid=bid, req=BatchUpdate(status="in_progress"), user=user, db=db)
         steps = await db.fetch("SELECT id FROM batch_steps WHERE batch_id=$1::uuid", bid)
         for s in steps:
+            step_id = str(s["id"])
             await update_step(
-                bid=bid, step_id=str(s["id"]),
+                bid=bid, step_id=step_id,
                 req=BatchStepUpdate(status="completed", performed_by="Test User"),
                 user=user, db=db,
             )
+            if approve_steps:
+                await approve_step(bid=bid, step_id=step_id, user=user, db=db)
         await update_batch(bid=bid, req=BatchUpdate(status="completed"), user=user, db=db)
 
     return bid
@@ -137,11 +198,13 @@ class TestSealHappyPath:
         hashes = {r["step_hash"] for r in rows}
         assert len(hashes) == 2
 
-    async def test_04_seal_response_includes_unapproved_count(self, db_tx, biz_a):
-        # Steps marked completed but NOT step-approved → unapproved_steps > 0.
-        bid = await _seed_full_batch(db_tx, biz_a)
-        result = await approve_batch(bid=bid, user=biz_a, db=db_tx)
-        assert result["unapproved_steps"] == 2
+    async def test_04_seal_rejects_unapproved_steps(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a, approve_steps=False)
+        with pytest.raises(HTTPException) as exc:
+            await approve_batch(bid=bid, user=biz_a, db=db_tx)
+        assert exc.value.status_code == 400
+        assert "chưa đủ điều kiện seal" in exc.value.detail["message"]
+        assert any("chưa được xác nhận" in reason for reason in exc.value.detail["reasons"])
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -293,8 +356,27 @@ class TestImmutability:
                 request=FakeReq({"member_id": biz_a["sub"]}),
                 user=biz_a, db=db_tx,
             )
-        assert exc.value.status_code == 400
-        assert "sealed" in exc.value.detail or "đã sealed" in exc.value.detail
+        assert exc.value.status_code == 403
+        assert "seal" in str(exc.value.detail).lower() or "sealed" in str(exc.value.detail).lower()
+
+    async def test_15_cannot_update_batch_after_seal(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a)
+        await approve_batch(bid=bid, user=biz_a, db=db_tx)
+        with pytest.raises(HTTPException) as exc:
+            await update_batch(
+                bid=bid,
+                req=BatchUpdate(notes="late note"),
+                user=biz_a,
+                db=db_tx,
+            )
+        assert exc.value.status_code == 403
+
+    async def test_16_cannot_delete_batch_after_seal(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a)
+        await approve_batch(bid=bid, user=biz_a, db=db_tx)
+        with pytest.raises(HTTPException) as exc:
+            await delete_batch(bid=bid, user=biz_a, db=db_tx)
+        assert exc.value.status_code == 403
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -303,21 +385,21 @@ class TestImmutability:
 
 
 class TestPreconditionsAndAuth:
-    async def test_15_cannot_seal_incomplete_batch(self, db_tx, biz_a):
+    async def test_17_cannot_seal_incomplete_batch(self, db_tx, biz_a):
         bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
         with pytest.raises(HTTPException) as exc:
             await approve_batch(bid=bid, user=biz_a, db=db_tx)
         assert exc.value.status_code == 400
         assert "chưa hoàn thành" in exc.value.detail
 
-    async def test_16_other_tenant_cannot_verify(self, db_tx, biz_a, biz_b):
+    async def test_18_other_tenant_cannot_verify(self, db_tx, biz_a, biz_b):
         bid = await _seed_full_batch(db_tx, biz_a)
         await approve_batch(bid=bid, user=biz_a, db=db_tx)
         with pytest.raises(HTTPException) as exc:
             await verify_batch_integrity(bid=bid, user=biz_b, db=db_tx)
         assert exc.value.status_code == 404
 
-    async def test_17_other_tenant_cannot_seal(self, db_tx, biz_a, biz_b):
+    async def test_19_other_tenant_cannot_seal(self, db_tx, biz_a, biz_b):
         bid = await _seed_full_batch(db_tx, biz_a)
         with pytest.raises(HTTPException) as exc:
             await approve_batch(bid=bid, user=biz_b, db=db_tx)
@@ -330,7 +412,7 @@ class TestPreconditionsAndAuth:
                "all owner-flow tests pass. The assigned-member path is "
                "covered by the live HTTP integration suite."
     )
-    async def test_18_assigned_member_can_seal_even_when_not_owner(
+    async def test_20_assigned_member_can_seal_even_when_not_owner(
         self, db_tx, biz_a,
     ):
         bid = await _seed_full_batch(db_tx, biz_a)
@@ -350,3 +432,93 @@ class TestPreconditionsAndAuth:
         non_owner = {**biz_a, "is_owner": False}
         result = await approve_batch(bid=bid, user=non_owner, db=db_tx)
         assert result["sealed"] is True
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Group 6: PUBLIC TRACE P0 HARDENING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestPublicTraceP0:
+    async def test_21_create_batch_gets_opaque_public_trace_id_disabled_by_default(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
+        row = await db_tx.fetchrow(
+            "SELECT batch_code, public_trace_id, public_trace_enabled FROM production_batches WHERE id=$1::uuid",
+            bid,
+        )
+        assert row["public_trace_id"] is not None
+        assert str(row["public_trace_id"]) != row["batch_code"]
+        assert row["public_trace_enabled"] is False
+
+    async def test_22_public_trace_rejects_business_batch_code_lookup(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a)
+        await approve_batch(bid=bid, user=biz_a, db=db_tx)
+        code = await db_tx.fetchval("SELECT batch_code FROM production_batches WHERE id=$1::uuid", bid)
+        with pytest.raises(HTTPException) as exc:
+            await public_trace(trace_id=code, db=db_tx)
+        assert exc.value.status_code == 404
+
+    async def test_23_public_trace_is_sealed_only_fail_closed(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
+        trace_id = await db_tx.fetchval("SELECT public_trace_id FROM production_batches WHERE id=$1::uuid", bid)
+        with pytest.raises(HTTPException) as exc:
+            await public_trace(trace_id=str(trace_id), db=db_tx)
+        assert exc.value.status_code == 404
+
+    async def test_24_public_trace_returns_sealed_snapshot_not_live_tables(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a)
+        await approve_batch(bid=bid, user=biz_a, db=db_tx)
+        row = await db_tx.fetchrow(
+            "SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid",
+            bid,
+        )
+        sealed_product = row["product_name"]
+        await db_tx.execute(
+            "UPDATE production_batches SET product_name='LIVE TAMPER SHOULD NOT LEAK' WHERE id=$1::uuid",
+            bid,
+        )
+        trace = await public_trace(trace_id=str(row["public_trace_id"]), db=db_tx)
+        assert trace["batch"]["product_name"] == sealed_product
+        assert trace["batch"]["product_name"] != "LIVE TAMPER SHOULD NOT LEAK"
+        assert trace["integrity"]["verified"] is True
+        assert trace["integrity"]["snapshot_version"] >= 2
+
+    async def test_25_public_trace_handles_duplicate_batch_codes_by_trace_id(self, db_tx, biz_a, biz_b):
+        bid_a = await _seed_full_batch(db_tx, biz_a)
+        bid_b = await _seed_full_batch(db_tx, biz_b)
+        await db_tx.execute(
+            "UPDATE production_batches SET batch_code='LOT-DUPLICATE-PUBLIC' WHERE id=ANY($1::uuid[])",
+            [bid_a, bid_b],
+        )
+        await approve_batch(bid=bid_a, user=biz_a, db=db_tx)
+        await approve_batch(bid=bid_b, user=biz_b, db=db_tx)
+        row_a = await db_tx.fetchrow("SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid", bid_a)
+        row_b = await db_tx.fetchrow("SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid", bid_b)
+        trace_a = await public_trace(trace_id=str(row_a["public_trace_id"]), db=db_tx)
+        trace_b = await public_trace(trace_id=str(row_b["public_trace_id"]), db=db_tx)
+        assert trace_a["batch"]["batch_code"] == "LOT-DUPLICATE-PUBLIC"
+        assert trace_b["batch"]["batch_code"] == "LOT-DUPLICATE-PUBLIC"
+        assert trace_a["batch"]["product_name"] == row_a["product_name"]
+        assert trace_b["batch"]["product_name"] == row_b["product_name"]
+        assert trace_a["batch"]["public_trace_id"] != trace_b["batch"]["public_trace_id"]
+
+    async def test_26_seal_rejects_supplier_eligibility_revoked_at_seal_time(self, db_tx, biz_a):
+        bid = await _seed_full_batch(db_tx, biz_a)
+        await db_tx.execute(
+            """
+            UPDATE supplier_eligibilities se
+               SET status='revoked'
+             WHERE se.supplier_id IN (
+               SELECT COALESCE(bm.supplier_id, m.supplier_id)
+                 FROM batch_materials bm
+                 JOIN materials m ON m.id=bm.material_id
+                WHERE bm.batch_id=$1::uuid
+             )
+            """,
+            bid,
+        )
+        with pytest.raises(HTTPException) as exc:
+            await approve_batch(bid=bid, user=biz_a, db=db_tx)
+        assert exc.value.status_code == 400
+        assert "chưa đủ điều kiện seal" in str(exc.value.detail)
+        assert "CB" in str(exc.value.detail)
