@@ -1,0 +1,5 @@
+# Git hygiene
+## git diff --check
+## git status --short
+?? docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md
+?? docs/qa/2026-09-11-supply-chain-traceability-production/

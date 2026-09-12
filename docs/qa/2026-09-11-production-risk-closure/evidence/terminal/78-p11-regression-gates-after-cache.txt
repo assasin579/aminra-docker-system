@@ -1,0 +1,17 @@
+# P1.1 regression gates after backend/frontend public trace cache
+2026-09-11T23:57:45-04:00
+
+## backend supply-chain public trace/seal focused tests
+...................s......                                               [100%]
+25 passed, 1 skipped in 15.89s
+
+## playwright demo spine chromium
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (5.2s)
+  ✓  2 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.2s)
+  -  3 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+
+  1 skipped
+  2 passed (8.6s)

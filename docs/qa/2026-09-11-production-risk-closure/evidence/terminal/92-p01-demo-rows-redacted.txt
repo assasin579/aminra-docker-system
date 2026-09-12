@@ -1,0 +1,4 @@
+# P0.1 credential preflight demo rows retry (redacted)
+2026-09-12T00:14:22-04:00
+cb-demo@demo.aminra.vn|provider|t|active|t|t
+demo-platform-admin@demo.aminra.vn|provider|t|active|t|t

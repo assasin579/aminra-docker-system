@@ -66,6 +66,10 @@ def _load_migration(path: Path):
 MIGRATIONS = [_load_migration(path) for path in _MIGRATION_PATHS]
 
 
+def _response_json(response):
+    return json.loads(response.body.decode("utf-8"))
+
+
 @pytest.fixture(autouse=True)
 async def _p0_trace_schema(db_tx):
     await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
@@ -477,7 +481,7 @@ class TestPublicTraceP0:
             "UPDATE production_batches SET product_name='LIVE TAMPER SHOULD NOT LEAK' WHERE id=$1::uuid",
             bid,
         )
-        trace = await public_trace(trace_id=str(row["public_trace_id"]), db=db_tx)
+        trace = _response_json(await public_trace(trace_id=str(row["public_trace_id"]), db=db_tx))
         assert trace["batch"]["product_name"] == sealed_product
         assert trace["batch"]["product_name"] != "LIVE TAMPER SHOULD NOT LEAK"
         assert trace["integrity"]["verified"] is True
@@ -494,8 +498,8 @@ class TestPublicTraceP0:
         await approve_batch(bid=bid_b, user=biz_b, db=db_tx)
         row_a = await db_tx.fetchrow("SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid", bid_a)
         row_b = await db_tx.fetchrow("SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid", bid_b)
-        trace_a = await public_trace(trace_id=str(row_a["public_trace_id"]), db=db_tx)
-        trace_b = await public_trace(trace_id=str(row_b["public_trace_id"]), db=db_tx)
+        trace_a = _response_json(await public_trace(trace_id=str(row_a["public_trace_id"]), db=db_tx))
+        trace_b = _response_json(await public_trace(trace_id=str(row_b["public_trace_id"]), db=db_tx))
         assert trace_a["batch"]["batch_code"] == "LOT-DUPLICATE-PUBLIC"
         assert trace_b["batch"]["batch_code"] == "LOT-DUPLICATE-PUBLIC"
         assert trace_a["batch"]["product_name"] == row_a["product_name"]

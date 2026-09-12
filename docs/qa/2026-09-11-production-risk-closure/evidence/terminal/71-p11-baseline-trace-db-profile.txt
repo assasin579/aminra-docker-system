@@ -1,0 +1,13 @@
+# P1.1 baseline DB/profile for public trace
+2026-09-11T23:43:10-04:00
+
+## query plan and sealed snapshot size
+
+## baseline backend container env
+WEB_CONCURRENCY=4 DB_POOL_MAX_SIZE=15
+    PID    PPID %CPU %MEM COMMAND
+      7       1  0.0  0.1 /usr/local/bin/python3.11 /usr/local/bin/gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 240 --max-requests 1000 --max-requests-jitter 100
+      8       7  0.4  0.6 /usr/local/bin/python3.11 /usr/local/bin/gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 240 --max-requests 1000 --max-requests-jitter 100
+      9       7  0.4  0.6 /usr/local/bin/python3.11 /usr/local/bin/gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 240 --max-requests 1000 --max-requests-jitter 100
+     10       7  0.4  0.6 /usr/local/bin/python3.11 /usr/local/bin/gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 240 --max-requests 1000 --max-requests-jitter 100
+     11       7  0.4  0.6 /usr/local/bin/python3.11 /usr/local/bin/gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 240 --max-requests 1000 --max-requests-jitter 100

@@ -1,0 +1,104 @@
+# Frontend full Vitest suite
+
+> aminra-web@0.1.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+ [32m✓[39m __tests__/landing-keycloak-cta.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1888[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps the hero CTA inside AMINRA auth even when OIDC is enabled [33m 1557[2mms[22m[39m
+     [33m[2m✓[22m[39m also keeps the lower-page CTA inside AMINRA auth [33m 324[2mms[22m[39m
+ [32m✓[39m __tests__/auth-callback-page.test.tsx [2m([22m[2m42 tests[22m[2m)[22m[33m 2938[2mms[22m[39m
+     [33m[2m✓[22m[39m renders error message when OIDC flag is off [33m 328[2mms[22m[39m
+     [33m[2m✓[22m[39m offers 'Quay lại đăng nhập' button when flag off [33m 472[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-eligible-suppliers.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2810[2mms[22m[39m
+     [33m[2m✓[22m[39m fetches CB-eligible suppliers for the material dropdown and shows policy copy [33m 1728[2mms[22m[39m
+     [33m[2m✓[22m[39m refetches eligible suppliers by material category and hides scope-mismatched suppliers [33m 702[2mms[22m[39m
+     [33m[2m✓[22m[39m shows certificate risk alerts and lets buyer acknowledge them [33m 351[2mms[22m[39m
+ [32m✓[39m __tests__/submit-application.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 3527[2mms[22m[39m
+     [33m[2m✓[22m[39m business user thấy button Gửi hồ sơ mới trong trang submissions [33m 532[2mms[22m[39m
+     [33m[2m✓[22m[39m modal mở sau khi fetch xong [33m 306[2mms[22m[39m
+     [33m[2m✓[22m[39m button Gửi X tài liệu disabled khi chưa chọn provider [33m 357[2mms[22m[39m
+     [33m[2m✓[22m[39m gửi đúng payload khi chọn đủ provider + docs [33m 362[2mms[22m[39m
+     [33m[2m✓[22m[39m modal đóng và fetchSubs được gọi sau khi submit thành công [33m 426[2mms[22m[39m
+     [33m[2m✓[22m[39m hiện alert và giữ modal khi API trả lỗi [33m 383[2mms[22m[39m
+     [33m[2m✓[22m[39m uncheck một doc → counter giảm → button label cập nhật [33m 462[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-admin-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2410[2mms[22m[39m
+     [33m[2m✓[22m[39m renders admin-only navigation on /admin even when /auth/me projects the platform admin as provider [33m 1324[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps provider portal navigation outside /admin, with an explicit Admin Panel escape hatch [33m 597[2mms[22m[39m
+     [33m[2m✓[22m[39m does not show admin navigation on /admin unless Keycloak realm authority is present [33m 482[2mms[22m[39m
+ [32m✓[39m __tests__/audit-logs.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1976[2mms[22m[39m
+     [33m[2m✓[22m[39m shows login prompt when no token in storage [33m 364[2mms[22m[39m
+     [33m[2m✓[22m[39m apply filters re-fetches with filter params + resets page to 1 [33m 731[2mms[22m[39m
+     [33m[2m✓[22m[39m shows backend error when fetch fails [33m 334[2mms[22m[39m
+ [32m✓[39m __tests__/certificates-status-guardrails.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 2438[2mms[22m[39m
+     [33m[2m✓[22m[39m PUTs status changes through the API client with bearer auth and JSON body [33m 1742[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI errors and keeps the confirmation modal open [33m 685[2mms[22m[39m
+ [32m✓[39m __tests__/admin-analytics.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 4133[2mms[22m[39m
+     [33m[2m✓[22m[39m shows login prompt when no token [33m 302[2mms[22m[39m
+     [33m[2m✓[22m[39m renders all sections from API response [33m 1468[2mms[22m[39m
+     [33m[2m✓[22m[39m displays cert bucket labels [33m 1052[2mms[22m[39m
+     [33m[2m✓[22m[39m top actions section lists action codes + counts [33m 553[2mms[22m[39m
+     [33m[2m✓[22m[39m shows backend error [33m 361[2mms[22m[39m
+     [33m[2m✓[22m[39m calls /api/auth/admin/analytics with bearer token [33m 378[2mms[22m[39m
+ [32m✓[39m __tests__/legal-pages.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 1705[2mms[22m[39m
+     [33m[2m✓[22m[39m renders heading + last-updated date [33m 573[2mms[22m[39m
+ [32m✓[39m __tests__/revision-panel.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 2015[2mms[22m[39m
+     [33m[2m✓[22m[39m shows error message when fetch fails [33m 411[2mms[22m[39m
+     [33m[2m✓[22m[39m shows form for provider when status=reviewing [33m 341[2mms[22m[39m
+ [32m✓[39m __tests__/verify-blockchain.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2149[2mms[22m[39m
+     [33m[2m✓[22m[39m shows pending message when blockchain.anchored=false [33m 990[2mms[22m[39m
+     [33m[2m✓[22m[39m shows Polygon badge + tx hash + PolygonScan link when anchored [33m 649[2mms[22m[39m
+ [32m✓[39m __tests__/data-export.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1504[2mms[22m[39m
+     [33m[2m✓[22m[39m renders explainer + button + Vietnamese law citation [33m 894[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-process-create.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1530[2mms[22m[39m
+     [33m[2m✓[22m[39m POSTs the modal name to the backend proxy with bearer auth and JSON content-type [33m 818[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI save errors instead of showing a false success [33m 526[2mms[22m[39m
+ [32m✓[39m __tests__/overdue-submissions.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1317[2mms[22m[39m
+     [33m[2m✓[22m[39m renders overdue items in table with provider info + days overdue [33m 720[2mms[22m[39m
+ [32m✓[39m __tests__/components/SimpleHeader.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 989[2mms[22m[39m
+     [33m[2m✓[22m[39m renders Chat and Upload nav links [33m 671[2mms[22m[39m
+ [32m✓[39m __tests__/components/KeycloakSsoButton.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 428[2mms[22m[39m
+[90mstderr[2m | __tests__/AdminAuthContext.test.tsx[2m > [22m[2mAdminAuthProvider token synchronization[2m > [22m[2mpreserves the OIDC id token through local purge so Keycloak admin session is ended
+[22m[39mAn update to AdminAuthProvider inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m __tests__/AdminAuthContext.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 633[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves the OIDC id token through local purge so Keycloak admin session is ended [33m 448[2mms[22m[39m
+ [32m✓[39m __tests__/sla-badge.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 333[2mms[22m[39m
+ [32m✓[39m __tests__/reset-password.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 441[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps reset handoff inside AMINRA UI [33m 411[2mms[22m[39m
+ [32m✓[39m __tests__/expiry-urgency.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 408[2mms[22m[39m
+ [32m✓[39m __tests__/UserAuthContext-keycloak.test.tsx [2m([22m[2m27 tests[22m[2m)[22m[32m 297[2mms[22m[39m
+ [32m✓[39m __tests__/forgot-password.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 515[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps password recovery handoff inside AMINRA UI [33m 466[2mms[22m[39m
+ [32m✓[39m __tests__/auth-session-cleanup.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 86[2mms[22m[39m
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+ [32m✓[39m __tests__/auth-oidc.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 154[2mms[22m[39m
+ [32m✓[39m __tests__/apiClient.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m __tests__/service-worker-auth-cache.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m __tests__/auth-token-cleanup-guardrails.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m __tests__/normal-user-auth-owned-by-app-contract.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-failure-guardrails.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m __tests__/admin-user-password-reset-session.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m __tests__/auth-post-login-route.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m __tests__/UserAuthContext-logout-contract.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m __tests__/Sidebar-logout-navigation-contract.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 12[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m      Tests [22m [1m[32m238 passed[39m[22m[90m (238)[39m
+[2m   Start at [22m 21:18:24
+[2m   Duration [22m 41.32s[2m (transform 4.04s, setup 16.67s, import 8.30s, tests 36.86s, environment 79.31s)[22m
+

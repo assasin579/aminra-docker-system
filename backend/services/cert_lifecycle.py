@@ -184,10 +184,11 @@ async def mark_alert_sent(
            SET expiry_alerts_sent =
                 CASE WHEN expiry_alerts_sent ? $1::text
                      THEN expiry_alerts_sent
-                     ELSE expiry_alerts_sent || to_jsonb($1::int)
+                     ELSE expiry_alerts_sent || to_jsonb($2::int)
                 END
-         WHERE id = $2
+         WHERE id = $3
         """,
+        str(threshold),
         threshold,
         cert_id,
     )

@@ -1,0 +1,5 @@
+arq-worker-1  | [entrypoint] Loading secrets from Vault Agent...
+arq-worker-1  | 08:34:27: Starting worker for 8 functions: ingest_document, send_email, daily_anchor_polygon, daily_cert_expiry_alerts, daily_submission_sla_check, cron:daily_anchor_polygon, cron:daily_cert_expiry_alerts, cron:daily_submission_sla_check
+arq-worker-1  | 08:34:27: redis_version=7.4.8 mem_usage=1.44M clients_connected=1 db_keys=1
+arq-worker-1  | 08:34:37:   0.05s → 7ee6b75b4c034c45b0af972811a999b8:daily_cert_expiry_alerts()
+arq-worker-1  | 08:34:37:   0.21s ← 7ee6b75b4c034c45b0af972811a999b8:daily_cert_expiry_alerts ● {'sent': 1, 'failed': 0, 'checked': 1}

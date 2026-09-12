@@ -49,6 +49,8 @@ class FakeConn:
 
     async def fetchrow(self, sql: str, *args):
         self.calls.append(("fetchrow", (sql, args)))
+        if "SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1" in sql:
+            return FakeRecord(id=args[0]) if args else None
         return self._match(sql, self.fetchrow_responses)
 
     async def fetchval(self, sql: str, *args):

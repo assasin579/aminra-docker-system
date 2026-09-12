@@ -1,0 +1,7 @@
+# Improvement 2: platform-admin positive E2E availability check
+2026-09-11T23:01:25-04:00
+ADMIN_DEMO_PW=MISSING
+AMINRA_E2E_ADMIN_PASSWORD=MISSING
+ADMIN_PASSWORD=MISSING
+
+BLOCKED: ADMIN_DEMO_PW is not set in this Hermes environment; platform-admin positive live path remains skipped.

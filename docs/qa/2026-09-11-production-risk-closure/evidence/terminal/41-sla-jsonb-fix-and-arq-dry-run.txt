@@ -1,0 +1,6 @@
+# Phase 5 SLA JSONB bind-param regression + ARQ dry run after fix
+2026-09-11T22:47:57-04:00
+.......                                                                  [100%]
+7 passed in 0.51s
+
+{'flagged': 1, 'checked': 1}

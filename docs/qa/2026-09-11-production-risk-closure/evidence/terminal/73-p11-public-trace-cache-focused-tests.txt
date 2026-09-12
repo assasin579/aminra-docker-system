@@ -1,0 +1,4 @@
+# P1.1 focused tests after public trace short TTL response cache
+2026-09-11T23:46:14-04:00
+...................s......                                               [100%]
+25 passed, 1 skipped in 17.97s

@@ -1,0 +1,14 @@
+# Phase 1 multi-role API/browser E2E: demo spine after provider repair
+2026-09-11T22:41:48-04:00
+
+> aminra-web@0.1.0 test:e2e
+> playwright test --project=desktop-chromium e2e/38-demo-spine-keycloak.spec.ts
+
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (5.2s)
+  ✓  2 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.1s)
+  ✓  3 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (639ms)
+
+  3 passed (8.8s)

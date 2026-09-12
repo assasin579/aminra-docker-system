@@ -1,0 +1,6 @@
+00-env	PASS	date-and-git-boundary	docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/001-00-env-date-and-git-boundary.txt	
+00-env	PASS	docker-compose-health-and-http-smoke	docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt	
+00-env	PASS	runtime-smoke-script	docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/003-00-env-runtime-smoke-script.txt	
+00-env	PASS	diff-whitespace-check	docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/004-00-env-diff-whitespace-check.txt	
+01-auth-session-rbac	PASS	keycloak-token-admin-jwks-dual-auth	docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/005-01-auth-session-rbac-keycloak-token-admin-jwks-dual-auth.txt	
+01-auth-session-rbac	FAIL	role-boundaries-live-and-admin-reset	docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/006-01-auth-session-rbac-role-boundaries-live-and-admin-reset.txt	exit_code=1

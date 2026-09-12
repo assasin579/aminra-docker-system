@@ -1,0 +1,4 @@
+# P1.1 post-recreate focused test retry with conftest
+2026-09-11T23:48:43-04:00
+...................s......                                               [100%]
+25 passed, 1 skipped in 15.94s

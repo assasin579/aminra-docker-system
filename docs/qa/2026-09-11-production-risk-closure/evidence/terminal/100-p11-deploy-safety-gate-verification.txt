@@ -1,0 +1,33 @@
+# P1.1 deploy safety gate verification
+2026-09-12T00:18:40-04:00
+
+## bash syntax
+bash_n=pass
+
+## default unsafe path should fail
+default_rc=64
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+ERROR: set DEPLOY_STRATEGY=maintenance with an approved window, or use an external rolling/blue-green deploy path.
+
+
+## maintenance dry-run should pass
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+==> DRY_RUN passed deploy safety gate for tag: test-tag
+
+## rolling path should fail closed until real orchestrator exists
+rolling_rc=65
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+ERROR: rolling/blue-green is not implemented by this Docker Compose script; use an orchestrator/runbook that proves overlap + health-gated cutover.
+

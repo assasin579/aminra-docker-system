@@ -1,0 +1,3 @@
+# Improvement 3b: high concurrency public trace retest after rebuild
+2026-09-11T23:02:27-04:00
+{"case": "public_trace_200req_50concurrency", "requests": 200, "concurrency": 50, "errors": 0, "median_ms": 572.3, "p95_ms": 1815.1, "max_ms": 2885.7, "statuses": {"200": 200}}

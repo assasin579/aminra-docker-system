@@ -1,0 +1,6 @@
+# P1.1 performance retest after public trace short TTL response cache
+2026-09-11T23:49:18-04:00
+{"case": "local_backend_trace", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 37.7, "p95_ms": 416.7, "max_ms": 513.5, "statuses": {"200": 100}}
+{"case": "local_frontend_proxy_trace", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 221.4, "p95_ms": 353.8, "max_ms": 356.7, "statuses": {"200": 100}}
+{"case": "public_frontend_proxy_trace", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 373.2, "p95_ms": 560.9, "max_ms": 637.8, "statuses": {"200": 100}}
+{"case": "public_trace_200req_50concurrency", "requests": 200, "concurrency": 50, "errors": 0, "median_ms": 663.7, "p95_ms": 1191.4, "max_ms": 2120.5, "statuses": {"200": 200}}

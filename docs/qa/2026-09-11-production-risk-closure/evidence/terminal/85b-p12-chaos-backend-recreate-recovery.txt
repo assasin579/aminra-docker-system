@@ -1,0 +1,12 @@
+# P1.2 chaos drill 4: backend recreate recovery verification
+2026-09-12T00:01:35-04:00
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                             PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    33 seconds ago   Up 21 seconds (health: starting)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   6 minutes ago    Up 6 minutes (healthy)             0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+public_trace_http=200 total=0.279842

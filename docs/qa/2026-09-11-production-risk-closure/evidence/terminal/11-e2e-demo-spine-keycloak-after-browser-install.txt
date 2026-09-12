@@ -1,0 +1,51 @@
+# Phase 1 multi-role API/browser E2E: demo spine Keycloak retry after installing Chromium
+2026-09-11T22:35:49-04:00
+
+> aminra-web@0.1.0 test:e2e
+> playwright test --project=desktop-chromium e2e/38-demo-spine-keycloak.spec.ts
+
+
+Running 3 tests using 1 worker
+
+  ✘  1 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:27:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (14.2s)
+  ✓  2 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:41:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.0s)
+  -  3 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:61:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+
+
+  1) [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:27:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('LOT-2026-DEMO-TRACE').first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText('LOT-2026-DEMO-TRACE').first()[22m
+
+
+      33 |     await page.goto(`/trace/${DEMO_TRACE_BATCH}`);
+      34 |     await page.waitForLoadState("networkidle");
+    > 35 |     await expect(page.getByText(DEMO_TRACE_BATCH).first()).toBeVisible();
+         |                                                            ^
+      36 |
+      37 |     await page.goto("/forgot-password");
+      38 |     await expect(page).toHaveURL(/forgot-password|auth\.silvergem\.org/);
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/38-demo-spine-keycloak.spec.ts:35:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/38-demo-spine-keycloak-P0--8691c--APIs-render-safe-demo-data-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/38-demo-spine-keycloak-P0--8691c--APIs-render-safe-demo-data-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/38-demo-spine-keycloak-P0--8691c--APIs-render-safe-demo-data-desktop-chromium/error-context.md
+
+  1 failed
+    [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:27:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+  1 skipped
+  1 passed (18.7s)

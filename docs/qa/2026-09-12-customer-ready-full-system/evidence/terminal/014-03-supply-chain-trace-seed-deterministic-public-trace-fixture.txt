@@ -1,0 +1,9 @@
+# Domain: 03-supply-chain-trace
+# Step: seed-deterministic-public-trace-fixture
+# Started: 2026-09-12T05:27:17-04:00
+# Command: docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; python scripts/qa/seed-public-trace-fixture.py'
+
+python: can't open file '/app/scripts/qa/seed-public-trace-fixture.py': [Errno 2] No such file or directory
+
+# Finished: 2026-09-12T05:27:17-04:00
+# Exit code: 2

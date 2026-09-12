@@ -1,0 +1,8 @@
+# P1.2 cold-cache distinct public trace inventory
+2026-09-12T00:18:59-04:00
+
+## public-enabled sealed trace count
+1
+
+## sample public trace ids (redacted internal columns)
+73695b8a-3c10-570b-8bba-92c12da9b56e|QA-TRACE-PUBLISHED-SEALED-001

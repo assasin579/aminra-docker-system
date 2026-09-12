@@ -1,0 +1,10 @@
+# P1 final diff/status verification
+2026-09-12T00:03:18-04:00
+
+## code diff check
+
+## changed key files
+ M backend/supply_chain/batch_router.py
+ M backend/tests/test_supply_chain_sealing.py
+ M frontend/aminra-web/app/api/[...path]/route.ts
+?? docs/qa/2026-09-11-production-risk-closure/

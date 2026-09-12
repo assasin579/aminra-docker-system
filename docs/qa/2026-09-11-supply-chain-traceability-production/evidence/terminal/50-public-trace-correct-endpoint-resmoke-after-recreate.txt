@@ -1,0 +1,20 @@
+# Public trace smoke after deterministic redacted seed
+2026-09-11T22:33:53-04:00
+
+## valid backend public trace API
+HTTP=200
+batch_code= QA-TRACE-PUBLISHED-SEALED-001
+product_name= QA Published Sealed Halal Trace Fixture
+integrity_verified= True
+snapshot_version= 2
+hash_match= True
+leak_marker_tenant_id= False
+leak_marker_provider_id= False
+leak_marker_source_certificate_id= False
+leak_marker_changed_by= False
+
+## invalid ID
+HTTP=404
+
+## public proxy path
+HTTP=200

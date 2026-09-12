@@ -1,0 +1,9 @@
+# P1.2 cold-cache fixture cleanup note
+
+The cleanup command output counted the psql command tag line as one row, so `deleted_qa_cold_fixtures=121` is an output-counting artifact.
+
+Ground truth:
+- Creation evidence `102-p12-create-cold-cache-fixtures.txt` inserted `120` QA-only fixtures.
+- Cleanup evidence `104-p12-cleanup-cold-cache-fixtures.txt` confirms `remaining_qa_cold=0`.
+
+No QA-COLD-TRACE fixtures remain in `production_batches`.

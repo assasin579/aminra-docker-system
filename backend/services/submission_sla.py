@@ -122,10 +122,11 @@ async def mark_sla_alert_sent(
            SET sla_alerts_sent =
                 CASE WHEN sla_alerts_sent ? $1::text
                      THEN sla_alerts_sent
-                     ELSE sla_alerts_sent || to_jsonb($1::int)
+                     ELSE sla_alerts_sent || to_jsonb($2::int)
                 END
-         WHERE id = $2
+         WHERE id = $3
         """,
+        str(threshold),
         threshold,
         submission_id,
     )

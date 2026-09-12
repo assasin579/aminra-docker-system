@@ -1,0 +1,139 @@
+# Domain: 08-frontend-browser-a11y
+# Step: playwright-accessibility-mobile-critical
+# Started: 2026-09-12T05:30:38-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/accessibility.spec.ts e2e/19-mobile-responsive-audit.spec.ts --project=desktop-chromium
+
+
+Running 19 tests using 1 worker
+
+  -   1 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › landing: mobile responsive checks
+  -   2 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-login: mobile responsive checks
+  -   3 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-register: mobile responsive checks
+  -   4 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-login: mobile responsive checks
+  -   5 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-register: mobile responsive checks
+  -   6 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › forgot-password: mobile responsive checks
+  -   7 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › reset-password: mobile responsive checks
+  -   8 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › privacy: mobile responsive checks
+  -   9 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › terms: mobile responsive checks
+  -  10 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › chat: mobile responsive checks
+  -  11 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-active: mobile responsive checks
+  -  12 [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-404: mobile responsive checks
+  ✘  13 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations (1ms)
+  ✘  14 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations (5ms)
+  ✘  15 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations (5ms)
+  ✘  16 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › forgot-password — no critical a11y violations (4ms)
+  ✘  17 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › privacy — no critical a11y violations (5ms)
+  ✘  18 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › terms — no critical a11y violations (6ms)
+  ✘  19 [desktop-chromium] › e2e/accessibility.spec.ts:55:7 › Layer 3 — Accessibility (public pages) › verify page (404 state) — no critical a11y violations (4ms)
+
+
+  1) [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-ea970-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-8736e-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  3) [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-d4994-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  4) [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › forgot-password — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-e0326-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  5) [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › privacy — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-de3e4-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  6) [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › terms — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-09694-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  7) [desktop-chromium] › e2e/accessibility.spec.ts:55:7 › Layer 3 — Accessibility (public pages) › verify page (404 state) — no critical a11y violations 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/accessibility-Layer-3-—-Ac-3352f-no-critical-a11y-violations-desktop-chromium/error-context.md
+
+  7 failed
+    [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations 
+    [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations 
+    [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations 
+    [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › forgot-password — no critical a11y violations 
+    [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › privacy — no critical a11y violations 
+    [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › terms — no critical a11y violations 
+    [desktop-chromium] › e2e/accessibility.spec.ts:55:7 › Layer 3 — Accessibility (public pages) › verify page (404 state) — no critical a11y violations 
+  12 skipped
+
+# Finished: 2026-09-12T05:30:53-04:00
+# Exit code: 1

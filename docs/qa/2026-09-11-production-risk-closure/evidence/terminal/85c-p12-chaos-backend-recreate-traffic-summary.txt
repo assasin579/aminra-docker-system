@@ -1,0 +1,6 @@
+# P1.2 chaos drill 4: backend recreate traffic summary
+2026-09-12T00:01:35-04:00
+
+TRAFFIC_SUMMARY {"total": 429, "errors": 10, "statuses": {"200": 419, "None": 10}, "sample_errors": [{"i": 317, "ms": 5155.8, "status": null, "err": "ReadTimeout"}, {"i": 316, "ms": 5194.3, "status": null, "err": "ReadTimeout"}, {"i": 323, "ms": 5186.8, "status": null, "err": "ReadTimeout"}, {"i": 314, "ms": 5140.7, "status": null, "err": "ReadTimeout"}, {"i": 322, "ms": 5275.7, "status": null, "err": "ReadTimeout"}, {"i": 321, "ms": 5277.4, "status": null, "err": "ReadTimeout"}, {"i": 315, "ms": 5175.9, "status": null, "err": "ReadTimeout"}, {"i": 320, "ms": 5155.4, "status": null, "err": "ReadTimeout"}, {"i": 319, "ms": 5182.1, "status": null, "err": "ReadTimeout"}, {"i": 318, "ms": 5279.9, "status": null, "err": "ReadTimeout"}]}
+
+Interpretation: backend force-recreate causes a short timeout window for in-flight traffic. Service recovered and public trace returned HTTP 200 after recreate. This is acceptable only if deployment/pilot uses rolling or blue-green release; single-container force-recreate is not zero-downtime.

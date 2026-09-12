@@ -1,0 +1,9 @@
+# Domain: 03-supply-chain-trace
+# Step: supply-chain-core-sealing-eligibility
+# Started: 2026-09-12T06:32:19-04:00
+# Command: sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_supply_chain_sealing.py tests/test_supply_chain_batches.py tests/test_supply_chain_suppliers.py tests/test_supply_chain_materials.py tests/test_supply_chain_processes.py tests/test_supply_chain_supplier_eligibility_routes.py tests/test_supplier_eligibility_service.py tests/test_migrations_supplier_eligibility.py'
+
+bash: line 1: sync_backend_test_assets: command not found
+
+# Finished: 2026-09-12T06:32:19-04:00
+# Exit code: 127

@@ -1,0 +1,18 @@
+# P0 backend recreate from rebuilt image
+2026-09-11T21:53:29-04:00
+
+## compose ps before
+NAME                                    IMAGE                                                                     COMMAND                  SERVICE          CREATED       STATUS                 PORTS
+aminra-docker-system-aminra-backend-1   sha256:6232226fc14b061cbec7463dd962ede305f76b3a03e51c8b5b841d07f089e200   "/app/entrypoint.sh …"   aminra-backend   2 hours ago   Up 2 hours (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+
+## recreate backend
+
+## wait for health
+{"status":"ok","service":"Aminra Halal Certification AI","database":"connected","qdrant":"connected"}
+
+## compose ps after
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                            PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   22 seconds ago   Up 9 seconds (health: starting)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+
+## image id running
+container_image=sha256:0d67794ff83bc804d36e1637fea7630e8b3baf0dfe168d8a37e37f74059afa3e image_name=aminra-docker-system-aminra-backend started=2026-09-12T01:53:43.790332668Z

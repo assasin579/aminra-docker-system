@@ -1,0 +1,80 @@
+# Phase 6 browser matrix: demo spine Chromium/Firefox/WebKit
+2026-09-11T22:50:22-04:00
+
+## project=desktop-chromium
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (5.1s)
+  ✓  2 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (978ms)
+  ✓  3 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (628ms)
+
+  3 passed (8.6s)
+
+## project=desktop-firefox
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop-firefox] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (7.5s)
+  ✓  2 [desktop-firefox] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.0s)
+  ✓  3 [desktop-firefox] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (574ms)
+
+  3 passed (13.3s)
+
+## project=desktop-webkit
+
+Running 3 tests using 1 worker
+
+  ✘  1 [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (8ms)
+  ✓  2 [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (995ms)
+  ✓  3 [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (581ms)
+
+
+  1) [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+
+    Error: browserType.launch: 
+    ╔══════════════════════════════════════════════════════╗
+    ║ Host system is missing dependencies to run browsers. ║
+    ║ Missing libraries:                                   ║
+    ║     libwoff2dec.so.1.0.2                             ║
+    ╚══════════════════════════════════════════════════════╝
+
+    Error Context: test-results/38-demo-spine-keycloak-P0--8691c--APIs-render-safe-demo-data-desktop-webkit/error-context.md
+
+  1 failed
+    [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+  2 passed (5.1s)
+
+## project=mobile-chrome
+
+Running 3 tests using 1 worker
+
+  ✓  1 [mobile-chrome] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (5.4s)
+  ✓  2 [mobile-chrome] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.1s)
+  ✓  3 [mobile-chrome] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (744ms)
+
+  3 passed (9.0s)
+
+## project=mobile-safari
+
+Running 3 tests using 1 worker
+
+  ✘  1 [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (5ms)
+  ✓  2 [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.3s)
+  ✓  3 [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (548ms)
+
+
+  1) [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+
+    Error: browserType.launch: 
+    ╔══════════════════════════════════════════════════════╗
+    ║ Host system is missing dependencies to run browsers. ║
+    ║ Missing libraries:                                   ║
+    ║     libwoff2dec.so.1.0.2                             ║
+    ╚══════════════════════════════════════════════════════╝
+
+    Error Context: test-results/38-demo-spine-keycloak-P0--8691c--APIs-render-safe-demo-data-mobile-safari/error-context.md
+
+  1 failed
+    [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+  2 passed (5.4s)

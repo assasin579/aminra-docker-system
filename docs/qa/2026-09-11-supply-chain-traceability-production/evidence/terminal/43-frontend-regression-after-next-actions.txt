@@ -1,0 +1,198 @@
+# Frontend regression after next actions
+2026-09-11T21:41:44-04:00
+
+## npm run lint
+
+> aminra-web@0.1.0 lint
+> eslint . --max-warnings=0
+
+
+## npm run test:guardrails:supply-chain
+
+> aminra-web@0.1.0 test:guardrails:supply-chain
+> vitest run apiClient.test.ts supply-chain-failure-guardrails.test.ts supply-chain-process-create.test.tsx
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/supply-chain-failure-guardrails.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m __tests__/apiClient.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-process-create.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1208[2mms[22m[39m
+     [33m[2m✓[22m[39m POSTs the modal name to the backend proxy with bearer auth and JSON content-type [33m 841[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 21:42:09
+[2m   Duration [22m 4.63s[2m (transform 645ms, setup 1.25s, import 900ms, tests 1.29s, environment 5.92s)[22m
+
+
+## npm run test
+
+> aminra-web@0.1.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/auth-callback-page.test.tsx [2m([22m[2m42 tests[22m[2m)[22m[33m 2581[2mms[22m[39m
+     [33m[2m✓[22m[39m offers 'Quay lại đăng nhập' button when flag off [33m 378[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-eligible-suppliers.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 3208[2mms[22m[39m
+     [33m[2m✓[22m[39m fetches CB-eligible suppliers for the material dropdown and shows policy copy [33m 1545[2mms[22m[39m
+     [33m[2m✓[22m[39m refetches eligible suppliers by material category and hides scope-mismatched suppliers [33m 1404[2mms[22m[39m
+ [32m✓[39m __tests__/admin-analytics.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 3498[2mms[22m[39m
+     [33m[2m✓[22m[39m renders all sections from API response [33m 1452[2mms[22m[39m
+     [33m[2m✓[22m[39m displays cert bucket labels [33m 558[2mms[22m[39m
+     [33m[2m✓[22m[39m top actions section lists action codes + counts [33m 318[2mms[22m[39m
+     [33m[2m✓[22m[39m calls /api/auth/admin/analytics with bearer token [33m 742[2mms[22m[39m
+ [32m✓[39m __tests__/submit-application.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 4049[2mms[22m[39m
+     [33m[2m✓[22m[39m business user thấy button Gửi hồ sơ mới trong trang submissions [33m 833[2mms[22m[39m
+     [33m[2m✓[22m[39m fetch providers và docs đồng thời khi click button [33m 342[2mms[22m[39m
+     [33m[2m✓[22m[39m gửi đúng payload khi chọn đủ provider + docs [33m 720[2mms[22m[39m
+     [33m[2m✓[22m[39m modal đóng và fetchSubs được gọi sau khi submit thành công [33m 448[2mms[22m[39m
+     [33m[2m✓[22m[39m uncheck một doc → counter giảm → button label cập nhật [33m 440[2mms[22m[39m
+ [32m✓[39m __tests__/certificates-status-guardrails.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1925[2mms[22m[39m
+     [33m[2m✓[22m[39m PUTs status changes through the API client with bearer auth and JSON body [33m 1105[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI errors and keeps the confirmation modal open [33m 805[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-admin-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2324[2mms[22m[39m
+     [33m[2m✓[22m[39m renders admin-only navigation on /admin even when /auth/me projects the platform admin as provider [33m 1546[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps provider portal navigation outside /admin, with an explicit Admin Panel escape hatch [33m 426[2mms[22m[39m
+     [33m[2m✓[22m[39m does not show admin navigation on /admin unless Keycloak realm authority is present [33m 345[2mms[22m[39m
+ [32m✓[39m __tests__/verify-blockchain.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2117[2mms[22m[39m
+     [33m[2m✓[22m[39m shows pending message when blockchain.anchored=false [33m 644[2mms[22m[39m
+     [33m[2m✓[22m[39m shows Polygon badge + tx hash + PolygonScan link when anchored [33m 869[2mms[22m[39m
+ [32m✓[39m __tests__/revision-panel.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 2131[2mms[22m[39m
+     [33m[2m✓[22m[39m shows error message when fetch fails [33m 364[2mms[22m[39m
+     [33m[2m✓[22m[39m shows form for provider when status=reviewing [33m 450[2mms[22m[39m
+ [32m✓[39m __tests__/audit-logs.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1835[2mms[22m[39m
+     [33m[2m✓[22m[39m shows login prompt when no token in storage [33m 459[2mms[22m[39m
+     [33m[2m✓[22m[39m fetches logs with token from localStorage on mount [33m 325[2mms[22m[39m
+     [33m[2m✓[22m[39m apply filters re-fetches with filter params + resets page to 1 [33m 658[2mms[22m[39m
+ [32m✓[39m __tests__/data-export.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1717[2mms[22m[39m
+     [33m[2m✓[22m[39m renders explainer + button + Vietnamese law citation [33m 996[2mms[22m[39m
+ [32m✓[39m __tests__/landing-keycloak-cta.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 2557[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps the hero CTA inside AMINRA auth even when OIDC is enabled [33m 1926[2mms[22m[39m
+     [33m[2m✓[22m[39m also keeps the lower-page CTA inside AMINRA auth [33m 613[2mms[22m[39m
+ [32m✓[39m __tests__/legal-pages.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 2325[2mms[22m[39m
+     [33m[2m✓[22m[39m renders heading + last-updated date [33m 701[2mms[22m[39m
+     [33m[2m✓[22m[39m contains all 10 mandated PDPL-aligned sections [33m 323[2mms[22m[39m
+     [33m[2m✓[22m[39m contains all 12 required ToS sections [33m 323[2mms[22m[39m
+ [32m✓[39m __tests__/overdue-submissions.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1380[2mms[22m[39m
+     [33m[2m✓[22m[39m renders overdue items in table with provider info + days overdue [33m 745[2mms[22m[39m
+ [32m✓[39m __tests__/components/SimpleHeader.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 605[2mms[22m[39m
+     [33m[2m✓[22m[39m renders Chat and Upload nav links [33m 403[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-process-create.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2054[2mms[22m[39m
+     [33m[2m✓[22m[39m POSTs the modal name to the backend proxy with bearer auth and JSON content-type [33m 992[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI save errors instead of showing a false success [33m 713[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI create errors instead of failing silently [33m 334[2mms[22m[39m
+ [32m✓[39m __tests__/AdminAuthContext.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 989[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves the OIDC id token through local purge so Keycloak admin session is ended [33m 778[2mms[22m[39m
+ [32m✓[39m __tests__/reset-password.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 202[2mms[22m[39m
+ [32m✓[39m __tests__/forgot-password.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 361[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps password recovery handoff inside AMINRA UI [33m 314[2mms[22m[39m
+ [32m✓[39m __tests__/expiry-urgency.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 291[2mms[22m[39m
+ [32m✓[39m __tests__/components/KeycloakSsoButton.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 789[2mms[22m[39m
+     [33m[2m✓[22m[39m renders button + divider + hint when flag on [33m 398[2mms[22m[39m
+ [32m✓[39m __tests__/sla-badge.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 326[2mms[22m[39m
+ [32m✓[39m __tests__/auth-oidc.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 158[2mms[22m[39m
+ [32m✓[39m __tests__/auth-session-cleanup.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 92[2mms[22m[39m
+ [32m✓[39m __tests__/UserAuthContext-keycloak.test.tsx [2m([22m[2m27 tests[22m[2m)[22m[32m 189[2mms[22m[39m
+ [32m✓[39m __tests__/apiClient.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m __tests__/auth-token-cleanup-guardrails.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-failure-guardrails.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m __tests__/normal-user-auth-owned-by-app-contract.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 165[2mms[22m[39m
+ [32m✓[39m __tests__/UserAuthContext-logout-contract.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m __tests__/Sidebar-logout-navigation-contract.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m __tests__/auth-post-login-route.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m __tests__/admin-user-password-reset-session.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m __tests__/service-worker-auth-cache.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m      Tests [22m [1m[32m238 passed[39m[22m[90m (238)[39m
+[2m   Start at [22m 21:42:15
+[2m   Duration [22m 44.47s[2m (transform 4.30s, setup 16.62s, import 7.94s, tests 38.14s, environment 85.81s)[22m
+
+
+## npm run build
+
+> aminra-web@0.1.0 build
+> next build
+
+▲ Next.js 16.2.4 (Turbopack)
+- Experiments (use with caution):
+  · clientTraceMetadata
+  ✓ webpackBuildWorker
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 22.3s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 550ms
+  Running TypeScript ...
+  Finished TypeScript in 28.8s ...
+  Collecting page data using 4 workers ...
+  Generating static pages using 4 workers (0/46) ...
+  Generating static pages using 4 workers (11/46) 
+  Generating static pages using 4 workers (22/46) 
+  Generating static pages using 4 workers (34/46) 
+✓ Generating static pages using 4 workers (46/46) in 1441ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /account/confirm-deletion
+├ ƒ /admin
+├ ○ /admin/analytics
+├ ○ /admin/audit-logs
+├ ○ /admin/industries
+├ ○ /admin/overdue-submissions
+├ ○ /admin/standards
+├ ƒ /api/[...path]
+├ ƒ /api/auth/login
+├ ƒ /api/auth/refresh
+├ ƒ /api/chat
+├ ƒ /api/upload
+├ ○ /auditors
+├ ○ /audits
+├ ƒ /audits/[id]
+├ ○ /audits/templates
+├ ○ /auth/callback
+├ ○ /business/login
+├ ○ /business/onboarding/industry-select
+├ ○ /business/register
+├ ƒ /businesses/[id]
+├ ○ /certificates
+├ ○ /chat
+├ ○ /create-document
+├ ○ /dashboard/business
+├ ○ /dashboard/provider
+├ ○ /dashboard/provider/overdue
+├ ○ /documents
+├ ○ /dossiers
+├ ƒ /dossiers/[id]
+├ ○ /dossiers/new
+├ ○ /forgot-password
+├ ƒ /invite/[token]
+├ ○ /landing
+├ ○ /members
+├ ○ /portfolio
+├ ○ /privacy
+├ ○ /provider/login
+├ ○ /provider/register
+├ ○ /reset-password
+├ ○ /settings
+├ ○ /settings/company
+├ ○ /settings/data-export
+├ ○ /submissions
+├ ƒ /supplier-portal/[token]
+├ ○ /supply-chain/batches
+├ ○ /supply-chain/materials
+├ ○ /supply-chain/process
+├ ○ /terms
+├ ƒ /trace/[code]
+├ ○ /upload
+└ ƒ /verify/[cert_number]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

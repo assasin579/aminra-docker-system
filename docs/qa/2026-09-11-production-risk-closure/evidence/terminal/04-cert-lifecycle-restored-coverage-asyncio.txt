@@ -1,0 +1,4 @@
+# Regression after restoring cert lifecycle test coverage with asyncio mode
+2026-09-11T22:29:56-04:00
+..........                                                               [100%]
+10 passed in 0.55s

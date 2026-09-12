@@ -1,0 +1,4 @@
+# Phase 1 backend live role-boundary smoke after provider credential repair
+2026-09-11T22:41:40-04:00
+.........sss                                                             [100%]
+9 passed, 3 skipped in 0.55s

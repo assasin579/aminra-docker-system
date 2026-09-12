@@ -1,0 +1,34 @@
+# Environment baseline
+
+## date
+2026-09-11T21:08:50-04:00
+
+## git status
+?? docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md
+?? docs/qa/2026-09-11-supply-chain-traceability-production/
+
+## branch
+dev
+
+## commit
+ed0893f
+
+## docker compose ps
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    54 minutes ago   Up 54 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   54 minutes ago   Up 53 minutes (healthy)   0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-arq-worker-1        aminra-docker-system-arq-worker        "/app/entrypoint.sh …"   arq-worker        52 minutes ago   Up 52 minutes             8000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago       Up 22 hours (healthy)     8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       aminra-docker-system-postgres-db       "docker-entrypoint.s…"   postgres-db       55 minutes ago   Up 55 minutes (healthy)   5432/tcp
+aminra-docker-system-qdrant-db-1         aminra-docker-system-qdrant-db         "./entrypoint.sh"        qdrant-db         55 minutes ago   Up 55 minutes (healthy)   6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                       "docker-entrypoint.s…"   redis             4 days ago       Up 22 hours (healthy)     6379/tcp
+
+## backend health
+{"status":"ok","service":"Aminra Halal Certification AI","database":"connected","qdrant":"connected"}
+## frontend local
+HTTP 200
+
+## public sandbox
+HTTP 200
+
+## alembic current

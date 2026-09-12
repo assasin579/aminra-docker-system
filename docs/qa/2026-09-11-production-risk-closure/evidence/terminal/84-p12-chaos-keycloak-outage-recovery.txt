@@ -1,0 +1,22 @@
+# P1.2 chaos drill 3: Keycloak outage/recovery
+2026-09-11T23:59:48-04:00
+
+## stop keycloak
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    12 minutes ago   Up 12 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   4 minutes ago    Up 4 minutes (healthy)    0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+
+## expected: Keycloak discovery/token endpoint fails while public trace remains available
+keycloak_discovery_http=000 total=0.000278
+discovery_curl_rc=7
+public_trace_http=200 total=0.298148
+
+## restart keycloak
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                             PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    13 minutes ago   Up 13 minutes (healthy)            0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   5 minutes ago    Up 5 minutes (healthy)             0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago       Up 30 seconds (health: starting)   8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+
+## post-recovery keycloak discovery
+keycloak_discovery_http=200 total=0.042092
+{'issuer': 'http://auth.silvergem.org:8180/realms/aminra', 'token_endpoint_present': True}

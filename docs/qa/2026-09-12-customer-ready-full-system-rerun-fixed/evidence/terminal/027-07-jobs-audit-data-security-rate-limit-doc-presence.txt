@@ -1,0 +1,60 @@
+# Domain: 07-jobs-audit-data-security
+# Step: rate-limit-doc-presence
+# Started: 2026-09-12T06:33:17-04:00
+# Command: test -f docs/api/rate-limiting.md && sed -n '1,180p' docs/api/rate-limiting.md
+
+# Rate Limiting
+
+---
+
+## 1. Hiện trạng
+
+Rate limiting được implement ở 2 tầng:
+- **nginx**: rate limiting theo IP (`limit_req_zone` trong nginx.conf)
+- **Backend**: `Depends(rate_limit_upload)` trên endpoints upload/evaluate
+
+---
+
+## 2. Giới hạn theo endpoint type
+
+| Endpoint type | Giới hạn | Tầng |
+|---|---|---|
+| Auth (login, register) | 10 req/phút/IP | nginx |
+| Document upload (`/ingest`) | 20 req/phút/user | backend |
+| AI evaluation (`/evaluate`) | 10 req/phút/user | backend |
+| Document rewrite (`/rewrite`) | 10 req/phút/user | backend |
+| General API | 300 req/phút/IP | nginx |
+| Public verify (`/certificates/verify`) | 60 req/phút/IP | nginx |
+
+**⚠️ Known issues (C12/C13):** `/evaluate` và `/rewrite` hiện chưa có auth → rate limit theo user không hoạt động. Cần fix auth trước.
+
+---
+
+## 3. Response khi bị rate limit
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+Content-Type: application/json
+
+{
+  "detail": "Quá nhiều yêu cầu. Vui lòng thử lại sau 60 giây.",
+  "code": "RATE_LIMIT_EXCEEDED",
+  "retry_after": 60
+}
+```
+
+---
+
+## 4. Kế hoạch tier-based limiting (Roadmap)
+
+| Tier | Upload/phút | AI eval/ngày | API calls/giờ |
+|---|---|---|---|
+| Free | 5 | 10 | 100 |
+| Standard | 20 | 100 | 500 |
+| Enterprise | Không giới hạn | Không giới hạn | Không giới hạn |
+
+Implement khi có billing model hoàn chỉnh. Sẽ dùng Redis counter per `(user_id, endpoint, window)`.
+
+# Finished: 2026-09-12T06:33:17-04:00
+# Exit code: 0

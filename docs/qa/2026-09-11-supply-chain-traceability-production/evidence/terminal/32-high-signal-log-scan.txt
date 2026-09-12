@@ -1,0 +1,43 @@
+# High-signal log scan since QA start (~30m)
+postgres-db-1  | 2026-09-12 01:11:51.079 UTC [2636] ERROR:  value too long for type character varying(100)
+postgres-db-1  | 2026-09-12 01:11:51.596 UTC [2637] ERROR:  duplicate key value violates unique constraint "uq_production_batches_tenant_code"
+postgres-db-1  | 2026-09-12 01:11:55.450 UTC [2650] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:12:15.420 UTC [2705] ERROR:  invalid input value for enum material_risk: "catastrophic"
+postgres-db-1  | 2026-09-12 01:12:17.001 UTC [2709] ERROR:  value too long for type character varying(100)
+postgres-db-1  | 2026-09-12 01:12:17.446 UTC [2710] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:12:19.299 UTC [2715] ERROR:  update or delete on table "suppliers" violates foreign key constraint "materials_supplier_id_fkey" on table "materials"
+postgres-db-1  | 2026-09-12 01:12:31.311 UTC [2755] ERROR:  update or delete on table "materials" violates foreign key constraint "batch_materials_material_id_fkey" on table "batch_materials"
+postgres-db-1  | 2026-09-12 01:12:40.993 UTC [2786] ERROR:  column e.provider_id does not exist at character 269
+postgres-db-1  | 2026-09-12 01:12:42.179 UTC [2789] ERROR:  invalid input value for enum supplier_certificate_status: "unknown" at character 188
+postgres-db-1  | 2026-09-12 01:12:42.509 UTC [2790] ERROR:  insert or update on table "supplier_eligibilities" violates foreign key constraint "supplier_eligibilities_supplier_id_fkey"
+postgres-db-1  | 2026-09-12 01:13:41.096 UTC [2886] ERROR:  value too long for type character varying(100)
+postgres-db-1  | 2026-09-12 01:13:41.593 UTC [2887] ERROR:  duplicate key value violates unique constraint "uq_production_batches_tenant_code"
+postgres-db-1  | 2026-09-12 01:13:44.649 UTC [2894] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:14:01.319 UTC [2948] ERROR:  invalid input value for enum material_risk: "catastrophic"
+postgres-db-1  | 2026-09-12 01:14:02.646 UTC [2952] ERROR:  value too long for type character varying(100)
+arq-worker-1   | 08:00:00:   0.18s ! cron:daily_cert_expiry_alerts failed, RuntimeError: Database not available
+arq-worker-1   | Traceback (most recent call last):
+arq-worker-1   |     raise RuntimeError("Database not available")
+arq-worker-1   | RuntimeError: Database not available
+postgres-db-1  | 2026-09-12 01:14:02.991 UTC [2953] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:14:04.625 UTC [2958] ERROR:  update or delete on table "suppliers" violates foreign key constraint "materials_supplier_id_fkey" on table "materials"
+postgres-db-1  | 2026-09-12 01:14:16.622 UTC [3005] ERROR:  update or delete on table "materials" violates foreign key constraint "batch_materials_material_id_fkey" on table "batch_materials"
+postgres-db-1  | 2026-09-12 01:14:27.124 UTC [3038] ERROR:  invalid input value for enum supplier_certificate_status: "unknown" at character 188
+postgres-db-1  | 2026-09-12 01:14:27.529 UTC [3039] ERROR:  insert or update on table "supplier_eligibilities" violates foreign key constraint "supplier_eligibilities_supplier_id_fkey"
+postgres-db-1  | 2026-09-12 01:14:58.108 UTC [3083] ERROR:  value too long for type character varying(100)
+postgres-db-1  | 2026-09-12 01:14:58.684 UTC [3084] ERROR:  duplicate key value violates unique constraint "uq_production_batches_tenant_code"
+postgres-db-1  | 2026-09-12 01:15:02.067 UTC [3091] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:15:19.322 UTC [3145] ERROR:  invalid input value for enum material_risk: "catastrophic"
+postgres-db-1  | 2026-09-12 01:15:20.830 UTC [3149] ERROR:  value too long for type character varying(100)
+postgres-db-1  | 2026-09-12 01:15:21.172 UTC [3150] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:15:22.856 UTC [3155] ERROR:  update or delete on table "suppliers" violates foreign key constraint "materials_supplier_id_fkey" on table "materials"
+postgres-db-1  | 2026-09-12 01:15:36.090 UTC [3197] ERROR:  update or delete on table "materials" violates foreign key constraint "batch_materials_material_id_fkey" on table "batch_materials"
+postgres-db-1  | 2026-09-12 01:15:40.162 UTC [3249] ERROR:  update or delete on table "process_templates" violates foreign key constraint "production_batches_process_template_id_fkey" on table "production_batches"
+postgres-db-1  | 2026-09-12 01:16:01.408 UTC [3318] ERROR:  value too long for type character varying(50)
+postgres-db-1  | 2026-09-12 01:16:02.054 UTC [3325] ERROR:  value too long for type character varying(255)
+postgres-db-1  | 2026-09-12 01:16:04.444 UTC [3347] ERROR:  invalid input value for enum supplier_status: "not_a_real_status"
+postgres-db-1  | 2026-09-12 01:16:04.700 UTC [3349] ERROR:  update or delete on table "suppliers" violates foreign key constraint "materials_supplier_id_fkey" on table "materials"
+postgres-db-1  | 2026-09-12 01:16:10.706 UTC [3376] ERROR:  invalid input value for enum supplier_certificate_status: "unknown" at character 188
+postgres-db-1  | 2026-09-12 01:16:10.990 UTC [3377] ERROR:  insert or update on table "supplier_eligibilities" violates foreign key constraint "supplier_eligibilities_supplier_id_fkey"
+postgres-db-1  | 2026-09-12 01:19:37.613 UTC [3533] ERROR:  relation "supply_batches" does not exist at character 133
+postgres-db-1  | 2026-09-12 01:19:51.626 UTC [3554] ERROR:  column "sealed_at" does not exist at character 55

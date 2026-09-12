@@ -1,0 +1,27 @@
+# Phase 0 final static/security scan after redaction fix
+2026-09-11T22:34:12-04:00
+
+## changed/untracked paths
+ M backend/services/cert_lifecycle.py
+ M backend/services/jobs.py
+ M backend/tests/test_cert_lifecycle_unit.py
+ M backend/tests/test_jobs_unit.py
+ M backend/tests/test_supplier_eligibility_service.py
+ M docker-compose.yml
+?? docs/plans/2026-09-11-aminra-production-risk-closure-plan.md
+?? docs/qa/2026-09-11-production-risk-closure/
+?? docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md
+?? docs/qa/2026-09-11-supply-chain-traceability-production/
+?? scripts/qa/seed-public-trace-fixture.py
+
+## no internal UUID columns in seed evidence
+-- docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/33-seed-public-trace-fixture.txt
+ok: no id/tenant_id output columns
+-- docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/47-reseed-public-trace-fixture-after-backend-recreate.txt
+ok: no id/tenant_id output columns
+
+## added-line secret-like patterns
+
+## added-line shell/eval/sql candidates
+
+## diff whitespace

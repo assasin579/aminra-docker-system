@@ -1,0 +1,4 @@
+# P1.2 cold-cache/many-distinct public trace load profile
+2026-09-12T00:19:45-04:00
+{"profile": "cold_distinct_public_trace", "requests": 100, "concurrency": 20, "p50_ms": 408.4, "p95_ms": 946.4, "max_ms": 1414.6, "mean_ms": 485.9, "statuses": {"200": 100}, "errors": 0, "sample_errors": []}
+{"profile": "cold_distinct_public_trace", "requests": 120, "concurrency": 50, "p50_ms": 525.2, "p95_ms": 784.6, "max_ms": 876.3, "mean_ms": 544.9, "statuses": {"200": 120}, "errors": 0, "sample_errors": []}

@@ -1,0 +1,716 @@
+# P1.1 post-recreate focused test retry with PYTHONPATH
+2026-09-11T23:48:16-04:00
+EEEEEEEEEEEEEEEEEEEsEEEEEE                                               [100%]
+==================================== ERRORS ====================================
+_______ ERROR at setup of TestSealHappyPath.test_01_seal_completed_batch _______
+file /app/tests/test_supply_chain_sealing.py, line 167
+      async def test_01_seal_completed_batch(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          result = await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          assert result["sealed"] is True
+          assert result["integrity_hash"]
+          assert len(result["integrity_hash"]) == 64  # SHA-256 hex
+          # Confirm DB reflects seal
+          row = await db_tx.fetchrow(
+              "SELECT integrity_hash, sealed_data, approved_by, approved_at "
+              "FROM production_batches WHERE id=$1::uuid", bid,
+          )
+          assert row["integrity_hash"] == result["integrity_hash"]
+          assert row["sealed_data"] is not None
+          assert row["approved_by"] == biz_a["email"]
+          assert row["approved_at"] is not None
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_____ ERROR at setup of TestSealHappyPath.test_02_verify_intact_after_seal _____
+file /app/tests/test_supply_chain_sealing.py, line 183
+      async def test_02_verify_intact_after_seal(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          seal = await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          v = await verify_batch_integrity(bid=bid, user=biz_a, db=db_tx)
+          assert v["verified"] is True
+          assert v["stored_hash"] == seal["integrity_hash"]
+          assert v["computed_hash"] == seal["integrity_hash"]
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_______ ERROR at setup of TestSealHappyPath.test_03_per_step_hash_stored _______
+file /app/tests/test_supply_chain_sealing.py, line 191
+      async def test_03_per_step_hash_stored(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          rows = await db_tx.fetch(
+              "SELECT id, step_hash FROM batch_steps WHERE batch_id=$1::uuid", bid,
+          )
+          assert len(rows) == 2
+          for r in rows:
+              assert r["step_hash"]
+              assert len(r["step_hash"]) == 64  # SHA-256 hex
+          # Hashes must differ — distinct steps → distinct payloads
+          hashes = {r["step_hash"] for r in rows}
+          assert len(hashes) == 2
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+__ ERROR at setup of TestSealHappyPath.test_04_seal_rejects_unapproved_steps ___
+file /app/tests/test_supply_chain_sealing.py, line 205
+      async def test_04_seal_rejects_unapproved_steps(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a, approve_steps=False)
+          with pytest.raises(HTTPException) as exc:
+              await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          assert exc.value.status_code == 400
+          assert "chưa đủ điều kiện seal" in exc.value.detail["message"]
+          assert any("chưa được xác nhận" in reason for reason in exc.value.detail["reasons"])
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestTamperDetection.test_05_tampering_sealed_data_flips_verify_false _
+file /app/tests/test_supply_chain_sealing.py, line 220
+      async def test_05_tampering_sealed_data_flips_verify_false(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          seal = await approve_batch(bid=bid, user=biz_a, db=db_tx)
+
+          # Adversary mutates sealed JSON — change product name post-seal
+          row = await db_tx.fetchrow(
+              "SELECT sealed_data::text AS s FROM production_batches WHERE id=$1::uuid", bid,
+          )
+          tampered = json.loads(row["s"])
+          tampered["product_name"] = "TAMPERED PRODUCT"
+          await db_tx.execute(
+              "UPDATE production_batches SET sealed_data=$1::jsonb WHERE id=$2::uuid",
+              json.dumps(tampered), bid,
+          )
+
+          v = await verify_batch_integrity(bid=bid, user=biz_a, db=db_tx)
+          assert v["verified"] is False
+          assert v["stored_hash"] == seal["integrity_hash"]  # original hash unchanged
+          assert v["computed_hash"] != v["stored_hash"]
+          assert "CẢNH BÁO" in v["message"]
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestTamperDetection.test_06_tampering_step_inside_sealed_data_detected _
+file /app/tests/test_supply_chain_sealing.py, line 241
+      async def test_06_tampering_step_inside_sealed_data_detected(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+
+          row = await db_tx.fetchrow(
+              "SELECT sealed_data::text AS s FROM production_batches WHERE id=$1::uuid", bid,
+          )
+          tampered = json.loads(row["s"])
+          tampered["steps"][0]["performed_by"] = "FAKE OPERATOR"
+          await db_tx.execute(
+              "UPDATE production_batches SET sealed_data=$1::jsonb WHERE id=$2::uuid",
+              json.dumps(tampered), bid,
+          )
+
+          v = await verify_batch_integrity(bid=bid, user=biz_a, db=db_tx)
+          assert v["verified"] is False
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestTamperDetection.test_07_modifying_integrity_hash_alone_also_detected _
+file /app/tests/test_supply_chain_sealing.py, line 258
+      async def test_07_modifying_integrity_hash_alone_also_detected(self, db_tx, biz_a):
+          # If attacker swaps the hash to match tampered data they'd succeed in
+          # bypassing verify — but only if they re-compute the hash themselves.
+          # The harder case: attacker just zeroes / corrupts the stored hash.
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          # Corrupt the hash field
+          await db_tx.execute(
+              "UPDATE production_batches SET integrity_hash=$1 WHERE id=$2::uuid",
+              "0" * 64, bid,
+          )
+          v = await verify_batch_integrity(bid=bid, user=biz_a, db=db_tx)
+          assert v["verified"] is False
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestTamperDetection.test_08_unsealed_batch_verify_returns_not_verified_with_reason _
+file /app/tests/test_supply_chain_sealing.py, line 272
+      async def test_08_unsealed_batch_verify_returns_not_verified_with_reason(
+          self, db_tx, biz_a,
+      ):
+          bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
+          v = await verify_batch_integrity(bid=bid, user=biz_a, db=db_tx)
+          assert v["verified"] is False
+          assert "chưa được seal" in v["reason"]
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestCryptoProperties.test_09_recomputed_hash_matches_stored _
+file /app/tests/test_supply_chain_sealing.py, line 287
+      async def test_09_recomputed_hash_matches_stored(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          seal = await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          # Pull sealed text + recompute outside the endpoint to confirm the
+          # algorithm is reproducible by any verifier (eg. external auditor).
+          row = await db_tx.fetchrow(
+              "SELECT sealed_data::text AS s FROM production_batches WHERE id=$1::uuid", bid,
+          )
+          sealed = json.loads(row["s"])
+          sealed_json = json.dumps(sealed, sort_keys=True, ensure_ascii=False)
+          recomputed = hashlib.sha256(sealed_json.encode("utf-8")).hexdigest()
+          assert recomputed == seal["integrity_hash"]
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestCryptoProperties.test_10_two_independent_batches_have_distinct_hashes _
+file /app/tests/test_supply_chain_sealing.py, line 300
+      async def test_10_two_independent_batches_have_distinct_hashes(self, db_tx, biz_a):
+          bid_a = await _seed_full_batch(db_tx, biz_a)
+          bid_b = await _seed_full_batch(db_tx, biz_a)
+          a = await approve_batch(bid=bid_a, user=biz_a, db=db_tx)
+          b = await approve_batch(bid=bid_b, user=biz_a, db=db_tx)
+          assert a["integrity_hash"] != b["integrity_hash"]
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+____ ERROR at setup of TestCryptoProperties.test_11_hash_uses_sha256_64_hex ____
+file /app/tests/test_supply_chain_sealing.py, line 307
+      async def test_11_hash_uses_sha256_64_hex(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          result = await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          h = result["integrity_hash"]
+          assert len(h) == 64
+          assert all(c in "0123456789abcdef" for c in h)
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+___ ERROR at setup of TestImmutability.test_12_cannot_re_seal_already_sealed ___
+file /app/tests/test_supply_chain_sealing.py, line 321
+      async def test_12_cannot_re_seal_already_sealed(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          with pytest.raises(HTTPException) as exc:
+              await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          assert exc.value.status_code == 400
+          assert "đã được seal" in exc.value.detail or "sealed" in exc.value.detail
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+___ ERROR at setup of TestImmutability.test_13_cannot_modify_step_after_seal ___
+file /app/tests/test_supply_chain_sealing.py, line 329
+      async def test_13_cannot_modify_step_after_seal(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          step = await db_tx.fetchrow(
+              "SELECT id FROM batch_steps WHERE batch_id=$1::uuid LIMIT 1", bid,
+          )
+          with pytest.raises(HTTPException) as exc:
+              await update_step(
+                  bid=bid, step_id=str(step["id"]),
+                  req=BatchStepUpdate(notes="late edit"),
+                  user=biz_a, db=db_tx,
+              )
+          # update_step gates on integrity_hash → 403
+          assert exc.value.status_code == 403
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+__ ERROR at setup of TestImmutability.test_14_cannot_assign_member_after_seal __
+file /app/tests/test_supply_chain_sealing.py, line 344
+      async def test_14_cannot_assign_member_after_seal(self, db_tx, biz_a):
+          # Must build a Request-like object with json() async method
+          from fastapi import Request as _Req
+
+          class FakeReq:
+              def __init__(self, body):
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+__ ERROR at setup of TestImmutability.test_15_cannot_update_batch_after_seal ___
+file /app/tests/test_supply_chain_sealing.py, line 366
+      async def test_15_cannot_update_batch_after_seal(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          with pytest.raises(HTTPException) as exc:
+              await update_batch(
+                  bid=bid,
+                  req=BatchUpdate(notes="late note"),
+                  user=biz_a,
+                  db=db_tx,
+              )
+          assert exc.value.status_code == 403
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+__ ERROR at setup of TestImmutability.test_16_cannot_delete_batch_after_seal ___
+file /app/tests/test_supply_chain_sealing.py, line 378
+      async def test_16_cannot_delete_batch_after_seal(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          with pytest.raises(HTTPException) as exc:
+              await delete_batch(bid=bid, user=biz_a, db=db_tx)
+          assert exc.value.status_code == 403
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPreconditionsAndAuth.test_17_cannot_seal_incomplete_batch _
+file /app/tests/test_supply_chain_sealing.py, line 392
+      async def test_17_cannot_seal_incomplete_batch(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
+          with pytest.raises(HTTPException) as exc:
+              await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          assert exc.value.status_code == 400
+          assert "chưa hoàn thành" in exc.value.detail
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPreconditionsAndAuth.test_18_other_tenant_cannot_verify _
+file /app/tests/test_supply_chain_sealing.py, line 399
+      async def test_18_other_tenant_cannot_verify(self, db_tx, biz_a, biz_b):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          with pytest.raises(HTTPException) as exc:
+              await verify_batch_integrity(bid=bid, user=biz_b, db=db_tx)
+          assert exc.value.status_code == 404
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPreconditionsAndAuth.test_19_other_tenant_cannot_seal __
+file /app/tests/test_supply_chain_sealing.py, line 406
+      async def test_19_other_tenant_cannot_seal(self, db_tx, biz_a, biz_b):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          with pytest.raises(HTTPException) as exc:
+              await approve_batch(bid=bid, user=biz_b, db=db_tx)
+          assert exc.value.status_code == 404
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPublicTraceP0.test_21_create_batch_gets_opaque_public_trace_id_disabled_by_default _
+file /app/tests/test_supply_chain_sealing.py, line 447
+      async def test_21_create_batch_gets_opaque_public_trace_id_disabled_by_default(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
+          row = await db_tx.fetchrow(
+              "SELECT batch_code, public_trace_id, public_trace_enabled FROM production_batches WHERE id=$1::uuid",
+              bid,
+          )
+          assert row["public_trace_id"] is not None
+          assert str(row["public_trace_id"]) != row["batch_code"]
+          assert row["public_trace_enabled"] is False
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPublicTraceP0.test_22_public_trace_rejects_business_batch_code_lookup _
+file /app/tests/test_supply_chain_sealing.py, line 457
+      async def test_22_public_trace_rejects_business_batch_code_lookup(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          code = await db_tx.fetchval("SELECT batch_code FROM production_batches WHERE id=$1::uuid", bid)
+          with pytest.raises(HTTPException) as exc:
+              await public_trace(trace_id=code, db=db_tx)
+          assert exc.value.status_code == 404
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPublicTraceP0.test_23_public_trace_is_sealed_only_fail_closed _
+file /app/tests/test_supply_chain_sealing.py, line 465
+      async def test_23_public_trace_is_sealed_only_fail_closed(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a, status_completed=False)
+          trace_id = await db_tx.fetchval("SELECT public_trace_id FROM production_batches WHERE id=$1::uuid", bid)
+          with pytest.raises(HTTPException) as exc:
+              await public_trace(trace_id=str(trace_id), db=db_tx)
+          assert exc.value.status_code == 404
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPublicTraceP0.test_24_public_trace_returns_sealed_snapshot_not_live_tables _
+file /app/tests/test_supply_chain_sealing.py, line 472
+      async def test_24_public_trace_returns_sealed_snapshot_not_live_tables(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          row = await db_tx.fetchrow(
+              "SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid",
+              bid,
+          )
+          sealed_product = row["product_name"]
+          await db_tx.execute(
+              "UPDATE production_batches SET product_name='LIVE TAMPER SHOULD NOT LEAK' WHERE id=$1::uuid",
+              bid,
+          )
+          trace = _response_json(await public_trace(trace_id=str(row["public_trace_id"]), db=db_tx))
+          assert trace["batch"]["product_name"] == sealed_product
+          assert trace["batch"]["product_name"] != "LIVE TAMPER SHOULD NOT LEAK"
+          assert trace["integrity"]["verified"] is True
+          assert trace["integrity"]["snapshot_version"] >= 2
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPublicTraceP0.test_25_public_trace_handles_duplicate_batch_codes_by_trace_id _
+file /app/tests/test_supply_chain_sealing.py, line 490
+      async def test_25_public_trace_handles_duplicate_batch_codes_by_trace_id(self, db_tx, biz_a, biz_b):
+          bid_a = await _seed_full_batch(db_tx, biz_a)
+          bid_b = await _seed_full_batch(db_tx, biz_b)
+          await db_tx.execute(
+              "UPDATE production_batches SET batch_code='LOT-DUPLICATE-PUBLIC' WHERE id=ANY($1::uuid[])",
+              [bid_a, bid_b],
+          )
+          await approve_batch(bid=bid_a, user=biz_a, db=db_tx)
+          await approve_batch(bid=bid_b, user=biz_b, db=db_tx)
+          row_a = await db_tx.fetchrow("SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid", bid_a)
+          row_b = await db_tx.fetchrow("SELECT public_trace_id, product_name FROM production_batches WHERE id=$1::uuid", bid_b)
+          trace_a = _response_json(await public_trace(trace_id=str(row_a["public_trace_id"]), db=db_tx))
+          trace_b = _response_json(await public_trace(trace_id=str(row_b["public_trace_id"]), db=db_tx))
+          assert trace_a["batch"]["batch_code"] == "LOT-DUPLICATE-PUBLIC"
+          assert trace_b["batch"]["batch_code"] == "LOT-DUPLICATE-PUBLIC"
+          assert trace_a["batch"]["product_name"] == row_a["product_name"]
+          assert trace_b["batch"]["product_name"] == row_b["product_name"]
+          assert trace_a["batch"]["public_trace_id"] != trace_b["batch"]["public_trace_id"]
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+_ ERROR at setup of TestPublicTraceP0.test_26_seal_rejects_supplier_eligibility_revoked_at_seal_time _
+file /app/tests/test_supply_chain_sealing.py, line 509
+      async def test_26_seal_rejects_supplier_eligibility_revoked_at_seal_time(self, db_tx, biz_a):
+          bid = await _seed_full_batch(db_tx, biz_a)
+          await db_tx.execute(
+              """
+              UPDATE supplier_eligibilities se
+                 SET status='revoked'
+               WHERE se.supplier_id IN (
+                 SELECT COALESCE(bm.supplier_id, m.supplier_id)
+                   FROM batch_materials bm
+                   JOIN materials m ON m.id=bm.material_id
+                  WHERE bm.batch_id=$1::uuid
+               )
+              """,
+              bid,
+          )
+          with pytest.raises(HTTPException) as exc:
+              await approve_batch(bid=bid, user=biz_a, db=db_tx)
+          assert exc.value.status_code == 400
+          assert "chưa đủ điều kiện seal" in str(exc.value.detail)
+          assert "CB" in str(exc.value.detail)
+file /app/tests/test_supply_chain_sealing.py, line 73
+  @pytest.fixture(autouse=True)
+  async def _p0_trace_schema(db_tx):
+      await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+      for migration in reversed(MIGRATIONS):
+          for sql in migration.DOWN_SQL:
+              await db_tx.execute(sql)
+      for migration in MIGRATIONS:
+          for sql in migration.UP_SQL:
+              await db_tx.execute(sql)
+E       fixture 'db_tx' not found
+>       available fixtures: _asyncio_loop_factory, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _p0_trace_schema, _package_scoped_runner, _pytest_bdd_example, _session_faker, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cov, doctest_namespace, event_loop_policy, faker, fastsession, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestbdd_stepdef_given_trace, pytestbdd_stepdef_then_trace, pytestbdd_stepdef_when_trace, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, respx_mock, session, session_mocker, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/app/tests/test_supply_chain_sealing.py:73
+=========================== short test summary info ============================
+ERROR tests/test_supply_chain_sealing.py::TestSealHappyPath::test_01_seal_completed_batch
+ERROR tests/test_supply_chain_sealing.py::TestSealHappyPath::test_02_verify_intact_after_seal
+ERROR tests/test_supply_chain_sealing.py::TestSealHappyPath::test_03_per_step_hash_stored
+ERROR tests/test_supply_chain_sealing.py::TestSealHappyPath::test_04_seal_rejects_unapproved_steps
+ERROR tests/test_supply_chain_sealing.py::TestTamperDetection::test_05_tampering_sealed_data_flips_verify_false
+ERROR tests/test_supply_chain_sealing.py::TestTamperDetection::test_06_tampering_step_inside_sealed_data_detected
+ERROR tests/test_supply_chain_sealing.py::TestTamperDetection::test_07_modifying_integrity_hash_alone_also_detected
+ERROR tests/test_supply_chain_sealing.py::TestTamperDetection::test_08_unsealed_batch_verify_returns_not_verified_with_reason
+ERROR tests/test_supply_chain_sealing.py::TestCryptoProperties::test_09_recomputed_hash_matches_stored
+ERROR tests/test_supply_chain_sealing.py::TestCryptoProperties::test_10_two_independent_batches_have_distinct_hashes
+ERROR tests/test_supply_chain_sealing.py::TestCryptoProperties::test_11_hash_uses_sha256_64_hex
+ERROR tests/test_supply_chain_sealing.py::TestImmutability::test_12_cannot_re_seal_already_sealed
+ERROR tests/test_supply_chain_sealing.py::TestImmutability::test_13_cannot_modify_step_after_seal
+ERROR tests/test_supply_chain_sealing.py::TestImmutability::test_14_cannot_assign_member_after_seal
+ERROR tests/test_supply_chain_sealing.py::TestImmutability::test_15_cannot_update_batch_after_seal
+ERROR tests/test_supply_chain_sealing.py::TestImmutability::test_16_cannot_delete_batch_after_seal
+ERROR tests/test_supply_chain_sealing.py::TestPreconditionsAndAuth::test_17_cannot_seal_incomplete_batch
+ERROR tests/test_supply_chain_sealing.py::TestPreconditionsAndAuth::test_18_other_tenant_cannot_verify
+ERROR tests/test_supply_chain_sealing.py::TestPreconditionsAndAuth::test_19_other_tenant_cannot_seal
+ERROR tests/test_supply_chain_sealing.py::TestPublicTraceP0::test_21_create_batch_gets_opaque_public_trace_id_disabled_by_default
+ERROR tests/test_supply_chain_sealing.py::TestPublicTraceP0::test_22_public_trace_rejects_business_batch_code_lookup
+ERROR tests/test_supply_chain_sealing.py::TestPublicTraceP0::test_23_public_trace_is_sealed_only_fail_closed
+ERROR tests/test_supply_chain_sealing.py::TestPublicTraceP0::test_24_public_trace_returns_sealed_snapshot_not_live_tables
+ERROR tests/test_supply_chain_sealing.py::TestPublicTraceP0::test_25_public_trace_handles_duplicate_batch_codes_by_trace_id
+ERROR tests/test_supply_chain_sealing.py::TestPublicTraceP0::test_26_seal_rejects_supplier_eligibility_revoked_at_seal_time
+1 skipped, 25 errors in 2.08s

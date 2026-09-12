@@ -13,8 +13,42 @@ cd "$PROJECT_DIR"
 TAG="${1:-latest}"
 GITHUB_OWNER="${GITHUB_OWNER:-aminra-dev}"
 REGISTRY="ghcr.io"
+DEPLOY_STRATEGY="${DEPLOY_STRATEGY:-}"
+DEPLOY_WINDOW_APPROVED="${DEPLOY_WINDOW_APPROVED:-false}"
+DRY_RUN="${DRY_RUN:-false}"
+
+cat <<'EOF'
+==> AMINRA deploy safety gate
+    Docker Compose force-recreate is not zero-downtime for the current single-backend topology.
+    Production/pilot deploys must use one of:
+      DEPLOY_STRATEGY=maintenance DEPLOY_WINDOW_APPROVED=true  # explicit downtime window
+      DEPLOY_STRATEGY=rolling                                  # external rolling/blue-green orchestrator only
+EOF
+
+case "$DEPLOY_STRATEGY" in
+  maintenance)
+    if [ "$DEPLOY_WINDOW_APPROVED" != "true" ]; then
+      echo "ERROR: maintenance deploy requires DEPLOY_WINDOW_APPROVED=true" >&2
+      exit 64
+    fi
+    ;;
+  rolling)
+    echo "ERROR: rolling/blue-green is not implemented by this Docker Compose script; use an orchestrator/runbook that proves overlap + health-gated cutover." >&2
+    exit 65
+    ;;
+  *)
+    echo "ERROR: set DEPLOY_STRATEGY=maintenance with an approved window, or use an external rolling/blue-green deploy path." >&2
+    exit 64
+    ;;
+esac
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo "==> DRY_RUN passed deploy safety gate for tag: ${TAG}"
+  exit 0
+fi
 
 echo "==> Deploying tag: ${TAG}"
+echo "==> Strategy: ${DEPLOY_STRATEGY}"
 echo "==> Registry: ${REGISTRY}/${GITHUB_OWNER}/aminra-*"
 
 # Save current tag for rollback

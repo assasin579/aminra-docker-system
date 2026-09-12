@@ -1,0 +1,29 @@
+# P1.2 chaos drill 1: Redis outage/recovery
+2026-09-11T23:59:11-04:00
+
+## stop redis
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   12 minutes ago   Up 11 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-arq-worker-1       aminra-docker-system-arq-worker       "/app/entrypoint.sh …"   arq-worker       59 minutes ago   Up 58 minutes             8000/tcp
+
+## expected: public trace still available while redis is down
+public_trace_http=200 total=0.401013
+{'verified': True}
+
+## backend health during redis outage
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+
+## restart redis
+PONG
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                           PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   12 minutes ago   Up 11 minutes (healthy)          0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-arq-worker-1       aminra-docker-system-arq-worker       "/app/entrypoint.sh …"   arq-worker       59 minutes ago   Up 1 second                      8000/tcp
+aminra-docker-system-redis-1            redis:7.4-alpine                      "docker-entrypoint.s…"   redis            4 days ago       Up 1 second (health: starting)   6379/tcp
+
+## post-recovery public trace
+public_trace_http=200 total=0.361289

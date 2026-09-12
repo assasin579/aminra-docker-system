@@ -1,0 +1,197 @@
+# P1.1 build frontend with public trace proxy cache
+2026-09-11T23:52:17-04:00
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.39kB done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.30kB done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#3 DONE 1.5s
+
+#4 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#4 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.1s done
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 1.5s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [base 1/1] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#7 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#7 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 88.66MB 4.2s done
+#8 DONE 4.3s
+
+#9 [deps 2/4] WORKDIR /app
+#9 CACHED
+
+#10 [deps 3/4] COPY package.json package-lock.json* ./
+#10 CACHED
+
+#11 [deps 4/4] RUN --mount=type=cache,target=/root/.npm     npm ci --prefer-offline --legacy-peer-deps
+#11 CACHED
+
+#12 [builder 1/4] WORKDIR /app
+#12 CACHED
+
+#13 [deps 1/4] RUN apk add --no-cache libc6-compat
+#13 CACHED
+
+#14 [builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+#14 CACHED
+
+#15 [builder 3/4] COPY . .
+#15 DONE 52.8s
+
+#16 [builder 4/4] RUN npm run build
+#16 2.284 
+#16 2.284 > aminra-web@0.1.0 build
+#16 2.284 > next build
+#16 2.284 
+#16 4.340 [@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead. (Not supported with Turbopack.)
+#16 4.463 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#16 4.463 This information is used to shape Next.js' roadmap and prioritize features.
+#16 4.463 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#16 4.463 https://nextjs.org/telemetry
+#16 4.464 
+#16 10.60 ▲ Next.js 16.2.4 (Turbopack)
+#16 10.60 - Experiments (use with caution):
+#16 10.60   · clientTraceMetadata
+#16 10.60   ✓ webpackBuildWorker
+#16 10.60 
+#16 10.87   Creating an optimized production build ...
+#16 12.11 [@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead. (Not supported with Turbopack.)
+#16 31.39 ✓ Compiled successfully in 19.2s
+#16 31.39   Running next.config.js provided runAfterProductionCompile ...
+#16 32.16 ✓ Completed runAfterProductionCompile in 772ms
+#16 32.17   Running TypeScript ...
+#16 75.16   Finished TypeScript in 43s ...
+#16 75.17   Collecting page data using 4 workers ...
+#16 77.89   Generating static pages using 4 workers (0/46) ...
+#16 79.14   Generating static pages using 4 workers (11/46) 
+#16 79.67   Generating static pages using 4 workers (22/46) 
+#16 79.75   Generating static pages using 4 workers (34/46) 
+#16 80.20 ✓ Generating static pages using 4 workers (46/46) in 2.3s
+#16 80.23   Finalizing page optimization ...
+#16 81.51 
+#16 81.53 Route (app)
+#16 81.53 ┌ ○ /
+#16 81.53 ├ ○ /_not-found
+#16 81.53 ├ ○ /account/confirm-deletion
+#16 81.53 ├ ƒ /admin
+#16 81.53 ├ ○ /admin/analytics
+#16 81.53 ├ ○ /admin/audit-logs
+#16 81.53 ├ ○ /admin/industries
+#16 81.53 ├ ○ /admin/overdue-submissions
+#16 81.53 ├ ○ /admin/standards
+#16 81.53 ├ ƒ /api/[...path]
+#16 81.53 ├ ƒ /api/auth/login
+#16 81.53 ├ ƒ /api/auth/refresh
+#16 81.53 ├ ƒ /api/chat
+#16 81.53 ├ ƒ /api/upload
+#16 81.53 ├ ○ /auditors
+#16 81.53 ├ ○ /audits
+#16 81.53 ├ ƒ /audits/[id]
+#16 81.53 ├ ○ /audits/templates
+#16 81.53 ├ ○ /auth/callback
+#16 81.53 ├ ○ /business/login
+#16 81.53 ├ ○ /business/onboarding/industry-select
+#16 81.53 ├ ○ /business/register
+#16 81.53 ├ ƒ /businesses/[id]
+#16 81.53 ├ ○ /certificates
+#16 81.53 ├ ○ /chat
+#16 81.53 ├ ○ /create-document
+#16 81.53 ├ ○ /dashboard/business
+#16 81.53 ├ ○ /dashboard/provider
+#16 81.53 ├ ○ /dashboard/provider/overdue
+#16 81.53 ├ ○ /documents
+#16 81.53 ├ ○ /dossiers
+#16 81.53 ├ ƒ /dossiers/[id]
+#16 81.53 ├ ○ /dossiers/new
+#16 81.53 ├ ○ /forgot-password
+#16 81.53 ├ ƒ /invite/[token]
+#16 81.53 ├ ○ /landing
+#16 81.53 ├ ○ /members
+#16 81.53 ├ ○ /portfolio
+#16 81.53 ├ ○ /privacy
+#16 81.53 ├ ○ /provider/login
+#16 81.53 ├ ○ /provider/register
+#16 81.53 ├ ○ /reset-password
+#16 81.53 ├ ○ /settings
+#16 81.53 ├ ○ /settings/company
+#16 81.53 ├ ○ /settings/data-export
+#16 81.53 ├ ○ /submissions
+#16 81.53 ├ ƒ /supplier-portal/[token]
+#16 81.53 ├ ○ /supply-chain/batches
+#16 81.53 ├ ○ /supply-chain/materials
+#16 81.53 ├ ○ /supply-chain/process
+#16 81.53 ├ ○ /terms
+#16 81.53 ├ ƒ /trace/[code]
+#16 81.53 ├ ○ /upload
+#16 81.53 └ ƒ /verify/[cert_number]
+#16 81.53 
+#16 81.53 
+#16 81.53 ○  (Static)   prerendered as static content
+#16 81.53 ƒ  (Dynamic)  server-rendered on demand
+#16 81.53 
+#16 81.83 npm notice
+#16 81.83 npm notice New major version of npm available! 10.8.2 -> 12.0.2
+#16 81.83 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#16 81.83 npm notice To update run: npm install -g npm@12.0.2
+#16 81.83 npm notice
+#16 DONE 82.2s
+
+#17 [runner 4/9] RUN adduser --system --uid 1001 nextjs
+#17 CACHED
+
+#18 [runner 5/9] COPY --from=builder /app/public ./public
+#18 CACHED
+
+#19 [runner 6/9] RUN mkdir .next
+#19 CACHED
+
+#20 [runner 1/9] RUN apk add --no-cache tzdata
+#20 CACHED
+
+#21 [runner 2/9] WORKDIR /app
+#21 CACHED
+
+#22 [runner 3/9] RUN addgroup --system --gid 1001 nodejs
+#22 CACHED
+
+#23 [runner 7/9] RUN chown nextjs:nodejs .next
+#23 CACHED
+
+#24 [runner 8/9] COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+#24 DONE 0.8s
+
+#25 [runner 9/9] COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+#25 DONE 0.3s
+
+#26 exporting to image
+#26 exporting layers
+#26 exporting layers 5.0s done
+#26 exporting manifest sha256:5382c1039c152730e94a023cba7789cd70aa5d00ca9dee2d1e25fe2d8d77be71 0.0s done
+#26 exporting config sha256:552c82d24666cd0b1e790e009f4dc609245a811d45bb3cea3b8ddc5188d7a0de 0.0s done
+#26 exporting attestation manifest sha256:9977683c9b8912a6e2ab459f954fae45101d1e97774668d1a8ca50f413c1bc9b
+#26 exporting attestation manifest sha256:9977683c9b8912a6e2ab459f954fae45101d1e97774668d1a8ca50f413c1bc9b 0.1s done
+#26 exporting manifest list sha256:eea8e01b9ec87dc2dac24928985e092dd1de4e027eecf5df8ec151d958345f2e
+#26 exporting manifest list sha256:eea8e01b9ec87dc2dac24928985e092dd1de4e027eecf5df8ec151d958345f2e 0.1s done
+#26 naming to docker.io/library/aminra-docker-system-aminra-frontend:latest done
+#26 unpacking to docker.io/library/aminra-docker-system-aminra-frontend:latest
+#26 unpacking to docker.io/library/aminra-docker-system-aminra-frontend:latest 1.5s done
+#26 DONE 6.9s
+
+#27 resolving provenance for metadata file
+#27 DONE 0.0s

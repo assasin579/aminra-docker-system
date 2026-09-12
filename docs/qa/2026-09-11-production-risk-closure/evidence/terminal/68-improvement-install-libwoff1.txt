@@ -1,0 +1,39 @@
+# Improvement 4b: install minimal missing WebKit dependency libwoff1
+2026-09-11T23:03:15-04:00
+Get:1 https://brave-browser-apt-release.s3.brave.com stable InRelease [7,547 B]
+Get:2 https://download.docker.com/linux/debian trixie InRelease [32.5 kB]
+Get:3 https://brave-browser-apt-release.s3.brave.com stable/main amd64 Packages [37.6 kB]
+Get:4 https://persistent.oaistatic.com/codex-app-prod/linux/deb stable InRelease [2,797 B]
+Hit:5 https://deb.nodesource.com/node_24.x nodistro InRelease
+Hit:6 https://deb.debian.org/debian trixie InRelease
+Get:7 https://download.docker.com/linux/debian trixie/stable amd64 Packages [45.7 kB]
+Get:8 https://packages.microsoft.com/repos/code stable InRelease [3,590 B]
+Hit:9 https://updates.signal.org/desktop/apt xenial InRelease
+Get:10 https://aquasecurity.github.io/trivy-repo/deb trixie InRelease [3,236 B]
+Get:11 https://persistent.oaistatic.com/codex-app-prod/linux/deb stable/main amd64 Packages [836 B]
+Get:12 https://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+Get:13 https://packages.microsoft.com/repos/code stable/main amd64 Packages [30.3 kB]
+Get:14 https://deb.debian.org/debian-security trixie-security/main amd64 Packages [261 kB]
+Get:15 https://pkg.cloudflare.com/cloudflared any InRelease [5,039 B]
+Get:16 https://deb.debian.org/debian-security trixie-security/main Translation-en [160 kB]
+Get:17 https://pkg.cloudflare.com/cloudflared any/main amd64 Packages [377 B]
+Get:18 https://deb.qubes-os.org/r4.3/vm trixie InRelease [4,735 B]
+Get:19 https://deb.qubes-os.org/r4.3/vm trixie/main amd64 Packages [42.3 kB]
+Fetched 680 kB in 2s (332 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following NEW packages will be installed:
+  libwoff1
+0 upgraded, 1 newly installed, 0 to remove and 318 not upgraded.
+Need to get 44.3 kB of archives.
+After this operation, 150 kB of additional disk space will be used.
+Get:1 https://deb.debian.org/debian trixie/main amd64 libwoff1 amd64 1.0.2-2+b2 [44.3 kB]
+Fetched 44.3 kB in 0s (114 kB/s)
+Selecting previously unselected package libwoff1:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 182065 files and directories currently installed.)
+Preparing to unpack .../libwoff1_1.0.2-2+b2_amd64.deb ...
+Unpacking libwoff1:amd64 (1.0.2-2+b2) ...
+Setting up libwoff1:amd64 (1.0.2-2+b2) ...
+Processing triggers for libc-bin (2.41-12+deb13u2) ...

@@ -4,6 +4,7 @@ import logging
 import os
 import json as _json
 import io
+import time
 from uuid import UUID as _UUID, uuid4
 from pathlib import Path
 from typing import Optional
@@ -19,6 +20,14 @@ from .eligibility_service import assert_supplier_eligible
 
 log = logging.getLogger("aminra.supply_chain.batches")
 router = APIRouter()
+
+# Public trace is immutable after seal, but a short TTL avoids long-lived stale
+# reads if an operator disables public_trace_enabled after publication. This
+# cache absorbs short high-concurrency bursts on QR/public trace pages without
+# weakening the DB as source of truth for longer windows.
+_PUBLIC_TRACE_CACHE_TTL_SECONDS = float(os.getenv("PUBLIC_TRACE_CACHE_TTL_SECONDS", "5"))
+_PUBLIC_TRACE_CACHE_MAX_ITEMS = int(os.getenv("PUBLIC_TRACE_CACHE_MAX_ITEMS", "512"))
+_PUBLIC_TRACE_RESPONSE_CACHE: dict[str, tuple[float, str]] = {}
 
 # Base URL for QR trace links — uses FRONTEND_URL env or falls back to request origin
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "").rstrip("/")
@@ -353,6 +362,15 @@ async def public_trace(trace_id: str, db=Depends(get_db)):
     except ValueError:
         raise HTTPException(404, "Không tìm thấy truy xuất")
 
+    now = time.monotonic()
+    cached = _PUBLIC_TRACE_RESPONSE_CACHE.get(trace_id)
+    if cached and cached[0] > now:
+        return Response(
+            content=cached[1],
+            media_type="application/json",
+            headers={"Cache-Control": "public, max-age=5, stale-while-revalidate=30"},
+        )
+
     row = await db.fetchrow(
         """
         SELECT b.public_trace_id, b.batch_code, b.status, b.integrity_hash,
@@ -396,7 +414,7 @@ async def public_trace(trace_id: str, db=Depends(get_db)):
     process = sealed.get("process") or {}
     company = sealed.get("company") or {}
 
-    return {
+    payload = {
         "batch": {
             "batch_code": batch.get("batch_code") or sealed.get("batch_code") or row["batch_code"],
             "product_name": batch.get("product_name") or sealed.get("product_name"),
@@ -442,6 +460,22 @@ async def public_trace(trace_id: str, db=Depends(get_db)):
         ],
         "certificates": certificates,
     }
+    body = _json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    if _PUBLIC_TRACE_CACHE_TTL_SECONDS > 0:
+        if len(_PUBLIC_TRACE_RESPONSE_CACHE) >= _PUBLIC_TRACE_CACHE_MAX_ITEMS:
+            # Drop expired items first; if still full, evict an arbitrary oldest
+            # inserted item. This keeps the hot-path O(1) for normal use.
+            expired = [k for k, (expires, _) in _PUBLIC_TRACE_RESPONSE_CACHE.items() if expires <= now]
+            for k in expired:
+                _PUBLIC_TRACE_RESPONSE_CACHE.pop(k, None)
+            if len(_PUBLIC_TRACE_RESPONSE_CACHE) >= _PUBLIC_TRACE_CACHE_MAX_ITEMS:
+                _PUBLIC_TRACE_RESPONSE_CACHE.pop(next(iter(_PUBLIC_TRACE_RESPONSE_CACHE)), None)
+        _PUBLIC_TRACE_RESPONSE_CACHE[trace_id] = (now + _PUBLIC_TRACE_CACHE_TTL_SECONDS, body)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Cache-Control": "public, max-age=5, stale-while-revalidate=30"},
+    )
 
 
 @router.put("/batches/{bid}/assign-member")

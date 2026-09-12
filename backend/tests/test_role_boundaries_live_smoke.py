@@ -27,6 +27,7 @@ KC_TOKEN_URL = os.getenv(
 REALM = os.getenv("KEYCLOAK_REALM", "aminra")
 CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "aminra-frontend")
 DEMO_PW = os.getenv("DEMO_PW", "DemoP@ss2026")
+PROVIDER_DEMO_PW = os.getenv("PROVIDER_DEMO_PW", DEMO_PW)
 ADMIN_DEMO_PW = os.getenv("ADMIN_DEMO_PW")
 
 
@@ -78,7 +79,7 @@ def business_token() -> str:
 
 @pytest.fixture(scope="module")
 def provider_token() -> str:
-    return _token("cb-demo@demo.aminra.vn")
+    return _token("cb-demo@demo.aminra.vn", PROVIDER_DEMO_PW)
 
 
 @pytest.fixture(scope="module")

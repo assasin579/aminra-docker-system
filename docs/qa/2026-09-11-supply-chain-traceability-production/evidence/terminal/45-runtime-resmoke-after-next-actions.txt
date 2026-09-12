@@ -1,0 +1,13 @@
+# Runtime re-smoke after next actions
+2026-09-11T21:44:26-04:00
+
+## backend health
+{"status":"ok","service":"Aminra Halal Certification AI","database":"connected","qdrant":"connected"}
+## positive public trace API
+
+## public trace page
+HTTP/2 200 
+content-type: text/html; charset=utf-8
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+
+## arq worker target errors after fix

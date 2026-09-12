@@ -1,0 +1,10 @@
+# Improvement 1d: Playwright demo spine after backend/ARQ rebuild
+2026-09-11T23:00:55-04:00
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (5.3s)
+  ✓  2 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.1s)
+  ✓  3 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (636ms)
+
+  3 passed (8.8s)

@@ -1,0 +1,4 @@
+# Copy backend tests into running backend container for pytest harness
+container=79826ccd3fa0d49bc8d8d9727965d978794096bc8d46e905b44aa361b8032f3d
+/app/tests/test_supplier_eligibility_service.py
+/app/tests/test_supply_chain_sealing.py

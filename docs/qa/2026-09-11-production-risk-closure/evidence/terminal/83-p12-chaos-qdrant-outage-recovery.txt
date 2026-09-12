@@ -1,0 +1,32 @@
+# P1.2 chaos drill 2: Qdrant outage/recovery
+2026-09-11T23:59:31-04:00
+
+## stop qdrant
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   12 minutes ago   Up 12 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+
+## expected: backend health reports qdrant not connected or degraded
+health_http=200 total=0.067462
+curl_rc=0
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "disconnected"
+}
+
+## expected: public trace remains available (does not depend on Qdrant)
+public_trace_http=200 total=0.341665
+
+## restart qdrant
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                           PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   12 minutes ago   Up 12 minutes (healthy)          0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-qdrant-db-1        aminra-docker-system-qdrant-db        "./entrypoint.sh"        qdrant-db        4 hours ago      Up 1 second (health: starting)   6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+
+## post-recovery backend health
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}

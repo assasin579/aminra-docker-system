@@ -1,0 +1,12 @@
+# Domain: 08-frontend-browser-a11y
+# Step: frontend-lint
+# Started: 2026-09-12T05:39:05-04:00
+# Command: cd frontend/aminra-web && npm run lint
+
+
+> aminra-web@0.1.0 lint
+> eslint . --max-warnings=0
+
+
+# Finished: 2026-09-12T05:39:29-04:00
+# Exit code: 0

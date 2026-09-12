@@ -1,0 +1,93 @@
+# Domain: 08-frontend-browser-a11y
+# Step: frontend-build
+# Started: 2026-09-12T05:29:34-04:00
+# Command: cd frontend/aminra-web && npm run build
+
+
+> aminra-web@0.1.0 build
+> next build
+
+[@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead. (Not supported with Turbopack.)
+▲ Next.js 16.2.4 (Turbopack)
+- Experiments (use with caution):
+  · clientTraceMetadata
+  ✓ webpackBuildWorker
+
+  Creating an optimized production build ...
+[@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead. (Not supported with Turbopack.)
+✓ Compiled successfully in 22.9s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 626ms
+  Running TypeScript ...
+  Finished TypeScript in 29.6s ...
+  Collecting page data using 4 workers ...
+  Generating static pages using 4 workers (0/46) ...
+  Generating static pages using 4 workers (11/46) 
+  Generating static pages using 4 workers (22/46) 
+  Generating static pages using 4 workers (34/46) 
+✓ Generating static pages using 4 workers (46/46) in 1477ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /account/confirm-deletion
+├ ƒ /admin
+├ ○ /admin/analytics
+├ ○ /admin/audit-logs
+├ ○ /admin/industries
+├ ○ /admin/overdue-submissions
+├ ○ /admin/standards
+├ ƒ /api/[...path]
+├ ƒ /api/auth/login
+├ ƒ /api/auth/refresh
+├ ƒ /api/chat
+├ ƒ /api/upload
+├ ○ /auditors
+├ ○ /audits
+├ ƒ /audits/[id]
+├ ○ /audits/templates
+├ ○ /auth/callback
+├ ○ /business/login
+├ ○ /business/onboarding/industry-select
+├ ○ /business/register
+├ ƒ /businesses/[id]
+├ ○ /certificates
+├ ○ /chat
+├ ○ /create-document
+├ ○ /dashboard/business
+├ ○ /dashboard/provider
+├ ○ /dashboard/provider/overdue
+├ ○ /documents
+├ ○ /dossiers
+├ ƒ /dossiers/[id]
+├ ○ /dossiers/new
+├ ○ /forgot-password
+├ ƒ /invite/[token]
+├ ○ /landing
+├ ○ /members
+├ ○ /portfolio
+├ ○ /privacy
+├ ○ /provider/login
+├ ○ /provider/register
+├ ○ /reset-password
+├ ○ /settings
+├ ○ /settings/company
+├ ○ /settings/data-export
+├ ○ /submissions
+├ ƒ /supplier-portal/[token]
+├ ○ /supply-chain/batches
+├ ○ /supply-chain/materials
+├ ○ /supply-chain/process
+├ ○ /terms
+├ ƒ /trace/[code]
+├ ○ /upload
+└ ƒ /verify/[cert_number]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+# Finished: 2026-09-12T05:30:38-04:00
+# Exit code: 0

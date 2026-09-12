@@ -1,0 +1,12 @@
+# P1.1 post-recreate health + test gates
+2026-09-11T23:47:28-04:00
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                            PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   22 seconds ago   Up 8 seconds (health: starting)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+
+no tests ran in 1.45s

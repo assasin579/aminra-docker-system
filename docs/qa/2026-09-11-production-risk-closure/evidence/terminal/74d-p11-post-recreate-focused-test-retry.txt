@@ -1,0 +1,18 @@
+# P1.1 post-recreate focused test retry after creating /app/tests
+2026-09-11T23:47:57-04:00
+
+==================================== ERRORS ====================================
+_____________ ERROR collecting tests/test_supply_chain_sealing.py ______________
+ImportError while importing test module '/app/tests/test_supply_chain_sealing.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_supply_chain_sealing.py:29: in <module>
+    from supply_chain.batch_router import (
+E   ModuleNotFoundError: No module named 'supply_chain'
+=========================== short test summary info ============================
+ERROR tests/test_supply_chain_sealing.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 1.02s

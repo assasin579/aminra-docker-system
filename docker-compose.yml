@@ -314,6 +314,7 @@ services:
       - EMBED_MODEL=intfloat/multilingual-e5-base
     volumes:
       - upload-data:/app/docs
+      - vault-secrets:/vault/secrets:ro
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     networks:

@@ -1,0 +1,694 @@
+# Domain: 06-pdf-doc-versioning
+# Step: playwright-template-document-ui
+# Started: 2026-09-12T07:44:13-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/27-template-content-integrity.spec.ts e2e/28-admin-template-view.spec.ts e2e/31-revision-panel-visibility.spec.ts e2e/34-batch4-file-llm-safety.spec.ts --project=desktop-chromium
+
+
+Running 15 tests using 1 worker
+
+  ✘   1 [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:38:7 › template content integrity › no two doc_types serve the same template content (811ms)
+  ✓   2 [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:86:7 › template content integrity › template download returns no-store headers (prevent stale browser cache) (326ms)
+  ✓   3 [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:117:7 › template content integrity › backend _find_template_file uses exact canonical filename (23ms)
+  ✘   4 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:24:7 › admin file preview › view DOCX template returns PDF for inline preview (LibreOffice conversion) (48ms)
+  ✘   5 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:51:7 › admin file preview › view template-file via query-string token (for new-tab UX) (158ms)
+  ✘   6 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:65:7 › admin file preview › repeated PDF requests return identical content (cache deterministic) (145ms)
+  ✓   7 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:82:7 › admin file preview › view rejects missing/garbage auth (113ms)
+  ✓   8 [desktop-chromium] › e2e/28-admin-template-view.spec.ts:99:7 › admin file preview › view rejects path-traversal in filename (65ms)
+  ✘   9 [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:21:7 › revision panel visibility logic › source: panel returns null when no action + no history (38ms)
+  ✓  10 [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:45:7 › revision panel visibility logic › source: form conditions still align with backend ALLOWED_FROM_STATUSES (25ms)
+  ✓  11 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:24:7 › Phase 1 Batch 4 — file + LLM safety › static guards — code reflects all batch 4 fixes (50ms)
+  ✓  12 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:59:7 › Phase 1 Batch 4 — file + LLM safety › /ingest rejects unauthenticated (79ms)
+  ✓  13 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:74:7 › Phase 1 Batch 4 — file + LLM safety › /evaluate rejects unauthenticated (32ms)
+  ✓  14 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:89:7 › Phase 1 Batch 4 — file + LLM safety › /rewrite rejects unauthenticated (24ms)
+  ✓  15 [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:98:7 › Phase 1 Batch 4 — file + LLM safety › /generate-document rejects unauthenticated (30ms)
+
+
+  1) [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:38:7 › template content integrity › no two doc_types serve the same template content 
+
+    Error: Two doc_types must not serve the same content. Likely admin uploaded wrong file to the second one.
+      - internal_halal_committee == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)
+      - company_profile == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)
+      - ingredient_raw_material == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)
+      - process_flow_chart == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)
+      - sop_raw_material_receiving == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+
+    [32m- Expected  - 1[39m
+    [31m+ Received  + 7[39m
+
+    [32m- Array [][39m
+    [31m+ Array [[39m
+    [31m+   "internal_halal_committee == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)",[39m
+    [31m+   "company_profile == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)",[39m
+    [31m+   "ingredient_raw_material == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)",[39m
+    [31m+   "process_flow_chart == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)",[39m
+    [31m+   "sop_raw_material_receiving == has_manual (md5=0cb6aca2ed32d3a216b71f5f3563fc19)",[39m
+    [31m+ ][39m
+
+      81 |       "Two doc_types must not serve the same content. Likely admin uploaded wrong file to the second one.\n" +
+      82 |         collisions.map((c) => "  - " + c).join("\n"),
+    > 83 |     ).toEqual([]);
+         |       ^
+      84 |   });
+      85 |
+      86 |   test("template download returns no-store headers (prevent stale browser cache)", async ({
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/27-template-content-integrity.spec.ts:83:7
+
+    Error Context: test-results/27-template-content-integr-43398-e-the-same-template-content-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/28-admin-template-view.spec.ts:24:7 › admin file preview › view DOCX template returns PDF for inline preview (LibreOffice conversion) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      26 |   }) => {
+      27 |     const login = await request.post("/api/admin/login", { data: ADMIN_LOGIN });
+    > 28 |     expect(login.ok()).toBeTruthy();
+         |                        ^
+      29 |     const { token } = await login.json();
+      30 |
+      31 |     const r = await request.get(
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/28-admin-template-view.spec.ts:28:24
+
+    Error Context: test-results/28-admin-template-view-adm-3cf19-iew-LibreOffice-conversion--desktop-chromium/error-context.md
+
+  3) [desktop-chromium] › e2e/28-admin-template-view.spec.ts:51:7 › admin file preview › view template-file via query-string token (for new-tab UX) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      58 |       `/api/admin/templates/halal_policy/template-file/view?lang=vi&token=${encodeURIComponent(token)}`,
+      59 |     );
+    > 60 |     expect(r.status()).toBe(200);
+         |                        ^
+      61 |     const body = await r.body();
+      62 |     expect(body.subarray(0, 4).toString()).toBe("%PDF");
+      63 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/28-admin-template-view.spec.ts:60:24
+
+    Error Context: test-results/28-admin-template-view-adm-42a34-tring-token-for-new-tab-UX--desktop-chromium/error-context.md
+
+  4) [desktop-chromium] › e2e/28-admin-template-view.spec.ts:65:7 › admin file preview › repeated PDF requests return identical content (cache deterministic) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      72 |     const r1 = await request.get(url);
+      73 |     const r2 = await request.get(url);
+    > 74 |     expect(r1.status()).toBe(200);
+         |                         ^
+      75 |     expect(r2.status()).toBe(200);
+      76 |     const b1 = await r1.body();
+      77 |     const b2 = await r2.body();
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/28-admin-template-view.spec.ts:74:25
+
+    Error Context: test-results/28-admin-template-view-adm-52573-ontent-cache-deterministic--desktop-chromium/error-context.md
+
+  5) [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:21:7 › revision panel visibility logic › source: panel returns null when no action + no history 
+
+    Error: must hide entire panel on dead states
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/if \(!loading && !hasAction && !hasHistory\) \{[\s\S]*?return null;[\s\S]*?\}/[39m
+    Received string:  [31m"\"use client\";·[39m
+    [31mimport { useEffect, useState } from \"react\";·[39m
+    [31mtype Severity = \"minor\" | \"major\" | \"critical\";·[39m
+    [31minterface DocumentInfo {[39m
+    [31m  id: string;[39m
+    [31m  filename: string;[39m
+    [31m}·[39m
+    [31minterface DocumentFeedbackItem {[39m
+    [31m  document_id: string;[39m
+    [31m  issue: string;[39m
+    [31m  severity: Severity;[39m
+    [31m  suggestion?: string;[39m
+    [31m}·[39m
+    [31minterface RevisionRound {[39m
+    [31m  id: string;[39m
+    [31m  round: number;[39m
+    [31m  requester_id: string;[39m
+    [31m  requester_name: string;[39m
+    [31m  feedback: string;[39m
+    [31m  document_feedback: DocumentFeedbackItem[];[39m
+    [31m  requested_at: string;[39m
+    [31m  resolved_at: string | null;[39m
+    [31m  business_response: string | null;[39m
+    [31m}·[39m
+    [31minterface Props {[39m
+    [31m  submissionId: string;[39m
+    [31m  status: string;[39m
+    [31m  role: \"business\" | \"provider\";[39m
+    [31m  documents: DocumentInfo[];[39m
+    [31m  token: string;[39m
+    [31m  onChanged?: () => void; // notify parent to refetch submission[39m
+    [31m}·[39m
+    [31mexport default function RevisionPanel({[39m
+    [31m  submissionId,[39m
+    [31m  status,[39m
+    [31m  role,[39m
+    [31m  documents,[39m
+    [31m  token,[39m
+    [31m  onChanged,[39m
+    [31m}: Props) {[39m
+    [31m  const [history, setHistory] = useState<RevisionRound[]>([]);[39m
+    [31m  const [loading, setLoading] = useState(true);[39m
+    [31m  const [error, setError] = useState(\"\");·[39m
+    [31m  const fetchHistory = async () => {[39m
+    [31m    try {[39m
+    [31m      const res = await fetch([39m
+    [31m        `/api/api/submissions/${submissionId}/revisions`,[39m
+    [31m        {[39m
+    [31m          headers: { Authorization: `Bearer ${token}` },[39m
+    [31m          cache: \"no-store\",[39m
+    [31m        },[39m
+    [31m      );[39m
+    [31m      if (!res.ok) throw new Error(`Lỗi ${res.status}`);[39m
+    [31m      const data = await res.json();[39m
+    [31m      setHistory(data.history ?? []);[39m
+    [31m    } catch (err) {[39m
+    [31m      setError(err instanceof Error ? err.message : \"Lỗi tải lịch sử\");[39m
+    [31m    } finally {[39m
+    [31m      setLoading(false);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  // Re-fetch on status change too — after a resubmit / request_revision the[39m
+    [31m  // parent refreshes the submission, status flips, and we want the new round[39m
+    [31m  // (or the new business_response field) to land without a manual reload.[39m
+    [31m  useEffect(() => {[39m
+    [31m    fetchHistory();[39m
+    [31m  }, [submissionId, status]);·[39m
+    [31m  // Determine what the panel can do based on role + status[39m
+    [31m  const providerCanRequest =[39m
+    [31m    role === \"provider\" && (status === \"reviewing\" || status === \"returned\");[39m
+    [31m  const businessCanResubmit =[39m
+    [31m    role === \"business\" && status === \"revision_required\";[39m
+    [31m  const hasAction = providerCanRequest || businessCanResubmit;[39m
+    [31m  const hasHistory = history.length > 0;·[39m
+    [31m  // Hide panel entirely when nothing actionable + no history (common on[39m
+    [31m  // freshly-submitted/approved submissions — avoids visually-dead block).[39m
+    [31m  if (!loading && !error && !hasAction && !hasHistory) {[39m
+    [31m    return null;[39m
+    [31m  }·[39m
+    [31m  return ([39m
+    [31m    <section[39m
+    [31m      className=\"rounded-2xl bg-white p-5\"[39m
+    [31m      style={{[39m
+    [31m        border: \"1px solid #E2E8F0\",[39m
+    [31m        boxShadow: \"0 4px 20px rgba(0,0,0,0.04)\",[39m
+    [31m      }}[39m
+    [31m      data-revision-panel[39m
+    [31m    >[39m
+    [31m      <header className=\"flex items-center justify-between mb-4\">[39m
+    [31m        <h3 className=\"text-lg font-bold\" style={{ color: \"#0A1F44\" }}>[39m
+    [31m          Yêu cầu sửa hồ sơ[39m
+    [31m        </h3>[39m
+    [31m        {hasHistory && ([39m
+    [31m          <span[39m
+    [31m            className=\"text-xs px-2 py-1 rounded-full\"[39m
+    [31m            style={{ background: \"#FFFFFF\", color: \"#6B7280\" }}[39m
+    [31m          >[39m
+    [31m            {history.length} vòng[39m
+    [31m          </span>[39m
+    [31m        )}[39m
+    [31m      </header>·[39m
+    [31m      {error && ([39m
+    [31m        <div[39m
+    [31m          role=\"alert\"[39m
+    [31m          className=\"bg-red-50 border border-red-200 rounded p-3 text-sm mb-3\"[39m
+    [31m          style={{ color: \"#991b1b\" }}[39m
+    [31m        >[39m
+    [31m          {error}[39m
+    [31m        </div>[39m
+    [31m      )}·[39m
+    [31m      {/* Provider action — request revision */}[39m
+    [31m      {providerCanRequest && ([39m
+    [31m        <RequestRevisionForm[39m
+    [31m          submissionId={submissionId}[39m
+    [31m          documents={documents}[39m
+    [31m          token={token}[39m
+    [31m          onRequested={() => {[39m
+    [31m            fetchHistory();[39m
+    [31m            onChanged?.();[39m
+    [31m          }}[39m
+    [31m        />[39m
+    [31m      )}·[39m
+    [31m      {/* Business action — resubmit */}[39m
+    [31m      {businessCanResubmit && ([39m
+    [31m        <ResubmitForm[39m
+    [31m          submissionId={submissionId}[39m
+    [31m          documents={documents}[39m
+    [31m          token={token}[39m
+    [31m          onResubmitted={() => {[39m
+    [31m            fetchHistory();[39m
+    [31m            onChanged?.();[39m
+    [31m          }}[39m
+    [31m        />[39m
+    [31m      )}·[39m
+    [31m      {/* Contextual hint when no form available but workflow could unlock it */}[39m
+    [31m      {!hasAction &&[39m
+    [31m        hasHistory &&[39m
+    [31m        role === \"provider\" &&[39m
+    [31m        (status === \"pending\" || status === \"assigned\") && ([39m
+    [31m          <div[39m
+    [31m            className=\"rounded-lg p-3 text-xs mb-4\"[39m
+    [31m            style={{[39m
+    [31m              background: \"rgba(245,158,11,0.08)\",[39m
+    [31m              border: \"1px solid rgba(245,158,11,0.2)\",[39m
+    [31m              color: \"#92400E\",[39m
+    [31m            }}[39m
+    [31m          >[39m
+    [31m            Để yêu cầu sửa, đầu tiên chuyển trạng thái hồ sơ sang{\" \"}[39m
+    [31m            <strong>“Đang đánh giá”</strong>.[39m
+    [31m          </div>[39m
+    [31m        )}·[39m
+    [31m      {/* History — visible to both */}[39m
+    [31m      <RevisionHistory[39m
+    [31m        history={history}[39m
+    [31m        loading={loading}[39m
+    [31m        documents={documents}[39m
+    [31m      />[39m
+    [31m    </section>[39m
+    [31m  );[39m
+    [31m}·[39m
+    [31m// ── Provider form: request revision ───────────────────────────────────────·[39m
+    [31mfunction RequestRevisionForm({[39m
+    [31m  submissionId,[39m
+    [31m  documents,[39m
+    [31m  token,[39m
+    [31m  onRequested,[39m
+    [31m}: {[39m
+    [31m  submissionId: string;[39m
+    [31m  documents: DocumentInfo[];[39m
+    [31m  token: string;[39m
+    [31m  onRequested: () => void;[39m
+    [31m}) {[39m
+    [31m  const [feedback, setFeedback] = useState(\"\");[39m
+    [31m  const [docFeedback, setDocFeedback] = useState<DocumentFeedbackItem[]>([]);[39m
+    [31m  const [submitting, setSubmitting] = useState(false);[39m
+    [31m  const [error, setError] = useState(\"\");·[39m
+    [31m  const addDocIssue = () => {[39m
+    [31m    setDocFeedback([[39m
+    [31m      ...docFeedback,[39m
+    [31m      {[39m
+    [31m        document_id: documents[0]?.id ?? \"\",[39m
+    [31m        issue: \"\",[39m
+    [31m        severity: \"minor\",[39m
+    [31m        suggestion: \"\",[39m
+    [31m      },[39m
+    [31m    ]);[39m
+    [31m  };·[39m
+    [31m  const updateDocIssue = (i: number, patch: Partial<DocumentFeedbackItem>) => {[39m
+    [31m    setDocFeedback([39m
+    [31m      docFeedback.map((d, idx) => (idx === i ? { ...d, ...patch } : d)),[39m
+    [31m    );[39m
+    [31m  };·[39m
+    [31m  const removeDocIssue = (i: number) => {[39m
+    [31m    setDocFeedback(docFeedback.filter((_, idx) => idx !== i));[39m
+    [31m  };·[39m
+    [31m  const onSubmit = async (e: React.FormEvent) => {[39m
+    [31m    e.preventDefault();[39m
+    [31m    setError(\"\");[39m
+    [31m    if (!feedback.trim()) {[39m
+    [31m      setError(\"Vui lòng nhập nội dung yêu cầu\");[39m
+    [31m      return;[39m
+    [31m    }[39m
+    [31m    setSubmitting(true);[39m
+    [31m    try {[39m
+    [31m      const res = await fetch([39m
+    [31m        `/api/api/submissions/received/${submissionId}/request-revision`,[39m
+    [31m        {[39m
+    [31m          method: \"POST\",[39m
+    [31m          headers: {[39m
+    [31m            Authorization: `Bearer ${token}`,[39m
+    [31m            \"Content-Type\": \"application/json\",[39m
+    [31m          },[39m
+    [31m          body: JSON.stringify({[39m
+    [31m            feedback: feedback.trim(),[39m
+    [31m            document_feedback: docFeedback.filter([39m
+    [31m              (d) => d.issue.trim() && d.document_id,[39m
+    [31m            ),[39m
+    [31m          }),[39m
+    [31m        },[39m
+    [31m      );[39m
+    [31m      const body = await res.json().catch(() => ({}));[39m
+    [31m      if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);[39m
+    [31m      setFeedback(\"\");[39m
+    [31m      setDocFeedback([]);[39m
+    [31m      onRequested();[39m
+    [31m    } catch (err) {[39m
+    [31m      setError(err instanceof Error ? err.message : \"Lỗi gửi yêu cầu\");[39m
+    [31m    } finally {[39m
+    [31m      setSubmitting(false);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  return ([39m
+    [31m    <form[39m
+    [31m      onSubmit={onSubmit}[39m
+    [31m      className=\"space-y-3 mb-5 pb-5\"[39m
+    [31m      style={{ borderBottom: \"1px solid #F1F5F9\" }}[39m
+    [31m      data-form=\"request-revision\"[39m
+    [31m    >[39m
+    [31m      <div>[39m
+    [31m        <label[39m
+    [31m          className=\"block text-xs font-medium mb-1\"[39m
+    [31m          style={{ color: \"#6B7280\" }}[39m
+    [31m        >[39m
+    [31m          Nội dung yêu cầu sửa (overall)[39m
+    [31m        </label>[39m
+    [31m        <textarea[39m
+    [31m          value={feedback}[39m
+    [31m          onChange={(e) => setFeedback(e.target.value)}[39m
+    [31m          rows={3}[39m
+    [31m          placeholder=\"Mô tả những vấn đề doanh nghiệp cần sửa…\"[39m
+    [31m          className=\"w-full px-3 py-2 rounded-lg text-sm outline-none\"[39m
+    [31m          style={{ background: \"#FFFFFF\", border: \"1px solid #E2E8F0\" }}[39m
+    [31m        />[39m
+    [31m      </div>·[39m
+    [31m      {docFeedback.map((d, i) => ([39m
+    [31m        <div[39m
+    [31m          key={i}[39m
+    [31m          className=\"rounded-lg p-3\"[39m
+    [31m          style={{ background: \"#FFFFFF\", border: \"1px solid #E2E8F0\" }}[39m
+    [31m        >[39m
+    [31m          <div className=\"flex gap-2 mb-2\">[39m
+    [31m            <select[39m
+    [31m              value={d.document_id}[39m
+    [31m              onChange={(e) =>[39m
+    [31m                updateDocIssue(i, { document_id: e.target.value })[39m
+    [31m              }[39m
+    [31m              className=\"flex-1 px-2 py-1 text-xs rounded border\"[39m
+    [31m              style={{ borderColor: \"#E2E8F0\" }}[39m
+    [31m            >[39m
+    [31m              {documents.map((doc) => ([39m
+    [31m                <option key={doc.id} value={doc.id}>[39m
+    [31m                  {doc.filename}[39m
+    [31m                </option>[39m
+    [31m              ))}[39m
+    [31m            </select>[39m
+    [31m            <select[39m
+    [31m              value={d.severity}[39m
+    [31m              onChange={(e) =>[39m
+    [31m                updateDocIssue(i, { severity: e.target.value as Severity })[39m
+    [31m              }[39m
+    [31m              className=\"px-2 py-1 text-xs rounded border\"[39m
+    [31m              style={{ borderColor: \"#E2E8F0\" }}[39m
+    [31m            >[39m
+    [31m              <option value=\"minor\">Minor</option>[39m
+    [31m              <option value=\"major\">Major</option>[39m
+    [31m              <option value=\"critical\">Critical</option>[39m
+    [31m            </select>[39m
+    [31m            <button[39m
+    [31m              type=\"button\"[39m
+    [31m              onClick={() => removeDocIssue(i)}[39m
+    [31m              className=\"text-xs px-2 py-1 rounded\"[39m
+    [31m              style={{ color: \"#991b1b\" }}[39m
+    [31m            >[39m
+    [31m              ×[39m
+    [31m            </button>[39m
+    [31m          </div>[39m
+    [31m          <input[39m
+    [31m            type=\"text\"[39m
+    [31m            value={d.issue}[39m
+    [31m            onChange={(e) => updateDocIssue(i, { issue: e.target.value })}[39m
+    [31m            placeholder=\"Vấn đề cụ thể (vd: Thiếu dấu JAKIM)\"[39m
+    [31m            className=\"w-full px-2 py-1.5 text-sm rounded mb-1\"[39m
+    [31m            style={{ border: \"1px solid #E2E8F0\" }}[39m
+    [31m          />[39m
+    [31m          <input[39m
+    [31m            type=\"text\"[39m
+    [31m            value={d.suggestion ?? \"\"}[39m
+    [31m            onChange={(e) => updateDocIssue(i, { suggestion: e.target.value })}[39m
+    [31m            placeholder=\"Gợi ý fix (optional)\"[39m
+    [31m            className=\"w-full px-2 py-1.5 text-sm rounded\"[39m
+    [31m            style={{ border: \"1px solid #E2E8F0\" }}[39m
+    [31m          />[39m
+    [31m        </div>[39m
+    [31m      ))}·[39m
+    [31m      <button[39m
+    [31m        type=\"button\"[39m
+    [31m        onClick={addDocIssue}[39m
+    [31m        className=\"text-xs font-medium\"[39m
+    [31m        style={{ color: \"#0A1F44\" }}[39m
+    [31m      >[39m
+    [31m        + Thêm vấn đề cụ thể trên 1 document[39m
+    [31m      </button>·[39m
+    [31m      {error && ([39m
+    [31m        <p role=\"alert\" className=\"text-xs\" style={{ color: \"#991b1b\" }}>[39m
+    [31m          {error}[39m
+    [31m        </p>[39m
+    [31m      )}·[39m
+    [31m      <button[39m
+    [31m        type=\"submit\"[39m
+    [31m        disabled={submitting || !feedback.trim()}[39m
+    [31m        className=\"w-full py-2.5 rounded-xl font-semibold text-sm\"[39m
+    [31m        style={{[39m
+    [31m          background: submitting || !feedback.trim() ? \"#E2E8F0\" : \"#dc2626\",[39m
+    [31m          color: submitting || !feedback.trim() ? \"#6B7280\" : \"white\",[39m
+    [31m          cursor: submitting || !feedback.trim() ? \"not-allowed\" : \"pointer\",[39m
+    [31m        }}[39m
+    [31m      >[39m
+    [31m        {submitting ? \"Đang gửi…\" : \"Gửi yêu cầu sửa cho doanh nghiệp\"}[39m
+    [31m      </button>[39m
+    [31m    </form>[39m
+    [31m  );[39m
+    [31m}·[39m
+    [31m// ── Business form: resubmit ──────────────────────────────────────────────·[39m
+    [31mfunction ResubmitForm({[39m
+    [31m  submissionId,[39m
+    [31m  documents,[39m
+    [31m  token,[39m
+    [31m  onResubmitted,[39m
+    [31m}: {[39m
+    [31m  submissionId: string;[39m
+    [31m  documents: DocumentInfo[];[39m
+    [31m  token: string;[39m
+    [31m  onResubmitted: () => void;[39m
+    [31m}) {[39m
+    [31m  const [businessNotes, setBusinessNotes] = useState(\"\");[39m
+    [31m  const [submitting, setSubmitting] = useState(false);[39m
+    [31m  const [error, setError] = useState(\"\");·[39m
+    [31m  const onSubmit = async (e: React.FormEvent) => {[39m
+    [31m    e.preventDefault();[39m
+    [31m    setError(\"\");[39m
+    [31m    setSubmitting(true);[39m
+    [31m    try {[39m
+    [31m      const res = await fetch(`/api/api/submissions/${submissionId}/resubmit`, {[39m
+    [31m        method: \"POST\",[39m
+    [31m        headers: {[39m
+    [31m          Authorization: `Bearer ${token}`,[39m
+    [31m          \"Content-Type\": \"application/json\",[39m
+    [31m        },[39m
+    [31m        body: JSON.stringify({ business_notes: businessNotes.trim() }),[39m
+    [31m      });[39m
+    [31m      const body = await res.json().catch(() => ({}));[39m
+    [31m      if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);[39m
+    [31m      setBusinessNotes(\"\");[39m
+    [31m      onResubmitted();[39m
+    [31m    } catch (err) {[39m
+    [31m      setError(err instanceof Error ? err.message : \"Lỗi gửi lại\");[39m
+    [31m    } finally {[39m
+    [31m      setSubmitting(false);[39m
+    [31m    }[39m
+    [31m  };·[39m
+    [31m  return ([39m
+    [31m    <form[39m
+    [31m      onSubmit={onSubmit}[39m
+    [31m      className=\"space-y-3 mb-5 pb-5\"[39m
+    [31m      style={{ borderBottom: \"1px solid #F1F5F9\" }}[39m
+    [31m      data-form=\"resubmit\"[39m
+    [31m    >[39m
+    [31m      <div[39m
+    [31m        className=\"bg-amber-50 border border-amber-200 rounded p-3 text-sm\"[39m
+    [31m        style={{ color: \"#7c2d12\" }}[39m
+    [31m      >[39m
+    [31m        Hồ sơ đang ở trạng thái <strong>cần sửa</strong>. Hãy upload tài liệu[39m
+    [31m        mới (nếu cần) và gửi lại để CB tiếp tục đánh giá.[39m
+    [31m      </div>[39m
+    [31m      <textarea[39m
+    [31m        value={businessNotes}[39m
+    [31m        onChange={(e) => setBusinessNotes(e.target.value)}[39m
+    [31m        rows={3}[39m
+    [31m        placeholder=\"Mô tả những gì đã sửa (tùy chọn)…\"[39m
+    [31m        className=\"w-full px-3 py-2 rounded-lg text-sm outline-none\"[39m
+    [31m        style={{ background: \"#FFFFFF\", border: \"1px solid #E2E8F0\" }}[39m
+    [31m      />[39m
+    [31m      {error && ([39m
+    [31m        <p role=\"alert\" className=\"text-xs\" style={{ color: \"#991b1b\" }}>[39m
+    [31m          {error}[39m
+    [31m        </p>[39m
+    [31m      )}[39m
+    [31m      <button[39m
+    [31m        type=\"submit\"[39m
+    [31m        disabled={submitting}[39m
+    [31m        className=\"w-full py-2.5 rounded-xl font-semibold text-sm\"[39m
+    [31m        style={{[39m
+    [31m          background: submitting ? \"#94A3B8\" : \"#0A1F44\",[39m
+    [31m          color: \"white\",[39m
+    [31m          cursor: submitting ? \"not-allowed\" : \"pointer\",[39m
+    [31m        }}[39m
+    [31m      >[39m
+    [31m        {submitting ? \"Đang gửi lại…\" : \"Đã sửa — gửi lại cho CB\"}[39m
+    [31m      </button>[39m
+    [31m    </form>[39m
+    [31m  );[39m
+    [31m}·[39m
+    [31m// ── History list (both personas) ─────────────────────────────────────────·[39m
+    [31mfunction RevisionHistory({[39m
+    [31m  history,[39m
+    [31m  loading,[39m
+    [31m  documents,[39m
+    [31m}: {[39m
+    [31m  history: RevisionRound[];[39m
+    [31m  loading: boolean;[39m
+    [31m  documents: DocumentInfo[];[39m
+    [31m}) {[39m
+    [31m  const docName = (id: string) =>[39m
+    [31m    documents.find((d) => d.id === id)?.filename ?? id.slice(0, 8) + \"…\";·[39m
+    [31m  if (loading)[39m
+    [31m    return ([39m
+    [31m      <p className=\"text-sm\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m        Đang tải…[39m
+    [31m      </p>[39m
+    [31m    );[39m
+    [31m  if (history.length === 0) {[39m
+    [31m    return ([39m
+    [31m      <p className=\"text-sm\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m        Chưa có vòng sửa nào.[39m
+    [31m      </p>[39m
+    [31m    );[39m
+    [31m  }·[39m
+    [31m  return ([39m
+    [31m    <div className=\"space-y-3\">[39m
+    [31m      <h4 className=\"text-sm font-medium\" style={{ color: \"#6B7280\" }}>[39m
+    [31m        Lịch sử các vòng sửa[39m
+    [31m      </h4>[39m
+    [31m      {history.map((r) => ([39m
+    [31m        <div[39m
+    [31m          key={r.id}[39m
+    [31m          className=\"rounded-lg p-3\"[39m
+    [31m          style={{[39m
+    [31m            background: r.resolved_at ? \"#FFFFFF\" : \"rgba(220,38,38,0.04)\",[39m
+    [31m            border: `1px solid ${r.resolved_at ? \"#E2E8F0\" : \"rgba(220,38,38,0.2)\"}`,[39m
+    [31m          }}[39m
+    [31m        >[39m
+    [31m          <div className=\"flex items-center justify-between mb-2\">[39m
+    [31m            <div className=\"flex items-center gap-2\">[39m
+    [31m              <span[39m
+    [31m                className=\"text-xs font-bold px-2 py-0.5 rounded\"[39m
+    [31m                style={{[39m
+    [31m                  background: r.resolved_at ? \"#E2E8F0\" : \"#dc2626\",[39m
+    [31m                  color: r.resolved_at ? \"#6B7280\" : \"white\",[39m
+    [31m                }}[39m
+    [31m              >[39m
+    [31m                Vòng {r.round}[39m
+    [31m              </span>[39m
+    [31m              <span className=\"text-xs\" style={{ color: \"#6B7280\" }}>[39m
+    [31m                {r.requester_name}[39m
+    [31m              </span>[39m
+    [31m            </div>[39m
+    [31m            <span className=\"text-xs\" style={{ color: \"#94A3B8\" }}>[39m
+    [31m              {new Date(r.requested_at).toLocaleString(\"vi-VN\", {[39m
+    [31m                hour12: false,[39m
+    [31m              })}[39m
+    [31m            </span>[39m
+    [31m          </div>·[39m
+    [31m          <p[39m
+    [31m            className=\"text-sm mb-2 whitespace-pre-wrap\"[39m
+    [31m            style={{ color: \"#0A1F44\" }}[39m
+    [31m          >[39m
+    [31m            {r.feedback}[39m
+    [31m          </p>·[39m
+    [31m          {r.document_feedback.length > 0 && ([39m
+    [31m            <ul className=\"space-y-1.5 mt-2 ml-2\">[39m
+    [31m              {r.document_feedback.map((d, i) => ([39m
+    [31m                <li key={i} className=\"text-xs\" style={{ color: \"#374151\" }}>[39m
+    [31m                  <span[39m
+    [31m                    className=\"font-mono px-1.5 py-0.5 rounded mr-1.5\"[39m
+    [31m                    style={{[39m
+    [31m                      background:[39m
+    [31m                        d.severity === \"critical\"[39m
+    [31m                          ? \"#dc2626\"[39m
+    [31m                          : d.severity === \"major\"[39m
+    [31m                            ? \"#f59e0b\"[39m
+    [31m                            : \"#94A3B8\",[39m
+    [31m                      color: \"white\",[39m
+    [31m                      fontSize: \"10px\",[39m
+    [31m                    }}[39m
+    [31m                  >[39m
+    [31m                    {d.severity}[39m
+    [31m                  </span>[39m
+    [31m                  <strong>{docName(d.document_id)}:</strong> {d.issue}[39m
+    [31m                  {d.suggestion && ([39m
+    [31m                    <div className=\"ml-6 mt-0.5\" style={{ color: \"#6B7280\" }}>[39m
+    [31m                      → {d.suggestion}[39m
+    [31m                    </div>[39m
+    [31m                  )}[39m
+    [31m                </li>[39m
+    [31m              ))}[39m
+    [31m            </ul>[39m
+    [31m          )}·[39m
+    [31m          {r.business_response && ([39m
+    [31m            <div[39m
+    [31m              className=\"mt-3 rounded-lg p-2.5 text-sm\"[39m
+    [31m              style={{[39m
+    [31m                background: \"rgba(38, 194, 154, 0.08)\",[39m
+    [31m                border: \"1px solid rgba(38, 194, 154, 0.25)\",[39m
+    [31m              }}[39m
+    [31m            >[39m
+    [31m              <div[39m
+    [31m                className=\"text-xs font-medium mb-1\"[39m
+    [31m                style={{ color: \"#0A6B4F\" }}[39m
+    [31m              >[39m
+    [31m                Phản hồi từ doanh nghiệp[39m
+    [31m              </div>[39m
+    [31m              <p[39m
+    [31m                className=\"whitespace-pre-wrap\"[39m
+    [31m                style={{ color: \"#0A1F44\" }}[39m
+    [31m              >[39m
+    [31m                {r.business_response}[39m
+    [31m              </p>[39m
+    [31m            </div>[39m
+    [31m          )}·[39m
+    [31m          {r.resolved_at && ([39m
+    [31m            <p className=\"text-xs mt-2\" style={{ color: \"#102A5C\" }}>[39m
+    [31m              ✓ Đã giải quyết:{\" \"}[39m
+    [31m              {new Date(r.resolved_at).toLocaleString(\"vi-VN\", {[39m
+    [31m                hour12: false,[39m
+    [31m              })}[39m
+    [31m            </p>[39m
+    [31m          )}[39m
+    [31m        </div>[39m
+    [31m      ))}[39m
+    [31m    </div>[39m
+    [31m  );[39m
+    [31m}[39m
+    [31m"[39m
+
+      33 |
+      34 |     // Early return when nothing to show
+    > 35 |     expect(src, "must hide entire panel on dead states").toMatch(
+         |                                                          ^
+      36 |       /if \(!loading && !hasAction && !hasHistory\) \{[\s\S]*?return null;[\s\S]*?\}/,
+      37 |     );
+      38 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/31-revision-panel-visibility.spec.ts:35:58
+
+    Error Context: test-results/31-revision-panel-visibili-671e3-l-when-no-action-no-history-desktop-chromium/error-context.md
+
+  5 failed
+    [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:38:7 › template content integrity › no two doc_types serve the same template content 
+    [desktop-chromium] › e2e/28-admin-template-view.spec.ts:24:7 › admin file preview › view DOCX template returns PDF for inline preview (LibreOffice conversion) 
+    [desktop-chromium] › e2e/28-admin-template-view.spec.ts:51:7 › admin file preview › view template-file via query-string token (for new-tab UX) 
+    [desktop-chromium] › e2e/28-admin-template-view.spec.ts:65:7 › admin file preview › repeated PDF requests return identical content (cache deterministic) 
+    [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:21:7 › revision panel visibility logic › source: panel returns null when no action + no history 
+  10 passed (10.7s)
+
+# Finished: 2026-09-12T07:44:26-04:00
+# Exit code: 1

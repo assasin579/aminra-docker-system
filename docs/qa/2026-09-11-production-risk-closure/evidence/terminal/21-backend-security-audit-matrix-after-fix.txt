@@ -1,0 +1,75 @@
+# Phase 2 audit/security matrix after audit test fixture canonical-id fix
+2026-09-11T22:43:38-04:00
+........................................................................ [ 47%]
+........................................................................ [ 94%]
+.F.....s.                                                                [100%]
+=================================== FAILURES ===================================
+___ TestCertIssueEmitsAuditLog.test_issue_certificate_inserts_audit_log_row ____
+
+self = <tests.test_audit_log_integration.TestCertIssueEmitsAuditLog object at 0x7e73c102ca90>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e73c1071050>
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-1/test_issue_certificate_inserts0')
+
+    async def test_issue_certificate_inserts_audit_log_row(self, monkeypatch, tmp_path):
+        from auth.certificate_router import issue_certificate_for_company, IssueCertRequest
+    
+        monkeypatch.setenv("CERT_PDF_DIR", str(tmp_path / "certs"))
+        monkeypatch.setenv("APP_BASE_URL", "https://aminra.test")
+        import importlib
+        from auth import certificate_router
+        importlib.reload(certificate_router)
+    
+        BUSINESS_TENANT_ID = uuid4()
+        PROVIDER_USER_ID = uuid4()
+        BUSINESS_OWNER_ID = uuid4()
+    
+        provider_user = {
+            "sub":       str(PROVIDER_USER_ID),
+            "email":     "cb@example.vn",
+            "role":      "provider",
+            "is_owner":  True,
+            "tenant_id": str(uuid4()),
+        }
+    
+        db = FakeConn()
+        db.fetch_responses = [
+            ("FROM submissions WHERE business_tenant", [
+                FakeRecord(id=uuid4(), status="approved"),
+            ]),
+        ]
+        db.fetchrow_responses = [
+            ("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'", None),
+            ("FROM users WHERE id=$1", FakeRecord(company_name="Halal CB Vietnam")),
+            ("(id=$1 OR tenant_id=$1) AND is_owner=true",
+             FakeRecord(id=BUSINESS_OWNER_ID, company_name="Halal Foods Co")),
+            ("INSERT INTO halal_certificates", FakeRecord(id=uuid4())),
+        ]
+        db.fetchval_responses = [
+            ("COUNT(*) FROM halal_certificates WHERE cert_number LIKE", 0),
+        ]
+    
+        await certificate_router.issue_certificate_for_company(
+            business_tenant_id=str(BUSINESS_TENANT_ID),
+            req=IssueCertRequest(),
+            user=provider_user,
+            db=db,
+        )
+    
+        # Find the audit-log execute call
+        audit_calls = [
+            (sql, args) for kind, (sql, args) in db.calls
+            if kind == "execute" and "INSERT INTO audit_logs" in sql
+        ]
+        assert len(audit_calls) == 1, f"expected 1 audit-log insert, got {len(audit_calls)}"
+    
+        _, args = audit_calls[0]
+        # Positional: user_id, email, role, tenant_id, action, entity_type, entity_id, changes, metadata
+>       assert args[0] == provider_user["sub"]
+E       AssertionError: assert UUID('7c5c0a5b-58ec-43b8-99cb-87ec47c7c691') == '7c5c0a5b-58ec-43b8-99cb-87ec47c7c691'
+
+tests/test_audit_log_integration.py:152: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  aminra.notifications:notification_router.py:42 [notify] Failed to create notification: No FakeConn response configured for: 'INSERT INTO notifications (user_id, type, title, message, link) VALUES ($1, $2, '
+=========================== short test summary info ============================
+FAILED tests/test_audit_log_integration.py::TestCertIssueEmitsAuditLog::test_issue_certificate_inserts_audit_log_row
+1 failed, 151 passed, 1 skipped in 15.80s

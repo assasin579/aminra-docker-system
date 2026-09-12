@@ -1,0 +1,9 @@
+# P1.1 frontend post-recreate health + performance retest
+2026-09-11T23:57:20-04:00
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    10 minutes ago   Up 10 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   2 minutes ago    Up 2 minutes (healthy)    0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+frontend_ready=0
+{"case": "local_frontend_proxy_trace_100x20", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 119.0, "p95_ms": 190.9, "max_ms": 201.7, "statuses": {"200": 100}, "proxy_cache": {"hit": 100}}
+{"case": "public_frontend_proxy_trace_100x20", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 346.2, "p95_ms": 462.9, "max_ms": 613.8, "statuses": {"200": 100}, "proxy_cache": {"hit": 100}}
+{"case": "public_trace_200x50", "requests": 200, "concurrency": 50, "errors": 0, "median_ms": 474.5, "p95_ms": 725.1, "max_ms": 1675.9, "statuses": {"200": 200}, "proxy_cache": {"hit": 200}}

@@ -1,0 +1,31 @@
+00-env	PASS	date-and-git-boundary	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/001-00-env-date-and-git-boundary.txt	
+00-env	PASS	docker-compose-health-and-http-smoke	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt	
+00-env	PASS	runtime-smoke-script	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/003-00-env-runtime-smoke-script.txt	
+00-env	PASS	diff-whitespace-check	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/004-00-env-diff-whitespace-check.txt	
+01-auth-session-rbac	FAIL	keycloak-token-admin-jwks-dual-auth	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/005-01-auth-session-rbac-keycloak-token-admin-jwks-dual-auth.txt	exit_code=4
+01-auth-session-rbac	FAIL	role-boundaries-live-and-admin-reset	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/006-01-auth-session-rbac-role-boundaries-live-and-admin-reset.txt	exit_code=4
+01-auth-session-rbac	FAIL	frontend-auth-focused-vitest	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/007-01-auth-session-rbac-frontend-auth-focused-vitest.txt	exit_code=1
+01-auth-session-rbac	FAIL	playwright-keycloak-token-login-multiuser	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/008-01-auth-session-rbac-playwright-keycloak-token-login-multiuser.txt	exit_code=1
+01-auth-session-rbac	FAIL	playwright-token-isolation-and-logout	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/009-01-auth-session-rbac-playwright-token-isolation-and-logout.txt	exit_code=1
+01-auth-session-rbac	DEFERRED	smtp-verifyEmail-password-reset-live-send	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/010-01-auth-session-rbac-smtp-verifyemail-password-reset-live-send-deferred.txt	Founder explicitly deferred SMTP. Keep customer_onboarding/production_go non-PASS until RUN_SMTP=1 and live-send passes.
+02-tenant-idor-route-boundary	FAIL	cross-tenant-and-unauth-boundaries	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/011-02-tenant-idor-route-boundary-cross-tenant-and-unauth-boundaries.txt	exit_code=4
+02-tenant-idor-route-boundary	PASS	route-inventory-unknown-risk-scan	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/012-02-tenant-idor-route-boundary-route-inventory-unknown-risk-scan.txt	
+03-supply-chain-trace	FAIL	supply-chain-core-sealing-eligibility	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/013-03-supply-chain-trace-supply-chain-core-sealing-eligibility.txt	exit_code=4
+03-supply-chain-trace	FAIL	seed-deterministic-public-trace-fixture	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/014-03-supply-chain-trace-seed-deterministic-public-trace-fixture.txt	exit_code=2
+03-supply-chain-trace	FAIL	public-trace-valid-invalid-smoke	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt	exit_code=2
+03-supply-chain-trace	FAIL	playwright-supply-chain-and-demo-spine	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-playwright-supply-chain-and-demo-spine.txt	exit_code=1
+04-submission-cert-lifecycle	FAIL	submission-revisions-sla-and-cert-lifecycle	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/017-04-submission-cert-lifecycle-submission-revisions-sla-and-cert-lifecycle.txt	exit_code=4
+04-submission-cert-lifecycle	FAIL	known-p0-gap-test-file-presence	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/018-04-submission-cert-lifecycle-known-p0-gap-test-file-presence.txt	exit_code=2
+04-submission-cert-lifecycle	FAIL	playwright-cert-and-state-scoring	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/019-04-submission-cert-lifecycle-playwright-cert-and-state-scoring.txt	exit_code=1
+05-admin-user-crud	FAIL	admin-user-member-auditor-crud	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/020-05-admin-user-crud-admin-user-member-auditor-crud.txt	exit_code=4
+05-admin-user-crud	FAIL	playwright-admin-user-flows	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/021-05-admin-user-crud-playwright-admin-user-flows.txt	exit_code=1
+06-pdf-doc-versioning	FAIL	pdf-renderer-document-versioning	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/022-06-pdf-doc-versioning-pdf-renderer-document-versioning.txt	exit_code=4
+06-pdf-doc-versioning	FAIL	pdf-visual-baselines	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/023-06-pdf-doc-versioning-pdf-visual-baselines.txt	exit_code=4
+06-pdf-doc-versioning	FAIL	playwright-template-document-ui	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/024-06-pdf-doc-versioning-playwright-template-document-ui.txt	exit_code=1
+07-jobs-audit-data-security	FAIL	jobs-audit-data-upload	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/025-07-jobs-audit-data-security-jobs-audit-data-upload.txt	exit_code=4
+07-jobs-audit-data-security	PASS	high-signal-log-scan	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/026-07-jobs-audit-data-security-high-signal-log-scan.txt	
+07-jobs-audit-data-security	PASS	rate-limit-doc-presence	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/027-07-jobs-audit-data-security-rate-limit-doc-presence.txt	
+08-frontend-browser-a11y	PASS	frontend-full-vitest	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/028-08-frontend-browser-a11y-frontend-full-vitest.txt	
+08-frontend-browser-a11y	PASS	frontend-lint	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/029-08-frontend-browser-a11y-frontend-lint.txt	
+08-frontend-browser-a11y	PASS	frontend-build	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/030-08-frontend-browser-a11y-frontend-build.txt	
+08-frontend-browser-a11y	FAIL	playwright-accessibility-mobile-critical	docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/031-08-frontend-browser-a11y-playwright-accessibility-mobile-critical.txt	exit_code=1

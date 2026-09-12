@@ -1,0 +1,30 @@
+# Phase 6 accessibility axe public pages (Chromium)
+2026-09-11T22:51:23-04:00
+
+Running 7 tests using 1 worker
+
+[a11y:landing] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+  ✓  1 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations (6.2s)
+  ✓  2 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations (6.0s)
+[a11y:provider-login] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+  ✓  3 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations (5.4s)
+  ✓  4 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › forgot-password — no critical a11y violations (4.6s)
+  ✓  5 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › privacy — no critical a11y violations (4.9s)
+  ✓  6 [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › terms — no critical a11y violations (4.8s)
+  ✓  7 [desktop-chromium] › e2e/accessibility.spec.ts:55:7 › Layer 3 — Accessibility (public pages) › verify page (404 state) — no critical a11y violations (4.3s)
+
+  7 passed (38.5s)

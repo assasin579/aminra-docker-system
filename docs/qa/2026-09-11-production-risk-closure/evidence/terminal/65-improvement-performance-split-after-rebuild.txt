@@ -1,0 +1,14 @@
+# Improvement 3: performance split diagnostics after rebuild
+2026-09-11T23:02:03-04:00
+{"case": "local_backend_health", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 457.8, "p95_ms": 1528.0, "max_ms": 1863.6, "statuses": {"200": 100}}
+{"case": "local_backend_trace", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 72.2, "p95_ms": 562.4, "max_ms": 698.6, "statuses": {"200": 100}}
+{"case": "local_frontend_proxy_trace", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 248.6, "p95_ms": 295.6, "max_ms": 303.3, "statuses": {"200": 100}}
+{"case": "public_frontend_proxy_trace", "requests": 100, "concurrency": 20, "errors": 0, "median_ms": 368.8, "p95_ms": 558.7, "max_ms": 793.4, "statuses": {"200": 100}}
+{"case": "public_home", "requests": 50, "concurrency": 10, "errors": 0, "median_ms": 297.3, "p95_ms": 341.4, "max_ms": 373.5, "statuses": {"200": 50}}
+
+## backend container resource snapshot
+CONTAINER ID   NAME                                     CPU %     MEM USAGE / LIMIT   MEM %     NET I/O           BLOCK I/O         PIDS
+0d69759a8f8a   aminra-docker-system-aminra-backend-1    1.01%     1022MiB / 2GiB      49.88%    1.3MB / 1.33MB    10.3MB / 8.59MB   268
+acd7cdc9429f   aminra-docker-system-aminra-frontend-1   0.26%     71.01MiB / 2GiB     3.47%     2.25MB / 4.43MB   9.47MB / 0B       11
+f7de77591ed0   aminra-docker-system-postgres-db-1       0.01%     154.4MiB / 1GiB     15.08%    22.2MB / 10.7MB   27.9MB / 427MB    38
+31fb4c002232   aminra-docker-system-qdrant-db-1         0.01%     19.88MiB / 2GiB     0.97%     1.08MB / 1.2MB    5.58MB / 12.3kB   19

@@ -1,0 +1,12 @@
+# Domain: 01-auth-session-rbac
+# Step: role-boundaries-live-and-admin-reset
+# Started: 2026-09-12T05:34:57-04:00
+# Command: docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_role_boundaries_live_smoke.py tests/test_admin_user_password_reset.py tests/test_demo_account_login_smoke_script.py'
+
+ERROR: file or directory not found: tests/test_admin_user_password_reset.py
+
+
+no tests ran in 0.26s
+
+# Finished: 2026-09-12T05:34:59-04:00
+# Exit code: 4

@@ -1,0 +1,48 @@
+# Focused regression after next actions
+2026-09-11T21:34:56-04:00
+
+## Jobs unit
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 13 items
+
+tests/test_jobs_unit.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                    [100%][0m
+
+[32m============================== [32m[1m13 passed[0m[32m in 0.80s[0m[32m ==============================[0m
+
+## Cert lifecycle unit
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_cert_lifecycle_unit.py [32m.[0m[32m                                      [100%][0m
+
+[32m============================== [32m[1m1 passed[0m[32m in 0.37s[0m[32m ===============================[0m
+
+## Backend P0 focused unmodified
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 164 items
+
+tests/test_supply_chain_sealing.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m            [ 15%][0m
+tests/test_supply_chain_batches.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 38%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                        [ 48%][0m
+tests/test_supply_chain_materials.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 70%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                    [ 82%][0m
+tests/test_supply_chain_supplier_eligibility_routes.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m       [ 89%][0m
+tests/test_supplier_eligibility_service.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                 [ 97%][0m
+tests/test_migrations_supplier_eligibility.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                       [100%][0m
+
+[32m================== [32m[1m163 passed[0m, [33m1 skipped[0m[32m in 78.81s (0:01:18)[0m[32m ===================[0m

@@ -1,0 +1,36 @@
+# Domain: 03-supply-chain-trace
+# Step: public-trace-valid-invalid-smoke
+# Started: 2026-09-12T05:27:17-04:00
+# Command: python3 - <<'PY'
+import json, re, subprocess, sys, pathlib, urllib.request
+term=pathlib.Path('docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal')
+ids=[]
+for f in term.glob('*seed-deterministic-public-trace-fixture*.txt'):
+    ids += re.findall(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', f.read_text(errors='ignore'))
+if not ids:
+    print('BLOCKED: no public_trace_id found in seed output')
+    sys.exit(2)
+trace_id=ids[0]
+print('trace_id=', trace_id)
+for url, expect in [
+    (f'http://127.0.0.1:8100/api/supply-chain/batches/trace/{trace_id}', 200),
+    (f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+    ('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+    ('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+]:
+    cp=subprocess.run(['curl','-sS','-o','/tmp/aminra-trace-smoke.json','-w','%{http_code}',url], text=True, capture_output=True, timeout=20)
+    code=int(cp.stdout.strip() or '0')
+    print(url, '->', code, 'expected', expect)
+    if code != expect:
+        sys.exit(1)
+    body=pathlib.Path('/tmp/aminra-trace-smoke.json').read_text(errors='ignore')
+    forbidden=['tenant_id','provider_id','source_certificate_id','changed_by']
+    if code==200 and any(x in body for x in forbidden):
+        print('PRIVATE_FIELD_LEAK', [x for x in forbidden if x in body])
+        sys.exit(1)
+PY
+
+BLOCKED: no public_trace_id found in seed output
+
+# Finished: 2026-09-12T05:27:17-04:00
+# Exit code: 2

@@ -168,3 +168,31 @@ class TestWorkerSettings:
         from services.jobs import WorkerSettings
         # Clients need a window to poll completion — 1 hour is reasonable
         assert WorkerSettings.keep_result >= 600
+
+    async def test_worker_startup_initializes_auth_db_pool(self, monkeypatch):
+        from services import jobs
+        calls = []
+
+        async def fake_init_pool():
+            calls.append("init")
+
+        monkeypatch.setattr("auth.db.init_pool", fake_init_pool)
+
+        await jobs.worker_startup(ctx={})
+
+        assert calls == ["init"]
+        assert jobs.WorkerSettings.on_startup is jobs.worker_startup
+
+    async def test_worker_shutdown_closes_auth_db_pool(self, monkeypatch):
+        from services import jobs
+        calls = []
+
+        async def fake_close_pool():
+            calls.append("close")
+
+        monkeypatch.setattr("auth.db.close_pool", fake_close_pool)
+
+        await jobs.worker_shutdown(ctx={})
+
+        assert calls == ["close"]
+        assert jobs.WorkerSettings.on_shutdown is jobs.worker_shutdown

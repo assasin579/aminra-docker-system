@@ -1,0 +1,42 @@
+# Domain: 04-submission-cert-lifecycle
+# Step: playwright-cert-and-state-scoring
+# Started: 2026-09-12T06:32:40-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/14-cuj-cert-lifecycle.spec.ts e2e/35-batch5-state-scoring.spec.ts --project=desktop-chromium
+
+
+Running 7 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert (83ms)
+  ✓  2 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert (1.4s)
+  ✘  3 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) (2.2s)
+  ✓  4 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:46:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible (1.8s)
+  -  5 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider
+  ✓  6 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:20:7 › Phase 1 Batch 5 — state + scoring › static guards — code reflects all batch 5 fixes (113ms)
+  ✓  7 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:68:7 › Phase 1 Batch 5 — state + scoring › transition matrix is sane: terminal states cannot transition out (8ms)
+
+
+  1) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected value: [32m401[39m
+    Received array: [31m[400, 403, 404][39m
+
+      41 |       },
+      42 |     );
+    > 43 |     expect([400, 403, 404]).toContain(res.status());
+         |                             ^
+      44 |   });
+      45 |
+      46 |   test("Cert lifecycle stats endpoint accessible", async ({ api, prov }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/14-cuj-cert-lifecycle.spec.ts:43:29
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--750eb-reason-validation-enforced--desktop-chromium/error-context.md
+
+  1 failed
+    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) 
+  1 skipped
+  5 passed (11.1s)
+
+# Finished: 2026-09-12T06:32:54-04:00
+# Exit code: 1

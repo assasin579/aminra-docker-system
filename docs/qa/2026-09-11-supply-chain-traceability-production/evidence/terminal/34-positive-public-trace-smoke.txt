@@ -1,0 +1,59 @@
+# Positive public trace smoke
+2026-09-11T21:29:30-04:00
+TRACE_ID=73695b8a-3c10-570b-8bba-92c12da9b56e
+
+## Local backend API
+HTTP 200
+verified= True
+snapshot_version= 2
+product= QA Published Sealed Halal Trace Fixture
+public_trace_id= 73695b8a-3c10-570b-8bba-92c12da9b56e
+contains_tenant_id= False
+contains_provider_id= False
+contains_source_certificate_id= False
+contains_changed_by= False
+
+## Local frontend trace page
+HTTP 200
+AMINRA
+Halal
+AMINRA
+Halal
+Halal
+AMINRA
+Đang tải
+__next
+__next
+__next
+__next
+__next
+__next
+AMINRA
+Halal
+AMINRA
+Halal
+Halal
+
+## Public frontend trace page
+HTTP 200
+AMINRA
+Halal
+AMINRA
+Halal
+Halal
+AMINRA
+Đang tải
+__next
+__next
+__next
+__next
+__next
+__next
+AMINRA
+Halal
+AMINRA
+Halal
+Halal
+
+## Public API via Next proxy path
+HTTP 200

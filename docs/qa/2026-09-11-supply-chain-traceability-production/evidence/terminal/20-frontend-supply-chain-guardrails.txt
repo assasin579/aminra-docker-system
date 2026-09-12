@@ -1,0 +1,18 @@
+# Frontend supply-chain guardrails
+
+> aminra-web@0.1.0 test:guardrails:supply-chain
+> vitest run apiClient.test.ts supply-chain-failure-guardrails.test.ts supply-chain-process-create.test.tsx
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/supply-chain-failure-guardrails.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m __tests__/apiClient.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-process-create.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1058[2mms[22m[39m
+     [33m[2m✓[22m[39m POSTs the modal name to the backend proxy with bearer auth and JSON content-type [33m 674[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 21:16:29
+[2m   Duration [22m 4.45s[2m (transform 771ms, setup 1.29s, import 918ms, tests 1.13s, environment 5.92s)[22m
+

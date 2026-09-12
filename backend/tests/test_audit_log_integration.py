@@ -149,7 +149,7 @@ class TestCertIssueEmitsAuditLog:
 
         _, args = audit_calls[0]
         # Positional: user_id, email, role, tenant_id, action, entity_type, entity_id, changes, metadata
-        assert args[0] == provider_user["sub"]
+        assert str(args[0]) == provider_user["sub"]
         assert args[1] == "cb@example.vn"
         assert args[2] == "provider"
         assert args[4] == "certificate.issue"

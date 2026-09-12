@@ -217,6 +217,7 @@ class TestMarkAlertSent:
             if kind == "execute" and "expiry_alerts_sent" in sql
         ]
         assert len(executes) == 1
-        # First arg is threshold int, second is cert_id
-        assert executes[0][1][0] == 30
-        assert executes[0][1][1] == str(CERT_ID)
+        sql, args = executes[0]
+        assert "? $1::text" in sql
+        assert "to_jsonb($2::int)" in sql
+        assert args == ("30", 30, str(CERT_ID))

@@ -1,0 +1,5 @@
+# Phase 4 diagnostic load: local backend vs public proxy
+2026-09-11T22:46:31-04:00
+{"case": "local_public_trace", "concurrency": 10, "errors": 0, "max_ms": 167.1, "mean_ms": 40.6, "p95_ms": 123.5, "requests": 50, "rps": 205.8}
+{"case": "public_proxy_trace", "concurrency": 10, "errors": 0, "max_ms": 403.6, "mean_ms": 321.8, "p95_ms": 368.1, "requests": 50, "rps": 29.0}
+{"case": "local_health", "concurrency": 10, "errors": 0, "max_ms": 629.7, "mean_ms": 261.6, "p95_ms": 568.9, "requests": 50, "rps": 36.2}

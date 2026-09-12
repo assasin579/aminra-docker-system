@@ -16,11 +16,17 @@ from supply_chain.eligibility_service import (
 from supply_chain.models import SupplierCreate
 from supply_chain.supplier_router import create_supplier
 
-_MIGRATION_PATH = Path(__file__).resolve().parents[1] / "alembic/versions/038_cb_supplier_certificate_eligibility.py"
-_SPEC = importlib.util.spec_from_file_location("p0a_supplier_eligibility_migration", _MIGRATION_PATH)
-assert _SPEC and _SPEC.loader
-MIGRATION = importlib.util.module_from_spec(_SPEC)
-_SPEC.loader.exec_module(MIGRATION)
+_MIGRATION_PATHS = [
+    Path(__file__).resolve().parents[1] / "alembic/versions/038_cb_supplier_certificate_eligibility.py",
+    Path(__file__).resolve().parents[1] / "alembic/versions/039_supplier_authority_batch_snapshot.py",
+]
+MIGRATIONS = []
+for idx, migration_path in enumerate(_MIGRATION_PATHS):
+    spec = importlib.util.spec_from_file_location(f"supplier_eligibility_migration_{idx}", migration_path)
+    assert spec and spec.loader
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    MIGRATIONS.append(migration)
 
 
 @pytest.fixture(autouse=True)
@@ -32,10 +38,12 @@ async def _p0a_schema(db_tx):
     each test and do not mutate persistent dev data.
     """
     await db_tx.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-    for sql in MIGRATION.DOWN_SQL:
-        await db_tx.execute(sql)
-    for sql in MIGRATION.UP_SQL:
-        await db_tx.execute(sql)
+    for migration in reversed(MIGRATIONS):
+        for sql in migration.DOWN_SQL:
+            await db_tx.execute(sql)
+    for migration in MIGRATIONS:
+        for sql in migration.UP_SQL:
+            await db_tx.execute(sql)
 
 
 async def _supplier(db, user, name="Elig Supplier"):

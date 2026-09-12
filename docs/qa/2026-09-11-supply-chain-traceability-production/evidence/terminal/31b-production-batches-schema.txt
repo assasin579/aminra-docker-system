@@ -1,0 +1,39 @@
+                               Table "public.production_batches"
+        Column        |           Type           | Collation | Nullable |        Default        
+----------------------+--------------------------+-----------+----------+-----------------------
+ id                   | uuid                     |           | not null | uuid_generate_v4()
+ tenant_id            | uuid                     |           | not null | 
+ batch_code           | character varying(100)   |           | not null | 
+ product_name         | character varying(255)   |           | not null | 
+ process_template_id  | uuid                     |           |          | 
+ status               | batch_status             |           |          | 'draft'::batch_status
+ started_at           | timestamp with time zone |           |          | 
+ completed_at         | timestamp with time zone |           |          | 
+ compliance_score     | integer                  |           |          | 
+ qr_code_url          | text                     |           |          | 
+ notes                | text                     |           |          | 
+ created_at           | timestamp with time zone |           |          | now()
+ updated_at           | timestamp with time zone |           |          | now()
+ integrity_hash       | text                     |           |          | 
+ sealed_data          | jsonb                    |           |          | 
+ assigned_to          | uuid                     |           |          | 
+ assigned_name        | character varying(255)   |           |          | 
+ approved_by          | character varying(255)   |           |          | 
+ approved_at          | timestamp with time zone |           |          | 
+ public_trace_id      | uuid                     |           | not null | uuid_generate_v4()
+ public_trace_enabled | boolean                  |           | not null | false
+Indexes:
+    "production_batches_pkey" PRIMARY KEY, btree (id)
+    "idx_production_batches_status" btree (status)
+    "idx_production_batches_tenant" btree (tenant_id)
+    "uq_production_batches_public_trace_id" UNIQUE, btree (public_trace_id)
+    "uq_production_batches_tenant_code" UNIQUE CONSTRAINT, btree (tenant_id, batch_code)
+Foreign-key constraints:
+    "production_batches_process_template_id_fkey" FOREIGN KEY (process_template_id) REFERENCES process_templates(id)
+Referenced by:
+    TABLE "batch_anchor_proofs" CONSTRAINT "batch_anchor_proofs_batch_id_fkey" FOREIGN KEY (batch_id) REFERENCES production_batches(id) ON DELETE CASCADE
+    TABLE "batch_materials" CONSTRAINT "batch_materials_batch_id_fkey" FOREIGN KEY (batch_id) REFERENCES production_batches(id) ON DELETE CASCADE
+    TABLE "batch_steps" CONSTRAINT "batch_steps_batch_id_fkey" FOREIGN KEY (batch_id) REFERENCES production_batches(id) ON DELETE CASCADE
+Triggers:
+    update_production_batches_updated_at BEFORE UPDATE ON production_batches FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
+

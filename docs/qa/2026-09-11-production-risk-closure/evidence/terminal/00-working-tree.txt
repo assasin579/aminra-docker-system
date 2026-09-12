@@ -1,0 +1,80 @@
+# Phase 0 working tree + sensitive diff baseline
+2026-09-11T22:28:16-04:00
+
+## git status --short
+ M backend/services/cert_lifecycle.py
+ M backend/services/jobs.py
+ M backend/tests/test_cert_lifecycle_unit.py
+ M backend/tests/test_jobs_unit.py
+ M backend/tests/test_supplier_eligibility_service.py
+ M docker-compose.yml
+?? docs/plans/2026-09-11-aminra-production-risk-closure-plan.md
+?? docs/qa/2026-09-11-production-risk-closure/
+?? docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md
+?? docs/qa/2026-09-11-supply-chain-traceability-production/
+?? scripts/qa/seed-public-trace-fixture.py
+
+## git diff --stat
+ backend/services/cert_lifecycle.py                 |   5 +-
+ backend/services/jobs.py                           |  21 ++
+ backend/tests/test_cert_lifecycle_unit.py          | 228 ++-------------------
+ backend/tests/test_jobs_unit.py                    |  28 +++
+ backend/tests/test_supplier_eligibility_service.py |  26 ++-
+ docker-compose.yml                                 |   1 +
+ 6 files changed, 84 insertions(+), 225 deletions(-)
+
+## untracked
+docs/plans/2026-09-11-aminra-production-risk-closure-plan.md
+docs/qa/2026-09-11-production-risk-closure/evidence/terminal/00-working-tree.txt
+docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md
+docs/qa/2026-09-11-supply-chain-traceability-production/defects/DEFECTS.md
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/local-home.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/local-trace-invalid-ABC123.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/local-trace-valid-73695b8a-3c10-570b-8bba-92c12da9b56e.json
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/local-trace-valid-page.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/public-home.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/public-trace-invalid-ABC123.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/public-trace-invalid-injection.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/public-trace-valid-73695b8a-3c10-570b-8bba-92c12da9b56e.json
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/api/public-trace-valid-page.html
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/screenshots/public-invalid-trace-not-found.png
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/screenshots/public-valid-trace-after-backend-recreate.png
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/screenshots/public-valid-trace-qa-fixture.png
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/00-environment-baseline.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/01-alembic-current-wrapper.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/09-copy-backend-tests-into-container.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/09b-pytest-harness-config.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/10-backend-p0-focused-tests.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/11-backend-p0-focused-tests-retry.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/12-backend-p0-focused-tests-excluding-stale-fixture.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/13-backend-supply-chain-regression.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/20-frontend-supply-chain-guardrails.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/21-frontend-lint.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/22-frontend-build.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/23-frontend-full-vitest.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/30-runtime-smoke.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/31-public-trace-fixture-candidates.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/31b-production-batches-schema.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/32-high-signal-log-scan.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/33-seed-public-trace-fixture.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/34-positive-public-trace-smoke.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/35-arq-worker-tail-before-fix.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/36-arq-worker-after-recreate.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/37-arq-daily-cert-dry-run-after-fix.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/38-arq-worker-after-second-recreate.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/39-arq-daily-cert-dry-run-after-param-fix.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/40-git-hygiene.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/41-focused-regression-after-next-actions.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/42-supply-chain-regression-after-next-actions.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/43-frontend-regression-after-next-actions.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/44-backend-image-build-after-next-actions.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/45-runtime-resmoke-after-next-actions.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/46-backend-recreate-after-build.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/47-reseed-public-trace-fixture-after-backend-recreate.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/48-public-trace-api-frontend-resmoke-after-recreate.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/49-backend-log-after-positive-404.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/50-public-trace-correct-endpoint-resmoke-after-recreate.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/51-log-scan-after-public-trace-resmoke.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/evidence/terminal/52-public-next-actual-proxy-resmoke.txt
+docs/qa/2026-09-11-supply-chain-traceability-production/report.md
+scripts/qa/seed-public-trace-fixture.py

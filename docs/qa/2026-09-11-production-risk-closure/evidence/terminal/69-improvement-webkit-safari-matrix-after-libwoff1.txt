@@ -1,0 +1,28 @@
+# Improvement 4c: WebKit/Safari matrix after libwoff1/system dependency install
+2026-09-11T23:03:42-04:00
+
+## woff library
+	libwoff2enc.so.1.0.2 (libc6,x86-64) => /lib/x86_64-linux-gnu/libwoff2enc.so.1.0.2
+	libwoff2dec.so.1.0.2 (libc6,x86-64) => /lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2
+	libwoff2common.so.1.0.2 (libc6,x86-64) => /lib/x86_64-linux-gnu/libwoff2common.so.1.0.2
+
+
+## project=desktop-webkit
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (10.0s)
+  ✓  2 [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.1s)
+  ✓  3 [desktop-webkit] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (673ms)
+
+  3 passed (14.3s)
+
+## project=mobile-safari
+
+Running 3 tests using 1 worker
+
+  ✓  1 [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:29:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (7.2s)
+  ✓  2 [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:43:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.1s)
+  ✓  3 [mobile-safari] › e2e/38-demo-spine-keycloak.spec.ts:63:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action (611ms)
+
+  3 passed (11.0s)

@@ -1,0 +1,18 @@
+arq-worker-1  | 07:16:51: Starting worker for 8 functions: ingest_document, send_email, daily_anchor_polygon, daily_cert_expiry_alerts, daily_submission_sla_check, cron:daily_anchor_polygon, cron:daily_cert_expiry_alerts, cron:daily_submission_sla_check
+arq-worker-1  | 07:16:51: redis_version=7.4.8 mem_usage=1.41M clients_connected=1 db_keys=0
+arq-worker-1  | 08:00:00:   1.00s → cron:daily_cert_expiry_alerts()
+arq-worker-1  | 08:00:00:   0.18s ! cron:daily_cert_expiry_alerts failed, RuntimeError: Database not available
+arq-worker-1  | Traceback (most recent call last):
+arq-worker-1  |   File "/usr/local/lib/python3.11/site-packages/arq/worker.py", line 599, in run_job
+arq-worker-1  |     result = await asyncio.wait_for(task, timeout_s)
+arq-worker-1  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+arq-worker-1  |   File "/usr/local/lib/python3.11/asyncio/tasks.py", line 489, in wait_for
+arq-worker-1  |     return fut.result()
+arq-worker-1  |            ^^^^^^^^^^^^
+arq-worker-1  |   File "/app/services/jobs.py", line 127, in daily_cert_expiry_alerts
+arq-worker-1  |     pool = get_pool()
+arq-worker-1  |            ^^^^^^^^^^
+arq-worker-1  |   File "/app/auth/db.py", line 48, in get_pool
+arq-worker-1  |     raise RuntimeError("Database not available")
+arq-worker-1  | RuntimeError: Database not available
+arq-worker-1  | 08:16:52: recording health: Sep-12 08:16:52 j_complete=0 j_failed=1 j_retried=0 j_ongoing=0 queued=0

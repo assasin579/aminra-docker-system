@@ -1,0 +1,43 @@
+# Phase 5 non-destructive resilience/dependency checks after SLA fix
+2026-09-11T22:48:12-04:00
+
+## compose ps
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED             STATUS                    PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    54 minutes ago      Up 54 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   3 hours ago         Up 3 hours (healthy)      0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-arq-worker-1        aminra-docker-system-arq-worker        "/app/entrypoint.sh …"   arq-worker        About an hour ago   Up About an hour          8000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago          Up 24 hours (healthy)     8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       aminra-docker-system-postgres-db       "docker-entrypoint.s…"   postgres-db       3 hours ago         Up 3 hours (healthy)      5432/tcp
+aminra-docker-system-qdrant-db-1         aminra-docker-system-qdrant-db         "./entrypoint.sh"        qdrant-db         3 hours ago         Up 3 hours (healthy)      6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                       "docker-entrypoint.s…"   redis             4 days ago          Up 24 hours (healthy)     6379/tcp
+
+## backend health
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+
+## redis ping
+PONG
+
+## qdrant readiness / collections via mapped host port 6433
+all shards are ready
+
+## keycloak discovery
+HTTP=200
+issuer= https://auth.silvergem.org/realms/aminra
+token_endpoint_present= True
+
+## arq worker recent logs errors after dry-run fix
+arq-worker-1  | 08:34:37:   0.21s ← 7ee6b75b4c034c45b0af972811a999b8:daily_cert_expiry_alerts ● {'sent': 1, 'failed': 0, 'checked': 1}
+arq-worker-1  | 09:00:00:   0.09s ! cron:daily_submission_sla_check failed, DataError: invalid input for query argument $1: 80 (expected str, got int)
+arq-worker-1  | Traceback (most recent call last):
+arq-worker-1  | TypeError: expected str, got int
+arq-worker-1  | The above exception was the direct cause of the following exception:
+arq-worker-1  | Traceback (most recent call last):
+arq-worker-1  | asyncpg.exceptions.DataError: invalid input for query argument $1: 80 (expected str, got int)
+arq-worker-1  | 09:34:28: recording health: Sep-12 09:34:28 j_complete=1 j_failed=1 j_retried=0 j_ongoing=0 queued=0
+
+## backend recent logs errors

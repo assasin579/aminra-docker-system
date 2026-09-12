@@ -1,0 +1,357 @@
+# Phase 2 audit/security matrix: focused backend security suites
+2026-09-11T22:42:25-04:00
+........................................................................ [ 47%]
+.....................................................F.................. [ 94%]
+.FFFF.Fs.                                                                [100%]
+=================================== FAILURES ===================================
+_______________ TestLogAudit.test_inserts_with_full_user_context _______________
+
+self = <tests.test_audit_log_unit.TestLogAudit object at 0x764bf6bf5750>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x764befdf4bd0>
+
+    async def test_inserts_with_full_user_context(self, mocker):
+        db = mocker.AsyncMock()
+        user = {
+            "sub": "11111111-1111-1111-1111-111111111111",
+            "email": "biz@example.vn",
+            "role": "business",
+            "tenant_id": "22222222-2222-2222-2222-222222222222",
+        }
+        await log_audit(
+            db,
+            user=user,
+            action="submission.submit",
+            entity_type="submission",
+            entity_id="33333333-3333-3333-3333-333333333333",
+            changes={"status": ["draft", "submitted"]},
+        )
+        db.execute.assert_awaited_once()
+        sql, args = db.execute.call_args[0][0], db.execute.call_args[0][1:]
+        assert "INSERT INTO audit_logs" in sql
+>       assert args[0] == user["sub"]            # user_id
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert <MagicMock name='mock.fetchrow().__getitem__()' id='130068498092112'> == '11111111-1111-1111-1111-111111111111'
+
+tests/test_audit_log_unit.py:70: AssertionError
+___ TestCertIssueEmitsAuditLog.test_issue_certificate_inserts_audit_log_row ____
+
+self = <tests.test_audit_log_integration.TestCertIssueEmitsAuditLog object at 0x764befd4e350>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x764beea2ea50>
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_issue_certificate_inserts0')
+
+    async def test_issue_certificate_inserts_audit_log_row(self, monkeypatch, tmp_path):
+        from auth.certificate_router import issue_certificate_for_company, IssueCertRequest
+    
+        monkeypatch.setenv("CERT_PDF_DIR", str(tmp_path / "certs"))
+        monkeypatch.setenv("APP_BASE_URL", "https://aminra.test")
+        import importlib
+        from auth import certificate_router
+        importlib.reload(certificate_router)
+    
+        BUSINESS_TENANT_ID = uuid4()
+        PROVIDER_USER_ID = uuid4()
+        BUSINESS_OWNER_ID = uuid4()
+    
+        provider_user = {
+            "sub":       str(PROVIDER_USER_ID),
+            "email":     "cb@example.vn",
+            "role":      "provider",
+            "is_owner":  True,
+            "tenant_id": str(uuid4()),
+        }
+    
+        db = FakeConn()
+        db.fetch_responses = [
+            ("FROM submissions WHERE business_tenant", [
+                FakeRecord(id=uuid4(), status="approved"),
+            ]),
+        ]
+        db.fetchrow_responses = [
+            ("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'", None),
+            ("FROM users WHERE id=$1", FakeRecord(company_name="Halal CB Vietnam")),
+            ("(id=$1 OR tenant_id=$1) AND is_owner=true",
+             FakeRecord(id=BUSINESS_OWNER_ID, company_name="Halal Foods Co")),
+            ("INSERT INTO halal_certificates", FakeRecord(id=uuid4())),
+        ]
+        db.fetchval_responses = [
+            ("COUNT(*) FROM halal_certificates WHERE cert_number LIKE", 0),
+        ]
+    
+>       await certificate_router.issue_certificate_for_company(
+            business_tenant_id=str(BUSINESS_TENANT_ID),
+            req=IssueCertRequest(),
+            user=provider_user,
+            db=db,
+        )
+
+tests/test_audit_log_integration.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+auth/certificate_router.py:185: in issue_certificate_for_company
+    await log_audit(
+services/audit_log.py:72: in log_audit
+    user_id = await resolve_canonical_user_id(user, db) if user.get("email") or user.get("sub") else None
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+auth/identity.py:38: in resolve_canonical_user_id
+    row = await db.fetchrow(
+tests/test_certificate_pdf_integration.py:52: in fetchrow
+    return self._match(sql, self.fetchrow_responses)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.test_certificate_pdf_integration.FakeConn object at 0x764bed9fe690>
+sql = 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+table = [("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'", None), ('FROM users WHERE i...ny_name': 'Halal Foods Co'}), ('INSERT INTO halal_certificates', {'id': UUID('7e21bdd8-3951-46f6-b422-6a9e030fde7f')})]
+
+    def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
+        for needle, value in table:
+            if needle in sql:
+                return value
+>       raise AssertionError(f"No FakeConn response configured for: {sql[:80]!r}")
+E       AssertionError: No FakeConn response configured for: 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+
+tests/test_certificate_pdf_integration.py:44: AssertionError
+______ TestCertStatusChangeEmitsAuditLog.test_revoke_records_status_diff _______
+
+self = <tests.test_audit_log_integration.TestCertStatusChangeEmitsAuditLog object at 0x764befd4edd0>
+
+    async def test_revoke_records_status_diff(self):
+        from auth.certificate_router import update_cert_status
+    
+        cert_id = uuid4()
+        provider_user = {
+            "sub":      str(uuid4()),
+            "email":    "cb@example.vn",
+            "role":     "provider",
+            "is_owner": True,
+        }
+    
+        db = FakeConn()
+        db.fetchrow_responses = [
+            ("SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2",
+             FakeRecord(
+                 id=cert_id,
+                 cert_number="HALAL-2026-0001",
+                 status="active",
+                 business_tenant=uuid4(),
+             )),
+            # revoke_cert() preflight check
+            ("SELECT id, cert_number, business_tenant, status, revoked_at",
+             FakeRecord(
+                 id=cert_id,
+                 cert_number="HALAL-2026-0001",
+                 business_tenant=uuid4(),
+                 status="active",
+                 revoked_at=None,
+             )),
+            # revoke_cert() UPDATE...RETURNING
+            ("UPDATE halal_certificates",
+             FakeRecord(revoked_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))),
+            ("(id=$1 OR tenant_id=$1) AND is_owner=true", None),  # no biz owner → notify skipped
+        ]
+    
+>       await update_cert_status(
+            cert_id=str(cert_id),
+            req={"status": "revoked", "reason": "Vi phạm tiêu chuẩn"},
+            user=provider_user,
+            db=db,
+        )
+
+tests/test_audit_log_integration.py:200: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+auth/certificate_router.py:482: in update_cert_status
+    await log_audit(
+services/audit_log.py:72: in log_audit
+    user_id = await resolve_canonical_user_id(user, db) if user.get("email") or user.get("sub") else None
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+auth/identity.py:38: in resolve_canonical_user_id
+    row = await db.fetchrow(
+tests/test_certificate_pdf_integration.py:52: in fetchrow
+    return self._match(sql, self.fetchrow_responses)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.test_certificate_pdf_integration.FakeConn object at 0x764bed377310>
+sql = 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+table = [('SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2', {'id': UUID('b476a0b3-5dc6-4d36-a23b-07b599aa950b')...e(2026, 9, 12, 2, 42, 42, 799266, tzinfo=datetime.timezone.utc)}), ('(id=$1 OR tenant_id=$1) AND is_owner=true', None)]
+
+    def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
+        for needle, value in table:
+            if needle in sql:
+                return value
+>       raise AssertionError(f"No FakeConn response configured for: {sql[:80]!r}")
+E       AssertionError: No FakeConn response configured for: 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+
+tests/test_certificate_pdf_integration.py:44: AssertionError
+________ TestProviderApprovalAuditLog.test_approve_records_status_diff _________
+
+self = <tests.test_audit_log_coverage.TestProviderApprovalAuditLog object at 0x764befdf5050>
+
+    async def test_approve_records_status_diff(self):
+        from auth.admin_router import approve_provider
+    
+        provider_id = str(uuid4())
+        db = FakeConn()
+        db.fetchrow_responses = [
+            ("UPDATE users SET status = 'active'",
+             FakeRecord(id=uuid4(), email="cb@example.vn", status="active")),
+        ]
+>       await approve_provider(
+            provider_id=provider_id,
+            request=FakeRequest(),
+            admin=ADMIN_USER,
+            db=db,
+        )
+
+tests/test_audit_log_coverage.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+auth/admin_router.py:60: in approve_provider
+    await log_audit(
+services/audit_log.py:72: in log_audit
+    user_id = await resolve_canonical_user_id(user, db) if user.get("email") or user.get("sub") else None
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+auth/identity.py:38: in resolve_canonical_user_id
+    row = await db.fetchrow(
+tests/test_certificate_pdf_integration.py:52: in fetchrow
+    return self._match(sql, self.fetchrow_responses)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.test_certificate_pdf_integration.FakeConn object at 0x764bed3a8790>
+sql = 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+table = [("UPDATE users SET status = 'active'", {'id': UUID('69c1ed0d-5263-46da-9163-b1da41bb5fbd'), 'email': 'cb@example.vn', 'status': 'active'})]
+
+    def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
+        for needle, value in table:
+            if needle in sql:
+                return value
+>       raise AssertionError(f"No FakeConn response configured for: {sql[:80]!r}")
+E       AssertionError: No FakeConn response configured for: 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+
+tests/test_certificate_pdf_integration.py:44: AssertionError
+___ TestProviderApprovalAuditLog.test_reject_records_status_diff_and_reason ____
+
+self = <tests.test_audit_log_coverage.TestProviderApprovalAuditLog object at 0x764befdf4d90>
+
+    async def test_reject_records_status_diff_and_reason(self):
+        from auth.admin_router import reject_provider, RejectRequest
+    
+        provider_id = str(uuid4())
+        db = FakeConn()
+        db.fetchrow_responses = [
+            ("UPDATE users SET status = 'suspended'",
+             FakeRecord(id=uuid4(), email="cb@example.vn", status="suspended")),
+        ]
+>       await reject_provider(
+            provider_id=provider_id,
+            req=RejectRequest(reason="Hồ sơ không đầy đủ"),
+            request=FakeRequest(),
+            admin=ADMIN_USER,
+            db=db,
+        )
+
+tests/test_audit_log_coverage.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+auth/admin_router.py:109: in reject_provider
+    await log_audit(
+services/audit_log.py:72: in log_audit
+    user_id = await resolve_canonical_user_id(user, db) if user.get("email") or user.get("sub") else None
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+auth/identity.py:38: in resolve_canonical_user_id
+    row = await db.fetchrow(
+tests/test_certificate_pdf_integration.py:52: in fetchrow
+    return self._match(sql, self.fetchrow_responses)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.test_certificate_pdf_integration.FakeConn object at 0x764bed513c50>
+sql = 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+table = [("UPDATE users SET status = 'suspended'", {'id': UUID('a62f3479-41f5-456f-9f8d-63bad24449ac'), 'email': 'cb@example.vn', 'status': 'suspended'})]
+
+    def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
+        for needle, value in table:
+            if needle in sql:
+                return value
+>       raise AssertionError(f"No FakeConn response configured for: {sql[:80]!r}")
+E       AssertionError: No FakeConn response configured for: 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+
+tests/test_certificate_pdf_integration.py:44: AssertionError
+___ TestSubmissionSubmitAuditLog.test_submit_records_provider_and_doc_count ____
+
+self = <tests.test_audit_log_coverage.TestSubmissionSubmitAuditLog object at 0x764befdf5bd0>
+
+    async def test_submit_records_provider_and_doc_count(self):
+        from auth.submission_router import submit_documents
+        from auth.submission_router import SubmitRequest
+    
+        owner = {
+            "sub":       str(uuid4()),
+            "email":     "biz@example.vn",
+            "role":      "business",
+            "is_owner":  True,
+            "tenant_id": str(uuid4()),
+        }
+        provider_id = str(uuid4())
+        doc_id = uuid4()
+    
+        db = FakeConn()
+        # provider lookup → fetchrow
+        # documents count → fetchval
+        # business name → fetchrow
+        # INSERT submission → fetchrow
+        db.fetchrow_responses = [
+            ("FROM users WHERE id = $1 AND role = 'provider'",
+             FakeRecord(id=uuid4(), company_name="Halal CB Vietnam")),
+            ("SELECT company_name FROM users WHERE id = $1",
+             FakeRecord(company_name="Halal Foods Co")),
+            ("INSERT INTO submissions",
+             FakeRecord(id=uuid4(), submitted_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))),
+        ]
+        db.fetchval_responses = [
+            ("SELECT COUNT(*) FROM documents", 1),
+        ]
+    
+>       await submit_documents(
+            req=SubmitRequest(
+                provider_id=provider_id,
+                document_ids=[str(doc_id)],
+                notes="MVP test",
+            ),
+            request=FakeRequest(),
+            owner=owner,
+            db=db,
+        )
+
+tests/test_audit_log_coverage.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+auth/submission_router.py:400: in submit_documents
+    await log_audit(
+services/audit_log.py:72: in log_audit
+    user_id = await resolve_canonical_user_id(user, db) if user.get("email") or user.get("sub") else None
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+auth/identity.py:38: in resolve_canonical_user_id
+    row = await db.fetchrow(
+tests/test_certificate_pdf_integration.py:52: in fetchrow
+    return self._match(sql, self.fetchrow_responses)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.test_certificate_pdf_integration.FakeConn object at 0x764bed4eecd0>
+sql = 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+table = [("FROM users WHERE id = $1 AND role = 'provider'", {'id': UUID('fdba2ffb-5283-44fb-b469-4205b98173e4'), 'company_name...a2fb-545cde1ea977'), 'submitted_at': datetime.datetime(2026, 9, 12, 2, 42, 42, 981580, tzinfo=datetime.timezone.utc)})]
+
+    def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
+        for needle, value in table:
+            if needle in sql:
+                return value
+>       raise AssertionError(f"No FakeConn response configured for: {sql[:80]!r}")
+E       AssertionError: No FakeConn response configured for: 'SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1'
+
+tests/test_certificate_pdf_integration.py:44: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_audit_log_unit.py::TestLogAudit::test_inserts_with_full_user_context
+FAILED tests/test_audit_log_integration.py::TestCertIssueEmitsAuditLog::test_issue_certificate_inserts_audit_log_row
+FAILED tests/test_audit_log_integration.py::TestCertStatusChangeEmitsAuditLog::test_revoke_records_status_diff
+FAILED tests/test_audit_log_coverage.py::TestProviderApprovalAuditLog::test_approve_records_status_diff
+FAILED tests/test_audit_log_coverage.py::TestProviderApprovalAuditLog::test_reject_records_status_diff_and_reason
+FAILED tests/test_audit_log_coverage.py::TestSubmissionSubmitAuditLog::test_submit_records_provider_and_doc_count
+6 failed, 146 passed, 1 skipped in 16.07s

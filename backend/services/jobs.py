@@ -180,6 +180,25 @@ except ImportError:  # arq < 0.26 fallback (tests)
     _CRON_AVAILABLE = False
 
 
+async def worker_startup(ctx: dict) -> None:
+    """Initialize shared app resources for ARQ worker processes.
+
+    FastAPI initializes auth.db in app lifespan, but ARQ imports WorkerSettings
+    directly and never runs the FastAPI startup hook. Scheduled jobs that call
+    auth.db.get_pool() therefore need an explicit worker lifecycle hook.
+    """
+    from auth.db import init_pool
+
+    await init_pool()
+
+
+async def worker_shutdown(ctx: dict) -> None:
+    """Close shared app resources initialized by worker_startup."""
+    from auth.db import close_pool
+
+    await close_pool()
+
+
 class WorkerSettings:
     functions = [
         ingest_document,
@@ -189,6 +208,8 @@ class WorkerSettings:
         daily_submission_sla_check,
     ]
     redis_settings = _redis_settings_from_env()
+    on_startup = staticmethod(worker_startup)
+    on_shutdown = staticmethod(worker_shutdown)
     job_timeout = 600  # 10 minutes for big PPTX/PDF
     keep_result = 3600  # results live 1 hour for status polling
     max_jobs = 4

@@ -1,0 +1,96 @@
+# Regression after restoring cert lifecycle test coverage
+2026-09-11T22:29:32-04:00
+FFFFFFFFFF                                                               [100%]
+=================================== FAILURES ===================================
+______________ TestRevokeCert.test_happy_path_revokes_with_reason ______________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________ TestRevokeCert.test_rejects_empty_reason ___________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________ TestRevokeCert.test_unknown_cert_raises ____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________________ TestRevokeCert.test_already_revoked_raises __________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+____________________ TestRevokeCert.test_reason_is_trimmed _____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______ TestFindExpiringCerts.test_returns_certs_at_each_threshold_unsent _______
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_________ TestFindExpiringCerts.test_skips_already_alerted_thresholds __________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_________ TestFindExpiringCerts.test_expired_cert_uses_zero_threshold __________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+________ TestFindExpiringCerts.test_empty_when_no_certs_close_to_expiry ________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______________ TestMarkAlertSent.test_persists_threshold_to_jsonb ______________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+=========================== short test summary info ============================
+FAILED tests/test_cert_lifecycle_unit.py::TestRevokeCert::test_happy_path_revokes_with_reason
+FAILED tests/test_cert_lifecycle_unit.py::TestRevokeCert::test_rejects_empty_reason
+FAILED tests/test_cert_lifecycle_unit.py::TestRevokeCert::test_unknown_cert_raises
+FAILED tests/test_cert_lifecycle_unit.py::TestRevokeCert::test_already_revoked_raises
+FAILED tests/test_cert_lifecycle_unit.py::TestRevokeCert::test_reason_is_trimmed
+FAILED tests/test_cert_lifecycle_unit.py::TestFindExpiringCerts::test_returns_certs_at_each_threshold_unsent
+FAILED tests/test_cert_lifecycle_unit.py::TestFindExpiringCerts::test_skips_already_alerted_thresholds
+FAILED tests/test_cert_lifecycle_unit.py::TestFindExpiringCerts::test_expired_cert_uses_zero_threshold
+FAILED tests/test_cert_lifecycle_unit.py::TestFindExpiringCerts::test_empty_when_no_certs_close_to_expiry
+FAILED tests/test_cert_lifecycle_unit.py::TestMarkAlertSent::test_persists_threshold_to_jsonb
+10 failed in 0.99s

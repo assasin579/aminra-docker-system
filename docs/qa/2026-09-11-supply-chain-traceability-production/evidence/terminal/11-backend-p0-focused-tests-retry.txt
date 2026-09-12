@@ -1,0 +1,41 @@
+# Backend P0 focused tests retry with pytest.ini copied
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 164 items
+
+tests/test_supply_chain_sealing.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m            [ 15%][0m
+tests/test_supply_chain_batches.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 38%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                        [ 48%][0m
+tests/test_supply_chain_materials.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 70%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                    [ 82%][0m
+tests/test_supply_chain_supplier_eligibility_routes.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m       [ 89%][0m
+tests/test_supplier_eligibility_service.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[31m                 [ 97%][0m
+tests/test_migrations_supplier_eligibility.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                       [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_______________ test_list_eligible_suppliers_filters_fail_closed _______________[0m
+[1m[31mtests/test_supplier_eligibility_service.py[0m:162: in test_list_eligible_suppliers_filters_fail_closed
+    [0mrows = [94mawait[39;49;00m list_eligible_suppliers(db_tx, biz_a[[33m"[39;49;00m[33mtenant_id[39;49;00m[33m"[39;49;00m], [33m"[39;49;00m[33mmeat[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31msupply_chain/eligibility_service.py[0m:152: in list_eligible_suppliers
+    [0mrows = [94mawait[39;49;00m db.fetch([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:694: in fetch
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m [96mself[39;49;00m._execute([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:1873: in _execute
+    [0mresult, _ = [94mawait[39;49;00m [96mself[39;49;00m.__execute([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:1970: in __execute
+    [0mresult, stmt = [94mawait[39;49;00m [96mself[39;49;00m._do_execute([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2013: in _do_execute
+    [0mstmt = [94mawait[39;49;00m [96mself[39;49;00m._get_statement([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:443: in _get_statement
+    [0mstatement = [94mawait[39;49;00m [96mself[39;49;00m._protocol.prepare([90m[39;49;00m
+[1m[31masyncpg/protocol/protocol.pyx[0m:165: in prepare
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.UndefinedColumnError: column e.provider_id does not exist[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_supplier_eligibility_service.py::[1mtest_list_eligible_suppliers_filters_fail_closed[0m - asyncpg.exceptions.UndefinedColumnError: column e.provider_id does not exist
+[31m============= [31m[1m1 failed[0m, [32m162 passed[0m, [33m1 skipped[0m[31m in 80.96s (0:01:20)[0m[31m ==============[0m

@@ -1,0 +1,21 @@
+# Domain: 01-auth-session-rbac
+# Step: frontend-auth-focused-vitest
+# Started: 2026-09-12T06:25:59-04:00
+# Command: cd frontend/aminra-web && npm test -- --run __tests__/admin-auth-route-boundary.test.tsx __tests__/auth-cache-behavior.test.tsx __tests__/admin-password-self-reset.test.tsx
+
+
+> aminra-web@0.1.0 test
+> vitest run --run __tests__/admin-auth-route-boundary.test.tsx __tests__/auth-cache-behavior.test.tsx __tests__/admin-password-self-reset.test.tsx
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33m__tests__/admin-auth-route-boundary.test.tsx[2m, [22m__tests__/auth-cache-behavior.test.tsx[2m, [22m__tests__/admin-password-self-reset.test.tsx[39m
+[2minclude: [22m[33m__tests__/**/*.test.{ts,tsx}[2m, [22mcomponents/**/*.test.{ts,tsx}[2m, [22mlib/**/*.test.{ts,tsx}[39m
+[2mexclude:  [22m[33mnode_modules[2m, [22m.next[2m, [22me2e[39m
+
+
+# Finished: 2026-09-12T06:26:00-04:00
+# Exit code: 1

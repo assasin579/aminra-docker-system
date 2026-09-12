@@ -1,0 +1,1870 @@
+# Domain: 01-auth-session-rbac
+# Step: playwright-keycloak-token-login-multiuser
+# Started: 2026-09-12T06:26:00-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/keycloak/01-token-validation.spec.ts e2e/keycloak/02-login-ui-flow.spec.ts e2e/keycloak/03-attacker-scenarios.spec.ts e2e/keycloak/04-multi-user.spec.ts --project=desktop-chromium
+
+
+Running 100 tests using 1 worker
+
+  ✘    1 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:17:7 › Valid Keycloak token › business user token validates against BE /auth/me (163ms)
+  ✘    2 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:30:7 › Valid Keycloak token › auditor user token validates (130ms)
+  ✘    3 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:35:7 › Valid Keycloak token › cb_admin user token validates (133ms)
+  ✘    4 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:39:7 › Valid Keycloak token › platform_admin user token validates (155ms)
+  ✘    5 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:43:7 › Valid Keycloak token › token contains email claim (135ms)
+  ✘    6 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:50:7 › Valid Keycloak token › token contains tenant_id mapper claim (148ms)
+  ✘    7 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:57:7 › Valid Keycloak token › token contains is_owner mapper claim (142ms)
+  ✘    8 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:64:7 › Valid Keycloak token › token contains status mapper claim (136ms)
+  ✘    9 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:71:7 › Valid Keycloak token › token contains realm_access.roles claim (159ms)
+  ✘   10 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:78:7 › Valid Keycloak token › token contains aminra-backend in audience (128ms)
+  ✓   11 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:91:7 › Token rejection › BE rejects missing Authorization header (83ms)
+  ✓   12 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:97:7 › Token rejection › BE rejects empty Bearer token (32ms)
+  ✓   13 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:105:7 › Token rejection › BE rejects malformed Bearer token (22ms)
+  ✘   14 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:113:7 › Token rejection › BE rejects token with tampered signature (81ms)
+  ✘   15 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:123:7 › Token rejection › BE rejects token with tampered payload (125ms)
+  ✓   16 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:139:7 › Token rejection › BE rejects garbage token structure (88ms)
+  ✓   17 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:147:7 › Token rejection › BE rejects token issued by wrong realm (101ms)
+  ✓   18 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:168:7 › Token rejection › BE 401 response includes detail field (23ms)
+  ✘   19 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:182:7 › Token lifecycle › access token expires (refresh) after refresh grant produces new token (96ms)
+  ✘   20 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:202:7 › Token lifecycle › refresh token rotation produces new refresh token (170ms)
+  ✓   21 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:218:7 › Token lifecycle › refresh with invalid refresh_token rejected (66ms)
+  ✘   22 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:233:7 › Token lifecycle › token has expires_in within realm policy bounds (150ms)
+  ✘   23 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:242:7 › Token lifecycle › token has iat claim near current time (170ms)
+  ✘   24 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:255:7 › Account state › disabled user cannot direct-grant login (185ms)
+  ✘   25 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:272:7 › Account state › suspended user has accessToken empty in fixture (159ms)
+  ✘   26 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:281:7 › Authentication failures › wrong password rejected (136ms)
+  ✓   27 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:298:7 › Authentication failures › non-existent user rejected (170ms)
+  ✘   28 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:315:7 › Authentication failures › empty password rejected (103ms)
+  ✘   29 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:332:7 › Authentication failures › missing client_id rejected (140ms)
+  ✘   30 [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:348:7 › Authentication failures › wrong client_id rejected (149ms)
+  ✓   31 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:18:7 › Business login page UI › renders form fields when page loads (2.4s)
+  ✘   32 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:24:7 › Business login page UI › renders Keycloak SSO button when flag enabled (11.1s)
+  ✘   33 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:29:7 › Business login page UI › renders 'HOẶC' divider (11.3s)
+  ✘   34 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:34:7 › Business login page UI › renders TOTP hint under SSO button (11.2s)
+  ✓   35 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:39:7 › Business login page UI › legacy email+password form remains functional alongside SSO (2.2s)
+  ✓   36 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:44:7 › Business login page UI › forgot password link is present (2.0s)
+  ✘   37 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:54:7 › Provider login page UI › renders Keycloak SSO button (11.1s)
+  ✘   38 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:59:7 › Provider login page UI › renders auditor-specific TOTP hint (11.3s)
+  ✓   39 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:64:7 › Provider login page UI › renders trusted bodies badge (2.3s)
+  ✘   40 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:74:7 › Forgot password page › renders Keycloak SSO notice when flag on (12.6s)
+  ✘   41 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:79:7 › Forgot password page › CTA links to Keycloak account console (12.7s)
+  ✘   42 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:85:7 › Forgot password page › legacy form still rendered for unmigrated users (12.8s)
+  ✘   43 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:92:7 › Reset password page › renders SSO notice when accessed without token (13.0s)
+  ✘   44 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:97:7 › Reset password page › notice mentions migrated accounts (12.6s)
+  ✘   45 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:107:7 › SSO redirect flow › clicking SSO button redirects to Keycloak (11.3s)
+  ✘   46 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:116:7 › SSO redirect flow › redirect URL contains response_type=code (11.3s)
+  ✘   47 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:125:7 › SSO redirect flow › redirect URL contains client_id=aminra-frontend (11.3s)
+  ✘   48 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:134:7 › SSO redirect flow › redirect URL contains code_challenge (PKCE) (11.3s)
+  ✘   49 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:143:7 › SSO redirect flow › redirect URL has code_challenge_method=S256 (11.3s)
+  ✘   50 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:152:7 › SSO redirect flow › redirect URL has state parameter (11.4s)
+  ✘   51 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:161:7 › SSO redirect flow › redirect URL has redirect_uri pointing to /auth/callback (11.3s)
+  ✘   52 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:170:7 › SSO redirect flow › Keycloak login page renders username field (11.3s)
+  ✘   53 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:179:7 › SSO redirect flow › Keycloak login page renders password field (11.4s)
+  ✓   54 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:193:7 › OIDC callback page › direct visit without code shows error fallback (1.5s)
+  ✓   55 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:204:7 › OIDC callback page › callback with invalid code shows error (3.0s)
+  ✘   56 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:44:7 › Signature attacks › alg=none attack rejected (124ms)
+  ✘   57 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:51:7 › Signature attacks › HS256 with public-key-as-secret rejected (alg confusion) (136ms)
+  ✘   58 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:60:7 › Signature attacks › ES256 algorithm rejected (not in whitelist) (139ms)
+  ✘   59 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:69:7 › Signature attacks › signature byte-flipped rejected (134ms)
+  ✘   60 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:78:7 › Signature attacks › signature truncated rejected (130ms)
+  ✘   61 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:85:7 › Signature attacks › signature replaced with junk rejected (150ms)
+  ✘   62 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:99:7 › Claim tampering › modified email claim rejected (signature break) (137ms)
+  ✘   63 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:106:7 › Claim tampering › modified tenant_id rejected (142ms)
+  ✘   64 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:113:7 › Claim tampering › modified is_owner claim rejected (135ms)
+  ✘   65 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:122:7 › Claim tampering › escalated role claim rejected (159ms)
+  ✘   66 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:133:7 › Claim tampering › aud changed to attacker rejected (132ms)
+  ✘   67 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:140:7 › Claim tampering › iss changed rejected (131ms)
+  ✘   68 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:151:7 › Claim tampering › exp extended forever rejected (141ms)
+  ✘   69 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:162:7 › Claim tampering › status escalated to active when suspended rejected (152ms)
+  ✘   70 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:177:7 › Kid header attacks › missing kid rejected (134ms)
+  ✘   71 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:185:7 › Kid header attacks › empty kid rejected (138ms)
+  ✘   72 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:192:7 › Kid header attacks › kid SQL injection payload rejected (149ms)
+  ✘   73 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:203:7 › Kid header attacks › kid path traversal rejected (123ms)
+  ✘   74 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:214:7 › Kid header attacks › kid enormous string rejected (161ms)
+  ✘   75 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:232:7 › Token structure attacks › token with extra dots rejected (140ms)
+  ✓   76 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:238:7 › Token structure attacks › token with NULL byte rejected (50ms)
+  ✘   77 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:251:7 › Token structure attacks › token with whitespace rejected (141ms)
+  ✘   78 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:258:7 › Token structure attacks › missing one segment rejected (130ms)
+  ✘   79 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:265:7 › Token structure attacks › Bearer prefix in token value rejected (191ms)
+  ✘   80 [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:274:7 › Token structure attacks › non-Bearer scheme rejected (142ms)
+  ✘   81 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:19:7 › Cross-tenant isolation › two business users in different tenants have different tenant_id claim (121ms)
+  ✘   82 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:33:7 › Cross-tenant isolation › user A tenant_id matches their fixture spec (128ms)
+  ✘   83 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:40:7 › Cross-tenant isolation › user B tenant_id matches their fixture spec (125ms)
+  ✘   84 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:47:7 › Cross-tenant isolation › auditor has tenant_id null (no tenant binding) (127ms)
+  ✘   85 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:55:7 › Cross-tenant isolation › platform admin has tenant_id null (130ms)
+  ✘   86 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:67:7 › Role-based claims › business user has only business role (154ms)
+  ✘   87 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:77:7 › Role-based claims › auditor user has only auditor role (130ms)
+  ✘   88 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:87:7 › Role-based claims › cb_admin user has only cb_admin role (133ms)
+  ✘   89 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:97:7 › Role-based claims › platform_admin user has only platform_admin role (140ms)
+  ✘   90 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:114:7 › Token uniqueness › two different users have different access tokens (127ms)
+  ✘   91 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:120:7 › Token uniqueness › same user logged in twice has different access tokens (133ms)
+  ✘   92 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:144:7 › Admin actions on users › disabling user invalidates future logins (135ms)
+  ✘   93 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:162:7 › Admin actions on users › logout-all-sessions endpoint exists for admin (143ms)
+  ✘   94 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:173:7 › Concurrent token operations › two users refresh tokens simultaneously without crossover (128ms)
+  ✓   95 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:208:7 › Realm OIDC discovery › OIDC discovery endpoint reachable (85ms)
+  ✓   96 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:219:7 › Realm OIDC discovery › JWKs endpoint returns at least one key (32ms)
+  ✓   97 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:230:7 › Realm OIDC discovery › JWKs keys have RSA kty (16ms)
+  ✘   98 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:240:7 › Realm OIDC discovery › issuer in discovery doc matches token iss claim (127ms)
+  ✓   99 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:252:7 › Realm OIDC discovery › token endpoint URL in discovery doc is correct (126ms)
+  ✓  100 [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:261:7 › Realm OIDC discovery › authorization endpoint URL exists (29ms)
+
+
+  1) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:17:7 › Valid Keycloak token › business user token validates against BE /auth/me 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-7ad90-alidates-against-BE-auth-me-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:30:7 › Valid Keycloak token › auditor user token validates 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-0e976-uditor-user-token-validates-desktop-chromium/error-context.md
+
+  3) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:35:7 › Valid Keycloak token › cb_admin user token validates 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-f014d--admin-user-token-validates-desktop-chromium/error-context.md
+
+  4) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:39:7 › Valid Keycloak token › platform_admin user token validates 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-7493f--admin-user-token-validates-desktop-chromium/error-context.md
+
+  5) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:43:7 › Valid Keycloak token › token contains email claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-c857a--token-contains-email-claim-desktop-chromium/error-context.md
+
+  6) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:50:7 › Valid Keycloak token › token contains tenant_id mapper claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-8b658-ains-tenant-id-mapper-claim-desktop-chromium/error-context.md
+
+  7) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:57:7 › Valid Keycloak token › token contains is_owner mapper claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-cd895-tains-is-owner-mapper-claim-desktop-chromium/error-context.md
+
+  8) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:64:7 › Valid Keycloak token › token contains status mapper claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-bd865-ontains-status-mapper-claim-desktop-chromium/error-context.md
+
+  9) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:71:7 › Valid Keycloak token › token contains realm_access.roles claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-83d66-ns-realm-access-roles-claim-desktop-chromium/error-context.md
+
+  10) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:78:7 › Valid Keycloak token › token contains aminra-backend in audience 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-d9a66--aminra-backend-in-audience-desktop-chromium/error-context.md
+
+  11) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:113:7 › Token rejection › BE rejects token with tampered signature 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-00adc-ken-with-tampered-signature-desktop-chromium/error-context.md
+
+  12) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:123:7 › Token rejection › BE rejects token with tampered payload 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-32fb5-token-with-tampered-payload-desktop-chromium/error-context.md
+
+  13) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:182:7 › Token lifecycle › access token expires (refresh) after refresh grant produces new token 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-3b5c3-sh-grant-produces-new-token-desktop-chromium/error-context.md
+
+  14) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:202:7 › Token lifecycle › refresh token rotation produces new refresh token 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-9efd3--produces-new-refresh-token-desktop-chromium/error-context.md
+
+  15) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:233:7 › Token lifecycle › token has expires_in within realm policy bounds 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-13538--within-realm-policy-bounds-desktop-chromium/error-context.md
+
+  16) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:242:7 › Token lifecycle › token has iat claim near current time 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-ab3b2-iat-claim-near-current-time-desktop-chromium/error-context.md
+
+  17) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:255:7 › Account state › disabled user cannot direct-grant login 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-a62a2-r-cannot-direct-grant-login-desktop-chromium/error-context.md
+
+  18) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:272:7 › Account state › suspended user has accessToken empty in fixture 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-d9a5b-ccessToken-empty-in-fixture-desktop-chromium/error-context.md
+
+  19) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:281:7 › Authentication failures › wrong password rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-5753e-res-wrong-password-rejected-desktop-chromium/error-context.md
+
+  20) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:315:7 › Authentication failures › empty password rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-899ac-res-empty-password-rejected-desktop-chromium/error-context.md
+
+  21) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:332:7 › Authentication failures › missing client_id rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-45ecc--missing-client-id-rejected-desktop-chromium/error-context.md
+
+  22) [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:348:7 › Authentication failures › wrong client_id rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-01-token-validati-a7936-es-wrong-client-id-rejected-desktop-chromium/error-context.md
+
+  23) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:24:7 › Business login page UI › renders Keycloak SSO button when flag enabled 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByTestId('keycloak-sso-button')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      24 |   test("renders Keycloak SSO button when flag enabled", async ({ page }) => {
+      25 |     await page.goto(`${FE_URL}/business/login`);
+    > 26 |     await expect(page.getByTestId("keycloak-sso-button")).toBeVisible();
+         |                                                           ^
+      27 |   });
+      28 |
+      29 |   test("renders 'HOẶC' divider", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:26:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--9a5a2-SO-button-when-flag-enabled-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--9a5a2-SO-button-when-flag-enabled-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--9a5a2-SO-button-when-flag-enabled-desktop-chromium/error-context.md
+
+  24) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:29:7 › Business login page UI › renders 'HOẶC' divider 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('HOẶC')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText('HOẶC')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      29 |   test("renders 'HOẶC' divider", async ({ page }) => {
+      30 |     await page.goto(`${FE_URL}/business/login`);
+    > 31 |     await expect(page.getByText("HOẶC")).toBeVisible();
+         |                                          ^
+      32 |   });
+      33 |
+      34 |   test("renders TOTP hint under SSO button", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:31:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--8c113-age-UI-renders-HOẶC-divider-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--8c113-age-UI-renders-HOẶC-divider-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--8c113-age-UI-renders-HOẶC-divider-desktop-chromium/error-context.md
+
+  25) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:34:7 › Business login page UI › renders TOTP hint under SSO button 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText(/2 yếu tố/i)
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText(/2 yếu tố/i)[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      34 |   test("renders TOTP hint under SSO button", async ({ page }) => {
+      35 |     await page.goto(`${FE_URL}/business/login`);
+    > 36 |     await expect(page.getByText(/2 yếu tố/i)).toBeVisible();
+         |                                               ^
+      37 |   });
+      38 |
+      39 |   test("legacy email+password form remains functional alongside SSO", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:36:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--d8c85--TOTP-hint-under-SSO-button-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--d8c85--TOTP-hint-under-SSO-button-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--d8c85--TOTP-hint-under-SSO-button-desktop-chromium/error-context.md
+
+  26) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:54:7 › Provider login page UI › renders Keycloak SSO button 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByTestId('keycloak-sso-button')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+
+
+      54 |   test("renders Keycloak SSO button", async ({ page }) => {
+      55 |     await page.goto(`${FE_URL}/provider/login`);
+    > 56 |     await expect(page.getByTestId("keycloak-sso-button")).toBeVisible();
+         |                                                           ^
+      57 |   });
+      58 |
+      59 |   test("renders auditor-specific TOTP hint", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:56:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--6ebb7-renders-Keycloak-SSO-button-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--6ebb7-renders-Keycloak-SSO-button-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--6ebb7-renders-Keycloak-SSO-button-desktop-chromium/error-context.md
+
+  27) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:59:7 › Provider login page UI › renders auditor-specific TOTP hint 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText(/Auditor.*TOTP/i)
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText(/Auditor.*TOTP/i)[22m
+    [2m    - waiting for" http://localhost:3100/provider/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/provider/login"[22m
+
+
+      59 |   test("renders auditor-specific TOTP hint", async ({ page }) => {
+      60 |     await page.goto(`${FE_URL}/provider/login`);
+    > 61 |     await expect(page.getByText(/Auditor.*TOTP/i)).toBeVisible();
+         |                                                    ^
+      62 |   });
+      63 |
+      64 |   test("renders trusted bodies badge", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:61:52
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--72c8a--auditor-specific-TOTP-hint-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--72c8a--auditor-specific-TOTP-hint-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--72c8a--auditor-specific-TOTP-hint-desktop-chromium/error-context.md
+
+  28) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:74:7 › Forgot password page › renders Keycloak SSO notice when flag on 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByTestId('keycloak-account-cta')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByTestId('keycloak-account-cta')[22m
+
+
+      74 |   test("renders Keycloak SSO notice when flag on", async ({ page }) => {
+      75 |     await page.goto(`${FE_URL}/forgot-password`);
+    > 76 |     await expect(page.getByTestId("keycloak-account-cta")).toBeVisible();
+         |                                                            ^
+      77 |   });
+      78 |
+      79 |   test("CTA links to Keycloak account console", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:76:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--bfda0-oak-SSO-notice-when-flag-on-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--bfda0-oak-SSO-notice-when-flag-on-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--bfda0-oak-SSO-notice-when-flag-on-desktop-chromium/error-context.md
+
+  29) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:79:7 › Forgot password page › CTA links to Keycloak account console 
+
+    TimeoutError: locator.getAttribute: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-account-cta')[22m
+
+
+      79 |   test("CTA links to Keycloak account console", async ({ page }) => {
+      80 |     await page.goto(`${FE_URL}/forgot-password`);
+    > 81 |     const href = await page.getByTestId("keycloak-account-cta").getAttribute("href");
+         |                                                                 ^
+      82 |     expect(href).toContain("/realms/aminra/account");
+      83 |   });
+      84 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:81:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--b375c-to-Keycloak-account-console-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--b375c-to-Keycloak-account-console-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--b375c-to-Keycloak-account-console-desktop-chromium/error-context.md
+
+  30) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:85:7 › Forgot password page › legacy form still rendered for unmigrated users 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('input[type="email"]')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('input[type="email"]')[22m
+
+
+      85 |   test("legacy form still rendered for unmigrated users", async ({ page }) => {
+      86 |     await page.goto(`${FE_URL}/forgot-password`);
+    > 87 |     await expect(page.locator('input[type="email"]')).toBeVisible();
+         |                                                       ^
+      88 |   });
+      89 | });
+      90 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:87:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--d9d6e-ndered-for-unmigrated-users-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--d9d6e-ndered-for-unmigrated-users-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--d9d6e-ndered-for-unmigrated-users-desktop-chromium/error-context.md
+
+  31) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:92:7 › Reset password page › renders SSO notice when accessed without token 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByTestId('keycloak-account-cta')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByTestId('keycloak-account-cta')[22m
+
+
+      92 |   test("renders SSO notice when accessed without token", async ({ page }) => {
+      93 |     await page.goto(`${FE_URL}/reset-password`);
+    > 94 |     await expect(page.getByTestId("keycloak-account-cta")).toBeVisible();
+         |                                                            ^
+      95 |   });
+      96 |
+      97 |   test("notice mentions migrated accounts", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:94:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--521f1-when-accessed-without-token-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--521f1-when-accessed-without-token-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--521f1-when-accessed-without-token-desktop-chromium/error-context.md
+
+  32) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:97:7 › Reset password page › notice mentions migrated accounts 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText(/di trú/i)
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText(/di trú/i)[22m
+
+
+       97 |   test("notice mentions migrated accounts", async ({ page }) => {
+       98 |     await page.goto(`${FE_URL}/reset-password`);
+    >  99 |     await expect(page.getByText(/di trú/i)).toBeVisible();
+          |                                             ^
+      100 |   });
+      101 | });
+      102 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:99:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--bfb00--mentions-migrated-accounts-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--bfb00--mentions-migrated-accounts-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--bfb00--mentions-migrated-accounts-desktop-chromium/error-context.md
+
+  33) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:107:7 › SSO redirect flow › clicking SSO button redirects to Keycloak 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      109 |     await Promise.all([
+      110 |       page.waitForURL(/realms\/aminra\/protocol\/openid-connect\/auth/),
+    > 111 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      112 |     ]);
+      113 |     expect(page.url()).toContain("realms/aminra/protocol/openid-connect/auth");
+      114 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:111:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--ae9d0-utton-redirects-to-Keycloak-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--ae9d0-utton-redirects-to-Keycloak-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--ae9d0-utton-redirects-to-Keycloak-desktop-chromium/error-context.md
+
+  34) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:116:7 › SSO redirect flow › redirect URL contains response_type=code 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+
+
+      118 |     await Promise.all([
+      119 |       page.waitForURL(/realms\/aminra/),
+    > 120 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      121 |     ]);
+      122 |     expect(page.url()).toMatch(/response_type=code/);
+      123 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:120:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--e9538-contains-response-type-code-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--e9538-contains-response-type-code-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--e9538-contains-response-type-code-desktop-chromium/error-context.md
+
+  35) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:125:7 › SSO redirect flow › redirect URL contains client_id=aminra-frontend 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+
+
+      127 |     await Promise.all([
+      128 |       page.waitForURL(/realms\/aminra/),
+    > 129 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      130 |     ]);
+      131 |     expect(page.url()).toContain("client_id=aminra-frontend");
+      132 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:129:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--9b5ae-s-client-id-aminra-frontend-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--9b5ae-s-client-id-aminra-frontend-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--9b5ae-s-client-id-aminra-frontend-desktop-chromium/error-context.md
+
+  36) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:134:7 › SSO redirect flow › redirect URL contains code_challenge (PKCE) 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      136 |     await Promise.all([
+      137 |       page.waitForURL(/realms\/aminra/),
+    > 138 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      139 |     ]);
+      140 |     expect(page.url()).toMatch(/code_challenge=/);
+      141 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:138:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--14c1c-ntains-code-challenge-PKCE--desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--14c1c-ntains-code-challenge-PKCE--desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--14c1c-ntains-code-challenge-PKCE--desktop-chromium/error-context.md
+
+  37) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:143:7 › SSO redirect flow › redirect URL has code_challenge_method=S256 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      145 |     await Promise.all([
+      146 |       page.waitForURL(/realms\/aminra/),
+    > 147 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      148 |     ]);
+      149 |     expect(page.url()).toContain("code_challenge_method=S256");
+      150 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:147:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--f8ade--code-challenge-method-S256-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--f8ade--code-challenge-method-S256-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--f8ade--code-challenge-method-S256-desktop-chromium/error-context.md
+
+  38) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:152:7 › SSO redirect flow › redirect URL has state parameter 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      154 |     await Promise.all([
+      155 |       page.waitForURL(/realms\/aminra/),
+    > 156 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      157 |     ]);
+      158 |     expect(page.url()).toMatch(/state=/);
+      159 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:156:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--ca3b8-ect-URL-has-state-parameter-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--ca3b8-ect-URL-has-state-parameter-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--ca3b8-ect-URL-has-state-parameter-desktop-chromium/error-context.md
+
+  39) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:161:7 › SSO redirect flow › redirect URL has redirect_uri pointing to /auth/callback 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+
+
+      163 |     await Promise.all([
+      164 |       page.waitForURL(/realms\/aminra/),
+    > 165 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      166 |     ]);
+      167 |     expect(decodeURIComponent(page.url())).toContain("/auth/callback");
+      168 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:165:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--ba90a-i-pointing-to-auth-callback-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--ba90a-i-pointing-to-auth-callback-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--ba90a-i-pointing-to-auth-callback-desktop-chromium/error-context.md
+
+  40) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:170:7 › SSO redirect flow › Keycloak login page renders username field 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      172 |     await Promise.all([
+      173 |       page.waitForURL(/realms\/aminra/),
+    > 174 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      175 |     ]);
+      176 |     await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 10000 });
+      177 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:174:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--3850e-page-renders-username-field-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--3850e-page-renders-username-field-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--3850e-page-renders-username-field-desktop-chromium/error-context.md
+
+  41) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:179:7 › SSO redirect flow › Keycloak login page renders password field 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByTestId('keycloak-sso-button')[22m
+    [2m    - waiting for" http://localhost:3100/business/login" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3100/business/login"[22m
+
+
+      181 |     await Promise.all([
+      182 |       page.waitForURL(/realms\/aminra/),
+    > 183 |       page.getByTestId("keycloak-sso-button").click(),
+          |                                               ^
+      184 |     ]);
+      185 |     await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 10000 });
+      186 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:183:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--85c0f-page-renders-password-field-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--85c0f-page-renders-password-field-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--85c0f-page-renders-password-field-desktop-chromium/error-context.md
+
+  42) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:44:7 › Signature attacks › alg=none attack rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-a61ff-ks-alg-none-attack-rejected-desktop-chromium/error-context.md
+
+  43) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:51:7 › Signature attacks › HS256 with public-key-as-secret rejected (alg confusion) 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-77ae2-ret-rejected-alg-confusion--desktop-chromium/error-context.md
+
+  44) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:60:7 › Signature attacks › ES256 algorithm rejected (not in whitelist) 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-829b0--rejected-not-in-whitelist--desktop-chromium/error-context.md
+
+  45) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:69:7 › Signature attacks › signature byte-flipped rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-a6b2f-ature-byte-flipped-rejected-desktop-chromium/error-context.md
+
+  46) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:78:7 › Signature attacks › signature truncated rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-0c800-ignature-truncated-rejected-desktop-chromium/error-context.md
+
+  47) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:85:7 › Signature attacks › signature replaced with junk rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-0c05f-replaced-with-junk-rejected-desktop-chromium/error-context.md
+
+  48) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:99:7 › Claim tampering › modified email claim rejected (signature break) 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-b0751-m-rejected-signature-break--desktop-chromium/error-context.md
+
+  49) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:106:7 › Claim tampering › modified tenant_id rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-2e284-modified-tenant-id-rejected-desktop-chromium/error-context.md
+
+  50) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:113:7 › Claim tampering › modified is_owner claim rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-61a36-ied-is-owner-claim-rejected-desktop-chromium/error-context.md
+
+  51) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:122:7 › Claim tampering › escalated role claim rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-462b7-calated-role-claim-rejected-desktop-chromium/error-context.md
+
+  52) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:133:7 › Claim tampering › aud changed to attacker rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-0eb71-hanged-to-attacker-rejected-desktop-chromium/error-context.md
+
+  53) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:140:7 › Claim tampering › iss changed rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-1f83e-pering-iss-changed-rejected-desktop-chromium/error-context.md
+
+  54) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:151:7 › Claim tampering › exp extended forever rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-97692-p-extended-forever-rejected-desktop-chromium/error-context.md
+
+  55) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:162:7 › Claim tampering › status escalated to active when suspended rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-e832a-ive-when-suspended-rejected-desktop-chromium/error-context.md
+
+  56) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:177:7 › Kid header attacks › missing kid rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-6064a-ttacks-missing-kid-rejected-desktop-chromium/error-context.md
+
+  57) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:185:7 › Kid header attacks › empty kid rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-ce95a--attacks-empty-kid-rejected-desktop-chromium/error-context.md
+
+  58) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:192:7 › Kid header attacks › kid SQL injection payload rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-98326--injection-payload-rejected-desktop-chromium/error-context.md
+
+  59) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:203:7 › Kid header attacks › kid path traversal rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-1b7e8-kid-path-traversal-rejected-desktop-chromium/error-context.md
+
+  60) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:214:7 › Kid header attacks › kid enormous string rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-4cb48-id-enormous-string-rejected-desktop-chromium/error-context.md
+
+  61) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:232:7 › Token structure attacks › token with extra dots rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-2963a-en-with-extra-dots-rejected-desktop-chromium/error-context.md
+
+  62) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:251:7 › Token structure attacks › token with whitespace rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-ca459-en-with-whitespace-rejected-desktop-chromium/error-context.md
+
+  63) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:258:7 › Token structure attacks › missing one segment rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-d04b1-issing-one-segment-rejected-desktop-chromium/error-context.md
+
+  64) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:265:7 › Token structure attacks › Bearer prefix in token value rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-ac30d-fix-in-token-value-rejected-desktop-chromium/error-context.md
+
+  65) [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:274:7 › Token structure attacks › non-Bearer scheme rejected 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-03-attacker-scena-abcec--non-Bearer-scheme-rejected-desktop-chromium/error-context.md
+
+  66) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:19:7 › Cross-tenant isolation › two business users in different tenants have different tenant_id claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Cro-d4282-e-different-tenant-id-claim-desktop-chromium/error-context.md
+
+  67) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:33:7 › Cross-tenant isolation › user A tenant_id matches their fixture spec 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Cro-76ce8--matches-their-fixture-spec-desktop-chromium/error-context.md
+
+  68) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:40:7 › Cross-tenant isolation › user B tenant_id matches their fixture spec 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Cro-34085--matches-their-fixture-spec-desktop-chromium/error-context.md
+
+  69) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:47:7 › Cross-tenant isolation › auditor has tenant_id null (no tenant binding) 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Cro-dccdb--id-null-no-tenant-binding--desktop-chromium/error-context.md
+
+  70) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:55:7 › Cross-tenant isolation › platform admin has tenant_id null 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Cro-63a56-rm-admin-has-tenant-id-null-desktop-chromium/error-context.md
+
+  71) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:67:7 › Role-based claims › business user has only business role 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Rol-bf153-user-has-only-business-role-desktop-chromium/error-context.md
+
+  72) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:77:7 › Role-based claims › auditor user has only auditor role 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Rol-dfaa5--user-has-only-auditor-role-desktop-chromium/error-context.md
+
+  73) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:87:7 › Role-based claims › cb_admin user has only cb_admin role 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Rol-389b8-user-has-only-cb-admin-role-desktop-chromium/error-context.md
+
+  74) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:97:7 › Role-based claims › platform_admin user has only platform_admin role 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Rol-e512a-as-only-platform-admin-role-desktop-chromium/error-context.md
+
+  75) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:114:7 › Token uniqueness › two different users have different access tokens 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Tok-eb8bb-ave-different-access-tokens-desktop-chromium/error-context.md
+
+  76) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:120:7 › Token uniqueness › same user logged in twice has different access tokens 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Tok-3e0a0-has-different-access-tokens-desktop-chromium/error-context.md
+
+  77) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:144:7 › Admin actions on users › disabling user invalidates future logins 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Adm-b64fc-r-invalidates-future-logins-desktop-chromium/error-context.md
+
+  78) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:162:7 › Admin actions on users › logout-all-sessions endpoint exists for admin 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Adm-e5ef4-s-endpoint-exists-for-admin-desktop-chromium/error-context.md
+
+  79) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:173:7 › Concurrent token operations › two users refresh tokens simultaneously without crossover 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Con-ba5ee-taneously-without-crossover-desktop-chromium/error-context.md
+
+  80) [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:240:7 › Realm OIDC discovery › issuer in discovery doc matches token iss claim 
+
+    Error: Admin token fetch failed: 401 {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+       at keycloak/helpers/admin-api.ts:42
+
+      40 |   });
+      41 |   if (!res.ok()) {
+    > 42 |     throw new Error(`Admin token fetch failed: ${res.status()} ${await res.text()}`);
+         |           ^
+      43 |   }
+      44 |   const body = await res.json();
+      45 |   return body.access_token;
+        at getAdminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts:42:11)
+        at Object.adminToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/helpers/fixtures.ts:111:17)
+
+    Error Context: test-results/keycloak-04-multi-user-Rea-86692-doc-matches-token-iss-claim-desktop-chromium/error-context.md
+
+  80 failed
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:17:7 › Valid Keycloak token › business user token validates against BE /auth/me 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:30:7 › Valid Keycloak token › auditor user token validates 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:35:7 › Valid Keycloak token › cb_admin user token validates 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:39:7 › Valid Keycloak token › platform_admin user token validates 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:43:7 › Valid Keycloak token › token contains email claim 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:50:7 › Valid Keycloak token › token contains tenant_id mapper claim 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:57:7 › Valid Keycloak token › token contains is_owner mapper claim 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:64:7 › Valid Keycloak token › token contains status mapper claim 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:71:7 › Valid Keycloak token › token contains realm_access.roles claim 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:78:7 › Valid Keycloak token › token contains aminra-backend in audience 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:113:7 › Token rejection › BE rejects token with tampered signature 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:123:7 › Token rejection › BE rejects token with tampered payload 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:182:7 › Token lifecycle › access token expires (refresh) after refresh grant produces new token 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:202:7 › Token lifecycle › refresh token rotation produces new refresh token 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:233:7 › Token lifecycle › token has expires_in within realm policy bounds 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:242:7 › Token lifecycle › token has iat claim near current time 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:255:7 › Account state › disabled user cannot direct-grant login 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:272:7 › Account state › suspended user has accessToken empty in fixture 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:281:7 › Authentication failures › wrong password rejected 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:315:7 › Authentication failures › empty password rejected 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:332:7 › Authentication failures › missing client_id rejected 
+    [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:348:7 › Authentication failures › wrong client_id rejected 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:24:7 › Business login page UI › renders Keycloak SSO button when flag enabled 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:29:7 › Business login page UI › renders 'HOẶC' divider 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:34:7 › Business login page UI › renders TOTP hint under SSO button 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:54:7 › Provider login page UI › renders Keycloak SSO button 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:59:7 › Provider login page UI › renders auditor-specific TOTP hint 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:74:7 › Forgot password page › renders Keycloak SSO notice when flag on 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:79:7 › Forgot password page › CTA links to Keycloak account console 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:85:7 › Forgot password page › legacy form still rendered for unmigrated users 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:92:7 › Reset password page › renders SSO notice when accessed without token 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:97:7 › Reset password page › notice mentions migrated accounts 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:107:7 › SSO redirect flow › clicking SSO button redirects to Keycloak 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:116:7 › SSO redirect flow › redirect URL contains response_type=code 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:125:7 › SSO redirect flow › redirect URL contains client_id=aminra-frontend 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:134:7 › SSO redirect flow › redirect URL contains code_challenge (PKCE) 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:143:7 › SSO redirect flow › redirect URL has code_challenge_method=S256 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:152:7 › SSO redirect flow › redirect URL has state parameter 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:161:7 › SSO redirect flow › redirect URL has redirect_uri pointing to /auth/callback 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:170:7 › SSO redirect flow › Keycloak login page renders username field 
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:179:7 › SSO redirect flow › Keycloak login page renders password field 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:44:7 › Signature attacks › alg=none attack rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:51:7 › Signature attacks › HS256 with public-key-as-secret rejected (alg confusion) 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:60:7 › Signature attacks › ES256 algorithm rejected (not in whitelist) 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:69:7 › Signature attacks › signature byte-flipped rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:78:7 › Signature attacks › signature truncated rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:85:7 › Signature attacks › signature replaced with junk rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:99:7 › Claim tampering › modified email claim rejected (signature break) 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:106:7 › Claim tampering › modified tenant_id rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:113:7 › Claim tampering › modified is_owner claim rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:122:7 › Claim tampering › escalated role claim rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:133:7 › Claim tampering › aud changed to attacker rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:140:7 › Claim tampering › iss changed rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:151:7 › Claim tampering › exp extended forever rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:162:7 › Claim tampering › status escalated to active when suspended rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:177:7 › Kid header attacks › missing kid rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:185:7 › Kid header attacks › empty kid rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:192:7 › Kid header attacks › kid SQL injection payload rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:203:7 › Kid header attacks › kid path traversal rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:214:7 › Kid header attacks › kid enormous string rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:232:7 › Token structure attacks › token with extra dots rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:251:7 › Token structure attacks › token with whitespace rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:258:7 › Token structure attacks › missing one segment rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:265:7 › Token structure attacks › Bearer prefix in token value rejected 
+    [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:274:7 › Token structure attacks › non-Bearer scheme rejected 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:19:7 › Cross-tenant isolation › two business users in different tenants have different tenant_id claim 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:33:7 › Cross-tenant isolation › user A tenant_id matches their fixture spec 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:40:7 › Cross-tenant isolation › user B tenant_id matches their fixture spec 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:47:7 › Cross-tenant isolation › auditor has tenant_id null (no tenant binding) 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:55:7 › Cross-tenant isolation › platform admin has tenant_id null 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:67:7 › Role-based claims › business user has only business role 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:77:7 › Role-based claims › auditor user has only auditor role 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:87:7 › Role-based claims › cb_admin user has only cb_admin role 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:97:7 › Role-based claims › platform_admin user has only platform_admin role 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:114:7 › Token uniqueness › two different users have different access tokens 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:120:7 › Token uniqueness › same user logged in twice has different access tokens 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:144:7 › Admin actions on users › disabling user invalidates future logins 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:162:7 › Admin actions on users › logout-all-sessions endpoint exists for admin 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:173:7 › Concurrent token operations › two users refresh tokens simultaneously without crossover 
+    [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:240:7 › Realm OIDC discovery › issuer in discovery doc matches token iss claim 
+  20 passed (6.2m)
+
+# Finished: 2026-09-12T06:32:13-04:00
+# Exit code: 1

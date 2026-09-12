@@ -34,3 +34,6 @@ frontend/aminra-web/playwright-report/
 docs/qa/**/raw/
 **/tsconfig.tsbuildinfo
 *.tmp
+
+# Local QA credentials — never commit demo/admin secrets
+.qa/

@@ -1,0 +1,10 @@
+# Re-run seed after redacting internal IDs from script output
+2026-09-11T22:33:16-04:00
+          batch_code           |           public_trace_id            | public_trace_enabled |                          integrity_hash                          
+-------------------------------+--------------------------------------+----------------------+------------------------------------------------------------------
+ QA-TRACE-PUBLISHED-SEALED-001 | 73695b8a-3c10-570b-8bba-92c12da9b56e | t                    | 6a1336bb97323e713ff19e00519370969b86d17d3343cf1621221f1452327ac2
+(1 row)
+
+TRACE_ID=73695b8a-3c10-570b-8bba-92c12da9b56e
+BATCH_CODE=QA-TRACE-PUBLISHED-SEALED-001
+INTEGRITY_HASH=6a1336bb97323e713ff19e00519370969b86d17d3343cf1621221f1452327ac2

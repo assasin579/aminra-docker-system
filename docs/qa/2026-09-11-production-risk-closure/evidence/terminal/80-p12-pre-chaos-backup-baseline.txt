@@ -1,0 +1,41 @@
+# P1.2 pre-chaos backup and baseline
+2026-09-11T23:58:40-04:00
+
+## docker compose ps baseline
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    11 minutes ago   Up 11 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   3 minutes ago    Up 3 minutes (healthy)    0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-arq-worker-1        aminra-docker-system-arq-worker        "/app/entrypoint.sh …"   arq-worker        58 minutes ago   Up 58 minutes             8000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago       Up 25 hours (healthy)     8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       aminra-docker-system-postgres-db       "docker-entrypoint.s…"   postgres-db       4 hours ago      Up 4 hours (healthy)      5432/tcp
+aminra-docker-system-qdrant-db-1         aminra-docker-system-qdrant-db         "./entrypoint.sh"        qdrant-db         4 hours ago      Up 4 hours (healthy)      6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                       "docker-entrypoint.s…"   redis             4 days ago       Up 25 hours (healthy)     6379/tcp
+
+## postgres logical backup
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  docs/qa/2026-09-11-production-risk-closure/evidence/backups/p12-pre-chaos-postgres.sql
+
+## health baseline
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+
+## public trace baseline
+HTTP/2 200 
+date: Sat, 12 Sep 2026 03:58:41 GMT
+content-type: application/json
+content-length: 1467
+cache-control: public, max-age=5, stale-while-revalidate=30
+server: cloudflare
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-aminra-proxy-cache: hit
+x-request-id: d33731ca55074348812445572a08df62
+cf-cache-status: DYNAMIC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=O45eAV%2BMQexR1FYjXWt%2Bvr77UELSWOoku9LX8gm3rahtfC7n%2BE9e37sRfqZo4LH4sFUajWHKBISjz79W0uH1uNvsN8q0ia9UYCwSmz5dYyX8O3EAl6nVQRCzRMzjkb9tgEQ%2BL22bbKg%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-ray: a39bfec53ff0f8d2-SIN
+alt-svc: h3=":443"; ma=86400
+
+{'batch_code': 'QA-TRACE-PUBLISHED-SEALED-001', 'verified': True}

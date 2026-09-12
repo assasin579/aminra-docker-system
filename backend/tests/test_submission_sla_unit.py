@@ -139,8 +139,10 @@ class TestMarkAlertSent:
             if kind == "execute" and "sla_alerts_sent" in sql
         ]
         assert len(executes) == 1
-        assert executes[0][1][0] == 80
-        assert executes[0][1][1] == sub_id
+        sql, args = executes[0]
+        assert "? $1::text" in sql
+        assert "to_jsonb($2::int)" in sql
+        assert args == ("80", 80, sub_id)
 
 
 # ── list_overdue_submissions ──────────────────────────────────────────────

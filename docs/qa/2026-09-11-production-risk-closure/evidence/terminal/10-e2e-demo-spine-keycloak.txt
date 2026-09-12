@@ -1,0 +1,32 @@
+# Phase 1 multi-role API/browser E2E: demo spine Keycloak
+2026-09-11T22:34:34-04:00
+
+> aminra-web@0.1.0 test:e2e
+> playwright test --project=desktop-chromium e2e/38-demo-spine-keycloak.spec.ts
+
+
+Running 3 tests using 1 worker
+
+  ✘  1 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:27:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data (4ms)
+  ✓  2 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:41:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints (1.2s)
+  -  3 [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:61:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+
+
+  1) [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:27:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/38-demo-spine-keycloak-P0--8691c--APIs-render-safe-demo-data-desktop-chromium/error-context.md
+
+  1 failed
+    [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:27:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data 
+  1 skipped
+  1 passed (4.6s)

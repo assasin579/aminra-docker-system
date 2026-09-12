@@ -1,0 +1,41 @@
+# P0 public trace re-smoke after backend recreate + reseed
+2026-09-11T21:54:32-04:00
+TRACE_ID=73695b8a-3c10-570b-8bba-92c12da9b56e
+
+## backend health
+{"status":"ok","service":"Aminra Halal Certification AI","database":"connected","qdrant":"connected"}
+## valid local backend API
+HTTP 404
+bytes= 22
+batch_code= None
+product= None
+integrity_verified= None
+snapshot_version= None
+contains_tenant_id= False
+contains_provider_id= False
+contains_source_certificate_id= False
+contains_changed_by= False
+contains_created_by= False
+contains_approved_by= False
+
+## invalid local backend API
+HTTP 404
+
+## injection-shaped local backend API
+HTTP 404
+
+## public frontend HEAD
+HTTP/2 200 
+content-type: text/html; charset=utf-8
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+
+## public Next proxy API
+HTTP 404
+bytes= 22
+batch_code= None
+integrity_verified= None
+snapshot_version= None
+contains_tenant_id= False
+contains_provider_id= False
+contains_source_certificate_id= False
+contains_changed_by= False

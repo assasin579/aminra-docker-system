@@ -1,0 +1,71 @@
+# Domain: 04-submission-cert-lifecycle
+# Step: playwright-cert-and-state-scoring
+# Started: 2026-09-12T05:37:44-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/14-cuj-cert-lifecycle.spec.ts e2e/35-batch5-state-scoring.spec.ts --project=desktop-chromium
+
+
+Running 7 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert (76ms)
+  ✘  2 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert (2ms)
+  ✘  3 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) (1.9s)
+  ✓  4 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:46:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible (1.2s)
+  ✘  5 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider (1ms)
+  ✓  6 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:20:7 › Phase 1 Batch 5 — state + scoring › static guards — code reflects all batch 5 fixes (53ms)
+  ✓  7 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:68:7 › Phase 1 Batch 5 — state + scoring › transition matrix is sane: terminal states cannot transition out (8ms)
+
+
+  1) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--e6da9-g-tìm-thấy-for-unknown-cert-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected value: [32m401[39m
+    Received array: [31m[400, 403, 404][39m
+
+      41 |       },
+      42 |     );
+    > 43 |     expect([400, 403, 404]).toContain(res.status());
+         |                             ^
+      44 |   });
+      45 |
+      46 |   test("Cert lifecycle stats endpoint accessible", async ({ api, prov }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/14-cuj-cert-lifecycle.spec.ts:43:29
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--750eb-reason-validation-enforced--desktop-chromium/error-context.md
+
+  3) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider 
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/error-context.md
+
+  3 failed
+    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert 
+    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) 
+    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider 
+  4 passed (8.8s)
+
+# Finished: 2026-09-12T05:37:55-04:00
+# Exit code: 1

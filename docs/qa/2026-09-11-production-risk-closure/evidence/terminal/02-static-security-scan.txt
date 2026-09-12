@@ -1,0 +1,12 @@
+# Phase 0 static/security scan
+2026-09-11T22:28:27-04:00
+
+## Added-line secret-like patterns
+
+## Added-line shell injection candidates
+
+## Added-line dangerous eval/exec/pickle candidates
+
+## Added-line SQL string formatting candidates
+
+## diff whitespace

@@ -1,0 +1,4 @@
+# P1.2 cleanup QA cold-cache trace fixtures
+2026-09-12T00:20:02-04:00
+deleted_qa_cold_fixtures=121
+remaining_qa_cold=0

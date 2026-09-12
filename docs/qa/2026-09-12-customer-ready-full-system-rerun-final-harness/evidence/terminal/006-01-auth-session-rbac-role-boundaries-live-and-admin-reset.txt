@@ -1,0 +1,199 @@
+# Domain: 01-auth-session-rbac
+# Step: role-boundaries-live-and-admin-reset
+# Started: 2026-09-12T07:32:58-04:00
+# Command: sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_role_boundaries_live_smoke.py tests/test_admin_user_password_reset.py tests/test_demo_account_login_smoke_script.py'
+
+....EEEE.sss.....F...                                                    [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/analytics] _
+
+    @pytest.fixture(scope="module")
+    def provider_token() -> str:
+>       return _token("cb-demo@demo.aminra.vn", PROVIDER_DEMO_PW)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_role_boundaries_live_smoke.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_role_boundaries_live_smoke.py:56: in _token
+    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 - controlled test URL
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:216: in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:525: in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:634: in http_response
+    response = self.parent.error(
+/usr/local/lib/python3.11/urllib/request.py:563: in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <urllib.request.HTTPDefaultErrorHandler object at 0x7b1a342b42d0>
+req = <urllib.request.Request object at 0x7b1a342bd150>
+fp = <http.client.HTTPResponse object at 0x7b1a341e5540>, code = 401
+msg = 'Unauthorized', hdrs = <http.client.HTTPMessage object at 0x7b1a342bdd50>
+
+    def http_error_default(self, req, fp, code, msg, hdrs):
+>       raise HTTPError(req.full_url, code, msg, hdrs, fp)
+E       urllib.error.HTTPError: HTTP Error 401: Unauthorized
+
+/usr/local/lib/python3.11/urllib/request.py:643: HTTPError
+_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/overdue-submissions] _
+
+    @pytest.fixture(scope="module")
+    def provider_token() -> str:
+>       return _token("cb-demo@demo.aminra.vn", PROVIDER_DEMO_PW)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_role_boundaries_live_smoke.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_role_boundaries_live_smoke.py:56: in _token
+    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 - controlled test URL
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:216: in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:525: in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:634: in http_response
+    response = self.parent.error(
+/usr/local/lib/python3.11/urllib/request.py:563: in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <urllib.request.HTTPDefaultErrorHandler object at 0x7b1a342b42d0>
+req = <urllib.request.Request object at 0x7b1a342bd150>
+fp = <http.client.HTTPResponse object at 0x7b1a341e5540>, code = 401
+msg = 'Unauthorized', hdrs = <http.client.HTTPMessage object at 0x7b1a342bdd50>
+
+    def http_error_default(self, req, fp, code, msg, hdrs):
+>       raise HTTPError(req.full_url, code, msg, hdrs, fp)
+E       urllib.error.HTTPError: HTTP Error 401: Unauthorized
+
+/usr/local/lib/python3.11/urllib/request.py:643: HTTPError
+_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/audit-logs] _
+
+    @pytest.fixture(scope="module")
+    def provider_token() -> str:
+>       return _token("cb-demo@demo.aminra.vn", PROVIDER_DEMO_PW)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_role_boundaries_live_smoke.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_role_boundaries_live_smoke.py:56: in _token
+    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 - controlled test URL
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:216: in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:525: in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:634: in http_response
+    response = self.parent.error(
+/usr/local/lib/python3.11/urllib/request.py:563: in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <urllib.request.HTTPDefaultErrorHandler object at 0x7b1a342b42d0>
+req = <urllib.request.Request object at 0x7b1a342bd150>
+fp = <http.client.HTTPResponse object at 0x7b1a341e5540>, code = 401
+msg = 'Unauthorized', hdrs = <http.client.HTTPMessage object at 0x7b1a342bdd50>
+
+    def http_error_default(self, req, fp, code, msg, hdrs):
+>       raise HTTPError(req.full_url, code, msg, hdrs, fp)
+E       urllib.error.HTTPError: HTTP Error 401: Unauthorized
+
+/usr/local/lib/python3.11/urllib/request.py:643: HTTPError
+_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/pending-providers] _
+
+    @pytest.fixture(scope="module")
+    def provider_token() -> str:
+>       return _token("cb-demo@demo.aminra.vn", PROVIDER_DEMO_PW)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_role_boundaries_live_smoke.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_role_boundaries_live_smoke.py:56: in _token
+    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 - controlled test URL
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:216: in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:525: in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:634: in http_response
+    response = self.parent.error(
+/usr/local/lib/python3.11/urllib/request.py:563: in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/urllib/request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <urllib.request.HTTPDefaultErrorHandler object at 0x7b1a342b42d0>
+req = <urllib.request.Request object at 0x7b1a342bd150>
+fp = <http.client.HTTPResponse object at 0x7b1a341e5540>, code = 401
+msg = 'Unauthorized', hdrs = <http.client.HTTPMessage object at 0x7b1a342bdd50>
+
+    def http_error_default(self, req, fp, code, msg, hdrs):
+>       raise HTTPError(req.full_url, code, msg, hdrs, fp)
+E       urllib.error.HTTPError: HTTP Error 401: Unauthorized
+
+/usr/local/lib/python3.11/urllib/request.py:643: HTTPError
+=================================== FAILURES ===================================
+__ test_admin_user_editor_uses_reset_password_route_not_profile_put_password ___
+
+    def test_admin_user_editor_uses_reset_password_route_not_profile_put_password():
+>       text = ADMIN_USER_MANAGER.read_text(encoding="utf-8")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_admin_user_password_reset.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/pathlib.py:1058: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/app/frontend/aminra-web/components/AdminUserManager.tsx')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/app/frontend/aminra-web/components/AdminUserManager.tsx'
+
+/usr/local/lib/python3.11/pathlib.py:1044: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_admin_user_password_reset.py::test_admin_user_editor_uses_reset_password_route_not_profile_put_password
+ERROR tests/test_role_boundaries_live_smoke.py::test_provider_cannot_access_platform_admin_surfaces[/auth/admin/analytics]
+ERROR tests/test_role_boundaries_live_smoke.py::test_provider_cannot_access_platform_admin_surfaces[/auth/admin/overdue-submissions]
+ERROR tests/test_role_boundaries_live_smoke.py::test_provider_cannot_access_platform_admin_surfaces[/auth/admin/audit-logs]
+ERROR tests/test_role_boundaries_live_smoke.py::test_provider_cannot_access_platform_admin_surfaces[/auth/admin/pending-providers]
+1 failed, 13 passed, 3 skipped, 4 errors in 2.53s
+
+# Finished: 2026-09-12T07:33:03-04:00
+# Exit code: 1

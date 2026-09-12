@@ -1,0 +1,4 @@
+# P1.2 create QA-only distinct public trace fixtures
+2026-09-12T00:19:25-04:00
+inserted=120
+qa_cold_total=120

@@ -5,8 +5,10 @@ const KC_URL = process.env.KEYCLOAK_URL ?? "https://auth.silvergem.org";
 const KC_REALM = process.env.KEYCLOAK_REALM ?? "aminra";
 const KC_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID ?? "aminra-frontend";
 const DEMO_PW = process.env.DEMO_PW ?? "DemoP@ss2026";
+const PROVIDER_DEMO_PW = process.env.PROVIDER_DEMO_PW ?? DEMO_PW;
 const DEMO_CERT = "HALAL-2026-DEMO";
-const DEMO_TRACE_BATCH = "LOT-2026-DEMO-TRACE";
+const DEMO_TRACE_PUBLIC_ID = "73695b8a-3c10-570b-8bba-92c12da9b56e";
+const DEMO_TRACE_BATCH = "QA-TRACE-PUBLISHED-SEALED-001";
 
 async function keycloakToken(email: string, password = DEMO_PW): Promise<string | null> {
   const ctx = await request.newContext();
@@ -30,7 +32,7 @@ test.describe("P0 browser/API demo spine with Keycloak", () => {
     await expect(page.getByText(DEMO_CERT).first()).toBeVisible();
     await expect(page.getByText(/Chứng nhận hợp lệ|Certificate valid/i).first()).toBeVisible();
 
-    await page.goto(`/trace/${DEMO_TRACE_BATCH}`);
+    await page.goto(`/trace/${DEMO_TRACE_PUBLIC_ID}`);
     await page.waitForLoadState("networkidle");
     await expect(page.getByText(DEMO_TRACE_BATCH).first()).toBeVisible();
 
@@ -59,7 +61,7 @@ test.describe("P0 browser/API demo spine with Keycloak", () => {
   });
 
   test("provider token can reach provider demo spine endpoints and business is denied provider-only action", async () => {
-    const providerToken = await keycloakToken("cb-demo@demo.aminra.vn");
+    const providerToken = await keycloakToken("cb-demo@demo.aminra.vn", PROVIDER_DEMO_PW);
     const businessToken = await keycloakToken("biz-demo-1@demo.aminra.vn");
     test.skip(!providerToken || !businessToken, "seeded Keycloak users missing");
 

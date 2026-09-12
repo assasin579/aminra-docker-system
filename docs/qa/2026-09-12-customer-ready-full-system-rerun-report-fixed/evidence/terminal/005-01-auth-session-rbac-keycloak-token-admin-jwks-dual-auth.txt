@@ -1,0 +1,12 @@
+# Domain: 01-auth-session-rbac
+# Step: keycloak-token-admin-jwks-dual-auth
+# Started: 2026-09-12T07:33:48-04:00
+# Command: sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_keycloak_token_security.py tests/test_keycloak_admin_edge.py tests/test_keycloak_jwks_edge.py tests/test_dual_auth_unit.py tests/test_dual_auth_fast_path.py tests/test_dual_auth_cross_tenant_unit.py'
+
+........................................................................ [ 34%]
+........................................................................ [ 69%]
+................................................................         [100%]
+208 passed in 15.53s
+
+# Finished: 2026-09-12T07:34:06-04:00
+# Exit code: 0

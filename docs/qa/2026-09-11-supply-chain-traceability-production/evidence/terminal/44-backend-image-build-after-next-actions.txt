@@ -1,0 +1,60 @@
+#15 [stage-0 19/22] COPY app.py .
+#15 CACHED
+
+#16 [stage-0 14/22] COPY templates_docx/ ./templates_docx/
+#16 CACHED
+
+#17 [stage-0  4/22] RUN --mount=type=cache,target=/root/.cache/pip     pip install torch --index-url https://download.pytorch.org/whl/cpu
+#17 CACHED
+
+#18 [stage-0  7/22] RUN python -c "from sentence_transformers import SentenceTransformer;     SentenceTransformer('intfloat/multilingual-e5-base')"
+#18 CACHED
+
+#19 [stage-0 18/22] COPY alembic/ ./alembic/
+#19 CACHED
+
+#20 [stage-0 20/22] COPY entrypoint.sh .
+#20 CACHED
+
+#21 [stage-0 21/22] RUN chmod +x entrypoint.sh
+#21 CACHED
+
+#22 [stage-0 12/22] COPY contracts/ ./contracts/
+#22 CACHED
+
+#23 [stage-0 13/22] COPY templates/ ./templates/
+#23 CACHED
+
+#24 [stage-0 15/22] COPY templates_html/ ./templates_html/
+#24 CACHED
+
+#25 [stage-0 16/22] COPY supply_chain/ ./supply_chain/
+#25 CACHED
+
+#26 [stage-0  8/22] RUN playwright install --with-deps chromium
+#26 CACHED
+
+#27 [stage-0  5/22] COPY requirements.txt .
+#27 CACHED
+
+#28 [stage-0 17/22] COPY alembic.ini .
+#28 CACHED
+
+#29 [stage-0 22/22] RUN mkdir -p /app/docs /app/data /app/doc_text_cache
+#29 CACHED
+
+#30 exporting to image
+#30 exporting layers 0.0s done
+#30 exporting manifest sha256:02a61405d98dc08965dc008535baa8b4fe54e867db31345a8ec724d21f1b62d3 0.1s done
+#30 exporting config sha256:bbff32691c18aa0897f96a1a4c269ae6ae09e86311b2628faa13d45befc73e04
+#30 exporting config sha256:bbff32691c18aa0897f96a1a4c269ae6ae09e86311b2628faa13d45befc73e04 0.1s done
+#30 exporting attestation manifest sha256:0b3578ff45143969bb9ff9dcaa5d459c649dc0367821f9a3edf3ea672a7d86f2
+#30 exporting attestation manifest sha256:0b3578ff45143969bb9ff9dcaa5d459c649dc0367821f9a3edf3ea672a7d86f2 0.1s done
+#30 exporting manifest list sha256:0d67794ff83bc804d36e1637fea7630e8b3baf0dfe168d8a37e37f74059afa3e 0.1s done
+#30 naming to docker.io/library/aminra-docker-system-aminra-backend:latest
+#30 naming to docker.io/library/aminra-docker-system-aminra-backend:latest done
+#30 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest 0.1s done
+#30 DONE 0.6s
+
+#31 resolving provenance for metadata file
+#31 DONE 0.0s

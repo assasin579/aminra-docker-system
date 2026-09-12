@@ -1,0 +1,28 @@
+# Improvement 1c: post-recreate targeted gates
+2026-09-11T23:00:34-04:00
+
+## compose ps
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                    PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   59 seconds ago   Up 45 seconds (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-arq-worker-1       aminra-docker-system-arq-worker       "/app/entrypoint.sh …"   arq-worker       47 seconds ago   Up 12 seconds             8000/tcp
+
+## backend health
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+
+## copy latest tests into rebuilt container
+
+## submission SLA unit
+.......                                                                  [100%]
+7 passed in 2.25s
+
+## ARQ SLA dry-run from recreated worker
+{'flagged': 0, 'checked': 0}
+
+## role-boundary live smoke
+.........sss                                                             [100%]
+9 passed, 3 skipped in 1.07s

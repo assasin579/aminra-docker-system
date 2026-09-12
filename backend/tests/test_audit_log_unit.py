@@ -50,6 +50,7 @@ class TestComputeDiff:
 class TestLogAudit:
     async def test_inserts_with_full_user_context(self, mocker):
         db = mocker.AsyncMock()
+        db.fetchrow.return_value = {"id": "11111111-1111-1111-1111-111111111111"}
         user = {
             "sub": "11111111-1111-1111-1111-111111111111",
             "email": "biz@example.vn",

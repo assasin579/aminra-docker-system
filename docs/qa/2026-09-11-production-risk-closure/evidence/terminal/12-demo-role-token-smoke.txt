@@ -1,0 +1,4 @@
+# Phase 1 demo role token/account smoke (no SMTP) retry
+2026-09-11T22:36:48-04:00
+PASS: biz-demo-1@demo.aminra.vn login ok password=REDACTED expected_role=business
+PASS: auditor-demo@demo.aminra.vn login ok password=REDACTED expected_role=auditor

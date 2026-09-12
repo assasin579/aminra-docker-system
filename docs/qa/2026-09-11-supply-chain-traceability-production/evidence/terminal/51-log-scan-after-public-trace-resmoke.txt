@@ -1,0 +1,14 @@
+# P0 post-recreate log scan
+2026-09-11T21:56:12-04:00
+
+## backend targeted errors
+
+## arq targeted errors
+
+## service states
+NAME                                    IMAGE                                 COMMAND                  SERVICE          CREATED          STATUS                   PORTS
+aminra-docker-system-aminra-backend-1   aminra-docker-system-aminra-backend   "/app/entrypoint.sh …"   aminra-backend   2 minutes ago    Up 2 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-arq-worker-1       aminra-docker-system-arq-worker       "/app/entrypoint.sh …"   arq-worker       21 minutes ago   Up 21 minutes            8000/tcp
+aminra-docker-system-postgres-db-1      aminra-docker-system-postgres-db      "docker-entrypoint.s…"   postgres-db      2 hours ago      Up 2 hours (healthy)     5432/tcp
+aminra-docker-system-qdrant-db-1        aminra-docker-system-qdrant-db        "./entrypoint.sh"        qdrant-db        2 hours ago      Up 2 hours (healthy)     6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1            redis:7.4-alpine                      "docker-entrypoint.s…"   redis            4 days ago       Up 23 hours (healthy)    6379/tcp

@@ -1,0 +1,19 @@
+# P1.1 baseline DB/profile retry
+2026-09-11T23:43:24-04:00
+                                                   QUERY PLAN                                                   
+----------------------------------------------------------------------------------------------------------------
+ Seq Scan on production_batches b  (cost=0.00..1.04 rows=1 width=827) (actual time=0.073..0.074 rows=1 loops=1)
+   Filter: (public_trace_id = '73695b8a-3c10-570b-8bba-92c12da9b56e'::uuid)
+   Rows Removed by Filter: 2
+   Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=155
+ Planning Time: 4.098 ms
+ Execution Time: 0.126 ms
+(8 rows)
+
+ sealed_jsonb_bytes | sealed_text_chars 
+--------------------+-------------------
+               1144 |              1825
+(1 row)
+

@@ -1,0 +1,4 @@
+# Phase 4 load/performance smoke: public trace + health
+2026-09-11T22:46:09-04:00
+{"case": "public_trace", "concurrency": 50, "error_rate": 0.0, "errors": 0, "max_ms": 3911.0, "mean_ms": 932.9, "p95_ms": 2964.1, "p95_slo_ms": 800, "passed": false, "requests": 200, "rps": 49.3}
+{"case": "backend_health", "concurrency": 20, "error_rate": 0.0, "errors": 0, "max_ms": 1776.8, "mean_ms": 507.3, "p95_ms": 1289.6, "p95_slo_ms": 250, "passed": false, "requests": 100, "rps": 36.6}

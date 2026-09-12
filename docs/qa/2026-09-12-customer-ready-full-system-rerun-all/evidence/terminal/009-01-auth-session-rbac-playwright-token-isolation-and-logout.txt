@@ -1,0 +1,93 @@
+# Domain: 01-auth-session-rbac
+# Step: playwright-token-isolation-and-logout
+# Started: 2026-09-12T05:37:15-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/22-token-isolation.spec.ts e2e/23-cross-context-logout.spec.ts --project=desktop-chromium
+
+
+Running 4 tests using 1 worker
+
+  ✓  1 [desktop-chromium] › e2e/22-token-isolation.spec.ts:56:5 › no page reads aminra_admin_token outside the allowed central files (106ms)
+  ✓  2 [desktop-chromium] › e2e/22-token-isolation.spec.ts:77:5 › no page reads aminra_user_token outside the allowed central files (115ms)
+  ✘  3 [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout removes aminra_admin_token (16ms)
+  ✘  4 [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token (17ms)
+
+
+  1) [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout removes aminra_admin_token 
+
+    Error: UserAuthContext.logout must remove 'aminra_admin_token'
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/removeItem\(['"]aminra_admin_token['"]\)/[39m
+    Received string:  [31m"[39m
+    [31m    // Detect Keycloak session via stored OIDC user. If present, redirect[39m
+    [31m    // through Keycloak end-session endpoint so realm cookie is cleared —[39m
+    [31m    // otherwise next \"Đăng nhập SSO\" would auto-relogin same user.[39m
+    [31m    setToken(null);[39m
+    [31m    setUser(null);[39m
+    [31m    void (async () => {[39m
+    [31m      try {[39m
+    [31m        const { isOidcEnabled, getOidcUser, signoutRedirect } = await import([39m
+    [31m          \"@/lib/auth-oidc\"[39m
+    [31m        );[39m
+    [31m        const oidcUser = isOidcEnabled()[39m
+    [31m          ? await getOidcUser().catch(() => null)[39m
+    [31m          : null;[39m
+    [31m        await purgeAuthSessionState(\"logout\");[39m
+    [31m        if (oidcUser) {[39m
+    [31m          // Only browser-initiated SSO sessions need Keycloak end-session.[39m
+    [31m          // Normal business/provider logins use the AMINRA form plus a[39m
+    [31m          // server-side token exchange, so redirecting them to Keycloak on[39m
+    [31m          // logout would expose the identity-provider UI unnecessarily.[39m
+    [31m          await signoutRedirect(oidcUser);[39m
+    [31m        }[39m
+    [31m      } catch {[39m
+    [31m        await purgeAuthSessionState(\"logout\");[39m
+    [31m      }[39m
+    [31m    })();[39m
+    [31m  "[39m
+
+      34 |     body,
+      35 |     "UserAuthContext.logout must remove 'aminra_admin_token'",
+    > 36 |   ).toMatch(/removeItem\(['"]aminra_admin_token['"]\)/);
+         |     ^
+      37 | });
+      38 |
+      39 | test("AdminAuthContext.logout removes aminra_user_token", async () => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/23-cross-context-logout.spec.ts:36:5
+
+    Error Context: test-results/23-cross-context-logout-Us-8f508--removes-aminra-admin-token-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token 
+
+    Error: AdminAuthContext.logout must call central auth-session purge
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/purgeAuthSessionState\(\)/[39m
+    Received string:  [31m"[39m
+    [31m    setToken(null);[39m
+    [31m    void (async () => {[39m
+    [31m      const oidcUser = await getOidcUser().catch(() => null);[39m
+    [31m      await purgeAuthSessionState(\"logout\");[39m
+    [31m      await signoutRedirect(oidcUser);[39m
+    [31m    })();[39m
+    [31m  "[39m
+
+      53 |     body,
+      54 |     "AdminAuthContext.logout must call central auth-session purge",
+    > 55 |   ).toMatch(/purgeAuthSessionState\(\)/);
+         |     ^
+      56 | });
+      57 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/23-cross-context-logout.spec.ts:55:5
+
+    Error Context: test-results/23-cross-context-logout-Ad-19586-t-removes-aminra-user-token-desktop-chromium/error-context.md
+
+  2 failed
+    [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout removes aminra_admin_token 
+    [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token 
+  2 passed (3.3s)
+
+# Finished: 2026-09-12T05:37:21-04:00
+# Exit code: 1

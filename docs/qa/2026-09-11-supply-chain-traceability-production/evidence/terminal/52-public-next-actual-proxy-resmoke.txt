@@ -1,0 +1,13 @@
+# Public Next browser proxy actual path re-smoke
+2026-09-11T21:56:35-04:00
+actual_fetch_path=/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+HTTP 200
+bytes= 1509
+batch_code= QA-TRACE-PUBLISHED-SEALED-001
+product= QA Published Sealed Halal Trace Fixture
+integrity_verified= True
+snapshot_version= 2
+contains_tenant_id= False
+contains_provider_id= False
+contains_source_certificate_id= False
+contains_changed_by= False

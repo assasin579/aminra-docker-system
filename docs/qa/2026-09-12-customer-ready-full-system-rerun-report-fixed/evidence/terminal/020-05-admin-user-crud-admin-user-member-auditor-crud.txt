@@ -1,0 +1,49 @@
+# Domain: 05-admin-user-crud
+# Step: admin-user-member-auditor-crud
+# Started: 2026-09-12T07:43:05-04:00
+# Command: sync_backend_test_assets && docker compose exec -T aminra-backend sh -lc 'cd /app && if [ -f /vault/secrets/env.sh ]; then . /vault/secrets/env.sh; fi; PYTHONPATH=/app pytest -q tests/test_admin_user_password_reset.py tests/test_admin_crud_unit.py tests/test_auth_invite_canonical_invited_by.py tests/test_company_logo_empty_state.py tests/test_kc_sub_fk_smoke.py'
+
+.....F.................................................................s [ 92%]
+ssssss                                                                   [100%]
+=================================== FAILURES ===================================
+__ test_admin_user_editor_uses_reset_password_route_not_profile_put_password ___
+
+    def test_admin_user_editor_uses_reset_password_route_not_profile_put_password():
+>       text = ADMIN_USER_MANAGER.read_text(encoding="utf-8")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_admin_user_password_reset.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/pathlib.py:1058: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/app/frontend/aminra-web/components/AdminUserManager.tsx')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/app/frontend/aminra-web/components/AdminUserManager.tsx'
+
+/usr/local/lib/python3.11/pathlib.py:1044: FileNotFoundError
+=============================== warnings summary ===============================
+tests/test_kc_sub_fk_smoke.py:29
+  /app/tests/test_kc_sub_fk_smoke.py:29: PytestUnknownMarkWarning: Unknown pytest.mark.uat - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.uat
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_admin_user_password_reset.py::test_admin_user_editor_uses_reset_password_route_not_profile_put_password
+1 failed, 70 passed, 7 skipped, 1 warning in 1.65s
+
+# Finished: 2026-09-12T07:43:09-04:00
+# Exit code: 1

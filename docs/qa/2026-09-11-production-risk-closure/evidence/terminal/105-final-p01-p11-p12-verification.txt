@@ -1,0 +1,33 @@
+# Final P0.1/P1.1/P1.2 verification
+2026-09-12T00:22:16-04:00
+
+## gitignored local credential file
+.qa credential file is gitignored
+mode=600 path=.qa/aminra-demo-credentials.env
+
+## codebase diff check
+
+## no remaining QA cold fixtures
+qa_cold_remaining=0
+
+## core service health
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED             STATUS                    PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    21 minutes ago      Up 21 minutes (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   27 minutes ago      Up 27 minutes (healthy)   0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-arq-worker-1        aminra-docker-system-arq-worker        "/app/entrypoint.sh …"   arq-worker        About an hour ago   Up 23 minutes             8000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago          Up 22 minutes (healthy)   8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       aminra-docker-system-postgres-db       "docker-entrypoint.s…"   postgres-db       4 hours ago         Up 4 hours (healthy)      5432/tcp
+aminra-docker-system-qdrant-db-1         aminra-docker-system-qdrant-db         "./entrypoint.sh"        qdrant-db         4 hours ago         Up 22 minutes (healthy)   6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                       "docker-entrypoint.s…"   redis             4 days ago          Up 23 minutes (healthy)   6379/tcp
+{
+    "status": "ok",
+    "service": "Aminra Halal Certification AI",
+    "database": "connected",
+    "qdrant": "connected"
+}
+
+## public trace post-cleanup
+public_trace_http=200 total=0.412990
+{'batch_code': 'QA-TRACE-PUBLISHED-SEALED-001', 'verified': True}
+
+## vault diff check

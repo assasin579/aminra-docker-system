@@ -1,0 +1,44 @@
+# Domain: 00-env
+# Step: docker-compose-health-and-http-smoke
+# Started: 2026-09-12T06:25:56-04:00
+# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https://dev-web.silvergem.org | head -12
+
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED        STATUS                  PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    6 hours ago    Up 6 hours (healthy)    0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   7 hours ago    Up 7 hours (healthy)    0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-arq-worker-1        aminra-docker-system-arq-worker        "/app/entrypoint.sh …"   arq-worker        7 hours ago    Up 6 hours              8000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago     Up 6 hours (healthy)    8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       aminra-docker-system-postgres-db       "docker-entrypoint.s…"   postgres-db       10 hours ago   Up 10 hours (healthy)   5432/tcp
+aminra-docker-system-qdrant-db-1         aminra-docker-system-qdrant-db         "./entrypoint.sh"        qdrant-db         10 hours ago   Up 6 hours (healthy)    6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                       "docker-entrypoint.s…"   redis             5 days ago     Up 6 hours (healthy)    6379/tcp
+--- backend health ---
+{"status":"ok","service":"Aminra Halal Certification AI","database":"connected","qdrant":"connected"}
+--- local FE ---
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "14uqibmgcdhfpb"
+Content-Type: text/html; charset=utf-8
+Content-Length: 20434
+Date: Sat, 12 Sep 2026 10:25:56 GMT
+--- public FE ---
+HTTP/2 200 
+date: Sat, 12 Sep 2026 10:25:57 GMT
+content-type: text/html; charset=utf-8
+cache-control: s-maxage=31536000
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+x-powered-by: Next.js
+cf-cache-status: DYNAMIC
+
+# Finished: 2026-09-12T06:25:57-04:00
+# Exit code: 0

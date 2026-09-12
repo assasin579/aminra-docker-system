@@ -1,0 +1,110 @@
+# P1.1 build backend with public trace cache
+2026-09-11T23:46:50-04:00
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.61kB done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.77kB done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#3 DONE 1.9s
+
+#4 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#4 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.1s done
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/python:3.11-slim
+#5 DONE 1.7s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [stage-0  1/22] FROM docker.io/library/python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
+#7 resolve docker.io/library/python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534 0.1s done
+#7 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 64.09kB 0.0s done
+#8 DONE 0.1s
+
+#9 [stage-0  6/22] RUN --mount=type=cache,target=/root/.cache/pip     pip install -r requirements.txt
+#9 CACHED
+
+#10 [stage-0  9/22] COPY pipeline/ ./pipeline/
+#10 CACHED
+
+#11 [stage-0 11/22] COPY services/ ./services/
+#11 CACHED
+
+#12 [stage-0 12/22] COPY contracts/ ./contracts/
+#12 CACHED
+
+#13 [stage-0 14/22] COPY templates_docx/ ./templates_docx/
+#13 CACHED
+
+#14 [stage-0  5/22] COPY requirements.txt .
+#14 CACHED
+
+#15 [stage-0  7/22] RUN python -c "from sentence_transformers import SentenceTransformer;     SentenceTransformer('intfloat/multilingual-e5-base')"
+#15 CACHED
+
+#16 [stage-0  2/22] RUN apt-get update && apt-get install -y --no-install-recommends     curl build-essential     libmagic1     libreoffice-writer-nogui &&     rm -rf /var/lib/apt/lists/*
+#16 CACHED
+
+#17 [stage-0  4/22] RUN --mount=type=cache,target=/root/.cache/pip     pip install torch --index-url https://download.pytorch.org/whl/cpu
+#17 CACHED
+
+#18 [stage-0  8/22] RUN playwright install --with-deps chromium
+#18 CACHED
+
+#19 [stage-0 10/22] COPY auth/ ./auth/
+#19 CACHED
+
+#20 [stage-0 13/22] COPY templates/ ./templates/
+#20 CACHED
+
+#21 [stage-0  3/22] WORKDIR /app
+#21 CACHED
+
+#22 [stage-0 15/22] COPY templates_html/ ./templates_html/
+#22 CACHED
+
+#23 [stage-0 16/22] COPY supply_chain/ ./supply_chain/
+#23 DONE 0.1s
+
+#24 [stage-0 17/22] COPY alembic.ini .
+#24 DONE 0.2s
+
+#25 [stage-0 18/22] COPY alembic/ ./alembic/
+#25 DONE 0.2s
+
+#26 [stage-0 19/22] COPY app.py .
+#26 DONE 0.2s
+
+#27 [stage-0 20/22] COPY entrypoint.sh .
+#27 DONE 0.2s
+
+#28 [stage-0 21/22] RUN chmod +x entrypoint.sh
+#28 DONE 0.5s
+
+#29 [stage-0 22/22] RUN mkdir -p /app/docs /app/data /app/doc_text_cache
+#29 DONE 0.6s
+
+#30 exporting to image
+#30 exporting layers
+#30 exporting layers 1.9s done
+#30 exporting manifest sha256:3a58cdabede6404d8b8b7f01a654417b9477ff95fb7cb66a46c8a8f95ab64004 0.0s done
+#30 exporting config sha256:36446d6b171b5a90931b78bbe622f14ba98e94768a15dd044219a9ea1bd16912 0.1s done
+#30 exporting attestation manifest sha256:97c1c6ca7591c6fca187e748c59fc7821299994afdabe7bdec7fd81ae4e62011 0.1s done
+#30 exporting manifest list sha256:02a6ab96cecdb666bf1ac3258892f2bb838a6a843cad4378451a26da97432267
+#30 exporting manifest list sha256:02a6ab96cecdb666bf1ac3258892f2bb838a6a843cad4378451a26da97432267 0.1s done
+#30 naming to docker.io/library/aminra-docker-system-aminra-backend:latest 0.0s done
+#30 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest
+#30 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest 0.4s done
+#30 DONE 2.8s
+
+#31 resolving provenance for metadata file
+#31 DONE 0.0s
