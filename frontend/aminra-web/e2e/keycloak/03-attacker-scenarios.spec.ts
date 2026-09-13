@@ -112,10 +112,8 @@ test.describe("Claim tampering", () => {
 
   test("modified is_owner claim rejected", async ({ bizUser }) => {
     const { header, payload, sig } = decode(bizUser.accessToken);
-    const evil = reassemble(header, { ...payload, is_owner: true }, sig);
+    const evil = reassemble(header, { ...payload, is_owner: !payload.is_owner }, sig);
     const res = await callApi(evil);
-    // Originally was true — keep but verify signature still rejected after re-encoding
-    if (payload.is_owner === true) test.skip(true, "Already true, no diff");
     expect(res.status()).toBe(401);
   });
 
@@ -159,10 +157,12 @@ test.describe("Claim tampering", () => {
     expect(res.status()).toBe(401);
   });
 
-  test("status escalated to active when suspended rejected", async ({ bizUser }) => {
+  test("status claim modified rejected", async ({ bizUser }) => {
     const { header, payload, sig } = decode(bizUser.accessToken);
-    const evil = reassemble(header, { ...payload, status: "active" }, sig);
-    if (payload.status === "active") test.skip(true, "Already active");
+    const evil = reassemble(header, {
+      ...payload,
+      status: payload.status === "active" ? "suspended" : "active",
+    }, sig);
     const res = await callApi(evil);
     expect(res.status()).toBe(401);
   });

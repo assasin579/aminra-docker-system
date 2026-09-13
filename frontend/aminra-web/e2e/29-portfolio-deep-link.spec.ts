@@ -9,12 +9,21 @@
  * via useSearchParams + initializes `selectedCompany` to that value.
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
-const PROVIDER_LOGIN = {
-  email: "cb-demo@demo.aminra.vn",
-  password: "DemoP@ss2026",
-  role: "provider",
-};
+const PROVIDER_EMAIL = process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn";
+const PROVIDER_PASSWORD = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+
+async function providerToken(request: Parameters<typeof requireKeycloakUserToken>[0]): Promise<string> {
+  if (!PROVIDER_PASSWORD) test.skip(true, "provider Keycloak password not configured");
+  return requireKeycloakUserToken(request, { email: PROVIDER_EMAIL, password: PROVIDER_PASSWORD as string });
+}
+
+async function appProfile(request: Parameters<typeof requireKeycloakUserToken>[0], token: string) {
+  const res = await request.get("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+  expect(res.ok()).toBeTruthy();
+  return res.json();
+}
 
 test.describe("portfolio deep-link to company folder", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -28,11 +37,8 @@ test.describe("portfolio deep-link to company folder", () => {
     page,
     request,
   }) => {
-    const login = await request.post("/api/auth/login", {
-      data: PROVIDER_LOGIN,
-    });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token, user } = await login.json();
+    const access_token = await providerToken(request);
+    const user = await appProfile(request, access_token);
 
     // Find a real business name from the provider's submissions.
     const sublist = await request.get("/api/api/submissions/received", {
@@ -94,11 +100,8 @@ test.describe("portfolio deep-link to company folder", () => {
     page,
     request,
   }) => {
-    const login = await request.post("/api/auth/login", {
-      data: PROVIDER_LOGIN,
-    });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token, user } = await login.json();
+    const access_token = await providerToken(request);
+    const user = await appProfile(request, access_token);
 
     // Find a real business name with submissions.
     const bizListRes = await request.get("/api/api/audits/businesses", {

@@ -1,0 +1,4 @@
+# smtp live-send setup
+2026-09-13T02:43:07-04:00
+9c0a55185a900c31d4c0afec45e20aeecbd2dfa2664f21a613f53301a6d9a536
+SMTP_CAPTURE_READY host=0.0.0.0 port=2525

@@ -12,6 +12,7 @@
  *     still exists but app code never touches it)
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
 test.describe("chat removed (submission_comments)", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -22,15 +23,12 @@ test.describe("chat removed (submission_comments)", () => {
   });
 
   test("backend /comments endpoints return 404", async ({ request }) => {
-    const login = await request.post("/api/auth/login", {
-      data: {
-        email: "cb-demo@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "provider",
-      },
+    const password = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+    if (!password) test.skip(true, "provider Keycloak password not configured");
+    const access_token = await requireKeycloakUserToken(request, {
+      email: process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn",
+      password: password as string,
     });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token } = await login.json();
 
     const stub = "00000000-0000-0000-0000-000000000000";
     const get = await request.get(

@@ -1,0 +1,5 @@
+09-load-chaos-deploy	PASS	seed-public-trace-fixture-rerun	docs/qa/2026-09-13-edge-cdn-fix/evidence/003-seed-public-trace-fixture-rerun.txt	Deterministic public trace fixture reseeded: 73695b8a-3c10-570b-8bba-92c12da9b56e.
+09-load-chaos-deploy	FAIL	public-trace-slo-rerun	docs/qa/2026-09-13-edge-cdn-fix/evidence/004-public-trace-slo-rerun-before-edge-access.txt	Local backend/proxy pass; public dev-web p95 957.8ms fails <800ms target; cf-cache-status DYNAMIC.
+09-load-chaos-deploy	PASS	edge-ownership-discovery	docs/qa/2026-09-13-edge-cdn-fix/evidence/005-cloudflare-edge-ownership-discovery.txt	No Cloudflare/Terraform/wrangler config or credentials found in repo/env.
+09-load-chaos-deploy	PASS	public-trace-header-diagnostics	docs/qa/2026-09-13-edge-cdn-fix/evidence/006-public-trace-payload-header-diagnostics.txt	Payload is small (1467 bytes), local proxy cache hit; public still Cloudflare DYNAMIC.
+09-load-chaos-deploy	BLOCKED	cloudflare-cache-rule-apply	docs/qa/2026-09-13-edge-cdn-fix/evidence/007-cloudflare-cache-rule-apply-attempt.txt	Apply blocked: CLOUDFLARE_API_TOKEN/CLOUDFLARE_ZONE_ID unavailable. Rule script created but not applied.

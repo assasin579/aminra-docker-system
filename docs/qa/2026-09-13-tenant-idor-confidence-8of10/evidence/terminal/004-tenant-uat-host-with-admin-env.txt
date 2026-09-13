@@ -1,0 +1,4 @@
+ImportError while loading conftest '/home/user/Documents/aminra-docker-system/backend/tests/conftest.py'.
+backend/tests/conftest.py:60: in <module>
+    import asyncpg
+E   ModuleNotFoundError: No module named 'asyncpg'

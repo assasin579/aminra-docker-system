@@ -31,6 +31,13 @@ PROTECTED_GET_ROUTES = [
     "/api/supply-chain/materials",
     "/api/supply-chain/processes",
     "/api/supply-chain/batches",
+    # Resource/file/token-adjacent routes: deterministic UUID/filename probes.
+    "/api/documents/00000000-0000-0000-0000-000000000000/preview",
+    "/api/documents/00000000-0000-0000-0000-000000000000/file",
+    "/api/submissions/certificates/00000000-0000-0000-0000-000000000000/pdf",
+    "/api/audits/00000000-0000-0000-0000-000000000000/report-pdf",
+    "/jobs/not-a-real-job",
+    "/reviews/not-a-real-review",
 ]
 
 
@@ -41,6 +48,7 @@ PROTECTED_POST_ROUTES = [
     ("/api/supply-chain/materials", {"name": "SHOULD-NOT-CREATE"}),
     ("/api/supply-chain/processes", {"name": "SHOULD-NOT-CREATE", "flowchart": {"nodes": [], "edges": []}}),
     ("/api/supply-chain/batches", {"batch_code": "SHOULD-NOT-CREATE", "product_name": "Blocked"}),
+    ("/reviews/not-a-real-review", {"filename": "not-a-real-review", "reviewer": "anonymous-should-fail"}),
 ]
 
 

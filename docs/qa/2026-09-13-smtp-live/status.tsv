@@ -1,0 +1,4 @@
+01-auth-session-rbac	PASS	smtp-capture-relay-start	docs/qa/2026-09-13-smtp-live/evidence/005-smtp-capture-restart.txt	QA SMTP capture relay running on docker network aminra-docker-system_app-network.
+01-auth-session-rbac	PASS	verifyEmail-live-send-captured	docs/qa/2026-09-13-smtp-live/evidence/006-keycloak-verify-email-live-send-capture.txt	Keycloak execute-actions-email accepted for VERIFY_EMAIL.
+01-auth-session-rbac	PASS	smtp-capture-proof	docs/qa/2026-09-13-smtp-live/evidence/007-smtp-capture-after-trigger.txt	SMTP_CAPTURE_BEGIN/END observed; recipient and Verify Email body captured.
+01-auth-session-rbac	PASS	customer-onboarding-smtp-gate-qa	docs/qa/2026-09-13-smtp-live/evidence/009-customer-onboarding-smtp-gate-final.txt	QA internal relay config gate passed with QA_ALLOW_INSECURE_SMTP=1; not production SMTP readiness.

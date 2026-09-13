@@ -8,6 +8,10 @@
  * 5. Subscribe endpoint accepts a valid PushSubscription shape
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
+
+const BIZ_EMAIL = process.env.PW_BIZ_EMAIL ?? "biz-demo-1@demo.aminra.vn";
+const BIZ_PASSWORD = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
 
 test.describe("PWA + web push", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -66,15 +70,11 @@ test.describe("PWA + web push", () => {
   });
 
   test("subscribe + unsubscribe with auth round-trips", async ({ request }) => {
-    const login = await request.post("/api/auth/login", {
-      data: {
-        email: "biz-demo-1@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "business",
-      },
+    if (!BIZ_PASSWORD) test.skip(true, "business Keycloak password not configured");
+    const access_token = await requireKeycloakUserToken(request, {
+      email: BIZ_EMAIL,
+      password: BIZ_PASSWORD as string,
     });
-    if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
-    const { access_token } = await login.json();
 
     const fakeEndpoint = `https://fcm.googleapis.com/fake/${Date.now()}`;
     const sub = await request.post(

@@ -1,0 +1,17 @@
+# smtp capture logs after trigger
+2026-09-13T02:43:11-04:00
+SMTP_CAPTURE_READY host=0.0.0.0 port=2525
+SMTP_CAPTURE_BEGIN
+FROM=qa-no-reply@aminra.local
+TO=demo-platform-admin@demo.aminra.vn
+From: qa-no-reply@aminra.local
+To: demo-platform-admin@demo.aminra.vn
+Subject: Update Your Account
+Content-Type: multipart/alternative; 
+Content-Type: text/plain; charset=UTF-8
+Your administrator has just requested that you update your AMINRA account by performing the following action(s): Verify Email. Click on the link below to start this process.
+http://auth.silvergem.org:8180/realms/aminra/login-actions/action-token?key=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIwMTc5NjdmMS0xOGJlLTRmNWItYWRiMC01Y2RhM2E3YWI1NDEifQ.eyJleHAiOjE3ODkzMjQ5OTEsImlhdCI6MTc4OTI4MTc5MSwianRpIjoiMGE2ZWVhNWQtYTYxMy00YTdiLTk1OWQtOTU4ZjU5MTAxNmFkIiwiaXNzIjoiaHR0cDovL2F1dGguc2lsdmVyZ2VtLm9yZzo4MTgwL3JlYWxtcy9hbWlucmEiLCJhdWQiOiJodHRwOi8vYXV0aC5zaWx2ZXJnZW0ub3JnOjgxODAvcmVhbG1zL2FtaW5yYSIsInN1YiI6IjRkZWFiNjhhLTVmNTUtNGMzYS04YTMzLWUyYzVlNzc4YTUwZiIsInR5cCI6ImV4Z
+Content-Type: text/html; charset=UTF-8
+t by performing the following action(s): Verify Email. Click on the link be=
+realms/aminra/login-actions/action-token?key=3DeyJhbGciOiJIUzUxMiIsInR5cCIg=
+SMTP_CAPTURE_END

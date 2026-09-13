@@ -42,14 +42,28 @@ from services.document_versioning import (
 UPLOAD_DIR = _Path(os.getenv("UPLOAD_DIR", "./docs"))
 
 
-def _get_user_from_header_or_query(request: Request, token: str | None) -> dict:
-    """Try Authorization header first, then fall back to ?token= query param."""
+async def _get_user_from_header_or_query(request: Request, token: str | None) -> dict:
+    """Try Authorization header first, then fall back to ?token= query param.
+
+    `decode_token()` returns raw Keycloak claims only. File/preview routes need
+    the same enriched app identity (`role`, `tenant_id`, `is_owner`) as normal
+    `get_current_user`, otherwise valid Keycloak tokens can crash with KeyError
+    or bypass tenant checks. Keep query-token compatibility for signed/download
+    links, but always enrich before authorization decisions.
+    """
     auth = request.headers.get("Authorization", "")
+    raw_token = None
     if auth.startswith("Bearer "):
-        return decode_token(auth[7:])
-    if token:
-        return decode_token(token)
-    raise HTTPException(401, "Not authenticated")
+        raw_token = auth[7:]
+    elif token:
+        raw_token = token
+    if not raw_token:
+        raise HTTPException(401, "Not authenticated")
+
+    claims = decode_token(raw_token)
+    from auth import keycloak_validator
+    from auth.db import get_pool
+    return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
 
 
 def _validate_uuid(value: str) -> str:
@@ -417,7 +431,7 @@ async def preview_document(
     db=Depends(get_db),
 ):
     """Convert document to PDF for inline viewing. Caches the result."""
-    user = _get_user_from_header_or_query(request, token)
+    user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
     row = None
     if user["role"] == "business":
@@ -534,7 +548,7 @@ async def get_document_file(
     db=Depends(get_db),
 ):
     """Serve the original uploaded file for viewing."""
-    user = _get_user_from_header_or_query(request, token)
+    user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
     row = None
     if user["role"] == "business":

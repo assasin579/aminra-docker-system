@@ -1493,8 +1493,8 @@ async def ingest_document(
 
 
 @app.get("/jobs/{job_id}")
-async def get_job(job_id: str):
-    """Poll a background job by ID. Used by clients after /ingest."""
+async def get_job(job_id: str, user: dict = Depends(get_current_user)):
+    """Poll a background job by ID. Auth required to avoid anonymous job-result IDOR."""
     from services.jobs import get_job_status
 
     view = await get_job_status(job_id)
@@ -1871,7 +1871,7 @@ async def export_docx(
 
 
 @app.post("/reviews/{filename}")
-async def save_review(filename: str, review: AuditorReview):
+async def save_review(filename: str, review: AuditorReview, user: dict = Depends(get_current_user)):
     import json as _json
 
     review.filename = filename
@@ -1884,7 +1884,7 @@ async def save_review(filename: str, review: AuditorReview):
 
 
 @app.get("/reviews/{filename}")
-async def get_review(filename: str):
+async def get_review(filename: str, user: dict = Depends(get_current_user)):
     import json as _json
 
     safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)

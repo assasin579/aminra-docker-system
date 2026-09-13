@@ -1,0 +1,1252 @@
+{
+  "finding_count": 169,
+  "findings": [
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/app.py",
+      "line": "837",
+      "method": "GET",
+      "path": "/templates/available",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/app.py",
+      "line": "1405",
+      "method": "POST",
+      "path": "/chat/stream",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1496",
+      "method": "GET",
+      "path": "/jobs/{job_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1874",
+      "method": "POST",
+      "path": "/reviews/{filename}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1887",
+      "method": "GET",
+      "path": "/reviews/{filename}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1230",
+      "message": "SELECT keycloak_sub, email FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1268",
+      "message": "SELECT * FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1336",
+      "message": "DELETE FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/app.py",
+      "line": "1288",
+      "message": "WHERE id = $"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/admin_router.py",
+      "line": "49",
+      "message": "UPDATE users SET status = 'active', approved_by = $2, approved_at = NOW()         WHERE id = $1 AND role = 'provider' AND status = 'pending'         RETURNING id, email, status"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/admin_router.py",
+      "line": "98",
+      "message": "UPDATE users SET status = 'suspended', rejection_reason = $2         WHERE id = $1 AND role = 'provider' AND status = 'pending'         RETURNING id, email, status"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "764",
+      "method": "PUT",
+      "path": "/{vid}/status",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "792",
+      "method": "POST",
+      "path": "/{vid}/populate-checklist",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "836",
+      "method": "GET",
+      "path": "/{vid}/items",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "859",
+      "method": "POST",
+      "path": "/{vid}/items",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "883",
+      "method": "DELETE",
+      "path": "/{vid}/items/{item_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "892",
+      "method": "PUT",
+      "path": "/{vid}/items/{item_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "918",
+      "method": "POST",
+      "path": "/{vid}/items/{item_id}/photo",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "952",
+      "method": "GET",
+      "path": "/{vid}/ncr",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "979",
+      "method": "POST",
+      "path": "/{vid}/ncr",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "998",
+      "method": "PUT",
+      "path": "/{vid}/ncr/{ncr_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1020",
+      "method": "POST",
+      "path": "/{vid}/ncr/{ncr_id}/photo",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1523",
+      "method": "POST",
+      "path": "/{vid}/signature",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1551",
+      "method": "PUT",
+      "path": "/{vid}/gps",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "605",
+      "message": "SELECT * FROM audit_visit_items WHERE visit_id=$1 ORDER BY category, created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "606",
+      "message": "SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "743",
+      "message": "SELECT business_tenant, scheduled_date FROM audit_visits WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "795",
+      "message": "SELECT template_id FROM audit_visits WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "799",
+      "message": "SELECT items FROM audit_checklist_templates WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "808",
+      "message": "DELETE FROM audit_visit_items WHERE visit_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "839",
+      "message": "SELECT * FROM audit_visit_items WHERE visit_id=$1 ORDER BY category, created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "887",
+      "message": "DELETE FROM audit_visit_items WHERE id=$1 AND visit_id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "938",
+      "message": "UPDATE audit_visit_items SET photo_paths = photo_paths || $1::jsonb         WHERE id=$2 AND visit_id=$3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "955",
+      "message": "SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1038",
+      "message": "UPDATE audit_ncr SET photo_paths = photo_paths || $1::jsonb WHERE id=$2 AND visit_id=$3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1058",
+      "message": "SELECT * FROM audit_visits WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1062",
+      "message": "SELECT * FROM audit_visit_items WHERE visit_id=$1 ORDER BY category, created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1063",
+      "message": "SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY severity, created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1071",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1352",
+      "message": "UPDATE audit_visits SET report_pdf_path=$1, status='report_submitted', compliance_score=$2 WHERE id=$3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1612",
+      "message": "SELECT n.id, n.visit_id FROM audit_ncr n         JOIN audit_visits v ON v.id = n.visit_id         WHERE n.id=$1 AND v.business_tenant=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1634",
+      "message": "UPDATE audit_ncr SET evidence_paths = evidence_paths || $1::jsonb, status='in_review'         WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1677",
+      "message": "SELECT v.business_tenant FROM audit_ncr n JOIN audit_visits v ON v.id = n.visit_id WHERE n.id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "501",
+      "message": "WHERE id=$"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "698",
+      "message": "WHERE id=$"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "773",
+      "message": "UPDATE audit_visits SET status=$1 WHERE id=$2 AND"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "780",
+      "message": "SELECT result FROM audit_visit_items WHERE visit_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "912",
+      "message": "WHERE id=$"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1015",
+      "message": "WHERE id=$"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1074",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1546",
+      "message": "=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1559",
+      "message": "=$1::jsonb WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1670",
+      "message": "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "1673",
+      "message": "UPDATE audit_ncr SET status='open' WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/audit_router.py",
+      "line": "785",
+      "message": "UPDATE audit_visits SET compliance_score=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "57",
+      "method": "POST",
+      "path": "/received/{submission_id}/issue-certificate",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "65",
+      "message": "SELECT business_tenant FROM submissions WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "119",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "405",
+      "message": "SELECT p.leaf_hash, p.leaf_index, p.proof_path,                a.id AS anchor_id, a.chain, a.merkle_root, a.tx_hash,                a.block_number, a.confirmed_at, a.status AS anchor_status         FROM cert_anchor_proofs p         JOIN blo"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "472",
+      "message": "SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "543",
+      "message": "SELECT * FROM halal_certificates WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "185",
+      "message": "UPDATE halal_certificates SET pdf_path = $1 WHERE id = $2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "496",
+      "message": "UPDATE halal_certificates SET status=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "191",
+      "message": "DELETE FROM halal_certificates WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/certificate_router.py",
+      "line": "194",
+      "message": "DELETE FROM halal_certificates WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "354",
+      "message": "UPDATE documents SET uploaded_at = NOW() WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "757",
+      "message": "UPDATE documents SET status = 'evaluating' WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "797",
+      "message": "DELETE FROM documents WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "1074",
+      "message": "UPDATE documents SET approval_status = 'pending_approval' WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "1123",
+      "message": "UPDATE documents                SET approval_status      = 'approved',                    approver_id          = $2,                    approved_at          = NOW(),                    effective_date       = $3,                    next_revi"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "1185",
+      "message": "UPDATE documents SET approval_status = 'draft' WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "1235",
+      "message": "UPDATE documents SET superseded_by_id = $2 WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "1242",
+      "message": "UPDATE documents SET version_parent_id = $2, version_number = $3 WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "1346",
+      "message": "SELECT email, company_name FROM users WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "707",
+      "message": "UPDATE documents                    SET compliance_score = $1, evaluation_result = $2, status = 'uploaded'                    WHERE id = $3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/document_router.py",
+      "line": "720",
+      "message": "UPDATE documents SET status = 'uploaded' WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/dossier_router.py",
+      "line": "179",
+      "message": "SELECT id, code FROM standard_types WHERE id = $1 AND enabled = true"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/dossier_router.py",
+      "line": "97",
+      "message": "SELECT code, name_vi FROM standard_types WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/dossier_router.py",
+      "line": "101",
+      "message": "SELECT doc_type, required, display_order FROM standard_doc_types WHERE standard_type_id = $1 ORDER BY display_order, doc_type"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/dossier_router.py",
+      "line": "110",
+      "message": "SELECT id, doc_type, filename, original_filename, status,                       compliance_score, version_number, uploaded_at                FROM documents WHERE dossier_id = $1                ORDER BY uploaded_at DESC"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/dossier_router.py",
+      "line": "260",
+      "message": "WHERE id = $"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/gdpr_router.py",
+      "line": "116",
+      "message": "SELECT company_name FROM users WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/industry_schema_router.py",
+      "line": "355",
+      "message": "WHERE id = $"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "111",
+      "method": "PUT",
+      "path": "/{notification_id}/read",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "76",
+      "message": "SELECT * FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "81",
+      "message": "SELECT COUNT(*) FROM notifications WHERE user_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "106",
+      "message": "SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND read=false"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "119",
+      "message": "UPDATE notifications SET read=true WHERE id=$1 AND user_id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "132",
+      "message": "UPDATE notifications SET read=true WHERE user_id=$1 AND read=false"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/notification_router.py",
+      "line": "191",
+      "message": "DELETE FROM push_subscriptions WHERE endpoint=$1 AND user_id=$2"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/auth/pdf_render_router.py",
+      "line": "112",
+      "method": "GET",
+      "path": "/render-pdf/health",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "192",
+      "method": "GET",
+      "path": "/{code_or_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "251",
+      "method": "PATCH",
+      "path": "/{standard_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "276",
+      "method": "DELETE",
+      "path": "/{standard_id}",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "290",
+      "method": "PUT",
+      "path": "/{standard_id}/doc-types",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "116",
+      "message": "SELECT doc_type, required, display_order FROM standard_doc_types WHERE standard_type_id = $1 ORDER BY display_order, doc_type"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "282",
+      "message": "UPDATE standard_types SET enabled = false, updated_at = NOW() WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "296",
+      "message": "SELECT 1 FROM standard_types WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "199",
+      "message": "SELECT * FROM standard_types WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "267",
+      "message": "WHERE id = $"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/standard_type_router.py",
+      "line": "301",
+      "message": "DELETE FROM standard_doc_types WHERE standard_type_id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1145",
+      "method": "GET",
+      "path": "/received/{submission_id}/evaluation",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "367",
+      "message": "SELECT id, company_name FROM users WHERE id = $1 AND role = 'provider' AND status = 'active' AND is_owner = true"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "385",
+      "message": "SELECT company_name FROM users WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "499",
+      "message": "SELECT * FROM halal_certificates WHERE id=$1 AND business_tenant=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "529",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "679",
+      "message": "SELECT id, original_filename, doc_type, compliance_score,                   file_size, mime_type, uploaded_at, evaluation_result            FROM documents WHERE id = ANY($1::uuid[])            ORDER BY uploaded_at DESC"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "688",
+      "message": "SELECT score, notes, checklist FROM submission_evaluations WHERE submission_id=$1 ORDER BY updated_at DESC LIMIT 1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "739",
+      "message": "SELECT status FROM submissions WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "772",
+      "message": "SELECT business_tenant FROM submissions WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "829",
+      "message": "SELECT company_name FROM users WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "920",
+      "message": "SELECT business_tenant FROM submissions WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1063",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1065",
+      "message": "SELECT company_name, business_tenant FROM submissions WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1152",
+      "message": "SELECT * FROM submission_evaluations WHERE submission_id=$1 ORDER BY updated_at DESC LIMIT 1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1275",
+      "message": "SELECT 1 FROM submission_evaluations WHERE submission_id=$1 AND score IS NOT NULL LIMIT 1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1287",
+      "message": "UPDATE submissions SET status='approved', updated_at=NOW() WHERE id=$1 AND status <> 'approved' RETURNING id"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1295",
+      "message": "SELECT score, notes FROM submission_evaluations WHERE submission_id=$1 ORDER BY updated_at DESC LIMIT 1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1347",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1402",
+      "message": "SELECT id, document_ids, status, archived_at FROM submissions WHERE id=$1 AND business_tenant=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1489",
+      "message": "SELECT business_tenant FROM submissions WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1544",
+      "message": "SELECT * FROM submissions WHERE id=$1 AND business_tenant=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1555",
+      "message": "UPDATE submissions SET archived_at = NOW(), updated_at = NOW() WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "660",
+      "message": "SELECT document_ids FROM submissions WHERE id=$1 AND business_tenant=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "749",
+      "message": "UPDATE submissions SET status = $1, auditor_notes = $2, updated_at = NOW() WHERE id = $3 AND"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "821",
+      "message": "SELECT id FROM submissions WHERE id = $2 AND"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1104",
+      "message": "SELECT id FROM submissions WHERE id=$1 AND business_tenant=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1212",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1261",
+      "message": "SELECT * FROM submissions WHERE id=$1 AND"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1434",
+      "message": "UPDATE submissions SET document_ids = $1::uuid[], status = 'reviewing', updated_at = NOW() WHERE id = $2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1439",
+      "message": "UPDATE submission_revision_requests SET resolved_at = NOW() WHERE submission_id = $1 AND resolved_at IS NULL"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1444",
+      "message": "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "624",
+      "message": "SELECT company_name FROM users WHERE id = $1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1209",
+      "message": "UPDATE submissions SET status='reviewing', updated_at=NOW() WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "667",
+      "message": "SELECT document_ids FROM submissions WHERE id = $1 AND"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/auth/submission_router.py",
+      "line": "1113",
+      "message": "SELECT id FROM submissions WHERE id=$1 AND auditor_id=$2"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "354",
+      "method": "GET",
+      "path": "/batches/trace/{trace_id}",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "710",
+      "method": "POST",
+      "path": "/batches/{bid}/approve",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "375",
+      "message": "SELECT b.public_trace_id, b.batch_code, b.status, b.integrity_hash,                b.sealed_data::text AS sealed_text, b.public_trace_enabled,                b.approved_at, b.approved_by         FROM production_batches b         WHERE b.pub"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "506",
+      "message": "UPDATE production_batches SET assigned_to=$1, assigned_name=$2 WHERE id=$3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "534",
+      "message": "SELECT * FROM batch_steps WHERE batch_id=$1 ORDER BY created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "538",
+      "message": "SELECT bm.*, m.name AS material_name, m.sku, s.name AS supplier_name         FROM batch_materials bm         JOIN materials m ON m.id = bm.material_id         LEFT JOIN suppliers s ON s.id = m.supplier_id         WHERE bm.batch_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "674",
+      "message": "SELECT COUNT(*) FROM batch_steps WHERE batch_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "675",
+      "message": "SELECT COUNT(*) FROM batch_steps WHERE batch_id=$1 AND status='completed'"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "677",
+      "message": "UPDATE production_batches SET compliance_score=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "698",
+      "message": "SELECT status FROM batch_steps WHERE id=$1 AND batch_id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "705",
+      "message": "UPDATE batch_steps SET approved_by=$1, approved_at=NOW() WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "738",
+      "message": "SELECT * FROM batch_steps WHERE batch_id=$1 ORDER BY created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "740",
+      "message": "SELECT bm.*, m.name AS material_name, m.sku, m.category, m.halal_risk,                COALESCE(bm.supplier_id, m.supplier_id) AS effective_supplier_id,                s.name AS supplier_name         FROM batch_materials bm         JOIN mate"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "752",
+      "message": "SELECT DISTINCT sc.cert_type, sc.cert_number, sc.issuing_body,                sc.issued_date, sc.expiry_date, s.name AS supplier_name         FROM batch_materials bm         JOIN materials m ON m.id = bm.material_id         JOIN suppliers s"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "891",
+      "message": "UPDATE production_batches         SET approved_by=$1, approved_at=NOW(), integrity_hash=$2,             sealed_data=$3::jsonb, public_trace_enabled=true         WHERE id=$4"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "959",
+      "message": "SELECT * FROM batch_steps WHERE batch_id=$1 ORDER BY created_at"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "961",
+      "message": "SELECT bm.*, m.name AS material_name, m.sku, s.name AS supplier_name         FROM batch_materials bm         JOIN materials m ON m.id = bm.material_id         LEFT JOIN suppliers s ON s.id = m.supplier_id         WHERE bm.batch_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "972",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "1205",
+      "message": "UPDATE batch_steps SET photo_path=$1 WHERE id=$2 AND batch_id=$3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "1289",
+      "message": "UPDATE production_batches SET qr_code_url=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "169",
+      "message": "SELECT b.*,             p.name AS process_name,             (SELECT COUNT(*) FROM batch_steps s WHERE s.batch_id = b.id) AS step_count,             (SELECT COUNT(*) FROM batch_steps s WHERE s.batch_id = b.id AND s.status = 'completed') AS s"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "671",
+      "message": "WHERE id=$1 AND batch_id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/batch_router.py",
+      "line": "886",
+      "message": "UPDATE batch_steps SET step_hash=$1 WHERE id=$2"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/process_router.py",
+      "line": "154",
+      "message": "SELECT company_name FROM users WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "resource_route_without_tenant_hint",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "334",
+      "method": "POST",
+      "path": "/suppliers/{sid}/cb-certificate",
+      "message": "resource-id route has auth but no nearby tenant/owner hint"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "679",
+      "method": "POST",
+      "path": "/suppliers/{sid}/invite",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "756",
+      "method": "POST",
+      "path": "/supplier-portal/{token}/upload",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "INFO",
+      "kind": "intentional_public_reviewed",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "813",
+      "method": "GET",
+      "path": "/suppliers/{sid}/verification-status",
+      "message": "public/token endpoint explicitly reviewed by scanner policy"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "671",
+      "message": "DELETE FROM supplier_certificates WHERE id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "693",
+      "message": "UPDATE suppliers SET invite_token=$1, invite_expires_at=$2 WHERE id=$3"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "727",
+      "message": "SELECT id, cert_type, original_filename, file_size, created_at FROM supplier_certificates WHERE supplier_id=$1 ORDER BY created_at DESC"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "821",
+      "message": "SELECT cert_type, uploaded_by FROM supplier_certificates WHERE supplier_id=$1"
+    },
+    {
+      "severity": "MEDIUM",
+      "kind": "raw_sql_id_lookup_without_tenant_hint",
+      "file": "backend/supply_chain/supplier_router.py",
+      "line": "852",
+      "message": "SELECT COUNT(*) FROM supplier_certificates WHERE supplier_id=$1 AND cert_type='halal_cert'"
+    }
+  ]
+}

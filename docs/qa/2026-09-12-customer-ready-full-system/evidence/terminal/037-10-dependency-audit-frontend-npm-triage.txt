@@ -1,0 +1,29 @@
+# Frontend npm dependency audit triage
+
+Generated: 2026-09-13T01:24:38.559592
+Command: cd frontend/aminra-web && npm audit --json
+Raw audit file: /tmp/aminra-npm-audit-20260913010224.json
+
+Audit metadata:
+- total: 23
+- critical: 1
+- high: 11
+- moderate: 10
+- low: 1
+
+P0/P1 triage:
+- next 16.2.4 — CRITICAL/HIGH direct production dependency. Multiple App Router/proxy/cache/server-action/image advisories; production blocker until upgraded and regression-tested. Fix is available according to npm audit.
+- axios 1.15.2 — HIGH direct dependency, but source search found no frontend code importing axios. Reachability likely low currently; remove if unused or upgrade. Transitive form-data high is via axios.
+- @sentry/nextjs 10.50.0 — MODERATE direct production observability dependency; transitive OpenTelemetry advisories. Upgrade with Sentry smoke, not immediate sandbox blocker.
+- docxtemplater -> @xmldom/xmldom 0.9.10 — HIGH transitive reachable in browser document-generation flow that parses downloaded DOCX XML. Risk depends on template trust boundary; admin-uploaded templates make this relevant before external/customer template uploads.
+- sharp 0.34.5 / postcss 8.5.12 — transitive via Next/build/runtime; remediate primarily through Next/PostCSS upgrades.
+- undici 7.25.0 — HIGH transitive via jsdom/dev/test path; likely not production runtime unless bundled by test/dev tooling. Keep as CI/dev risk until jsdom/undici upgraded.
+- vite 8.0.10 / vitest 4.1.5 — dev/test path; not production runtime, but CI/dev file-read/path risks. Upgrade in dev dependency sweep.
+
+Dry-run remediation note:
+- npm audit fix --dry-run failed with ERESOLVE because eslint-config-next@16.2.1 requires eslint >=9 while project has eslint ^8.
+- Do not run npm audit fix --force blindly; it can break lint/tooling. Remediation should be a controlled dependency upgrade branch.
+
+Senior QA verdict:
+- Production security sign-off: NO-GO until Next critical/high advisories are remediated or explicitly risk-accepted with compensating controls.
+- Sandbox/supervised demo: acceptable with caution if not exposed broadly and public edge SLO remains separately controlled.

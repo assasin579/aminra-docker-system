@@ -74,8 +74,13 @@ if from_addr: ok(f'SMTP from configured: {from_addr}')
 else: bad('SMTP from missing')
 if port: ok(f'SMTP port configured: {port}')
 else: warn('SMTP port missing (Keycloak may default unexpectedly)')
-if starttls == 'true' or ssl == 'true': ok(f'SMTP transport security enabled (starttls={starttls} ssl={ssl})')
-else: bad('SMTP transport security not enabled')
+allow_insecure = os.environ.get('QA_ALLOW_INSECURE_SMTP') == '1'
+if starttls == 'true' or ssl == 'true':
+    ok(f'SMTP transport security enabled (starttls={starttls} ssl={ssl})')
+elif allow_insecure:
+    warn('SMTP transport security disabled — accepted for QA internal relay because QA_ALLOW_INSECURE_SMTP=1')
+else:
+    bad('SMTP transport security not enabled')
 if auth == 'true':
     if user: ok('SMTP auth user configured')
     else: bad('SMTP auth enabled but user missing')
@@ -84,7 +89,9 @@ if auth == 'true':
 else:
     warn('SMTP auth disabled — acceptable only for trusted internal relay')
 
-if fail == 0:
+if fail == 0 and allow_insecure:
+    print('✅ Keycloak email verification config is QA-ready for an internal SMTP relay. This is NOT production SMTP readiness.')
+elif fail == 0:
     print('✅ Keycloak email verification config is production-ready (delivery still depends on provider reachability/SPF/DKIM).')
 else:
     print(f'❌ Keycloak email verification config has {fail} blocker(s).')

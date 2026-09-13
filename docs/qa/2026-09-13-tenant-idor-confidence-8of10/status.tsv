@@ -1,0 +1,7 @@
+check	status	notes
+route_inventory_generated	PASS	242 routes inventoried; 240 covered / 2 deferred; 0 deferred P0 rows
+route_inventory_coverage_gate	PASS	pytest gate passed: 3 tests; all P0 rows mapped to executable evidence or non-P0 deferral
+live_token_tenant_uat	PASS	QA platform-admin env loaded; final tenant UAT 50 passed / 0 failed
+p0_anonymous_resource_boundaries	PASS	deterministic P0 anonymous/resource boundary probes 32 passed / 0 failed
+static_tenant_boundary_scan	PASS	169 findings: 0 HIGH, 161 MEDIUM, 8 INFO; previous 16 HIGH closed
+confidence_score	PASS	Current tenant/IDOR confidence: 8/10 PASS WITH RESIDUAL WARNINGS; residuals are 2 P1 deferred rows and MEDIUM review backlog

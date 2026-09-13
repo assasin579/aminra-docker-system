@@ -1,0 +1,10 @@
+# keycloak email config check
+2026-09-13T02:13:01-04:00
+✗ verifyEmail is not enabled
+✓ resetPasswordAllowed enabled
+✗ SMTP host missing
+✗ SMTP from missing
+⚠ SMTP port missing (Keycloak may default unexpectedly)
+✗ SMTP transport security not enabled
+⚠ SMTP auth disabled — acceptable only for trusted internal relay
+❌ Keycloak email verification config has 4 blocker(s).

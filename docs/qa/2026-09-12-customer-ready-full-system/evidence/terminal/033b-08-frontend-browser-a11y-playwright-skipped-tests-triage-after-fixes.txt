@@ -1,0 +1,37 @@
+# Playwright skipped-test triage — after fixture/env fixes
+
+Generated: 2026-09-13T01:21:52.993654
+Command:
+  set -a; source .env; source .qa/aminra-demo-credentials.env; set +a; cd frontend/aminra-web && npx playwright test --project=desktop-chromium --reporter=line
+
+Result:
+- PASS: full desktop Chromium matrix remained green after test harness fixes.
+- Counts: 301 passed, 25 skipped, 0 failed.
+- Previous baseline: 293 passed, 33 skipped, 0 failed.
+- Delta: +8 executable tests; fixture/env/data-dependent skipped set reduced from 13 to 5.
+
+Fixes applied:
+- Replaced retired backend /api/auth/login usage in fixture-dependent E2E specs with Keycloak direct-grant helpers.
+- Removed hardcoded demo password literals from modified specs; passwords come from env only.
+- Confirmed no added secret literal via git diff scan.
+- Verification: npm run lint PASS; git diff --check PASS; full Playwright PASS.
+
+Remaining skipped categories:
+- SMTP-deferred: 8
+- Mobile/tablet project-gated: 12
+- Fixture/env/data remaining: 5
+
+Remaining fixture/env/data skips requiring seed/config before unsupervised pilot:
+- 25-pwa-push.spec.ts › PWA + web push › VAPID public key endpoint returns key
+- 29-portfolio-deep-link.spec.ts › portfolio deep-link to company folder › submissions page lands on company folder when ?company= passed
+- 29-portfolio-deep-link.spec.ts › portfolio deep-link to company folder › UI flow: click 'Xem hồ sơ' on portfolio → lands on company folder
+- 33-batch1-workflow-integrity.spec.ts › Phase 1 Batch 1 — workflow integrity › DB-level: status CHECK constraint blocks garbage values
+- 33-batch1-workflow-integrity.spec.ts › Phase 1 Batch 1 — workflow integrity › approve-final rejects when no evaluation saved (W3-M11)
+
+Senior QA decision:
+- The 8 converted tests are now release-gate executable and pass.
+- The remaining 5 are not code regressions from this pass; they indicate missing environment/demo seed/config:
+  1. VAPID public key not configured => web-push production readiness not proven.
+  2. Provider portfolio deep-link needs at least one provider-visible business with submissions.
+  3. Batch workflow integrity checks need suitable submission states to exercise DB/approve-final guards.
+- Do not count these 5 as PASS. Treat as pilot-readiness WARN until fixtures are seeded or tests are converted to deterministic setup/teardown.

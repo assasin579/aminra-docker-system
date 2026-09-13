@@ -1,0 +1,4 @@
+# cloudflare cache rule apply attempt
+2026-09-13T02:46:20-04:00
+BLOCKED: CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ZONE_ID not present in environment. Rule script created but not applied.
+script=scripts/qa/apply-cloudflare-public-trace-cache-rule.sh

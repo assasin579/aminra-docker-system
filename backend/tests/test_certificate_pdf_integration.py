@@ -96,7 +96,7 @@ def happy_path_db() -> FakeConn:
     """All submissions approved, no existing cert, biz owner found."""
     db = FakeConn()
     db.fetch_responses = [
-        ("FROM submissions WHERE business_tenant", [
+        ("FROM submissions", [
             FakeRecord(id=uuid4(), status="approved"),
             FakeRecord(id=uuid4(), status="approved"),
         ]),
@@ -181,7 +181,7 @@ class TestIssueCertificateEndpoint:
 
         db = FakeConn()
         db.fetch_responses = [
-            ("FROM submissions WHERE business_tenant", [
+            ("FROM submissions", [
                 FakeRecord(id=uuid4(), status="approved"),
                 FakeRecord(id=uuid4(), status="reviewing"),  # not approved
             ]),
@@ -204,7 +204,7 @@ class TestIssueCertificateEndpoint:
 
         db = FakeConn()
         db.fetch_responses = [
-            ("FROM submissions WHERE business_tenant", [
+            ("FROM submissions", [
                 FakeRecord(id=uuid4(), status="approved"),
             ]),
         ]

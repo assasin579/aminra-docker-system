@@ -18,7 +18,7 @@ class DuplicateThenSuccessConn:
 
     async def fetch(self, sql: str, *args):
         self.calls.append(("fetch", (sql, args)))
-        if "FROM submissions WHERE business_tenant" in sql:
+        if "FROM submissions" in sql:
             return [FakeRecord(id=uuid4(), status="approved")]
         raise AssertionError(sql)
 
@@ -33,7 +33,7 @@ class DuplicateThenSuccessConn:
         if "(id=$1 OR tenant_id=$1) AND is_owner=true" in sql:
             return FakeRecord(id=uuid4(), company_name="Business Co")
         if "INSERT INTO halal_certificates" in sql:
-            candidate = args[0]
+            candidate = args[1]
             self.insert_attempts.append(candidate)
             if len(self.insert_attempts) == 1:
                 raise Exception("duplicate key value violates unique constraint halal_certificates_cert_number_key")

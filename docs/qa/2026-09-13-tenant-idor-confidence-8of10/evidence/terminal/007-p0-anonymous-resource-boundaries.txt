@@ -1,0 +1,22 @@
+# P0 anonymous/resource boundary deterministic tests
+2026-09-13T02:06:48-04:00
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m   [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_ test_high_risk_get_routes_reject_anonymous[/api/certificates/00000000-0000-0000-0000-000000000000/pdf] _[0m
+[1m[31mtests/test_unauth_route_boundaries.py[0m:68: in test_high_risk_get_routes_reject_anonymous
+    [0m[94massert[39;49;00m resp.status_code [95min[39;49;00m ([94m401[39;49;00m, [94m403[39;49;00m), [33mf[39;49;00m[33m"[39;49;00m[33m{[39;49;00mpath[33m}[39;49;00m[33m returned [39;49;00m[33m{[39;49;00mresp.status_code[33m}[39;49;00m[33m: [39;49;00m[33m{[39;49;00mresp.text[:[94m300[39;49;00m][33m}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE   AssertionError: /api/certificates/00000000-0000-0000-0000-000000000000/pdf returned 404: {"detail":"Not Found"}[0m
+[1m[31mE   assert 404 in (401, 403)[0m
+[1m[31mE    +  where 404 = <Response [404 Not Found]>.status_code[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_unauth_route_boundaries.py::[1mtest_high_risk_get_routes_reject_anonymous[/api/certificates/00000000-0000-0000-0000-000000000000/pdf][0m - AssertionError: /api/certificates/00000000-0000-0000-0000-000000000000/pdf ...
+[31m========================= [31m[1m1 failed[0m, [32m31 passed[0m[31m in 2.96s[0m[31m =========================[0m

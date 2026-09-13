@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from asyncpg import Connection
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user
+from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
 from services.audit_log import log_audit
 from services.certificate_pdf import CertificateData, generate_pdf
@@ -30,6 +30,22 @@ def _validate_uuid(v: str) -> str:
     except ValueError:
         raise HTTPException(400, "Invalid ID")
     return v
+
+
+async def _enriched_user_from_header_or_query(request: Request, token: Optional[str]) -> dict:
+    auth = request.headers.get("Authorization", "")
+    tk = auth[7:] if auth.startswith("Bearer ") else token
+    if not tk:
+        raise HTTPException(401, "Unauthorized")
+    try:
+        claims = decode_token(tk)
+        from auth import keycloak_validator
+        from auth.db import get_pool
+        return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(401, "Invalid token")
 
 
 class IssueCertRequest(BaseModel):
@@ -70,7 +86,12 @@ async def issue_certificate_for_company(
     # All currently-active dossiers must be approved before cert can be issued.
     # Terminal-state 'rejected' submissions are historical and don't block future certs.
     active_subs = await db.fetch(
-        "SELECT id, status FROM submissions WHERE business_tenant=$1 AND provider_id=$2 AND status <> 'rejected'",
+        """
+        SELECT id, status
+        FROM submissions
+        WHERE business_tenant=$1 AND provider_id=$2 AND status <> 'rejected'
+        ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC
+        """,
         business_tenant_id,
         provider_id,
     )
@@ -83,6 +104,8 @@ async def issue_certificate_for_company(
             400,
             f"Còn {len(not_approved)} hồ sơ chưa được duyệt. Phải duyệt tất cả hồ sơ đang hoạt động trước khi cấp chứng nhận.",
         )
+
+    submission_id = active_subs[0]["id"]
 
     # Check if active cert already exists for this company
     existing = await db.fetchrow(
@@ -100,7 +123,7 @@ async def issue_certificate_for_company(
     expiry_date = issue_date + relativedelta(months=req.expiry_months)
 
     # Get names (used in PDF)
-    provider = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", user["sub"])
+    provider = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", provider_id)
     provider_name = provider["company_name"] if provider else "N/A"
     biz_user = await db.fetchrow(
         "SELECT company_name FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", business_tenant_id
@@ -124,12 +147,13 @@ async def issue_certificate_for_company(
         try:
             row = await db.fetchrow(
                 """
-                INSERT INTO halal_certificates (cert_number, issued_by, business_tenant, company_name,
+                INSERT INTO halal_certificates (submission_id, cert_number, issued_by, business_tenant, company_name,
                                                 issue_date, expiry_date, pdf_path, notes)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
             """,
+                submission_id,
                 candidate,
-                user["sub"],
+                provider_id,
                 business_tenant_id,
                 business_name,
                 issue_date,
@@ -477,7 +501,12 @@ async def update_cert_status(
         except AlreadyRevoked:
             raise HTTPException(400, "Chứng nhận đã bị thu hồi trước đó")
     else:
-        await db.execute("UPDATE halal_certificates SET status=$1 WHERE id=$2", new_status, cert_id)
+        if row["status"] == "revoked" or row["revoked_at"] is not None:
+            raise HTTPException(
+                409,
+                "Chứng nhận đã bị thu hồi; không thể kích hoạt lại bằng đổi trạng thái. Cần cấp chứng nhận thay thế.",
+            )
+        await db.execute("UPDATE halal_certificates SET status=$1, updated_at=NOW() WHERE id=$2", new_status, cert_id)
 
     await log_audit(
         db,
@@ -522,16 +551,7 @@ async def download_certificate_pdf(
     _validate_uuid(cert_id)
 
     # Support token from header or query param (for <a href> links)
-    from auth.jwt_utils import decode_token
-
-    auth = request.headers.get("Authorization", "")
-    tk = auth[7:] if auth.startswith("Bearer ") else token
-    if not tk:
-        raise HTTPException(401, "Unauthorized")
-    try:
-        user = decode_token(tk)
-    except Exception:
-        raise HTTPException(401, "Invalid token")
+    user = await _enriched_user_from_header_or_query(request, token)
 
     row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1", cert_id)
     if not row:

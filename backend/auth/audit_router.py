@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from auth.db import get_db
 from auth.identity import resolve_canonical_user_id
-from auth.jwt_utils import get_current_user
+from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
 
 log = logging.getLogger("aminra.audits")
@@ -27,6 +27,22 @@ def _validate_uuid(v: str) -> str:
     except ValueError:
         raise HTTPException(400, "Invalid ID")
     return v
+
+
+async def _enriched_user_from_header_or_query(request: Request, token: Optional[str]) -> dict:
+    auth = request.headers.get("Authorization", "")
+    tk = auth[7:] if auth.startswith("Bearer ") else token
+    if not tk:
+        raise HTTPException(401)
+    try:
+        claims = decode_token(tk)
+        from auth import keycloak_validator
+        from auth.db import get_pool
+        return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(401)
 
 
 def _audit_filter(user: dict):
@@ -1346,20 +1362,31 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
 @router.get("/{vid}/report-pdf")
 async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_db)):
     _validate_uuid(vid)
-    from auth.jwt_utils import decode_token
+    user = await _enriched_user_from_header_or_query(request, token)
 
-    auth = request.headers.get("Authorization", "")
-    tk = auth[7:] if auth.startswith("Bearer ") else token
-    if not tk:
-        raise HTTPException(401)
-    try:
-        decode_token(tk)
-    except:
-        raise HTTPException(401)
-
-    row = await db.fetchrow("SELECT report_pdf_path FROM audit_visits WHERE id=$1", vid)
+    row = await db.fetchrow(
+        """
+        SELECT report_pdf_path, provider_id, auditor_id, business_tenant
+        FROM audit_visits
+        WHERE id=$1
+        """,
+        vid,
+    )
     if not row or not row["report_pdf_path"]:
         raise HTTPException(404, "Báo cáo chưa được tạo")
+
+    role = user.get("role")
+    tenant_id = user.get("tenant_id")
+    sub = user.get("sub")
+    allowed = False
+    if role == "provider":
+        allowed = str(row["provider_id"]) in {str(tenant_id), str(sub)} or str(row["auditor_id"]) == str(sub)
+    elif role == "business":
+        allowed = str(row["business_tenant"]) == str(tenant_id)
+    elif role in {"admin", "platform_admin"} or "platform_admin" in (user.get("realm_roles") or []):
+        allowed = True
+    if not allowed:
+        raise HTTPException(403)
 
     pdf = Path(row["report_pdf_path"])
     if not pdf.exists():

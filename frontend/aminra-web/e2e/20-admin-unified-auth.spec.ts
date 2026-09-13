@@ -9,6 +9,7 @@
  */
 import { test, expect } from "@playwright/test";
 import { requireAdminToken } from "./helpers/admin-token";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
 test.describe("admin unified auth", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -49,19 +50,12 @@ test.describe("admin unified auth", () => {
   test("non-admin JWT is rejected by admin endpoints (regression)", async ({
     request,
   }) => {
-    const r = await request.post("/api/auth/login", {
-      data: {
-        email: "cb-demo@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "provider",
-      },
+    const password = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+    if (!password) test.skip(true, "provider Keycloak password not configured");
+    const access_token = await requireKeycloakUserToken(request, {
+      email: process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn",
+      password: password as string,
     });
-    if (!r.ok())
-      test.skip(
-        true,
-        "demo provider not seeded; skipping non-admin regression",
-      );
-    const { access_token } = await r.json();
 
     const an = await request.get("/api/auth/admin/analytics", {
       headers: { Authorization: `Bearer ${access_token}` },

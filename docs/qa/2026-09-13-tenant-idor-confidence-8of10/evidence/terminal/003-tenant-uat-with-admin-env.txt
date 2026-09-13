@@ -1,0 +1,16 @@
+# tenant UAT rerun with TEST_ADMIN_* env
+2026-09-13T01:55:27-04:00
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 50 items
+
+tests/uat/test_uat_c_tenant_isolation.py [32m.[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[32m [ 62%]
+[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[33ms[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33ms[0m[32m                                                      [100%][0m
+
+[36m[1m=========================== short test summary info ============================[0m
+[33mSKIPPED[0m [25] tests/uat/conftest.py:58: docker CLI not available in this runtime; DB invariant must run from host QA context
+[32m======================== [32m[1m25 passed[0m, [33m25 skipped[0m[32m in 6.92s[0m[32m ========================[0m

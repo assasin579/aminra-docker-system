@@ -1,0 +1,21 @@
+# Backend Python dependency audit triage
+
+Generated: 2026-09-13T01:21:53.005673
+Command: pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt --format json
+Raw audit file: /tmp/aminra-pip-audit-20260913010304.json
+
+Result:
+- Vulnerable packages: 1
+
+## ecdsa 0.19.2
+- PYSEC-2026-1325: python-ecdsa has been found to be subject to a Minerva timing attack on the P-256 curve. Using the `ecdsa.SigningKey.sign_digest()` API function and timing signatures an attacker can leak the internal nonce which may allow for private key discovery. Both ECDSA
+- PYSEC-2026-1325: python-ecdsa has been found to be subject to a Minerva timing attack on the P-256 curve. Using the `ecdsa.SigningKey.sign_digest()` API function and timing signatures an attacker can leak the internal nonce which may allow for private key discovery. Both ECDSA
+
+Reachability assessment:
+- ecdsa is pulled transitively by python-jose[cryptography]. The advisory concerns python-ecdsa signing APIs/timing leakage on P-256 signing.
+- AMINRA backend primarily verifies Keycloak JWTs and does not appear to use python-ecdsa for private signing of attacker-influenced material in normal app paths.
+- Risk classification: LOW/MEDIUM reachability, but track because auth dependencies are security-sensitive.
+
+Recommended remediation:
+- Prefer migration from python-jose to a maintained JWT/JWKS verifier stack that does not pull vulnerable python-ecdsa, or confirm python-jose can avoid ecdsa extra.
+- Add dependency audit to release gate; keep current finding as WARN, not immediate sandbox blocker.

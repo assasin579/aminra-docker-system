@@ -1,0 +1,5 @@
+# trigger Keycloak VERIFY_EMAIL live-send via QA SMTP relay
+2026-09-13T02:14:17-04:00
+target_email=demo-platform-admin@demo.aminra.vn user_id=4deab68a...
+execute-actions-email accepted
+--- smtp relay logs ---

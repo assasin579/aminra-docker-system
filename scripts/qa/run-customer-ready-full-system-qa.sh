@@ -205,6 +205,7 @@ fe_cmd "01-auth-session-rbac" "playwright-token-isolation-and-logout" "npx playw
 
 if [[ "$RUN_SMTP" == "1" ]]; then
   run_step "01-auth-session-rbac" "smtp-keycloak-email-check" "make keycloak-email-check"
+  run_step "01-auth-session-rbac" "smtp-verifyEmail-live-send" "bash scripts/qa/keycloak-email-live-send-check.sh"
 else
   mark_deferred "01-auth-session-rbac" "smtp-verifyEmail-password-reset-live-send" "Founder explicitly deferred SMTP. Keep customer_onboarding/production_go non-PASS until RUN_SMTP=1 and live-send passes."
 fi

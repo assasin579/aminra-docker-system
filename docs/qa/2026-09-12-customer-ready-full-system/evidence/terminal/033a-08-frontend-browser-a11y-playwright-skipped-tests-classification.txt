@@ -1,0 +1,48 @@
+# Playwright skipped tests classification
+# Updated: 2026-09-13T00:28:23-04:00
+# Commit: 0667c4d
+# Total skipped: 33
+
+## SMTP-deferred / customer-onboarding blocker (8)
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Forgot password endpoint returns generic OK for any email
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Forgot password for existing user emits same generic message (no leak)
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Verify-reset-token rejects invalid token
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Reset-password rejects weak password
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Reset-password rejects invalid token even with strong password
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Forgot-password page accessible without auth
+- 12-cuj-password-reset.spec.ts › CUJ-7: Password reset › Reset-password page renders invalid state without token
+- keycloak/02-login-ui-flow.spec.ts › Password reset pages › email-reset flow is SMTP-dependent and intentionally deferred
+
+## Desktop-only run: mobile/tablet project-gated checks (12)
+- 19-mobile-responsive-audit.spec.ts › landing: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › business-login: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › business-register: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › provider-login: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › provider-register: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › forgot-password: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › reset-password: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › privacy: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › terms: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › chat: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › verify-cert-active: mobile responsive checks
+- 19-mobile-responsive-audit.spec.ts › verify-cert-404: mobile responsive checks
+
+## Fixture/env/data-dependent skips requiring triage before unsupervised pilot (13)
+- 20-admin-unified-auth.spec.ts › admin unified auth › non-admin JWT is rejected by admin endpoints (regression)
+- 24-business-dossier-score.spec.ts › provider dossier + score › dossier + score endpoints return shape
+- 24-business-dossier-score.spec.ts › provider dossier + score › PUT /received/{id}/status rejects status='approved'
+- 24-business-dossier-score.spec.ts › provider dossier + score › provider page /businesses/[id] renders score + folder
+- 25-pwa-push.spec.ts › PWA + web push › VAPID public key endpoint returns key
+- 29-portfolio-deep-link.spec.ts › portfolio deep-link to company folder › submissions page lands on company folder when ?company= passed
+- 29-portfolio-deep-link.spec.ts › portfolio deep-link to company folder › UI flow: click 'Xem hồ sơ' on portfolio → lands on company folder
+- 32-chat-removed.spec.ts › chat removed (submission_comments) › backend /comments endpoints return 404
+- 33-batch1-workflow-integrity.spec.ts › Phase 1 Batch 1 — workflow integrity › DB-level: status CHECK constraint blocks garbage values
+- 33-batch1-workflow-integrity.spec.ts › Phase 1 Batch 1 — workflow integrity › approve-final rejects when no evaluation saved (W3-M11)
+- 38-demo-spine-keycloak.spec.ts › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+- keycloak/03-attacker-scenarios.spec.ts › Claim tampering › modified is_owner claim rejected
+- keycloak/03-attacker-scenarios.spec.ts › Claim tampering › status escalated to active when suspended rejected
+
+## Senior QA interpretation
+- SMTP-deferred skips are accepted only for sandbox/supervised demo; they remain customer_onboarding/production_go blockers.
+- Mobile/tablet skips are expected because this run was desktop-chromium only; run mobile/tablet projects before mobile UAT sign-off.
+- Fixture/env/data-dependent skips are not release passes; either seed required fixtures or quarantine obsolete checks explicitly.

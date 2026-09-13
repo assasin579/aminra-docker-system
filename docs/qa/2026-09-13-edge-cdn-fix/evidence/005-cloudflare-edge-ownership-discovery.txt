@@ -1,0 +1,7 @@
+# cloudflare edge ownership discovery
+2026-09-13T02:45:20-04:00
+repo cloudflare files:
+docs/qa/2026-09-13-edge-cdn-fix/evidence/005-cloudflare-edge-ownership-discovery.txt
+cloudflare env keys present (values redacted):
+wrangler:
+terraform:

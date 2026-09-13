@@ -1,0 +1,25 @@
+# tenant UAT rerun after asyncpg DB fallback
+2026-09-13T01:56:59-04:00
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, Faker-40.38.0, anyio-4.15.1, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 50 items
+
+tests/uat/test_uat_c_tenant_isolation.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 62%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                                                      [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_________ TestCrossTenantBlocked.test_c12_b_cannot_read_a_doc_preview __________[0m
+[1m[31mtests/uat/test_uat_c_tenant_isolation.py[0m:131: in test_c12_b_cannot_read_a_doc_preview
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m403[39;49;00m, [94m404[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 500 in (403, 404)[0m
+[1m[31mE    +  where 500 = <Response [500 Internal Server Error]>.status_code[0m
+[31m[1m___________ TestCrossTenantBlocked.test_c13_b_cannot_read_a_doc_file ___________[0m
+[1m[31mtests/uat/test_uat_c_tenant_isolation.py[0m:139: in test_c13_b_cannot_read_a_doc_file
+    [0m[94massert[39;49;00m r.status_code [95min[39;49;00m ([94m403[39;49;00m, [94m404[39;49;00m)[90m[39;49;00m
+[1m[31mE   assert 500 in (403, 404)[0m
+[1m[31mE    +  where 500 = <Response [500 Internal Server Error]>.status_code[0m
+[31m======================== [31m[1m2 failed[0m, [32m48 passed[0m[31m in 11.49s[0m[31m =========================[0m

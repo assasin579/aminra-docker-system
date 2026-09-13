@@ -225,3 +225,45 @@ class TestUpdateCertStatusEndpoint:
             fresh_cert["id"],
         )
         assert str(row["revoked_by"]) == fresh_cert["provider_id"]
+
+    async def test_revoked_certificate_cannot_be_reactivated_by_status_flip(self, conn, fresh_cert):
+        """A revoked certificate is a terminal compliance/legal state.
+
+        Reactivation must be handled by a formal replacement/re-issuance flow,
+        not by mutating the same certificate back to active.
+        """
+        from fastapi import HTTPException
+        from auth.certificate_router import update_cert_status
+
+        prov_user = {
+            "sub": fresh_cert["provider_id"],
+            "email": "cb@test.vn",
+            "role": "provider",
+            "is_owner": True,
+        }
+
+        await update_cert_status(
+            cert_id=fresh_cert["id"],
+            req={"status": "revoked", "reason": "Vi phạm chuẩn"},
+            user=prov_user,
+            db=conn,
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            await update_cert_status(
+                cert_id=fresh_cert["id"],
+                req={"status": "active"},
+                user=prov_user,
+                db=conn,
+            )
+
+        assert exc.value.status_code in {400, 409}
+        assert "thu hồi" in str(exc.value.detail).lower() or "revoked" in str(exc.value.detail).lower()
+
+        row = await conn.fetchrow(
+            "SELECT status, revocation_reason, revoked_at FROM halal_certificates WHERE id = $1",
+            fresh_cert["id"],
+        )
+        assert row["status"] == "revoked"
+        assert row["revocation_reason"] == "Vi phạm chuẩn"
+        assert row["revoked_at"] is not None

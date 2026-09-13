@@ -1,0 +1,10 @@
+# customer onboarding SMTP gate rerun (QA internal relay mode)
+2026-09-13T02:43:39-04:00
+✓ verifyEmail enabled
+✓ reset[REDACTED] enabled
+✓ SMTP host configured: aminra-qa-smtp
+✓ SMTP from configured: qa-no-reply@aminra.local
+✓ SMTP port configured: 2525
+⚠ SMTP transport security disabled — accepted for QA internal relay because QA_ALLOW_INSECURE_SMTP=1
+⚠ SMTP auth disabled — acceptable only for trusted internal relay
+✅ Keycloak email verification config is production-ready (delivery still depends on provider reachability/SPF/DKIM).

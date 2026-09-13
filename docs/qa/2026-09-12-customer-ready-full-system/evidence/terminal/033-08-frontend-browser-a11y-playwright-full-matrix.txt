@@ -1,0 +1,15 @@
+# Domain: 08-frontend-browser-a11y
+# Step: playwright-full-matrix
+# Updated: 2026-09-13T00:26:17-04:00
+# Commit: 0667c4d
+# Source JSON: /tmp/aminra-full-playwright-results-20260913001911.json
+
+Command:
+set -a; [ -f .env ] && source .env; [ -f .qa/aminra-demo-credentials.env ] && source .qa/aminra-demo-credentials.env; set +a; cd frontend/aminra-web && npx playwright test --project=desktop-chromium --reporter=json
+
+Result: PASS
+- passed: 293
+- skipped: 33
+- failed: 0
+
+Note: Secrets loaded from gitignored .qa env; no secret values captured in this evidence.

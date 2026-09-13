@@ -52,17 +52,59 @@ def backend_unreachable(client) -> bool:
 
 
 def psql(sql: str, *, check: bool = True) -> subprocess.CompletedProcess:
-    """Run a parameterless psql command. Use only with constant SQL — never
-    with user-controlled input (this helper does not parameterize)."""
-    if shutil.which("docker") is None:
-        pytest.skip("docker CLI not available in this runtime; DB invariant must run from host QA context")
-    return subprocess.run(
-        [
-            "docker", "exec", DB_CONTAINER,
-            "psql", "-U", "aminra_user", "-d", "aminra", "-tAc", sql,
-        ],
-        check=check, capture_output=True, timeout=15,
-    )
+    """Run a parameterless SQL command for UAT setup/invariants.
+
+    Prefer host `docker exec ... psql` when available. When the UAT suite runs
+    inside the backend container, docker/psql are intentionally absent; in that
+    case use the in-container `DATABASE_URL` + asyncpg fallback so DB invariants
+    execute instead of being silently skipped.
+
+    Use only with constant SQL — never with user-controlled input (this helper
+    does not parameterize).
+    """
+    if shutil.which("docker") is not None:
+        return subprocess.run(
+            [
+                "docker", "exec", DB_CONTAINER,
+                "psql", "-U", "aminra_user", "-d", "aminra", "-tAc", sql,
+            ],
+            check=check, capture_output=True, timeout=15,
+        )
+
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        pytest.skip("DATABASE_URL not available; DB invariant cannot run in this runtime")
+
+    import asyncio
+    import asyncpg
+
+    async def _run() -> subprocess.CompletedProcess:
+        try:
+            conn = await asyncpg.connect(url, timeout=5)
+            try:
+                if sql.lstrip().upper().startswith("SELECT"):
+                    val = await conn.fetchval(sql)
+                    stdout = ("" if val is None else str(val)).encode()
+                else:
+                    await conn.execute(sql)
+                    stdout = b""
+                return subprocess.CompletedProcess(args=["asyncpg", "-c", sql], returncode=0, stdout=stdout, stderr=b"")
+            finally:
+                await conn.close()
+        except Exception as exc:  # mirror subprocess failure shape
+            cp = subprocess.CompletedProcess(
+                args=["asyncpg", "-c", sql],
+                returncode=1,
+                stdout=b"",
+                stderr=str(exc).encode(),
+            )
+            if check:
+                raise subprocess.CalledProcessError(
+                    cp.returncode, cp.args, output=cp.stdout, stderr=cp.stderr
+                )
+            return cp
+
+    return asyncio.run(_run())
 
 
 def psql_value(sql: str) -> str:

@@ -1,0 +1,13 @@
+# Tenant-boundary scanner allowlist
+#
+# Entries here are NOT blanket approvals. Each entry must have:
+# - id: stable finding id or file:line:path tuple
+# - reason: why the finding is acceptable
+# - owner: accountable person/team
+# - review_by: date for revalidation
+#
+# Current status: no findings are allowlisted yet. The 2026-09-13 scanner output
+# is intentionally treated as review backlog until route-family negative tests or
+# code review prove safety.
+
+entries: []

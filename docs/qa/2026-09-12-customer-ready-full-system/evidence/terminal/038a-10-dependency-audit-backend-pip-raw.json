@@ -1,0 +1,1139 @@
+{
+  "dependencies": [
+    {
+      "name": "bcrypt",
+      "version": "4.3.0",
+      "vulns": []
+    },
+    {
+      "name": "pymupdf",
+      "version": "1.28.2",
+      "vulns": []
+    },
+    {
+      "name": "python-pptx",
+      "version": "1.0.2",
+      "vulns": []
+    },
+    {
+      "name": "python-docx",
+      "version": "1.2.0",
+      "vulns": []
+    },
+    {
+      "name": "markitdown",
+      "version": "0.1.7",
+      "vulns": []
+    },
+    {
+      "name": "magika",
+      "version": "0.6.3",
+      "vulns": []
+    },
+    {
+      "name": "qdrant-client",
+      "version": "1.19.0",
+      "vulns": []
+    },
+    {
+      "name": "portalocker",
+      "version": "3.2.0",
+      "vulns": []
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "vulns": []
+    },
+    {
+      "name": "sentence-transformers",
+      "version": "6.0.1",
+      "vulns": []
+    },
+    {
+      "name": "huggingface-hub",
+      "version": "1.31.0",
+      "vulns": []
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "vulns": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "vulns": []
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.6.0",
+      "vulns": []
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "vulns": []
+    },
+    {
+      "name": "transformers",
+      "version": "5.17.0",
+      "vulns": []
+    },
+    {
+      "name": "tokenizers",
+      "version": "0.23.2",
+      "vulns": []
+    },
+    {
+      "name": "torch",
+      "version": "2.14.0",
+      "vulns": []
+    },
+    {
+      "name": "cuda-toolkit",
+      "version": "13.0.3.0",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cudnn-cu13",
+      "version": "9.24.0.43",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cusparselt-cu13",
+      "version": "0.8.1",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-nccl-cu13",
+      "version": "2.30.7",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-nvshmem-cu13",
+      "version": "3.4.5",
+      "vulns": []
+    },
+    {
+      "name": "cuda-bindings",
+      "version": "13.4.1",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cublas",
+      "version": "13.1.1.3",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cuda-cupti",
+      "version": "13.0.85",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cuda-nvrtc",
+      "version": "13.0.88",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cuda-runtime",
+      "version": "13.0.96",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cufft",
+      "version": "12.0.0.61",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cufile",
+      "version": "1.15.1.6",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-curand",
+      "version": "10.4.0.35",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cusolver",
+      "version": "12.0.4.66",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-cusparse",
+      "version": "12.6.3.3",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-nvjitlink",
+      "version": "13.4.52",
+      "vulns": []
+    },
+    {
+      "name": "nvidia-nvtx",
+      "version": "13.0.85",
+      "vulns": []
+    },
+    {
+      "name": "triton",
+      "version": "3.8.0",
+      "vulns": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.141.1",
+      "vulns": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.52.4",
+      "vulns": []
+    },
+    {
+      "name": "gunicorn",
+      "version": "26.2.0",
+      "vulns": []
+    },
+    {
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "vulns": []
+    },
+    {
+      "name": "python-magic",
+      "version": "0.4.27",
+      "vulns": []
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.3",
+      "vulns": []
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "vulns": []
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "vulns": []
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "vulns": []
+    },
+    {
+      "name": "idna",
+      "version": "3.19",
+      "vulns": []
+    },
+    {
+      "name": "asyncpg",
+      "version": "0.31.0",
+      "vulns": []
+    },
+    {
+      "name": "passlib",
+      "version": "1.7.4",
+      "vulns": []
+    },
+    {
+      "name": "python-jose",
+      "version": "3.5.0",
+      "vulns": []
+    },
+    {
+      "name": "rsa",
+      "version": "4.9.1",
+      "vulns": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.5",
+      "vulns": []
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.46.5",
+      "vulns": []
+    },
+    {
+      "name": "alembic",
+      "version": "1.20.0",
+      "vulns": []
+    },
+    {
+      "name": "sqlalchemy",
+      "version": "2.0.52",
+      "vulns": []
+    },
+    {
+      "name": "psycopg2-binary",
+      "version": "2.9.13",
+      "vulns": []
+    },
+    {
+      "name": "aiosmtplib",
+      "version": "5.1.3",
+      "vulns": []
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "vulns": []
+    },
+    {
+      "name": "arq",
+      "version": "0.28.0",
+      "vulns": []
+    },
+    {
+      "name": "redis",
+      "version": "5.3.1",
+      "vulns": []
+    },
+    {
+      "name": "web3",
+      "version": "8.0.0",
+      "vulns": []
+    },
+    {
+      "name": "py-solc-x",
+      "version": "2.0.5",
+      "vulns": []
+    },
+    {
+      "name": "eth-account",
+      "version": "0.14.0",
+      "vulns": []
+    },
+    {
+      "name": "opentimestamps-client",
+      "version": "0.7.2",
+      "vulns": []
+    },
+    {
+      "name": "opentimestamps",
+      "version": "0.4.5",
+      "vulns": []
+    },
+    {
+      "name": "python-bitcoinlib",
+      "version": "0.12.2",
+      "vulns": []
+    },
+    {
+      "name": "sentry-sdk",
+      "version": "2.69.1",
+      "vulns": []
+    },
+    {
+      "name": "prometheus-client",
+      "version": "0.26.0",
+      "vulns": []
+    },
+    {
+      "name": "starlette-prometheus",
+      "version": "0.10.0",
+      "vulns": []
+    },
+    {
+      "name": "structlog",
+      "version": "26.1.0",
+      "vulns": []
+    },
+    {
+      "name": "qrcode",
+      "version": "8.2",
+      "vulns": []
+    },
+    {
+      "name": "reportlab",
+      "version": "5.0.1",
+      "vulns": []
+    },
+    {
+      "name": "playwright",
+      "version": "1.62.0",
+      "vulns": []
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.5",
+      "vulns": []
+    },
+    {
+      "name": "pyee",
+      "version": "13.0.1",
+      "vulns": []
+    },
+    {
+      "name": "pikepdf",
+      "version": "10.13.0.post1",
+      "vulns": []
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "vulns": []
+    },
+    {
+      "name": "pluggy",
+      "version": "1.6.0",
+      "vulns": []
+    },
+    {
+      "name": "pytest-asyncio",
+      "version": "1.4.0",
+      "vulns": []
+    },
+    {
+      "name": "pytest-cov",
+      "version": "7.1.0",
+      "vulns": []
+    },
+    {
+      "name": "respx",
+      "version": "0.23.1",
+      "vulns": []
+    },
+    {
+      "name": "pytest-mock",
+      "version": "3.15.1",
+      "vulns": []
+    },
+    {
+      "name": "aiosmtpd",
+      "version": "1.4.6",
+      "vulns": []
+    },
+    {
+      "name": "fakeredis",
+      "version": "2.38.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-tester",
+      "version": "0.14.0b1",
+      "vulns": []
+    },
+    {
+      "name": "factory-boy",
+      "version": "3.3.3",
+      "vulns": []
+    },
+    {
+      "name": "pytest-bdd",
+      "version": "8.1.0",
+      "vulns": []
+    },
+    {
+      "name": "gherkin-official",
+      "version": "29.0.0",
+      "vulns": []
+    },
+    {
+      "name": "hypothesis",
+      "version": "6.168.0",
+      "vulns": []
+    },
+    {
+      "name": "sortedcontainers",
+      "version": "2.4.0",
+      "vulns": []
+    },
+    {
+      "name": "locust",
+      "version": "2.46.5",
+      "vulns": []
+    },
+    {
+      "name": "pywebpush",
+      "version": "2.5.0",
+      "vulns": []
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "vulns": []
+    },
+    {
+      "name": "ruff",
+      "version": "0.16.7",
+      "vulns": []
+    },
+    {
+      "name": "aiohttp",
+      "version": "3.14.3",
+      "vulns": []
+    },
+    {
+      "name": "multidict",
+      "version": "6.8.0",
+      "vulns": []
+    },
+    {
+      "name": "yarl",
+      "version": "1.24.5",
+      "vulns": []
+    },
+    {
+      "name": "aiohappyeyeballs",
+      "version": "2.7.1",
+      "vulns": []
+    },
+    {
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "vulns": []
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "vulns": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "appdirs",
+      "version": "1.4.4",
+      "vulns": []
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "vulns": []
+    },
+    {
+      "name": "bitarray",
+      "version": "3.11.0",
+      "vulns": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "vulns": []
+    },
+    {
+      "name": "ckzg",
+      "version": "2.1.8",
+      "vulns": []
+    },
+    {
+      "name": "configargparse",
+      "version": "1.7.7",
+      "vulns": []
+    },
+    {
+      "name": "coverage",
+      "version": "7.16.0",
+      "vulns": []
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.1",
+      "vulns": []
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "vulns": []
+    },
+    {
+      "name": "cuda-pathfinder",
+      "version": "1.8.1",
+      "vulns": []
+    },
+    {
+      "name": "ecdsa",
+      "version": "0.19.2",
+      "vulns": [
+        {
+          "id": "PYSEC-2026-1325",
+          "fix_versions": [],
+          "aliases": [
+            "GHSA-wj6h-64fc-37mp",
+            "CVE-2024-23342"
+          ],
+          "description": "python-ecdsa has been found to be subject to a Minerva timing attack on the P-256 curve. Using the `ecdsa.SigningKey.sign_digest()` API function and timing signatures an attacker can leak the internal nonce which may allow for private key discovery. Both ECDSA signatures, key generation, and ECDH operations are affected. ECDSA signature verification is unaffected. The python-ecdsa project considers side channel attacks out of scope for the project and there is no planned fix."
+        },
+        {
+          "id": "PYSEC-2026-1325",
+          "fix_versions": [],
+          "aliases": [
+            "GHSA-wj6h-64fc-37mp",
+            "CVE-2024-23342"
+          ],
+          "description": "python-ecdsa has been found to be subject to a Minerva timing attack on the P-256 curve. Using the `ecdsa.SigningKey.sign_digest()` API function and timing signatures an attacker can leak the internal nonce which may allow for private key discovery. Both ECDSA signatures, key generation, and ECDH operations are affected. ECDSA signature verification is unaffected. The python-ecdsa project considers side channel attacks out of scope for the project and there is no planned fix."
+        }
+      ]
+    },
+    {
+      "name": "eth-abi",
+      "version": "6.0.0",
+      "vulns": []
+    },
+    {
+      "name": "parsimonious",
+      "version": "0.10.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-hash",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "pycryptodome",
+      "version": "3.23.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-keyfile",
+      "version": "0.10.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-keys",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-rlp",
+      "version": "3.0.0",
+      "vulns": []
+    },
+    {
+      "name": "py-evm",
+      "version": "0.12.1b1",
+      "vulns": []
+    },
+    {
+      "name": "cached-property",
+      "version": "2.0.1",
+      "vulns": []
+    },
+    {
+      "name": "eth-bloom",
+      "version": "4.0.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-typing",
+      "version": "6.0.0",
+      "vulns": []
+    },
+    {
+      "name": "eth-utils",
+      "version": "6.0.0",
+      "vulns": []
+    },
+    {
+      "name": "cytoolz",
+      "version": "1.1.0",
+      "vulns": []
+    },
+    {
+      "name": "faker",
+      "version": "40.38.0",
+      "vulns": []
+    },
+    {
+      "name": "filelock",
+      "version": "3.32.6",
+      "vulns": []
+    },
+    {
+      "name": "flask",
+      "version": "3.1.3",
+      "vulns": []
+    },
+    {
+      "name": "blinker",
+      "version": "1.9.0",
+      "vulns": []
+    },
+    {
+      "name": "flask-cors",
+      "version": "6.0.5",
+      "vulns": []
+    },
+    {
+      "name": "flask-login",
+      "version": "0.6.3",
+      "vulns": []
+    },
+    {
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "vulns": []
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.7.0",
+      "vulns": []
+    },
+    {
+      "name": "gevent",
+      "version": "26.8.0",
+      "vulns": []
+    },
+    {
+      "name": "geventhttpclient",
+      "version": "2.3.9",
+      "vulns": []
+    },
+    {
+      "name": "gitpython",
+      "version": "3.1.62",
+      "vulns": []
+    },
+    {
+      "name": "gitdb",
+      "version": "4.0.12",
+      "vulns": []
+    },
+    {
+      "name": "smmap",
+      "version": "5.0.3",
+      "vulns": []
+    },
+    {
+      "name": "grpcio",
+      "version": "1.83.1",
+      "vulns": []
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "vulns": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "vulns": []
+    },
+    {
+      "name": "hexbytes",
+      "version": "2.0.0",
+      "vulns": []
+    },
+    {
+      "name": "hiredis",
+      "version": "3.4.1",
+      "vulns": []
+    },
+    {
+      "name": "http-ece",
+      "version": "1.2.1",
+      "vulns": []
+    },
+    {
+      "name": "h2",
+      "version": "4.4.1",
+      "vulns": []
+    },
+    {
+      "name": "hpack",
+      "version": "4.2.0",
+      "vulns": []
+    },
+    {
+      "name": "hyperframe",
+      "version": "6.1.0",
+      "vulns": []
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.0",
+      "vulns": []
+    },
+    {
+      "name": "itsdangerous",
+      "version": "2.2.0",
+      "vulns": []
+    },
+    {
+      "name": "lru-dict",
+      "version": "1.4.1",
+      "vulns": []
+    },
+    {
+      "name": "lxml",
+      "version": "6.1.3",
+      "vulns": []
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "vulns": []
+    },
+    {
+      "name": "msgpack",
+      "version": "1.2.2",
+      "vulns": []
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "vulns": []
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.3",
+      "vulns": []
+    },
+    {
+      "name": "onnxruntime",
+      "version": "1.30.0",
+      "vulns": []
+    },
+    {
+      "name": "pdfminer-six",
+      "version": "20260107",
+      "vulns": []
+    },
+    {
+      "name": "pdfplumber",
+      "version": "0.11.10",
+      "vulns": []
+    },
+    {
+      "name": "pillow",
+      "version": "12.3.0",
+      "vulns": []
+    },
+    {
+      "name": "propcache",
+      "version": "0.5.2",
+      "vulns": []
+    },
+    {
+      "name": "protobuf",
+      "version": "7.36.1",
+      "vulns": []
+    },
+    {
+      "name": "psutil",
+      "version": "7.2.2",
+      "vulns": []
+    },
+    {
+      "name": "py-ecc",
+      "version": "8.0.0",
+      "vulns": []
+    },
+    {
+      "name": "py-vapid",
+      "version": "1.9.4",
+      "vulns": []
+    },
+    {
+      "name": "pyasn1",
+      "version": "0.6.4",
+      "vulns": []
+    },
+    {
+      "name": "pycryptodomex",
+      "version": "3.23.0",
+      "vulns": []
+    },
+    {
+      "name": "email-validator",
+      "version": "2.3.0",
+      "vulns": []
+    },
+    {
+      "name": "dnspython",
+      "version": "2.8.0",
+      "vulns": []
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "vulns": []
+    },
+    {
+      "name": "pyjwt",
+      "version": "2.14.0",
+      "vulns": []
+    },
+    {
+      "name": "pypdfium2",
+      "version": "5.13.0",
+      "vulns": []
+    },
+    {
+      "name": "pysocks",
+      "version": "1.7.1",
+      "vulns": []
+    },
+    {
+      "name": "python-engineio",
+      "version": "4.14.0",
+      "vulns": []
+    },
+    {
+      "name": "python-socketio",
+      "version": "5.16.4",
+      "vulns": []
+    },
+    {
+      "name": "bidict",
+      "version": "0.24.1",
+      "vulns": []
+    },
+    {
+      "name": "pyunormalize",
+      "version": "17.0.0",
+      "vulns": []
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "vulns": []
+    },
+    {
+      "name": "pyzmq",
+      "version": "27.2.0",
+      "vulns": []
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.10",
+      "vulns": []
+    },
+    {
+      "name": "rlp",
+      "version": "5.0.0",
+      "vulns": []
+    },
+    {
+      "name": "safe-pysha3",
+      "version": "1.0.5",
+      "vulns": []
+    },
+    {
+      "name": "safetensors",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "scikit-learn",
+      "version": "1.9.1",
+      "vulns": []
+    },
+    {
+      "name": "joblib",
+      "version": "1.6.0",
+      "vulns": []
+    },
+    {
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "vulns": []
+    },
+    {
+      "name": "narwhals",
+      "version": "2.26.0",
+      "vulns": []
+    },
+    {
+      "name": "scipy",
+      "version": "1.18.1",
+      "vulns": []
+    },
+    {
+      "name": "semantic-version",
+      "version": "2.10.0",
+      "vulns": []
+    },
+    {
+      "name": "simple-websocket",
+      "version": "1.1.0",
+      "vulns": []
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "vulns": []
+    },
+    {
+      "name": "starlette",
+      "version": "1.6.0",
+      "vulns": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "vulns": []
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "vulns": []
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "vulns": []
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.6.0",
+      "vulns": []
+    },
+    {
+      "name": "toolz",
+      "version": "1.1.0",
+      "vulns": []
+    },
+    {
+      "name": "trie",
+      "version": "4.0.0",
+      "vulns": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "vulns": []
+    },
+    {
+      "name": "httptools",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "uvloop",
+      "version": "0.22.1",
+      "vulns": []
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.2.0",
+      "vulns": []
+    },
+    {
+      "name": "websocket-client",
+      "version": "1.9.2",
+      "vulns": []
+    },
+    {
+      "name": "websockets",
+      "version": "17.1",
+      "vulns": []
+    },
+    {
+      "name": "werkzeug",
+      "version": "3.1.8",
+      "vulns": []
+    },
+    {
+      "name": "xlsxwriter",
+      "version": "3.2.9",
+      "vulns": []
+    },
+    {
+      "name": "atpublic",
+      "version": "7.0.0",
+      "vulns": []
+    },
+    {
+      "name": "beautifulsoup4",
+      "version": "4.15.0",
+      "vulns": []
+    },
+    {
+      "name": "soupsieve",
+      "version": "2.9.2",
+      "vulns": []
+    },
+    {
+      "name": "brotli",
+      "version": "1.2.0",
+      "vulns": []
+    },
+    {
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "vulns": []
+    },
+    {
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "vulns": []
+    },
+    {
+      "name": "mako",
+      "version": "1.4.1",
+      "vulns": []
+    },
+    {
+      "name": "markdownify",
+      "version": "1.2.3",
+      "vulns": []
+    },
+    {
+      "name": "parse",
+      "version": "1.22.1",
+      "vulns": []
+    },
+    {
+      "name": "parse-type",
+      "version": "0.6.6",
+      "vulns": []
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "vulns": []
+    },
+    {
+      "name": "typer",
+      "version": "0.27.2",
+      "vulns": []
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "vulns": []
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "vulns": []
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "vulns": []
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "vulns": []
+    },
+    {
+      "name": "wsproto",
+      "version": "1.3.2",
+      "vulns": []
+    },
+    {
+      "name": "zope-event",
+      "version": "6.2",
+      "vulns": []
+    },
+    {
+      "name": "zope-interface",
+      "version": "8.6",
+      "vulns": []
+    }
+  ],
+  "fixes": []
+}

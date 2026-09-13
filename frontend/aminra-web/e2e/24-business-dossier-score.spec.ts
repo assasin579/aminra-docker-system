@@ -9,6 +9,21 @@
  *  5. approve-final rejects empty submissions
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
+
+const PROVIDER_EMAIL = process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn";
+const PROVIDER_PASSWORD = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+
+async function providerToken(request: Parameters<typeof requireKeycloakUserToken>[0]): Promise<string> {
+  if (!PROVIDER_PASSWORD) test.skip(true, "provider Keycloak password not configured");
+  return requireKeycloakUserToken(request, { email: PROVIDER_EMAIL, password: PROVIDER_PASSWORD as string });
+}
+
+async function appProfile(request: Parameters<typeof requireKeycloakUserToken>[0], token: string) {
+  const res = await request.get("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+  expect(res.ok()).toBeTruthy();
+  return res.json();
+}
 
 test.describe("provider dossier + score", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -19,15 +34,7 @@ test.describe("provider dossier + score", () => {
   });
 
   test("dossier + score endpoints return shape", async ({ request }) => {
-    const login = await request.post("/api/auth/login", {
-      data: {
-        email: "cb-demo@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "provider",
-      },
-    });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token } = await login.json();
+    const access_token = await providerToken(request);
 
     const list = await request.get("/api/api/audits/businesses", {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -68,15 +75,7 @@ test.describe("provider dossier + score", () => {
   test("PUT /received/{id}/status rejects status='approved'", async ({
     request,
   }) => {
-    const login = await request.post("/api/auth/login", {
-      data: {
-        email: "cb-demo@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "provider",
-      },
-    });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token } = await login.json();
+    const access_token = await providerToken(request);
 
     const stub = "00000000-0000-0000-0000-000000000000";
     const res = await request.put(
@@ -98,15 +97,8 @@ test.describe("provider dossier + score", () => {
     page,
     request,
   }) => {
-    const login = await request.post("/api/auth/login", {
-      data: {
-        email: "cb-demo@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "provider",
-      },
-    });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token, user } = await login.json();
+    const access_token = await providerToken(request);
+    const user = await appProfile(request, access_token);
 
     const list = await request.get("/api/api/audits/businesses", {
       headers: { Authorization: `Bearer ${access_token}` },

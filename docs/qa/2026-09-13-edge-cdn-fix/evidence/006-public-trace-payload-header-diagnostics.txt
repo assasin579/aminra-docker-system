@@ -1,0 +1,33 @@
+# public trace payload/header diagnostics
+2026-09-13T02:45:35-04:00
+--- http://127.0.0.1:8100/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+HTTP/1.1 200 OK
+server: uvicorn
+cache-control: public, max-age=5, stale-while-revalidate=30
+content-length: 1467
+http=200 time=0.038747 size_download=1467
+body_bytes= 1467
+--- http://127.0.0.1:3100/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+vary: Accept-Encoding
+cache-control: public, max-age=5, stale-while-revalidate=30
+cdn-cache-control: public, max-age=30, stale-while-revalidate=60
+cloudflare-cdn-cache-control: public, max-age=30, stale-while-revalidate=60
+content-length: 1467
+server: uvicorn
+x-aminra-proxy-cache: hit
+http=200 time=0.013154 size_download=1467
+body_bytes= 1467
+--- https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+HTTP/2 200 
+content-length: 1467
+cache-control: public, max-age=5, stale-while-revalidate=30
+cdn-cache-control: public, max-age=30, stale-while-revalidate=60
+server: cloudflare
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+vary: Accept-Encoding
+x-aminra-proxy-cache: hit
+cf-cache-status: DYNAMIC
+http=200 time=0.318888 size_download=1467
+body_bytes= 1467
