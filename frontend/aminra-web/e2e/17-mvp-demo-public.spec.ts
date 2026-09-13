@@ -10,6 +10,8 @@ import { test, expect } from "./fixtures";
 import { keycloakPasswordGrant, requireKeycloakUserToken } from "./helpers/auth-token";
 
 const DEMO_CERT = "HALAL-2026-DEMO";
+const BIZ_DEMO_EMAIL = process.env.PW_BIZ_EMAIL ?? "biz-demo-1@demo.aminra.vn";
+const BIZ_DEMO_PASSWORD = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
 
 // ── Flow 1: Public verify cert ─────────────────────────────────────────────
 
@@ -85,9 +87,14 @@ test.describe("MVP Flow 5: Public cert PDF download", () => {
 
 test.describe("MVP Flow 6: Business registration + login", () => {
   test("Business login with seeded demo account works", async ({ api }) => {
+    if (!BIZ_DEMO_PASSWORD) {
+      test.skip(true, "business demo password not configured (PW_BIZ_PASSWORD or DEMO_PW)");
+      return;
+    }
+    const password = BIZ_DEMO_PASSWORD;
     const res = await keycloakPasswordGrant(api, {
-      email: "biz-demo-1@demo.aminra.vn",
-      password: "DemoP@ss2026",
+      email: BIZ_DEMO_EMAIL,
+      password,
     });
     if (res.status() !== 200) {
       test.skip(true, "demo seed missing");
@@ -114,9 +121,14 @@ test.describe("MVP Flow 8: Submissions list (business view)", () => {
   test("my-submissions returns array for authenticated business", async ({
     api,
   }) => {
+    if (!BIZ_DEMO_PASSWORD) {
+      test.skip(true, "business demo password not configured (PW_BIZ_PASSWORD or DEMO_PW)");
+      return;
+    }
+    const password = BIZ_DEMO_PASSWORD;
     const access_token = await requireKeycloakUserToken(api, {
-      email: "biz-demo-1@demo.aminra.vn",
-      password: "DemoP@ss2026",
+      email: BIZ_DEMO_EMAIL,
+      password,
     }).catch(() => null);
     if (!access_token) test.skip(true, "demo seed missing");
 

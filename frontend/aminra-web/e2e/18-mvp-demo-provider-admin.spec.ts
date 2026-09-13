@@ -6,19 +6,21 @@
 import { test, expect } from "./fixtures";
 import { requireKeycloakUserToken } from "./helpers/auth-token";
 
-const BIZ_DEMO_PW = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW ?? "DemoP@ss2026";
+const BIZ_DEMO_PW = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
 const PROVIDER_DEMO_PW =
-  process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW ?? "DemoP@ss2026";
-const AUDITOR_DEMO_PW = process.env.PW_AUDITOR_PASSWORD ?? process.env.AUDITOR_DEMO_PW ?? process.env.DEMO_PW ?? "DemoP@ss2026";
+  process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+const AUDITOR_DEMO_PW = process.env.PW_AUDITOR_PASSWORD ?? process.env.AUDITOR_DEMO_PW ?? process.env.DEMO_PW;
 
-const SEEDED_PASSWORD_BY_EMAIL: Record<string, string> = {
+const SEEDED_PASSWORD_BY_EMAIL: Record<string, string | undefined> = {
   "biz-demo-1@demo.aminra.vn": BIZ_DEMO_PW,
   "cb-demo@demo.aminra.vn": PROVIDER_DEMO_PW,
   "auditor-demo@demo.aminra.vn": AUDITOR_DEMO_PW,
 };
 
 async function loginAs(api: Parameters<typeof requireKeycloakUserToken>[0], email: string) {
-  return requireKeycloakUserToken(api, { email, password: SEEDED_PASSWORD_BY_EMAIL[email] ?? BIZ_DEMO_PW }).catch(
+  const password = SEEDED_PASSWORD_BY_EMAIL[email] ?? BIZ_DEMO_PW;
+  if (!password) return null;
+  return requireKeycloakUserToken(api, { email, password }).catch(
     () => null,
   );
 }
