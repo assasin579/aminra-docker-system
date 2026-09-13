@@ -1,4 +1,5 @@
 import { APIRequestContext, test } from "@playwright/test";
+import { keycloakClientId, keycloakTokenUrl } from "./auth-token";
 
 /**
  * Resolve a Keycloak platform_admin token for admin E2E specs.
@@ -17,17 +18,15 @@ export async function requireAdminToken(request: APIRequestContext): Promise<str
   if (!email || !password) {
     test.skip(true, "admin Keycloak credentials not configured (PW_ADMIN_TOKEN or TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD)");
   }
+  const username = email as string;
+  const userPassword = password as string;
 
-  const keycloakUrl = (process.env.KEYCLOAK_PUBLIC_URL || process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.silvergem.org").replace(/\/$/, "");
-  const realm = process.env.KEYCLOAK_REALM || process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "aminra";
-  const clientId = process.env.KEYCLOAK_PUBLIC_CLIENT_ID || process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "aminra-frontend";
-
-  const login = await request.post(`${keycloakUrl}/realms/${realm}/protocol/openid-connect/token`, {
+  const login = await request.post(keycloakTokenUrl(), {
     form: {
-      grant_type: "password",
-      client_id: clientId,
-      username: email,
-      password,
+      grant_type: "password" as const,
+      client_id: keycloakClientId(),
+      username,
+      password: userPassword,
     },
   });
   if (!login.ok()) {

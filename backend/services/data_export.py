@@ -70,7 +70,7 @@ async def export_user_data(db, user: dict) -> dict:
     role = user.get("role")
     tenant_id = user.get("tenant_id")
 
-    profile = await _profile(db, user_id)
+    profile = await _profile(db, user)
     notifications = await _notifications(db, user_id)
     audit_logs = await _audit_logs(db, user_id)
 
@@ -108,7 +108,8 @@ async def export_user_data(db, user: dict) -> dict:
 # ── Sections ────────────────────────────────────────────────────────────────
 
 
-async def _profile(db, user_id: str) -> dict:
+async def _profile(db, user: dict) -> dict:
+    user_id = user["sub"]
     row = await db.fetchrow(
         """
         SELECT id, email, role, status, company_name, company_code, is_owner,
@@ -118,7 +119,23 @@ async def _profile(db, user_id: str) -> dict:
         """,
         user_id,
     )
-    return _row_to_dict(row, drop=SECRET_FIELDS)
+    profile = _row_to_dict(row, drop=SECRET_FIELDS)
+    if profile:
+        return profile
+
+    # Keycloak is the identity source of truth in Phase 4c. Some demo/live
+    # accounts can be valid JWT subjects before the local users table is fully
+    # backfilled. A data-rights export must still identify the requesting data
+    # subject, but must not invent tenant-owned rows.
+    return {
+        "id": user_id,
+        "email": user.get("email"),
+        "role": user.get("role"),
+        "status": user.get("status"),
+        "tenant_id": user.get("tenant_id"),
+        "is_owner": user.get("is_owner"),
+        "source": "keycloak_claims",
+    }
 
 
 async def _notifications(db, user_id: str) -> list[dict]:

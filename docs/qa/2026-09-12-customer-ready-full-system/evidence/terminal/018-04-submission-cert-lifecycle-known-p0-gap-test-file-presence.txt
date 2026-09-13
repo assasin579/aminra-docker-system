@@ -1,6 +1,6 @@
 # Domain: 04-submission-cert-lifecycle
 # Step: known-p0-gap-test-file-presence
-# Started: 2026-09-12T05:27:40-04:00
+# Started: 2026-09-12T19:34:43-04:00
 # Command: python3 - <<'PY'
 from pathlib import Path
 missing=[]
@@ -15,12 +15,7 @@ if missing:
 print('All named P0 lifecycle gap test files exist')
 PY
 
-MISSING_P0_TEST_FILES:
-backend/tests/test_submission_state_machine.py
-backend/tests/test_submission_document_lock.py
-backend/tests/test_certificate_lifecycle_scope.py
-backend/tests/test_certificate_number_concurrency.py
-These gaps must be implemented or mapped to equivalent existing tests before production GO.
+All named P0 lifecycle gap test files exist
 
-# Finished: 2026-09-12T05:27:40-04:00
-# Exit code: 2
+# Finished: 2026-09-12T19:34:43-04:00
+# Exit code: 0

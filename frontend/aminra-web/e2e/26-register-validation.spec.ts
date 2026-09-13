@@ -74,7 +74,8 @@ test.describe("register validation", () => {
     });
     expect(r.status()).toBe(201);
     const body = await r.json();
-    expect(body.access_token).toBeTruthy();
-    expect(body.user.role).toBe("business");
+    expect(body.email).toBeTruthy();
+    expect(body.status).toBe("active");
+    expect(body.message).toContain("Đăng ký thành công");
   });
 });

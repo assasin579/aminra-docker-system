@@ -127,6 +127,35 @@ class TestBundleShape:
         assert len(ds["notifications"]) == 1
         assert len(ds["audit_logs"]) == 1
 
+    async def test_profile_falls_back_to_keycloak_claims_when_local_user_missing(self):
+        from services.data_export import export_user_data
+        db = FakeConn()
+        db.fetchrow_responses = [("FROM users WHERE id = $1", None)]
+        db.fetch_responses = [
+            ("FROM notifications WHERE user_id", []),
+            ("FROM audit_logs WHERE user_id", []),
+            ("FROM documents WHERE tenant_id", []),
+            ("FROM submissions WHERE business_tenant", []),
+            ("FROM halal_certificates WHERE business_tenant", []),
+            ("FROM audit_visits WHERE business_tenant", []),
+            ("FROM suppliers WHERE tenant_id", []),
+            ("FROM materials WHERE tenant_id", []),
+            ("FROM production_batches WHERE tenant_id", []),
+        ]
+
+        bundle = await export_user_data(db, {
+            "sub": USER_ID,
+            "email": "kc-only@example.vn",
+            "role": "business",
+            "tenant_id": TENANT_ID,
+            "status": "active",
+            "is_owner": True,
+        })
+
+        profile = bundle["data_subject"]["profile"]
+        assert profile["email"] == "kc-only@example.vn"
+        assert profile["source"] == "keycloak_claims"
+
 
 # ── Secret filtering ────────────────────────────────────────────────────────
 

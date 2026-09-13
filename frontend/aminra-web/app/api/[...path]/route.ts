@@ -9,8 +9,10 @@ export const maxDuration = 120;
 export const dynamic = "force-dynamic";
 
 const BACKEND = process.env.BACKEND_URL || "http://aminra-backend:8000";
-const PUBLIC_TRACE_PROXY_CACHE_TTL_MS = Number(process.env.PUBLIC_TRACE_PROXY_CACHE_TTL_MS || "5000");
+const PUBLIC_TRACE_PROXY_CACHE_TTL_MS = Number(process.env.PUBLIC_TRACE_PROXY_CACHE_TTL_MS || "60000");
 const PUBLIC_TRACE_PROXY_CACHE_MAX_ITEMS = Number(process.env.PUBLIC_TRACE_PROXY_CACHE_MAX_ITEMS || "512");
+const PUBLIC_TRACE_BROWSER_CACHE_CONTROL = "public, max-age=5, stale-while-revalidate=30";
+const PUBLIC_TRACE_SHARED_CACHE_CONTROL = "public, max-age=30, stale-while-revalidate=60";
 const publicTraceProxyCache = new Map<string, { expiresAt: number; status: number; headers: [string, string][]; body: string }>();
 
 function cacheablePublicTracePath(req: NextRequest, path: string[]): string | null {
@@ -40,7 +42,10 @@ function rememberPublicTrace(cacheKey: string, upstream: Response, body: string)
     }
   }
   const headers = new Headers(upstream.headers);
-  headers.set("cache-control", "public, max-age=5, stale-while-revalidate=30");
+  headers.set("cache-control", PUBLIC_TRACE_BROWSER_CACHE_CONTROL);
+  headers.set("cdn-cache-control", PUBLIC_TRACE_SHARED_CACHE_CONTROL);
+  headers.set("cloudflare-cdn-cache-control", PUBLIC_TRACE_SHARED_CACHE_CONTROL);
+  headers.set("vary", "Accept-Encoding");
   headers.set("x-aminra-proxy-cache", "miss");
   publicTraceProxyCache.set(cacheKey, {
     expiresAt: now + PUBLIC_TRACE_PROXY_CACHE_TTL_MS,

@@ -4,16 +4,23 @@
  * Flows 12-20 from docs/mvp-demo-test-script.md.
  */
 import { test, expect } from "./fixtures";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
-const DEMO_PW = "DemoP@ss2026";
+const BIZ_DEMO_PW = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW ?? "DemoP@ss2026";
+const PROVIDER_DEMO_PW =
+  process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW ?? "DemoP@ss2026";
+const AUDITOR_DEMO_PW = process.env.PW_AUDITOR_PASSWORD ?? process.env.AUDITOR_DEMO_PW ?? process.env.DEMO_PW ?? "DemoP@ss2026";
 
-async function loginAs(api: any, email: string) {
-  const res = await api.post("/auth/login", {
-    data: { email, password: DEMO_PW },
-  });
-  if (res.status() !== 200) return null;
-  const body = await res.json();
-  return body.access_token as string;
+const SEEDED_PASSWORD_BY_EMAIL: Record<string, string> = {
+  "biz-demo-1@demo.aminra.vn": BIZ_DEMO_PW,
+  "cb-demo@demo.aminra.vn": PROVIDER_DEMO_PW,
+  "auditor-demo@demo.aminra.vn": AUDITOR_DEMO_PW,
+};
+
+async function loginAs(api: Parameters<typeof requireKeycloakUserToken>[0], email: string) {
+  return requireKeycloakUserToken(api, { email, password: SEEDED_PASSWORD_BY_EMAIL[email] ?? BIZ_DEMO_PW }).catch(
+    () => null,
+  );
 }
 
 // ── Flow 12: Provider login → portfolio ───────────────────────────────────

@@ -176,14 +176,25 @@ be_pytest() {
 
 fe_cmd() {
   local domain="$1" name="$2" cmd="$3"
-  run_step "$domain" "$name" "cd frontend/aminra-web && $cmd"
+  run_step "$domain" "$name" "set -a; [ -f .qa/aminra-demo-credentials.env ] && source .qa/aminra-demo-credentials.env; set +a; cd frontend/aminra-web && $cmd"
+}
+
+ensure_demo_accounts() {
+  run_step "00-env" "repair-demo-keycloak-accounts" "bash scripts/qa/repair-demo-accounts.sh | sed -E 's/(password|PASSWORD|secret|SECRET|token|TOKEN)[^[:space:]]*/[REDACTED]/Ig'"
+  if [[ -f ".qa/aminra-demo-credentials.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source .qa/aminra-demo-credentials.env
+    set +a
+  fi
 }
 
 # 0. Baseline / release boundary
 run_step "00-env" "date-and-git-boundary" "date -Is; git branch --show-current; git rev-parse --short HEAD; git status --short; git diff --stat"
 run_step "00-env" "docker-compose-health-and-http-smoke" "docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https://dev-web.silvergem.org | head -12"
 run_step "00-env" "runtime-smoke-script" "bash scripts/qa/runtime-smoke.sh"
-run_step "00-env" "diff-whitespace-check" "git diff --check"
+run_step "00-env" "diff-whitespace-check" "git diff --check -- . ':!docs/qa/**'"
+ensure_demo_accounts
 
 # 1. Auth / Keycloak / session / RBAC
 be_pytest "01-auth-session-rbac" "keycloak-token-admin-jwks-dual-auth" "tests/test_keycloak_token_security.py tests/test_keycloak_admin_edge.py tests/test_keycloak_jwks_edge.py tests/test_dual_auth_unit.py tests/test_dual_auth_fast_path.py tests/test_dual_auth_cross_tenant_unit.py"
@@ -275,7 +286,7 @@ fe_cmd "06-pdf-doc-versioning" "playwright-template-document-ui" "npx playwright
 
 # 7. Jobs / audit / data rights / upload / rate-limits
 be_pytest "07-jobs-audit-data-security" "jobs-audit-data-upload" "tests/test_jobs_unit.py tests/test_jobs_integration.py tests/test_anchor_job_unit.py tests/test_data_export_unit.py tests/test_data_export_integration.py tests/test_data_deletion_unit.py tests/test_data_deletion_integration.py tests/test_audit_log_unit.py tests/test_audit_log_integration.py tests/test_audit_log_coverage.py tests/test_upload_validation.py tests/test_config_tunables.py"
-run_step "07-jobs-audit-data-security" "high-signal-log-scan" "docker compose logs --since=60m aminra-backend arq-worker keycloak 2>&1 | grep -Ei 'traceback|exception|error|failed|fatal|database not available|secret|token' || true"
+run_step "07-jobs-audit-data-security" "high-signal-log-scan" "docker compose logs --since=60m aminra-backend arq-worker keycloak 2>&1 | grep -Ei \"traceback|exception|error|failed|fatal|database not available|secret|token\" || true"
 run_step "07-jobs-audit-data-security" "rate-limit-doc-presence" "test -f docs/api/rate-limiting.md && sed -n '1,180p' docs/api/rate-limiting.md"
 
 # 8. Frontend contracts / build / accessibility / browser

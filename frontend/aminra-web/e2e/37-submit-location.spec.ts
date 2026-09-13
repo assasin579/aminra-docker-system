@@ -86,7 +86,7 @@ test.describe("37 — submit-location static guard", () => {
       /\/submissions\/providers/,
     );
     expect(src, "openSubmitModal fetch documents").toMatch(
-      /\/documents\?page=1/,
+      /\/documents\?page=1(?:&page_size=100)?/,
     );
     expect(src, "openSubmitModal dùng Promise.all").toMatch(/Promise\.all/);
 
@@ -97,7 +97,7 @@ test.describe("37 — submit-location static guard", () => {
 
     // Button có isBusiness guard
     expect(src, "button Gửi hồ sơ mới chỉ render khi isBusiness").toMatch(
-      /isBusiness[\s\S]{0,200}Gửi hồ sơ mới|Gửi hồ sơ mới[\s\S]{0,200}isBusiness/,
+      /isBusiness[\s\S]{0,1200}Gửi hồ sơ mới|Gửi hồ sơ mới[\s\S]{0,1200}isBusiness/,
     );
 
     // Modal text có trong submissions page

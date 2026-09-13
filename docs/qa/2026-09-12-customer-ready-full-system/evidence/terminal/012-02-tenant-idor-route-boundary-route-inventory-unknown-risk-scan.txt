@@ -1,6 +1,6 @@
 # Domain: 02-tenant-idor-route-boundary
 # Step: route-inventory-unknown-risk-scan
-# Started: 2026-09-12T05:27:14-04:00
+# Started: 2026-09-12T19:32:41-04:00
 # Command: python3 - <<'PY'
 from pathlib import Path
 p=Path('docs/qa/route-auth-tenant-inventory.md')
@@ -14,5 +14,5 @@ public_unknown_count= 15
 tenant_unknown_count= 13
 NOTE: counts > 0 require executable negative tests before production GO
 
-# Finished: 2026-09-12T05:27:14-04:00
+# Finished: 2026-09-12T19:32:41-04:00
 # Exit code: 0

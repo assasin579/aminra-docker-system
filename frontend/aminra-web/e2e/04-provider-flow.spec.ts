@@ -25,12 +25,12 @@ test.describe("04. Provider user workflow", () => {
     expect([200, 307]).toContain(r.status());
   });
 
-  test("Provider can view pending NCR", async ({ api, prov }) => {
+  test("Provider is blocked from business-owned pending NCR queue", async ({ api, prov }) => {
     test.skip(!prov.token, "Provider not approved");
     const r = await api.get("/api/audits/ncr/pending", {
       headers: { Authorization: `Bearer ${prov.token}` },
     });
-    expect([200, 307]).toContain(r.status());
+    expect(r.status()).toBe(403);
   });
 
   test("Provider can view certificate registry", async ({ api, prov }) => {

@@ -7,6 +7,7 @@
  * Skips gracefully if seed data missing (run scripts/seed_demo_data.py first).
  */
 import { test, expect } from "./fixtures";
+import { keycloakPasswordGrant, requireKeycloakUserToken } from "./helpers/auth-token";
 
 const DEMO_CERT = "HALAL-2026-DEMO";
 
@@ -84,18 +85,20 @@ test.describe("MVP Flow 5: Public cert PDF download", () => {
 
 test.describe("MVP Flow 6: Business registration + login", () => {
   test("Business login with seeded demo account works", async ({ api }) => {
-    const res = await api.post("/auth/login", {
-      data: {
-        email: "biz-demo-1@demo.aminra.vn",
-        password: "DemoP@ss2026",
-      },
+    const res = await keycloakPasswordGrant(api, {
+      email: "biz-demo-1@demo.aminra.vn",
+      password: "DemoP@ss2026",
     });
     if (res.status() !== 200) {
       test.skip(true, "demo seed missing");
     }
     const body = await res.json();
     expect(body.access_token).toBeTruthy();
-    expect(body.user?.role).toBe("business");
+    const me = await api.get("/auth/me", {
+      headers: { Authorization: `Bearer ${body.access_token}` },
+    });
+    expect(me.status()).toBe(200);
+    expect((await me.json()).role).toBe("business");
   });
 
   test("Business login page renders form", async ({ page }) => {
@@ -111,11 +114,11 @@ test.describe("MVP Flow 8: Submissions list (business view)", () => {
   test("my-submissions returns array for authenticated business", async ({
     api,
   }) => {
-    const login = await api.post("/auth/login", {
-      data: { email: "biz-demo-1@demo.aminra.vn", password: "DemoP@ss2026" },
-    });
-    if (login.status() !== 200) test.skip(true, "demo seed missing");
-    const { access_token } = await login.json();
+    const access_token = await requireKeycloakUserToken(api, {
+      email: "biz-demo-1@demo.aminra.vn",
+      password: "DemoP@ss2026",
+    }).catch(() => null);
+    if (!access_token) test.skip(true, "demo seed missing");
 
     const res = await api.get("/api/submissions/my-submissions", {
       headers: { Authorization: `Bearer ${access_token}` },

@@ -1,0 +1,11 @@
+# Domain: 00-env
+# Step: repair-demo-keycloak-accounts
+# Started: 2026-09-12T19:42:22-04:00
+# Command: bash scripts/qa/repair-demo-accounts.sh | sed -E 's/(password|PASSWORD|secret|SECRET|token|TOKEN)[^[:space:]]*/[REDACTED]/Ig'
+
+PASS: repaired cb-demo@demo.aminra.vn role=cb_admin [REDACTED]
+PASS: repaired demo-platform-admin@demo.aminra.vn role=platform_admin [REDACTED]
+PASS: updated /home/user/Documents/aminra-docker-system/.qa/aminra-demo-credentials.env mode=600 values=REDACTED
+
+# Finished: 2026-09-12T19:42:23-04:00
+# Exit code: 0

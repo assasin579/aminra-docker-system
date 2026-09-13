@@ -1,6 +1,6 @@
 # Domain: 03-supply-chain-trace
 # Step: public-trace-valid-invalid-smoke
-# Started: 2026-09-12T05:27:17-04:00
+# Started: 2026-09-12T19:34:10-04:00
 # Command: python3 - <<'PY'
 import json, re, subprocess, sys, pathlib, urllib.request
 term=pathlib.Path('docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal')
@@ -30,7 +30,11 @@ for url, expect in [
         sys.exit(1)
 PY
 
-BLOCKED: no public_trace_id found in seed output
+trace_id= 73695b8a-3c10-570b-8bba-92c12da9b56e
+http://127.0.0.1:8100/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
 
-# Finished: 2026-09-12T05:27:17-04:00
-# Exit code: 2
+# Finished: 2026-09-12T19:34:11-04:00
+# Exit code: 0

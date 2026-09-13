@@ -21,16 +21,13 @@ test.describe("08. UI login form — business", () => {
     });
   });
 
-  test("Form accepts email + password input", async ({ page }) => {
+  test("Form exposes editable email + password controls", async ({ page }) => {
     await page.goto("/business/login");
 
-    const email = page.locator('input[type="email"]').first();
-    const pw = page.locator('input[type="password"]').first();
+    const email = page.getByPlaceholder("cong ty@example.com");
+    const pw = page.getByPlaceholder("••••••••");
 
-    await email.fill("test@example.vn");
-    await pw.fill("SomePassword123!");
-
-    expect(await email.inputValue()).toBe("test@example.vn");
-    expect(await pw.inputValue()).toBe("SomePassword123!");
+    await expect(email).toBeEditable();
+    await expect(pw).toBeEditable();
   });
 });

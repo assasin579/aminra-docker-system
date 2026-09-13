@@ -1,6 +1,12 @@
 import { test as base, APIRequestContext, request } from "@playwright/test";
+import { requireAdminToken } from "./helpers/admin-token";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
 const API_BASE = process.env.PW_API_BASE ?? "http://localhost:8100";
+const BIZ_EMAIL = process.env.PW_BIZ_EMAIL ?? "biz-demo-1@demo.aminra.vn";
+const BIZ_PASSWORD = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW ?? "DemoP@ss2026";
+const PROV_EMAIL = process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn";
+const PROV_PASSWORD = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW ?? "DemoP@ss2026";
 
 export type Persona = {
   api: APIRequestContext;
@@ -21,59 +27,26 @@ export const test = base.extend<Persona>({
     await ctx.dispose();
   },
 
-  /* Shared business account — registered once per worker */
+  /* Shared seeded business account. Dynamic backend register→login is obsolete:
+     backend /auth/login is retired and Keycloak owns credentials. */
   biz: async ({ api }, use) => {
-    const ts = Date.now();
-    const email = `pw-biz-${ts}@e2e.vn`;
-    const password = `Pw${ts}Pass!`;
-
-    await api.post("/auth/business/register", {
-      data: { email, password, company_name: `PW Biz ${ts}` },
-    });
-    const res = await api.post("/auth/login", { data: { email, password } });
-    const body = await res.json().catch(() => ({}));
-    await use({ email, password, token: body.access_token ?? "" });
+    const email = BIZ_EMAIL;
+    const password = BIZ_PASSWORD;
+    const token = await requireKeycloakUserToken(api, { email, password });
+    await use({ email, password, token });
   },
 
-  /* Shared provider account — admin-approved */
-  prov: async ({ api, admin }, use) => {
-    const ts = Date.now() + 1;
-    const email = `pw-prov-${ts}@e2e.vn`;
-    const password = `Pw${ts}Pass!`;
-
-    await api.post("/auth/provider/register", {
-      data: { email, password, company_name: `PW Provider ${ts}` },
-    });
-
-    /* Find + approve via admin */
-    if (admin.token) {
-      const pend = await api.get("/auth/admin/pending-providers", {
-        headers: { Authorization: `Bearer ${admin.token}` },
-      });
-      const list = await pend.json().catch(() => []);
-      const found = Array.isArray(list)
-        ? list.find((p: { email: string }) => p.email === email)
-        : null;
-      if (found) {
-        const pid = found.id ?? found.user_id;
-        await api.post(`/auth/admin/providers/${pid}/approve`, {
-          headers: { Authorization: `Bearer ${admin.token}` },
-        });
-      }
-    }
-
-    const res = await api.post("/auth/login", { data: { email, password } });
-    const body = await res.json().catch(() => ({}));
-    await use({ email, password, token: body.access_token ?? "" });
+  /* Shared seeded provider account. */
+  prov: async ({ api }, use) => {
+    const email = PROV_EMAIL;
+    const password = PROV_PASSWORD;
+    const token = await requireKeycloakUserToken(api, { email, password });
+    await use({ email, password, token });
   },
 
   /* Admin */
   admin: async ({ api }, use) => {
-    const res = await api.post("/admin/login", {
-      data: { username: "admin", password: "aminra2026" },
-    });
-    const body = await res.json().catch(() => ({}));
-    await use({ token: body.token ?? body.access_token ?? "" });
+    await use({ token: await requireAdminToken(api) });
   },
 });
 

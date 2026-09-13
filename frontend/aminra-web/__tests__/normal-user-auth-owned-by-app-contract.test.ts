@@ -43,6 +43,24 @@ describe("normal user auth is owned by AMINRA UI, not visible Keycloak pages", (
     expect(src).not.toContain("signinRedirect");
   });
 
+  it("Playwright helpers do not call retired backend login endpoints", () => {
+    for (const path of [
+      "e2e/fixtures.ts",
+      "e2e/02-auth.spec.ts",
+      "e2e/17-mvp-demo-public.spec.ts",
+      "e2e/18-mvp-demo-provider-admin.spec.ts",
+    ]) {
+      const src = read(path);
+      expect(src).not.toContain('"/auth/login"');
+      expect(src).not.toContain('"/admin/login"');
+    }
+
+    const authHelper = read("e2e/helpers/auth-token.ts");
+    expect(authHelper).toContain("/protocol/openid-connect/token");
+    expect(authHelper).not.toContain('"/auth/login"');
+    expect(authHelper).not.toContain('"/admin/login"');
+  });
+
   it("normal user logout does not redirect to Keycloak when no browser OIDC user exists", () => {
     const src = read("components/UserAuthContext.tsx");
     expect(src).toContain("if (oidcUser) {");

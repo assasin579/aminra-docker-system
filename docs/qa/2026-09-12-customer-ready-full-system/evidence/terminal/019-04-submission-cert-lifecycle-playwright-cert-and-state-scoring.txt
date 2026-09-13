@@ -1,71 +1,68 @@
 # Domain: 04-submission-cert-lifecycle
 # Step: playwright-cert-and-state-scoring
-# Started: 2026-09-12T05:27:40-04:00
+# Started: 2026-09-12T19:34:43-04:00
 # Command: cd frontend/aminra-web && npx playwright test e2e/14-cuj-cert-lifecycle.spec.ts e2e/35-batch5-state-scoring.spec.ts --project=desktop-chromium
 
 
 Running 7 tests using 1 worker
 
-  ✓  1 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert (72ms)
-  ✘  2 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert (1ms)
-  ✘  3 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) (1.8s)
-  ✓  4 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:46:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible (1.8s)
-  ✘  5 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider (2ms)
-  ✓  6 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:20:7 › Phase 1 Batch 5 — state + scoring › static guards — code reflects all batch 5 fixes (50ms)
-  ✓  7 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:68:7 › Phase 1 Batch 5 — state + scoring › transition matrix is sane: terminal states cannot transition out (11ms)
+  ✓  1 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert (62ms)
+  ✓  2 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert (1.4s)
+  ✓  3 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) (773ms)
+  ✘  4 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible (218ms)
+  ✘  5 [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider (1.4s)
+  ✓  6 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:20:7 › Phase 1 Batch 5 — state + scoring › static guards — code reflects all batch 5 fixes (132ms)
+  ✓  7 [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:68:7 › Phase 1 Batch 5 — state + scoring › transition matrix is sane: terminal states cannot transition out (20ms)
 
 
-  1) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert 
+  1) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible 
 
-    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
-    ╔════════════════════════════════════════════════════════════╗
-    ║ Looks like Playwright was just installed or updated.       ║
-    ║ Please run the following command to download new browsers: ║
-    ║                                                            ║
-    ║     npx playwright install                                 ║
-    ║                                                            ║
-    ║ <3 Playwright Team                                         ║
-    ╚════════════════════════════════════════════════════════════╝
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
 
-    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--e6da9-g-tìm-thấy-for-unknown-cert-desktop-chromium/error-context.md
+       at helpers/auth-token.ts:61
 
-  2) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) 
+      59 |   const login = await keycloakPasswordGrant(request, credentials);
+      60 |   if (!login.ok()) {
+    > 61 |     throw new Error(
+         |           ^
+      62 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      63 |     );
+      64 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:61:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:43:19)
 
-    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--f3c53-e-stats-endpoint-accessible-desktop-chromium/error-context.md
 
-    Expected value: [32m401[39m
-    Received array: [31m[400, 403, 404][39m
+  2) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider 
 
-      41 |       },
-      42 |     );
-    > 43 |     expect([400, 403, 404]).toContain(res.status());
-         |                             ^
-      44 |   });
-      45 |
-      46 |   test("Cert lifecycle stats endpoint accessible", async ({ api, prov }) => {
-        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/14-cuj-cert-lifecycle.spec.ts:43:29
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
 
-    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--750eb-reason-validation-enforced--desktop-chromium/error-context.md
+       at helpers/auth-token.ts:61
 
-  3) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider 
+      59 |   const login = await keycloakPasswordGrant(request, credentials);
+      60 |   if (!login.ok()) {
+    > 61 |     throw new Error(
+         |           ^
+      62 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      63 |     );
+      64 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:61:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:43:19)
 
-    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
-    ╔════════════════════════════════════════════════════════════╗
-    ║ Looks like Playwright was just installed or updated.       ║
-    ║ Please run the following command to download new browsers: ║
-    ║                                                            ║
-    ║     npx playwright install                                 ║
-    ║                                                            ║
-    ║ <3 Playwright Team                                         ║
-    ╚════════════════════════════════════════════════════════════╝
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
 
     Error Context: test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/error-context.md
 
-  3 failed
-    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert 
-    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced) 
-    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:59:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider 
-  4 passed (10.2s)
+  2 failed
+    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible 
+    [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider 
+  5 passed (9.0s)
 
-# Finished: 2026-09-12T05:27:52-04:00
+# Finished: 2026-09-12T19:34:54-04:00
 # Exit code: 1

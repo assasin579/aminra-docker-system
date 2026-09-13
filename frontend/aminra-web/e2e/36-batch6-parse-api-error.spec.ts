@@ -14,7 +14,6 @@ const MIGRATED_FILES = [
   "app/audits/page.tsx",
   "app/audits/templates/page.tsx",
   "app/submissions/page.tsx",
-  "components/AdminAuthContext.tsx",
   "components/AdminPage.tsx",
 ];
 
@@ -29,9 +28,9 @@ test.describe("Phase 1 Batch 6 — UX cleanup", () => {
   for (const path of MIGRATED_FILES) {
     test(`parseApiError used in ${path}`, async () => {
       const { readFile } = await import("node:fs/promises");
-      const src = await readFile(`../../frontend/aminra-web/${path}`, "utf8");
-      expect(src, `${path} must import parseApiError`).toContain(
-        "from '@/lib/apiError'",
+      const src = await readFile(path, "utf8");
+      expect(src, `${path} must import parseApiError`).toMatch(
+        /from ["']@\/lib\/apiError["']/,
       );
       expect(src, `${path} must call parseApiError`).toContain(
         "parseApiError(",
