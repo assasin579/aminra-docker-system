@@ -63,6 +63,22 @@ async def get_current_user(
     # credentials, so also validate the raw header shape. Accept exactly
     # `Bearer <token>` and reject leading/trailing/extra whitespace.
     raw_auth = request.headers.get("authorization") or request.headers.get("Authorization") or ""
+    # Starlette's Headers accessor may normalize optional whitespace; inspect
+    # ASGI raw headers first so `Authorization: Bearer   <jwt>   ` is not
+    # accepted as a canonical bearer credential.
+    raw_auth_bytes = next(
+        (
+            value
+            for key, value in request.scope.get("headers", [])
+            if key.lower() == b"authorization"
+        ),
+        None,
+    )
+    if raw_auth_bytes is not None:
+        try:
+            raw_auth = raw_auth_bytes.decode("latin-1")
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
     if raw_auth != f"Bearer {token}" or token != token.strip():
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
     if not keycloak_validator.looks_like_keycloak_token(token):

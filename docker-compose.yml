@@ -136,6 +136,16 @@ services:
       # Rotation: bash vault/scripts/rotate-secrets.sh web-push
       - CORS_ORIGINS=https://dev-web.silvergem.org,https://fe.silvergem.org,https://mukjizat.silvergem.org,http://localhost:3000,http://localhost:3001
       - FRONTEND_URL=https://dev-web.silvergem.org
+      # SMTP / transactional email — values sourced from .env or Vault-backed env injection.
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+      - SMTP_HOST=${SMTP_HOST:-smtp.example.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@aminra.org}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-AMINRA}
+      - APP_BASE_URL=${APP_BASE_URL:-https://aminra.org}
       - SENTRY_DSN=${SENTRY_DSN:-}
       - ENVIRONMENT=production
       # Secrets are injected via /vault/secrets/env.sh (see entrypoint.sh)
@@ -220,8 +230,8 @@ services:
       - KC_HOSTNAME_STRICT=true
       - KC_HOSTNAME_STRICT_BACKCHANNEL=false
       - KC_LOG_LEVEL=INFO
-      # Production hostname (Cloudflare Tunnel → localhost:8180, set 2026-05-14 Phase A)
-      - KC_HOSTNAME=auth.silvergem.org
+      # Production hostname (Cloudflare Tunnel → localhost:8180). Canonical AMINRA auth domain.
+      - KC_HOSTNAME=auth.aminra.org
       - KC_PROXY=edge
     ports:
       - "8180:8080"
@@ -312,6 +322,16 @@ services:
       - QDRANT_URL=http://qdrant-db:6333
       - QDRANT_API_KEY=${QDRANT_API_KEY}
       - EMBED_MODEL=intfloat/multilingual-e5-base
+      # SMTP / transactional email jobs — values sourced from .env.
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+      - SMTP_HOST=${SMTP_HOST:-smtp.example.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@aminra.org}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-AMINRA}
+      - APP_BASE_URL=${APP_BASE_URL:-https://aminra.org}
     volumes:
       - upload-data:/app/docs
       - vault-secrets:/vault/secrets:ro

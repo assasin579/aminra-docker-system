@@ -7,7 +7,7 @@ set -uo pipefail
 
 BACKEND_URL="${BACKEND_URL:-http://localhost:8100}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3100}"
-KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.silvergem.org}"
+KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.aminra.org}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-aminra}"
 PUBLIC_URLS="${AMINRA_SMOKE_PUBLIC_URLS:-https://dev-web.silvergem.org}"
 # Canonical public sandbox demo URL is dev-web.silvergem.org. Do not add

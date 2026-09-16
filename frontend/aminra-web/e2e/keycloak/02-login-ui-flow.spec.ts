@@ -1,20 +1,21 @@
 /**
  * Tier 1 Playwright E2E — normal-user login UI contract.
  *
- * Current product decision: normal business/provider users stay on AMINRA-owned
- * credential pages. Keycloak remains the identity backend and direct-grant token
- * issuer for tests/admin flows, but public login/register/reset screens must not
- * expose visible Keycloak SSO buttons or redirect normal users away from AMINRA.
+ * Current product decision: normal business/provider login pages keep the
+ * AMINRA-owned fallback form, but when NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED=true
+ * they must also expose the Keycloak SSO entry point. This catches the Next.js
+ * build-time env drift class where runtime env is correct but the browser bundle
+ * still behaves as if Keycloak is disabled.
  */
 
 import { test, expect } from "./helpers/fixtures";
 
 const FE_URL = process.env.PW_BASE_URL ?? "http://localhost:3100";
 
-async function expectNoVisibleKeycloakSso(page: any) {
-  await expect(page.getByTestId("keycloak-sso-button")).toHaveCount(0);
+async function expectVisibleKeycloakSso(page: any) {
+  await expect(page.getByTestId("keycloak-sso-button")).toBeVisible();
   await expect(page.getByTestId("keycloak-account-cta")).toHaveCount(0);
-  await expect(page.getByText(/Keycloak|SSO|di trú|TOTP/i)).toHaveCount(0);
+  await expect(page.getByText(/Keycloak/i)).toBeVisible();
 }
 
 test.describe("Business login page UI", () => {
@@ -24,7 +25,15 @@ test.describe("Business login page UI", () => {
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.getByRole("button", { name: /^Đăng nhập$/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /Về trang chủ/i })).toHaveAttribute("href", "/landing");
-    await expectNoVisibleKeycloakSso(page);
+    await expectVisibleKeycloakSso(page);
+  });
+
+  test("Keycloak CTA starts OIDC redirect", async ({ page }) => {
+    await page.goto(`${FE_URL}/business/login`);
+    await page.getByTestId("keycloak-sso-button").click();
+    await page.waitForURL(/\/realms\/aminra\//, { timeout: 15000 });
+    expect(page.url()).toContain("client_id=aminra-frontend");
+    expect(page.url()).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3100%2Fauth%2Fcallback");
   });
 
   test("forgot password link routes to AMINRA reset request page", async ({ page }) => {
@@ -35,7 +44,7 @@ test.describe("Business login page UI", () => {
 });
 
 test.describe("Provider login page UI", () => {
-  test("renders AMINRA-owned provider form without visible Keycloak SSO", async ({ page }) => {
+  test("renders AMINRA-owned provider form with visible Keycloak SSO", async ({ page }) => {
     await page.goto(`${FE_URL}/provider/login`);
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
@@ -44,7 +53,7 @@ test.describe("Provider login page UI", () => {
       "href",
       "/landing",
     );
-    await expectNoVisibleKeycloakSso(page);
+    await expectVisibleKeycloakSso(page);
   });
 });
 

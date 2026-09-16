@@ -78,17 +78,19 @@ def role_repr(role_name: str) -> dict:
         roles_cache[role_name] = role
     return roles_cache[role_name]
 
-def ensure_user(email: str, role_name: str, new_pw: str):
-    _, users = json_req("GET", f"/admin/realms/{realm}/users?username={urllib.parse.quote(email)}&exact=true", admin_tok)
+def ensure_user(email: str, role_name: str, new_pw: str, first_name: str, last_name: str):
+    _, users = json_req("GET", f"/admin/realms/{realm}/users?email={urllib.parse.quote(email)}&exact=true", admin_tok)
     if not users:
         status, _ = json_req("POST", f"/admin/realms/{realm}/users", admin_tok, {
-            "username": email, "email": email, "enabled": True, "emailVerified": True, "requiredActions": [],
+            "username": email, "email": email, "firstName": first_name, "lastName": last_name,
+            "enabled": True, "emailVerified": True, "requiredActions": [],
         })
-        _, users = json_req("GET", f"/admin/realms/{realm}/users?username={urllib.parse.quote(email)}&exact=true", admin_tok)
+        _, users = json_req("GET", f"/admin/realms/{realm}/users?email={urllib.parse.quote(email)}&exact=true", admin_tok)
     user = users[0]
     uid = user["id"]
     json_req("PUT", f"/admin/realms/{realm}/users/{uid}", admin_tok, {
-        **user, "enabled": True, "emailVerified": True, "requiredActions": []
+        **user, "username": email, "email": email, "firstName": first_name, "lastName": last_name,
+        "enabled": True, "emailVerified": True, "requiredActions": []
     })
     json_req("PUT", f"/admin/realms/{realm}/users/{uid}/reset-password", admin_tok, {
         "type": "password", "value": new_pw, "temporary": False,
@@ -111,8 +113,8 @@ def ensure_user(email: str, role_name: str, new_pw: str):
 
 provider_pw = gen_pw()
 admin_demo_pw = gen_pw()
-provider_pw = ensure_user("cb-demo@demo.aminra.vn", "cb_admin", provider_pw)
-admin_demo_pw = ensure_user("demo-platform-admin@demo.aminra.vn", "platform_admin", admin_demo_pw)
+provider_pw = ensure_user("cb-demo@demo.aminra.vn", "cb_admin", provider_pw, "Provider", "Demo")
+admin_demo_pw = ensure_user("demo-platform-admin@demo.aminra.vn", "platform_admin", admin_demo_pw, "Platform", "Admin")
 
 # Preserve existing file comments/order lightly and write only relevant keys without printing values.
 QA.parent.mkdir(parents=True, exist_ok=True)
