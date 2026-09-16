@@ -30,4 +30,17 @@ test.describe("08. UI login form — business", () => {
     await expect(email).toBeEditable();
     await expect(pw).toBeEditable();
   });
+
+  test("Login page lets unauthenticated users return to the landing page", async ({
+    page,
+  }) => {
+    await page.goto("/business/login");
+
+    const exit = page.getByRole("link", { name: "Về trang chủ" });
+    await expect(exit).toBeVisible();
+    await expect(exit).toHaveAttribute("href", "/landing");
+
+    await exit.click();
+    await expect(page).toHaveURL(/\/landing$/);
+  });
 });

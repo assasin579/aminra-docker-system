@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BackToLandingLink } from "@/components/auth/BackToLandingLink";
 import { useUserAuth } from "@/components/UserAuthContext";
 
 export default function ProviderLoginPage() {
@@ -30,6 +31,10 @@ export default function ProviderLoginPage() {
 
   return (
     <div className="w-full max-w-md" data-page>
+      <div className="mb-4" data-auth-exit-slot="landing">
+        <BackToLandingLink />
+      </div>
+
       {/* Header — institutional theme */}
       <div className="text-center mb-8 animate-section">
         <div

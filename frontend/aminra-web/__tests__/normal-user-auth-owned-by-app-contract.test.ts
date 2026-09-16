@@ -7,6 +7,26 @@ const read = (relativePath: string) =>
   readFileSync(join(root, relativePath), "utf8");
 
 describe("normal user auth is owned by AMINRA UI, not visible Keycloak pages", () => {
+  it("business and provider login pages expose a reusable route back to the public landing page", () => {
+    const componentPath = "components/auth/BackToLandingLink.tsx";
+    expect(existsSync(join(root, componentPath))).toBe(true);
+
+    const component = read(componentPath);
+    expect(component).toContain('href = "/landing"');
+    expect(component).toContain('label = "Về trang chủ"');
+    expect(component).toContain('aria-label={label}');
+    expect(component).toContain('data-auth-exit="landing"');
+
+    for (const page of [
+      "app/(auth)/business/login/page.tsx",
+      "app/(auth)/provider/login/page.tsx",
+    ]) {
+      const src = read(page);
+      expect(src).toContain('BackToLandingLink');
+      expect(src).toContain('data-auth-exit-slot="landing"');
+    }
+  });
+
   it("normal auth pages do not mention or redirect to Keycloak", () => {
     for (const page of [
       "app/(auth)/business/login/page.tsx",

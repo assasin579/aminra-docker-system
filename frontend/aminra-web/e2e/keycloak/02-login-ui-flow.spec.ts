@@ -23,6 +23,7 @@ test.describe("Business login page UI", () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.getByRole("button", { name: /^Đăng nhập$/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Về trang chủ/i })).toHaveAttribute("href", "/landing");
     await expectNoVisibleKeycloakSso(page);
   });
 
@@ -39,6 +40,10 @@ test.describe("Provider login page UI", () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.getByText(/AMINRA xét duyệt/i)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Về trang chủ" })).toHaveAttribute(
+      "href",
+      "/landing",
+    );
     await expectNoVisibleKeycloakSso(page);
   });
 });
