@@ -151,7 +151,7 @@ git status --short | tee "$LOG_DIR/git-status-before.txt"
 docker compose ps | tee "$LOG_DIR/docker-ps-before.txt"
 
 section "Static gates"
-PYTHONPYCACHEPREFIX=/tmp/aminra-pycache python -m py_compile "${BACKEND_FILES[@]}"
+PYTHONPYCACHEPREFIX=/tmp/aminra-pycache python3 -m py_compile "${BACKEND_FILES[@]}"
 git diff --check
 
 section "Backend focused gates in running container"
@@ -209,7 +209,8 @@ section "Apply DB migration"
 ./scripts/db-migrate.sh current | tee "$LOG_DIR/alembic-current-after.txt"
 
 section "Rebuild/recreate local production containers"
-docker compose up -d --build aminra-backend aminra-frontend | tee "$LOG_DIR/docker-compose-up.txt"
+docker compose build aminra-backend aminra-frontend | tee "$LOG_DIR/docker-compose-build.txt"
+docker compose up -d --no-deps aminra-backend aminra-frontend | tee "$LOG_DIR/docker-compose-up.txt"
 
 docker compose ps | tee "$LOG_DIR/docker-ps-after.txt"
 
