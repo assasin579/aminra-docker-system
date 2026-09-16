@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 from auth.db import get_db
 from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_admin
+from auth.module_service import provision_tenant_modules_for_industry
 
 log = logging.getLogger("aminra.industry_schema")
 
@@ -251,22 +252,30 @@ async def select_industry(
                 "Industry locked after cert issued. Contact admin for override.",
             )
 
-    # Assign
-    await db.execute(
-        "UPDATE users SET industry_schema_id = $1 WHERE id = $2",
-        req.schema_id, target_user_id,
-    )
-    log.info("[industry] user %s (%s) assigned to %s",
-             target_user_id, user["email"], schema_row["code"])
+    # Assign industry and provision module defaults atomically. Provisioning is
+    # idempotent and preserves admin overrides, so future admin-driven changes
+    # can safely reuse the same service without duplicate tenant_modules rows.
+    async with db.transaction():
+        await db.execute(
+            "UPDATE users SET industry_schema_id = $1 WHERE id = $2",
+            req.schema_id, target_user_id,
+        )
+        provisioned_modules = await provision_tenant_modules_for_industry(
+            db,
+            db_user["tenant_id"],
+            req.schema_id,
+        )
+        log.info("[industry] user %s (%s) assigned to %s; provisioned %s modules",
+                 target_user_id, user["email"], schema_row["code"], provisioned_modules)
 
-    # Audit log — `target_user_id` (AMINRA users.id) already resolved above,
-    # so reuse it. user["sub"] is the Keycloak UUID and would FK-violate.
-    await db.execute(
-        "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
-        "VALUES ($1, 'tenant_industry_assigned', 'tenant_industry_schema', $2, $3::jsonb)",
-        target_user_id, req.schema_id,
-        f'{{"schema_code":"{schema_row["code"]}","schema_name":"{schema_row["name_vi"]}"}}',
-    )
+        # Audit log — `target_user_id` (AMINRA users.id) already resolved above,
+        # so reuse it. user["sub"] is the Keycloak UUID and would FK-violate.
+        await db.execute(
+            "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) "
+            "VALUES ($1, 'tenant_industry_assigned', 'tenant_industry_schema', $2, $3::jsonb)",
+            target_user_id, req.schema_id,
+            f'{{"schema_code":"{schema_row["code"]}","schema_name":"{schema_row["name_vi"]}","modules_provisioned":{provisioned_modules}}}',
+        )
 
     return {
         "ok": True,

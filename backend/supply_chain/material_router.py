@@ -7,12 +7,13 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from auth.db import get_db
 from auth.jwt_utils import get_current_user
+from auth.module_guard import require_module
 from auth.permissions import check_permission_db
 from .models import MaterialCreate, MaterialUpdate, MaterialOut
 from .eligibility_service import assert_supplier_eligible
 
 log = logging.getLogger("aminra.supply_chain.materials")
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module("supplier_management"))])
 
 
 def _validate_uuid(v: str) -> str:

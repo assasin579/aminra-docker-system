@@ -9,11 +9,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import Response
 from auth.db import get_db
 from auth.jwt_utils import get_current_user
+from auth.module_guard import require_module
 from auth.permissions import check_permission_db
 from .models import ProcessCreate, ProcessUpdate, ProcessOut
 
 log = logging.getLogger("aminra.supply_chain.process")
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module("process_digitization"))])
 
 
 def _validate_uuid(v: str) -> str:

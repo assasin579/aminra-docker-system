@@ -7,6 +7,11 @@ import { useState, useEffect, useRef } from "react";
 import { useAdminAuth } from "./AdminAuthContext";
 import { useUserAuth } from "./UserAuthContext";
 import NotificationBell from "./NotificationBell";
+import { apiJson } from "@/lib/apiClient";
+
+type TenantModulePayload = {
+  modules?: Array<{ code?: string; status?: string }>;
+};
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -16,11 +21,46 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const { isAdmin, login: adminLogin, logout: logoutAdmin } = useAdminAuth();
   const { user, isAuthenticated, logout: logoutUser, token } = useUserAuth();
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [enabledModuleCodes, setEnabledModuleCodes] = useState<Set<string> | null>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setClientReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "business" || !token) {
+      setEnabledModuleCodes(null);
+      return;
+    }
+
+    let cancelled = false;
+    apiJson<TenantModulePayload>("/api/api/me/modules", {
+      token,
+      fallbackError: "Không tải được cấu hình module.",
+    })
+      .then((payload) => {
+        if (cancelled) return;
+        const enabled = new Set(
+          (payload.modules || [])
+            .filter((module) => module.code && ["enabled", "trial"].includes(module.status || ""))
+            .map((module) => module.code as string),
+        );
+        setEnabledModuleCodes(enabled);
+      })
+      .catch(() => {
+        // Fail open for sidebar rendering during gradual rollout. Backend guards
+        // will enforce access later behind MODULE_GUARDS_ENABLED.
+        if (!cancelled) setEnabledModuleCodes(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, token, user?.role]);
+
+  const hasModule = (...codes: string[]) =>
+    enabledModuleCodes === null || codes.some((code) => enabledModuleCodes.has(code));
 
   // Close avatar dropdown on outside click
   useEffect(() => {
@@ -393,6 +433,17 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         : []),
   ];
 
+  const moduleByHref: Record<string, string> = {
+    "/supply-chain/materials": "supplier_management",
+    "/supply-chain/process": "process_digitization",
+    "/supply-chain/batches": "traceability",
+  };
+
+  const visibleNavItems = navItems.filter((item) => {
+    const requiredModule = moduleByHref[item.href];
+    return !requiredModule || hasModule(requiredModule);
+  });
+
   return (
     <aside
       className="w-64 min-h-screen flex flex-col overflow-hidden"
@@ -608,7 +659,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* ── Navigation ── */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item, i) => {
+        {visibleNavItems.map((item, i) => {
           const [itemPath] = item.href.split("?");
           const active = shouldShowAdminNavigation
             ? pathname === itemPath
