@@ -1,0 +1,3 @@
+# Cloudflare zone discovery (redacted token)
+2026-09-13T10:19:45-04:00
+status=BLOCKED token_missing

@@ -1,0 +1,9 @@
+✓ verifyEmail enabled
+✓ resetPasswordAllowed enabled
+✓ SMTP host configured: aminra-qa-smtp
+✓ SMTP from configured: qa-no-reply@aminra.local
+✓ SMTP port configured: 2525
+✗ SMTP transport security not enabled
+⚠ SMTP auth disabled — acceptable only for trusted internal relay
+❌ Keycloak email verification config has 1 blocker(s).
+make: *** [Makefile:80: keycloak-email-check] Error 1

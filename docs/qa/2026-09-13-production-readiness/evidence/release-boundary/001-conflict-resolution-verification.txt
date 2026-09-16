@@ -1,0 +1,27 @@
+# Release boundary conflict resolution verification
+2026-09-13T10:57:00-04:00
+
+Resolved files:
+- frontend/aminra-web/e2e/fixtures.ts
+- frontend/aminra-web/e2e/17-mvp-demo-public.spec.ts
+- frontend/aminra-web/e2e/18-mvp-demo-provider-admin.spec.ts
+
+Resolution policy:
+- Kept Keycloak/OIDC modernized test behavior.
+- Removed hard-coded demo password fallback from E2E tests.
+- Missing demo credentials now skip with explicit message instead of silently using baked-in credentials.
+
+Verification commands:
+- git diff --check
+- marker scan for <<<<<<< / ======= / >>>>>>>
+- npx tsc --noEmit --pretty false --incremental false
+- npx eslint e2e/fixtures.ts e2e/17-mvp-demo-public.spec.ts e2e/18-mvp-demo-provider-admin.spec.ts --max-warnings=0
+
+Results:
+- conflict_markers=none
+- unmerged_paths=none after git add
+- typescript=PASS
+- eslint_focused=PASS
+
+Caveat:
+- Repository still has untracked QA evidence/scripts from this readiness pass. No commit/push performed.

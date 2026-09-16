@@ -1,0 +1,8 @@
+# Sanitized env presence correction
+2026-09-13T10:19:32-04:00
+CLOUDFLARE_API_TOKEN=missing
+CLOUDFLARE_ZONE_ID=missing
+SMTP_HOST=missing
+SMTP_USER=missing
+SMTP_PASSWORD=missing
+KEYCLOAK_SMTP_HOST=missing

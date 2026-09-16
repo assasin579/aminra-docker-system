@@ -1,0 +1,43 @@
+# Task 5 pg_restore dry-list via postgres container
+2026-09-13T16:38:22-04:00
+;
+; Archive created at 2026-09-13 21:22:27 +07
+;     dbname: aminra
+;     TOC Entries: 315
+;     Compression: -1
+;     Dump Version: 1.14-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 15.19
+;     Dumped by pg_dump version: 15.19
+;
+;
+; Selected TOC Entries:
+;
+2; 3079 16385 EXTENSION - uuid-ossp
+4074; 0 0 COMMENT - EXTENSION "uuid-ossp"
+936; 1247 24746 TYPE public batch_status aminra_user
+897; 1247 16410 TYPE public document_status aminra_user
+933; 1247 24736 TYPE public material_risk aminra_user
+906; 1247 63530 TYPE public supplier_certificate_status aminra_user
+930; 1247 24726 TYPE public supplier_status aminra_user
+891; 1247 16397 TYPE public user_role aminra_user
+894; 1247 16402 TYPE public user_status aminra_user
+277; 1255 25226 FUNCTION public audit_logs_immutable_guard() aminra_user
+279; 1255 25279 FUNCTION public block_delete_with_children() aminra_user
+278; 1255 25277 FUNCTION public enforce_documents_chain_tenant() aminra_user
+276; 1255 24724 FUNCTION public update_updated_at_column() aminra_user
+219; 1259 24581 TABLE public alembic_version aminra_user
+231; 1259 24959 TABLE public audit_checklist_templates aminra_user
+217; 1259 16479 TABLE public audit_logs aminra_user
+234; 1259 25022 TABLE public audit_ncr aminra_user
+233; 1259 25004 TABLE public audit_visit_items aminra_user
+232; 1259 24975 TABLE public audit_visits aminra_user
+238; 1259 25150 TABLE public batch_anchor_proofs aminra_user
+225; 1259 24825 TABLE public batch_materials aminra_user
+226; 1259 24840 TABLE public batch_steps aminra_user
+236; 1259 25108 TABLE public blockchain_anchors aminra_user
+237; 1259 25130 TABLE public cert_anchor_proofs aminra_user
+253; 1259 63583 TABLE public certificate_risk_alerts aminra_user
+pg_restore_list_existing_dump=PASS

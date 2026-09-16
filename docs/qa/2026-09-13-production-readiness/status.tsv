@@ -1,0 +1,10 @@
+release-boundary	PASS	git-merge-conflicts-resolved	evidence/release-boundary/001-conflict-resolution-verification.txt	Frontend E2E conflicts resolved; no conflict markers/unmerged paths; focused TypeScript and ESLint checks pass.
+edge-cdn	BLOCKED	cloudflare-cache-rule-apply	evidence/edge-cdn/001-cloudflare-cache-rule-prereq-and-apply-attempt.txt	Cloudflare zone/API credentials not available to apply rule in this session.
+edge-cdn	BLOCKED	cloudflare-zone-discovery	evidence/edge-cdn/002-cloudflare-zone-discovery.txt	No usable Cloudflare token/zone discovery in env.
+edge-cdn	PASS	seed-public-trace-fixture	evidence/edge-cdn/003-seed-public-trace-fixture.txt	Deterministic public trace fixture exists.
+edge-cdn	FAIL	public-trace-split-slo-rerun	evidence/edge-cdn/004-public-trace-split-slo-rerun.txt	Local backend p95 673.2ms PASS; local proxy p95 356.1ms PASS; public p95 1650.5ms FAIL; cf-cache-status DYNAMIC. Latest spot-check evidence/edge-cdn/005-post-conflict-edge-blocker-check.txt still DYNAMIC.
+smtp	FAIL	production-smtp-readiness-check	evidence/smtp/002-post-conflict-smtp-readiness-check.txt	Keycloak email config uses internal aminra-qa-smtp relay; transport security disabled; not production SMTP.
+dependency	WARN	dependency-audit-quick-triage	evidence/dependency/001-dependency-audit-quick-triage.txt	npm prod audit has 1 critical/8 high; direct next critical, axios high, sentry moderate; backend ecdsa 2 vulns.
+recovery	PASS	db-backup-smoke	evidence/recovery/001-db-backup-smoke.txt	DB custom dump created and non-empty.
+recovery	PASS	restore-dryrun-list	evidence/recovery/002-restore-dryrun-list.txt	pg_restore --list succeeded non-destructively.
+recovery	DEFERRED	destructive-chaos-drills	evidence/recovery/002-restore-dryrun-list.txt	No destructive chaos executed; requires explicit drill window and approval.

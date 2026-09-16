@@ -1,0 +1,19 @@
+# release boundary and cloudflare prerequisite check
+2026-09-13T10:19:10-04:00
+--- git status short ---
+UU frontend/aminra-web/e2e/17-mvp-demo-public.spec.ts
+UU frontend/aminra-web/e2e/18-mvp-demo-provider-admin.spec.ts
+UU frontend/aminra-web/e2e/fixtures.ts
+?? docs/qa/2026-09-13-production-confidence-one-pager.md
+?? docs/qa/2026-09-13-production-readiness-gates.md
+?? docs/qa/2026-09-13-production-readiness-testcase-matrix.md
+?? docs/qa/2026-09-13-production-readiness/
+?? scripts/qa/apply-cloudflare-public-trace-cache-rule.sh
+--- cloudflare env presence ---
+CLOUDFLARE_API_TOKEN=
+CLOUDFLARE_ZONE_ID=
+--- script syntax ---
+bash_syntax=PASS
+--- apply attempt ---
+scripts/qa/apply-cloudflare-public-trace-cache-rule.sh: line 13: CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN is required
+apply_exit=1

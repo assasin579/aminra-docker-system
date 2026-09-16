@@ -1,0 +1,9 @@
+# Dependency audit availability and quick triage
+2026-09-13T10:20:07-04:00
+--- frontend npm audit production ---
+npm_vulnerabilities= {'info': 0, 'low': 1, 'moderate': 7, 'high': 8, 'critical': 1, 'total': 17}
+direct_findings= [('@sentry/nextjs', 'moderate', '8.0.0-alpha.2 - 10.53.1'), ('axios', 'high', '1.0.0 - 1.17.0'), ('next', 'critical', '9.3.4-canary.0 - 16.3.2')]
+--- backend pip audit ---
+Found 2 known vulnerabilities in 1 package
+pip_findings_count= 1
+pip_findings_sample= [('ecdsa', '0.19.2', 2, ['PYSEC-2026-1325', 'PYSEC-2026-1325'])]

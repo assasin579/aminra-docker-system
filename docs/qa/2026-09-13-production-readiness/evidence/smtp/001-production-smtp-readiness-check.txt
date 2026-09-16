@@ -1,0 +1,20 @@
+# Production SMTP readiness check
+2026-09-13T10:23:39-04:00
+--- env presence ---
+SMTP_HOST=missing
+SMTP_USER=missing
+SMTP_PASSWORD=missing
+KEYCLOAK_SMTP_HOST=missing
+KEYCLOAK_SMTP_USER=missing
+KEYCLOAK_SMTP_PASSWORD=missing
+--- keycloak email config script syntax/check ---
+script_syntax=PASS
+✓ verifyEmail enabled
+✓ resetPasswordAllowed enabled
+✓ SMTP host configured: aminra-qa-smtp
+✓ SMTP from configured: qa-no-reply@aminra.local
+✓ SMTP port configured: 2525
+✗ SMTP transport security not enabled
+⚠ SMTP auth disabled — acceptable only for trusted internal relay
+❌ Keycloak email verification config has 1 blocker(s).
+keycloak_email_check_exit=1

@@ -1,0 +1,27 @@
+# Task 5 non-destructive preflight evidence
+2026-09-13T16:37:56-04:00
+--- git ---
+## HEAD (no branch)
+M  frontend/aminra-web/e2e/17-mvp-demo-public.spec.ts
+M  frontend/aminra-web/e2e/18-mvp-demo-provider-admin.spec.ts
+M  frontend/aminra-web/e2e/fixtures.ts
+?? docs/qa/2026-09-13-functional-completion-scorecard.md
+?? docs/qa/2026-09-13-production-confidence-one-pager.md
+?? docs/qa/2026-09-13-production-readiness-gates.md
+?? docs/qa/2026-09-13-production-readiness-testcase-matrix.md
+?? docs/qa/2026-09-13-production-readiness/
+?? scripts/qa/apply-cloudflare-public-trace-cache-rule.sh
+--- bash syntax ---
+backup.sh syntax=PASS
+restore.sh syntax=PASS
+backup-cron.sh syntax=PASS
+runtime-smoke.sh syntax=PASS
+deploy-from-registry.sh syntax=PASS
+--- restore usage gate (no args, expected nonzero) ---
+restore_no_args_exit=1
+Usage: restore.sh [--db-only|--qdrant-only|--volumes-only] [--yes] <backup-directory>
+restore_no_args_usage_gate=PASS
+--- docker compose config ---
+docker_compose_config=PASS
+--- existing dump dry-run list ---
+/usr/bin/bash: line 56: pg_restore: command not found

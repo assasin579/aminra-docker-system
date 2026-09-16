@@ -1,0 +1,18 @@
+# DB backup smoke for production-readiness recovery gate
+2026-09-13T10:22:27-04:00
+backup_dir=backups/qa-production-readiness-20260913_102227-db-only
+[10:22:27] Backing up PostgreSQL database 'aminra'...
+[10:22:27]   -> PostgreSQL dump saved: 160K
+
+========== Backup Summary ==========
+Directory : backups/qa-production-readiness-20260913_102227-db-only
+Timestamp : 20260913_102227
+------------------------------------
+-rw-rw-r-- 1 user user 157K Sep 13 10:22 postgres_aminra.dump
+------------------------------------
+Total size: 164K
+Errors    : 0
+====================================
+--- backup artifact verification ---
+backups/qa-production-readiness-20260913_102227-db-only/postgres_aminra.dump: PostgreSQL custom database dump - v1.14-0
+160K	backups/qa-production-readiness-20260913_102227-db-only/postgres_aminra.dump
