@@ -57,6 +57,9 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Next 16.3/Turbopack can resolve @swc/helpers ESM files at runtime even when
+# output tracing only carries the CJS subset into .next/standalone.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@swc/helpers ./node_modules/@swc/helpers
 
 USER nextjs
 
