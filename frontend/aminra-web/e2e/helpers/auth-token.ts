@@ -10,7 +10,11 @@ export type KeycloakLogin = {
 };
 
 export function keycloakTokenUrl(): string {
+  if (process.env.KEYCLOAK_TOKEN_URL) {
+    return process.env.KEYCLOAK_TOKEN_URL;
+  }
   const keycloakUrl = (
+    process.env.PW_KEYCLOAK_URL ||
     process.env.KEYCLOAK_PUBLIC_URL ||
     process.env.KEYCLOAK_URL ||
     process.env.NEXT_PUBLIC_KEYCLOAK_URL ||
@@ -31,6 +35,21 @@ export function keycloakClientId(): string {
   );
 }
 
+function keycloakForwardedHeaders(tokenUrl: string): Record<string, string> | undefined {
+  // Local Docker/host E2E can post to Keycloak on 127.0.0.1/keycloak while the
+  // backend validates the public issuer. Forwarded headers make Keycloak mint
+  // tokens with the same issuer the backend is configured to trust, without
+  // sending QA credentials through the public Cloudflare route.
+  if (!/(^http:\/\/127\.0\.0\.1|^http:\/\/localhost|^http:\/\/keycloak[:/])/.test(tokenUrl)) {
+    return undefined;
+  }
+  return {
+    "X-Forwarded-Proto": process.env.KEYCLOAK_PUBLIC_PROTO || "https",
+    "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.silvergem.org",
+    "X-Forwarded-Port": process.env.KEYCLOAK_PUBLIC_PORT || "443",
+  };
+}
+
 /**
  * Modern normal-user token grant for API E2E specs.
  *
@@ -42,7 +61,9 @@ export async function keycloakPasswordGrant(
   request: APIRequestContext,
   { email, password }: KeycloakLogin,
 ) {
-  return request.post(keycloakTokenUrl(), {
+  const tokenUrl = keycloakTokenUrl();
+  return request.post(tokenUrl, {
+    headers: keycloakForwardedHeaders(tokenUrl),
     form: {
       grant_type: "password" as const,
       client_id: keycloakClientId(),

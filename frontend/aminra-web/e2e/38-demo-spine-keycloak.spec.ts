@@ -1,7 +1,7 @@
 import { test, expect, request } from "@playwright/test";
 
 const API_BASE = process.env.PW_API_BASE ?? "http://localhost:8100";
-const KC_URL = process.env.KEYCLOAK_URL ?? "https://auth.silvergem.org";
+const KC_URL = process.env.PW_KEYCLOAK_URL ?? process.env.KEYCLOAK_URL ?? "https://auth.silvergem.org";
 const KC_REALM = process.env.KEYCLOAK_REALM ?? "aminra";
 const KC_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID ?? "aminra-frontend";
 const DEMO_PW = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
@@ -11,13 +11,26 @@ const DEMO_TRACE_PUBLIC_ID = "73695b8a-3c10-570b-8bba-92c12da9b56e";
 const DEMO_TRACE_BATCH = "QA-TRACE-PUBLISHED-SEALED-001";
 
 async function keycloakToken(email: string, password = DEMO_PW): Promise<string | null> {
+  if (!password) {
+    return null;
+  }
+  const loginPassword = password;
   const ctx = await request.newContext();
-  const res = await ctx.post(`${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/token`, {
+  const tokenUrl = `${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/token`;
+  const forwardedHeaders = /(^http:\/\/127\.0\.0\.1|^http:\/\/localhost|^http:\/\/keycloak[:/])/.test(tokenUrl)
+    ? {
+        "X-Forwarded-Proto": process.env.KEYCLOAK_PUBLIC_PROTO || "https",
+        "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.silvergem.org",
+        "X-Forwarded-Port": process.env.KEYCLOAK_PUBLIC_PORT || "443",
+      }
+    : undefined;
+  const res = await ctx.post(tokenUrl, {
+    headers: forwardedHeaders,
     form: {
       grant_type: "password",
       client_id: KC_CLIENT_ID,
       username: email,
-      password,
+      password: loginPassword,
     },
   });
   const body = await res.json().catch(() => ({}));

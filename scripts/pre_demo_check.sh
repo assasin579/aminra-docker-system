@@ -14,6 +14,7 @@ set -uo pipefail
 BACKEND_URL="${BACKEND_URL:-http://localhost:8100}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3100}"
 DEMO_PW="${DEMO_PW:-DemoP@ss2026}"
+PROVIDER_DEMO_PW="${PROVIDER_DEMO_PW:-${DEMO_PW}}"
 
 # Phase 4c-9: Keycloak is the sole login path. Smokes exchange a password
 # grant against the realm for an access_token. Override these env vars to
@@ -226,7 +227,7 @@ fi
 section "Tier 3 — Provider flows (12-16)"
 
 # Flow 12: Provider login via Keycloak password grant
-PROV_TOKEN=$(kc_token "cb-demo@demo.aminra.vn" "${DEMO_PW}")
+PROV_TOKEN=$(kc_token "cb-demo@demo.aminra.vn" "${PROVIDER_DEMO_PW}")
 if [ -n "$PROV_TOKEN" ]; then
   ok "Flow 12: Provider login succeeded (Keycloak password grant)"
 else
