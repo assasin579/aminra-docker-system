@@ -1085,6 +1085,13 @@ class AdminResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class AdminKeycloakEmailCleanupRequest(BaseModel):
+    email: str
+    # Safe default: audit only. Operators must explicitly confirm before a
+    # stale Keycloak identity is deleted.
+    confirm_delete: bool = False
+
+
 def _validate_admin_reset_password(new_password: str) -> None:
     if len(new_password) < 10:
         raise HTTPException(400, "Mật khẩu tối thiểu 10 ký tự")
@@ -1295,11 +1302,156 @@ async def admin_update_user(user_id: str, request: Request, body: AdminUpdateUse
     return dict(row)
 
 
+def _normalise_cleanup_email(email: str) -> str:
+    value = (email or "").strip().lower()
+    if not value or "@" not in value or re.search(r"\s", value):
+        raise HTTPException(400, "Email không hợp lệ")
+    return value
+
+
+async def _count_app_email_references(conn, email: str) -> dict[str, int]:
+    """Count app-side rows that still reference an email before IdP cleanup.
+
+    This repair endpoint is only for orphaned Keycloak identities. If the app DB
+    still owns the email, deleting the Keycloak identity by email would break a
+    legitimate account instead of repairing drift.
+    """
+    return {
+        "users": await conn.fetchval("SELECT COUNT(*) FROM users WHERE lower(email)=lower($1)", email),
+        "member_invites": await conn.fetchval("SELECT COUNT(*) FROM member_invites WHERE lower(email)=lower($1)", email),
+        "suppliers": await conn.fetchval("SELECT COUNT(*) FROM suppliers WHERE lower(email)=lower($1)", email),
+    }
+
+
+@app.post("/admin/keycloak-identities/cleanup-email")
+async def admin_cleanup_keycloak_identity_by_email(
+    request: Request,
+    body: AdminKeycloakEmailCleanupRequest,
+):
+    """Audit/delete a stale Keycloak identity when the app row is already gone.
+
+    Use for the re-registration blocker class: admin UI/app DB has no account,
+    but Keycloak still reserves the email. Fail closed if any app table still
+    references the email; default to dry_run until `confirm_delete=true`.
+    """
+    _require_admin(request)
+    from auth.db import get_pool
+    from auth import keycloak_admin
+
+    email = _normalise_cleanup_email(body.email)
+    pool = get_pool()
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                # Serialize concurrent operator cleanups for the same email and
+                # re-check app references immediately before destructive IdP
+                # cleanup. Registration still remains Keycloak-authoritative,
+                # but this prevents two cleanup calls from racing each other and
+                # avoids deleting when the app DB already owns the email.
+                await conn.execute("SELECT pg_advisory_xact_lock(hashtext($1))", f"keycloak-email-cleanup:{email}")
+                app_references = await _count_app_email_references(conn, email)
+                if any(app_references.values()):
+                    raise HTTPException(409, {
+                        "detail": "Email vẫn còn dữ liệu trong app DB; không xoá Keycloak identity bằng email.",
+                        "app_references": app_references,
+                    })
+
+                kc_sub = keycloak_admin.find_user_by_email(email)
+                # Final DB-side recheck after the external lookup and just before
+                # destructive delete to narrow the race window.
+                app_references = await _count_app_email_references(conn, email)
+                if any(app_references.values()):
+                    raise HTTPException(409, {
+                        "detail": "Email vừa xuất hiện lại trong app DB; không xoá Keycloak identity bằng email.",
+                        "app_references": app_references,
+                    })
+
+                dry_run = not body.confirm_delete
+                status_text = "no_keycloak_identity"
+                deleted_keycloak_sub = None
+                if kc_sub:
+                    status_text = "would_delete" if dry_run else "deleted"
+                    if body.confirm_delete:
+                        keycloak_admin.delete_user(kc_sub)
+                        deleted_keycloak_sub = kc_sub
+                return {
+                    "email": email,
+                    "app_references": app_references,
+                    "keycloak_sub": kc_sub,
+                    "deleted_keycloak_sub": deleted_keycloak_sub,
+                    "dry_run": dry_run,
+                    "status": status_text,
+                }
+    except keycloak_admin.KeycloakAdminError as e:
+        log.warning("Keycloak email cleanup failed for %s: %s", email, e.detail)
+        raise HTTPException(
+            status_code=502,
+            detail="Không thể kiểm tra/xoá Keycloak identity. App DB chưa bị thay đổi.",
+        ) from e
+
+
+def _keycloak_delete_candidates_for_user(row, keycloak_admin) -> list[str]:
+    """Resolve every Keycloak identity that can own this app user's email.
+
+    Admin delete must be fail-closed for IdP cleanup: deleting the PG row while
+    Keycloak lookup/delete is unavailable recreates the exact production drift
+    where the admin UI says the account is gone but Keycloak still reserves the
+    email and blocks future registration. A Keycloak 404 during delete remains
+    idempotent success inside ``keycloak_admin.delete_user``.
+    """
+    candidates: list[str] = []
+    if row["keycloak_sub"]:
+        candidates.append(str(row["keycloak_sub"]))
+
+    # Also look up by email even when keycloak_sub is present. Historical
+    # admin cleanup rows can have a stale/wrong keycloak_sub; deleting only
+    # by stale sub can leave a disabled Keycloak identity that still owns the
+    # email and blocks future self-registration.
+    if row["email"]:
+        email_kc_sub = keycloak_admin.find_user_by_email(row["email"])
+        if email_kc_sub and email_kc_sub not in candidates:
+            candidates.append(email_kc_sub)
+    return candidates
+
+
+def _delete_keycloak_identities_for_rows(rows, keycloak_admin) -> dict[str, list[str]]:
+    """Delete linked Keycloak identities for user rows before PG deletion.
+
+    Fail closed on Keycloak lookup before deleting any identity. Keycloak itself
+    cannot participate in the PG transaction, so collect all candidates first;
+    if lookup fails for any row, no Keycloak or PG deletion is attempted.
+    """
+    candidates_by_user: dict[str, list[str]] = {}
+    for row in rows:
+        candidates_by_user[str(row["id"])] = _keycloak_delete_candidates_for_user(row, keycloak_admin)
+
+    deleted_so_far: dict[str, list[str]] = {user_id: [] for user_id in candidates_by_user}
+    for user_id, candidates in candidates_by_user.items():
+        for kc_sub in candidates:
+            try:
+                keycloak_admin.delete_user(str(kc_sub))
+                deleted_so_far[user_id].append(str(kc_sub))
+            except keycloak_admin.KeycloakAdminError as e:
+                raise keycloak_admin.KeycloakAdminError(
+                    status_code=502,
+                    detail={
+                        "message": "Keycloak delete failed after partial cleanup; PG rows were not deleted.",
+                        "failed_keycloak_sub": str(kc_sub),
+                        "partial_keycloak_deleted": deleted_so_far,
+                        "upstream_detail": e.detail,
+                    },
+                ) from e
+    return candidates_by_user
+
+
 @app.delete("/admin/users/{user_id}")
 async def admin_delete_user(user_id: str, request: Request):
-    """Phase 4c-2: delete the Keycloak user first (best-effort), then the PG
-    row. Best-effort because a KC-side 404 is a no-op (already gone) — we
-    don't want a stale KC failure to block a perfectly valid PG cleanup."""
+    """Delete Keycloak identities first, then the PG rows.
+
+    This is intentionally fail-closed: if Keycloak lookup/delete fails, keep the
+    PG rows and return an error instead of creating a DB↔IdP orphan that later
+    blocks self-registration with "email already registered".
+    """
     _require_admin(request)
     if user_id == "54182089-3a6d-458a-994d-93ac4e0c504f":  # guard: never delete seeded admin
         raise HTTPException(403, "Không thể xoá tài khoản admin gốc")
@@ -1315,40 +1467,35 @@ async def admin_delete_user(user_id: str, request: Request):
         if not row:
             raise HTTPException(404, "User không tồn tại")
 
-        kc_candidates: list[str] = []
-        if row["keycloak_sub"]:
-            kc_candidates.append(str(row["keycloak_sub"]))
+        rows_to_delete = [row]
+        if row["role"] == "business" and row["tenant_id"] == user_id:
+            member_rows = await conn.fetch(
+                "SELECT id, role, tenant_id, email, keycloak_sub FROM users WHERE tenant_id=$1 AND id != $1",
+                user_id,
+            )
+            rows_to_delete.extend(member_rows)
 
-        # Also look up by email even when keycloak_sub is present. Historical
-        # admin cleanup rows can have a stale/wrong keycloak_sub; deleting only
-        # by stale sub can leave a disabled Keycloak identity that still owns the
-        # email and blocks future self-registration.
-        if row["email"]:
-            try:
-                email_kc_sub = keycloak_admin.find_user_by_email(row["email"])
-                if email_kc_sub and email_kc_sub not in kc_candidates:
-                    kc_candidates.append(email_kc_sub)
-            except keycloak_admin.KeycloakAdminError as e:
-                log.warning(
-                    "Keycloak email lookup failed for admin delete %s: %s — continuing with known sub candidates",
-                    row["email"], e.detail,
-                )
-
-        for kc_sub in kc_candidates:
-            try:
-                keycloak_admin.delete_user(str(kc_sub))
-            except keycloak_admin.KeycloakAdminError as e:
-                log.warning(
-                    "Keycloak delete_user failed for %s (sub=%s): %s — continuing PG cleanup",
-                    row["email"], kc_sub, e.detail,
-                )
+        try:
+            deleted_kc = _delete_keycloak_identities_for_rows(rows_to_delete, keycloak_admin)
+        except keycloak_admin.KeycloakAdminError as e:
+            log.warning(
+                "Keycloak cleanup failed during admin delete for app user %s: %s — aborting PG cleanup",
+                user_id, e.detail,
+            )
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "Không thể đồng bộ xoá tài khoản với Keycloak. PG/app DB chưa bị xoá; kiểm tra partial_keycloak_deleted để sửa thủ công nếu có.",
+                    "keycloak_error": e.detail,
+                },
+            ) from e
 
         # Delete tenant members first (cascade doesn't cover cross-tenant)
         if row["role"] == "business" and row["tenant_id"] == user_id:
             await conn.execute("DELETE FROM documents WHERE tenant_id=$1", user_id)
             await conn.execute("DELETE FROM users WHERE tenant_id=$1 AND id != $1", user_id, user_id)
         await conn.execute("DELETE FROM users WHERE id=$1", user_id)
-    return {"message": "Đã xoá user", "id": user_id}
+    return {"message": "Đã xoá user", "id": user_id, "keycloak_deleted": deleted_kc}
 
 
 @app.get("/health")

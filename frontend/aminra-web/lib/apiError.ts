@@ -19,6 +19,10 @@ export function parseApiError(
   if (!body || typeof body !== "object") return fallback;
   const detail = (body as { detail?: unknown }).detail;
   if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object") {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
   if (Array.isArray(detail) && detail.length > 0) {
     const first = detail[0] as FastApiValidationItem;
     const field = Array.isArray(first.loc)

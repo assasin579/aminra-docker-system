@@ -257,10 +257,16 @@ export default function AdminUserManager({ token }: { token: string }) {
       return;
     setDeleteId(id);
     try {
-      await fetch(`${API}/admin/users/${id}`, {
+      const res = await fetch(`${API}/admin/users/${id}`, {
         method: "DELETE",
         headers: authHdr,
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = parseApiError(err, `Không thể xoá user (HTTP ${res.status}). Dữ liệu chưa bị xoá.`);
+        alert(msg);
+        return;
+      }
       fetchUsers();
     } finally {
       setDeleteId(null);
