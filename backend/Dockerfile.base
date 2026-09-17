@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # AMINRA backend heavyweight runtime base.
 #
 # Build this image only when OS/Python dependencies, Playwright, or the embedding
@@ -47,6 +46,6 @@ PY
 
 # Install Playwright Chromium headless shell + system deps. Keep default browser
 # cache path to match Playwright's lean chromium-headless-shell install behavior.
-RUN playwright install --with-deps --only-shell --no-progress chromium
+RUN playwright install --with-deps --only-shell chromium
 
 RUN mkdir -p /app/docs /app/data /app/doc_text_cache

@@ -62,7 +62,7 @@ qrcode[pil]
 reportlab
 
 # PDF render via HTML+CSS (Playwright Chromium)
-playwright>=1.59.0           # async browser automation for HTML→PDF
+playwright==1.56.0           # async browser automation for HTML→PDF; 1.63 bundled Node segfaults in Qubes dev runtime
 pikepdf>=8.0.0               # PDF metadata strip → deterministic output bytes
 
 # ── Testing ──────────────────────────────────────────────────────────

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 ARG BACKEND_BASE_IMAGE=aminra-backend-base:local
 FROM ${BACKEND_BASE_IMAGE}
 
@@ -18,6 +17,8 @@ COPY supply_chain/ ./supply_chain/
 COPY alembic.ini .
 COPY alembic/ ./alembic/
 COPY app.py .
+COPY pytest.ini .
+COPY tests/ ./tests/
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
