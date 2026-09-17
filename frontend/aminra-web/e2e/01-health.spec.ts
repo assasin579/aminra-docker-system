@@ -10,6 +10,16 @@ test.describe("01. Infrastructure health", () => {
     expect(body.qdrant).toBe("connected");
   });
 
+  test("Frontend public /health proxies backend health", async ({ page }) => {
+    const r = await page.request.get("/health");
+    expect(r.status()).toBe(200);
+    expect(r.headers()["cache-control"]).toContain("no-store");
+    const body = await r.json();
+    expect(body.status).toBe("ok");
+    expect(body.database).toBe("connected");
+    expect(body.qdrant).toBe("connected");
+  });
+
   test("Frontend landing renders with expected title", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/Aminra|Halal/i);

@@ -1,0 +1,4 @@
+# Domain: email
+# Gate: G1-EMAIL verify-email live-send
+# Status: BLOCKED
+scripts/qa/keycloak-email-live-send-check.sh missing or not executable

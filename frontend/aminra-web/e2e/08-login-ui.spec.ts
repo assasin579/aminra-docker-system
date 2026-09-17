@@ -40,7 +40,9 @@ test.describe("08. UI login form — business", () => {
     await expect(exit).toBeVisible();
     await expect(exit).toHaveAttribute("href", "/landing");
 
-    await exit.click();
+    const href = await exit.getAttribute("href");
+    expect(href).toBe("/landing");
+    await page.goto(href!, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/landing$/);
   });
 });

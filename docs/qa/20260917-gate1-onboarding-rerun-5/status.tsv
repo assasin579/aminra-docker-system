@@ -1,0 +1,11 @@
+domain	status	step	evidence	note
+runtime	PASS	G1-RUNTIME health public login	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/001-runtime-g1-runtime-health-public-login.txt
+email	PASS	G1-EMAIL verify-email live-send	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/002-email-g1-email-verify-email-live-send.txt	must prove canonical verification email path
+session	PASS	G1-SESSION login oidc account isolation	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/003-session-g1-session-login-oidc-account-isolation.txt
+business	PASS	G1-BUSINESS first value and supply chain contracts	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/004-business-g1-business-first-value-and-supply-chain-contracts.txt
+provider	PASS	G1-PROVIDER certificate lifecycle provider flow	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/005-provider-g1-provider-certificate-lifecycle-provider-flow.txt
+auditor	PASS	G1-AUDITOR live role boundary smoke	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/006-auditor-g1-auditor-live-role-boundary-smoke.txt
+error	PASS	G1-ERROR invalid input and error UX	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/007-error-g1-error-invalid-input-and-error-ux.txt
+output	PASS	G1-OUTPUT public artifact correctness	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/008-output-g1-output-public-artifact-correctness.txt
+frontend	PASS	G1-FRONTEND lint build contracts	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/009-frontend-g1-frontend-lint-build-contracts.txt
+accounts	PASS	G1-ACCOUNTS repair before full browser matrix	docs/qa/20260917-gate1-onboarding-rerun-5/evidence/terminal/010-accounts-g1-accounts-repair-before-full-browser-matrix.txt

@@ -19,7 +19,7 @@ PROVIDER_DEMO_PW="${PROVIDER_DEMO_PW:-${DEMO_PW}}"
 # Phase 4c-9: Keycloak is the sole login path. Smokes exchange a password
 # grant against the realm for an access_token. Override these env vars to
 # point at staging/prod realms.
-KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.silvergem.org}"
+KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.aminra.org}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-aminra}"
 KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-aminra-frontend}"
 ADMIN_DEMO_EMAIL="${ADMIN_DEMO_EMAIL:-admin}"

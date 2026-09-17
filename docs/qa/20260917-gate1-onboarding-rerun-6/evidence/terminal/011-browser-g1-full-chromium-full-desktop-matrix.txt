@@ -1,0 +1,392 @@
+# Domain: browser
+# Gate: G1-FULL-CHROMIUM full desktop matrix
+# Started: 2026-09-17T07:05:31-04:00
+# Command: cd frontend/aminra-web && npx playwright test --project=desktop-chromium --reporter=line
+
+
+Running 328 tests using 1 worker
+
+[1A[2K[1/328] [desktop-chromium] › e2e/01-health.spec.ts:4:7 › 01. Infrastructure health › Backend /health returns ok + db + qdrant
+[1A[2K[2/328] [desktop-chromium] › e2e/01-health.spec.ts:13:7 › 01. Infrastructure health › Frontend landing renders with expected title
+[1A[2K[3/328] [desktop-chromium] › e2e/01-health.spec.ts:18:7 › 01. Infrastructure health › OpenAPI spec has ≥100 paths
+[1A[2K[4/328] [desktop-chromium] › e2e/02-auth.spec.ts:5:7 › 02. Authentication flows › Seeded business Keycloak login returns JWT
+[1A[2K[5/328] [desktop-chromium] › e2e/02-auth.spec.ts:10:7 › 02. Authentication flows › /auth/me returns correct email for business token
+[1A[2K[6/328] [desktop-chromium] › e2e/02-auth.spec.ts:23:7 › 02. Authentication flows › Wrong password rejected 401
+[1A[2K[7/328] [desktop-chromium] › e2e/02-auth.spec.ts:31:7 › 02. Authentication flows › Nonexistent email rejected
+[1A[2K[8/328] [desktop-chromium] › e2e/02-auth.spec.ts:39:7 › 02. Authentication flows › Duplicate email returns 409/422
+[1A[2K[9/328] [desktop-chromium] › e2e/02-auth.spec.ts:46:7 › 02. Authentication flows › Admin Keycloak token is available
+[1A[2K[10/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+[1A[2K[11/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+[1A[2K[12/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+[1A[2K[13/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+[1A[2K[14/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+[1A[2K[15/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+[1A[2K[16/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:4:7 › 04. Provider user workflow › Provider can list received submissions
+[1A[2K[17/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:12:7 › 04. Provider user workflow › Provider can view audit list
+[1A[2K[18/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:20:7 › 04. Provider user workflow › Provider can view audit templates
+[1A[2K[19/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:28:7 › 04. Provider user workflow › Provider is blocked from business-owned pending NCR queue
+[1A[2K[20/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:36:7 › 04. Provider user workflow › Provider can view certificate registry
+[1A[2K[21/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:44:7 › 04. Provider user workflow › Provider can view auditor list
+[1A[2K[22/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:4:7 › 05. Admin workflow › Admin can list pending providers
+[1A[2K[23/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:13:7 › 05. Admin workflow › Admin can list doc types
+[1A[2K[24/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:20:7 › 05. Admin workflow › Admin can list templates
+[1A[2K[25/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:27:7 › 05. Admin workflow › Admin can list placeholders
+[1A[2K[26/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › / renders with title
+[1A[2K[27/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /landing renders with title
+[1A[2K[28/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /business/login renders with title
+[1A[2K[29/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /business/register renders with title
+[1A[2K[30/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /provider/login renders with title
+[1A[2K[31/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /provider/register renders with title
+[1A[2K[32/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:21:7 › 06. Public-facing UI pages › Business login form has email + password fields
+[1A[2K[33/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:29:7 › 06. Public-facing UI pages › Business register form has required fields
+[1A[2K[34/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /dashboard/business → redirect to login when not authed
+[1A[2K[35/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /dashboard/provider → redirect to login when not authed
+[1A[2K[36/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /submissions → redirect to login when not authed
+[1A[2K[37/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /certificates → redirect to login when not authed
+[1A[2K[38/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /documents → redirect to login when not authed
+[1A[2K[39/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /supply-chain/batches → redirect to login when not authed
+[1A[2K[40/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /audits → redirect to login when not authed
+[1A[2K[41/328] [desktop-chromium] › e2e/08-login-ui.spec.ts:4:7 › 08. UI login form — business › Login form renders with email + password + submit button
+[1A[2K[42/328] [desktop-chromium] › e2e/08-login-ui.spec.ts:24:7 › 08. UI login form — business › Form exposes editable email + password controls
+[1A[2K[43/328] [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page
+[1A[2K[44/328] [desktop-chromium] › e2e/09-rag-chat.spec.ts:4:7 › 09. RAG / AI chat › Topics endpoint returns filters
+[1A[2K[45/328] [desktop-chromium] › e2e/09-rag-chat.spec.ts:11:7 › 09. RAG / AI chat › Stats endpoint returns vector count
+[1A[2K[46/328] [desktop-chromium] › e2e/09-rag-chat.spec.ts:19:7 › 09. RAG / AI chat › Chat endpoint responds (may be slow)
+[1A[2K[47/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+[1A[2K[48/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+[1A[2K[49/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+[1A[2K[50/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:25:7 › 10. Supply chain + Certificate verification › Public verify bogus cert number → 404
+[1A[2K[51/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+[1A[2K[52/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:10:7 › 11. Submission revisions cycle › Revisions endpoint reachable for valid submission
+[1A[2K[53/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:38:7 › 11. Submission revisions cycle › Provider rejects request-revision for unauthorized submission with 403/404
+[1A[2K[54/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:58:7 › 11. Submission revisions cycle › Business cannot request-revision (RBAC enforced)
+[1A[2K[55/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:73:7 › 11. Submission revisions cycle › Resubmit endpoint validates submission exists
+[1A[2K[56/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:15:7 › CUJ-7: Password reset › Forgot password endpoint returns generic OK for any email
+[1A[2K[57/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:26:7 › CUJ-7: Password reset › Forgot password for existing user emits same generic message (no leak)
+[1A[2K[58/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:38:7 › CUJ-7: Password reset › Verify-reset-token rejects invalid token
+[1A[2K[59/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:45:7 › CUJ-7: Password reset › Reset-password rejects weak password
+[1A[2K[60/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:54:7 › CUJ-7: Password reset › Reset-password rejects invalid token even with strong password
+[1A[2K[61/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:63:7 › CUJ-7: Password reset › Forgot-password page accessible without auth
+[1A[2K[62/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:71:7 › CUJ-7: Password reset › Reset-password page renders invalid state without token
+[1A[2K[63/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:13:7 › CUJ-6: GDPR rights › Data export returns JSON bundle for authenticated user
+[1A[2K[64/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:31:7 › CUJ-6: GDPR rights › Data export rejects unauthenticated
+[1A[2K[65/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:36:7 › CUJ-6: GDPR rights › Request deletion returns generic message
+[1A[2K[66/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:49:7 › CUJ-6: GDPR rights › Confirm deletion with invalid token returns 400
+[1A[2K[67/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:56:7 › CUJ-6: GDPR rights › Privacy policy page lists Nghị định 13/2023
+[1A[2K[68/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:62:7 › CUJ-6: GDPR rights › Terms page caps liability at 12 months fees
+[1A[2K[69/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert
+[1A[2K[70/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert
+[1A[2K[71/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced)
+[1A[2K[72/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible
+[1A[2K[73/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider
+[1A[2K[74/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:7:7 › CUJ-3: Onsite audit › Audit visits list endpoint accessible to provider
+[1A[2K[75/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:18:7 › CUJ-3: Onsite audit › Audit visits endpoint rejects business role
+[1A[2K[76/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:25:7 › CUJ-3: Onsite audit › Audit checklist templates endpoint accessible
+[1A[2K[77/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:36:7 › CUJ-3: Onsite audit › Provider audits page redirects auth-required for unauthenticated
+[1A[2K[78/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:19:7 › MVP Flow 1: Public verify cert › API returns valid=true for seeded demo cert
+[1A[2K[79/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:33:7 › MVP Flow 1: Public verify cert › Verify page renders cert details + green check
+[1A[2K[80/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:59:7 › MVP Flow 2: Halal advisor chat › Topics endpoint reachable
+[1A[2K[81/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:70:7 › MVP Flow 2: Halal advisor chat › Chat page renders without auth
+[1A[2K[82/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:83:7 › MVP Flow 5: Public cert PDF download › Cert PDF endpoint requires token (security)
+[1A[2K[83/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:95:7 › MVP Flow 6: Business registration + login › Business login with seeded demo account works
+[1A[2K[84/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:117:7 › MVP Flow 6: Business registration + login › Business login page renders form
+[1A[2K[85/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:127:7 › MVP Flow 8: Submissions list (business view) › my-submissions returns array for authenticated business
+[1A[2K[86/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:156:7 › MVP Flow 11: Submissions page renders › Page redirects to login or renders
+[1A[2K[87/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:43:7 › MVP Flow 12: Provider login + dashboard › Provider seeded login works
+[1A[2K[88/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:49:7 › MVP Flow 12: Provider login + dashboard › Provider /received endpoint accessible
+[1A[2K[89/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:58:7 › MVP Flow 12: Provider login + dashboard › Provider cb-stats accessible
+[1A[2K[90/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:71:7 › MVP Flow 13: Provider request revision › Request revision endpoint validates auth + fails for non-existent submission
+[1A[2K[91/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:90:7 › MVP Flow 13: Provider request revision › Business gets 403 trying to request revision
+[1A[2K[92/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:111:7 › MVP Flow 14: Assign auditor › Assign endpoint mounted (auth-gated)
+[1A[2K[93/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:123:7 › MVP Flow 15: Issue cert › Issue cert endpoint requires provider owner role
+[1A[2K[94/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:144:7 › MVP Flow 16: Cert revoke › Revoke without reason returns 400 from validation
+[1A[2K[95/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:164:7 › MVP Flow 17: Auditor visits queue › Auditor can list visits
+[1A[2K[96/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:178:7 › MVP Flow 18-20: Admin dashboard + queue + provider approve › Admin endpoints reject unauthenticated
+[1A[2K[97/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:190:7 › MVP Flow 18-20: Admin dashboard + queue + provider approve › Admin pages accessible at frontend URL
+[1A[2K[98/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › landing: mobile responsive checks
+[1A[2K[99/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-login: mobile responsive checks
+[1A[2K[100/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-register: mobile responsive checks
+[1A[2K[101/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-login: mobile responsive checks
+[1A[2K[102/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-register: mobile responsive checks
+[1A[2K[103/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › forgot-password: mobile responsive checks
+[1A[2K[104/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › reset-password: mobile responsive checks
+[1A[2K[105/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › privacy: mobile responsive checks
+[1A[2K[106/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › terms: mobile responsive checks
+[1A[2K[107/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › chat: mobile responsive checks
+[1A[2K[108/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-active: mobile responsive checks
+[1A[2K[109/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-404: mobile responsive checks
+[1A[2K[110/328] [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:34:7 › admin unified auth › Keycloak platform_admin token unlocks analytics + audit-logs + overdue
+[1A[2K[111/328] [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:62:7 › admin unified auth › non-admin JWT is rejected by admin endpoints (regression)
+[1A[2K[112/328] [desktop-chromium] › e2e/21-admin-pages-token-pattern.spec.ts:32:5 › admin pages use shared readAdminToken helper
+[1A[2K[113/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:21:7 › F1 — Industry classification (E2E) › F1.1 — public industry list endpoint accessible by business
+[1A[2K[114/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:28:7 › F1 — Industry classification (E2E) › F1.2 — industry list returns enabled-only by default
+[1A[2K[115/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:40:7 › F1 — Industry classification (E2E) › F1.3 — onboarding page loads
+[1A[2K[116/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:47:7 › F1 — Industry classification (E2E) › F1.4 — business-select with no auth → 401
+[1A[2K[117/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:54:7 › F1 — Industry classification (E2E) › F1.5 — business-select with provider role → 403
+[1A[2K[118/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:63:7 › F1 — Industry classification (E2E) › F1.6 — get industry by code accessible
+[1A[2K[119/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:78:7 › F1 — Industry classification (E2E) › F1.7 — industry get nonexistent → 404
+[1A[2K[120/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:85:7 › F1 — Industry classification (E2E) › F1.8 — admin endpoint /auth/admin/industry-schemas requires admin
+[1A[2K[121/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:92:7 › F1 — Industry classification (E2E) › F1.9 — settings/company page mounts
+[1A[2K[122/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:99:7 › F1 — Industry classification (E2E) › F1.10 — create-document page accessible
+[1A[2K[123/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:109:7 › F2 — Standards admin (E2E) › F2.1 — /admin/standards page route exists
+[1A[2K[124/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:114:7 › F2 — Standards admin (E2E) › F2.2 — public /standard-types list accessible
+[1A[2K[125/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:121:7 › F2 — Standards admin (E2E) › F2.3 — admin endpoint requires admin
+[1A[2K[126/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:128:7 › F2 — Standards admin (E2E) › F2.4 — admin endpoint with no auth → 401
+[1A[2K[127/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:133:7 › F2 — Standards admin (E2E) › F2.5 — standard by code accessible
+[1A[2K[128/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:140:7 › F2 — Standards admin (E2E) › F2.6 — standard by nonexistent code → 404
+[1A[2K[129/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:147:7 › F2 — Standards admin (E2E) › F2.7 — standards by-industry filter route
+[1A[2K[130/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:154:7 › F2 — Standards admin (E2E) › F2.8 — POST create standard requires admin
+[1A[2K[131/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:162:7 › F2 — Standards admin (E2E) › F2.9 — PATCH standard requires admin
+[1A[2K[132/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:173:7 › F2 — Standards admin (E2E) › F2.10 — DELETE soft-disable requires admin
+[1A[2K[133/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:186:7 › F3 — Industry↔Standard mapping (E2E) › F3.1 — /admin/industries page route exists
+[1A[2K[134/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:191:7 › F3 — Industry↔Standard mapping (E2E) › F3.2 — PUT mapping requires admin
+[1A[2K[135/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:202:7 › F3 — Industry↔Standard mapping (E2E) › F3.3 — PUT mapping with no auth → 401
+[1A[2K[136/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:210:7 › F3 — Industry↔Standard mapping (E2E) › F3.4 — PUT mapping nonexistent industry → 404 (with admin)
+[1A[2K[137/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:222:7 › F3 — Industry↔Standard mapping (E2E) › F3.5 — admin can list all industries with available_standards
+[1A[2K[138/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:230:7 › F3 — Industry↔Standard mapping (E2E) › F3.6 — PUT mapping validates uuid format on standard_type_id
+[1A[2K[139/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:242:7 › F3 — Industry↔Standard mapping (E2E) › F3.7 — public industry list includes available_standards field
+[1A[2K[140/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:254:7 › F3 — Industry↔Standard mapping (E2E) › F3.8 — PUT mapping malformed industry uuid → 422
+[1A[2K[141/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:271:7 › F4 — Dossier CRUD (E2E) › F4.1 — /dossiers list page route exists
+[1A[2K[142/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:276:7 › F4 — Dossier CRUD (E2E) › F4.2 — /dossiers/new page route exists
+[1A[2K[143/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:281:7 › F4 — Dossier CRUD (E2E) › F4.3 — /dossiers/[id] page renders 200 (even for non-existent)
+[1A[2K[144/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:288:7 › F4 — Dossier CRUD (E2E) › F4.4 — list endpoint requires auth
+[1A[2K[145/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:293:7 › F4 — Dossier CRUD (E2E) › F4.5 — create endpoint requires auth
+[1A[2K[146/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:300:7 › F4 — Dossier CRUD (E2E) › F4.6 — provider role cannot create dossier
+[1A[2K[147/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:308:7 › F4 — Dossier CRUD (E2E) › F4.7 — empty title rejected
+[1A[2K[148/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:316:7 › F4 — Dossier CRUD (E2E) › F4.8 — title > 255 chars rejected
+[1A[2K[149/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:327:7 › F4 — Dossier CRUD (E2E) › F4.9 — invalid standard_type_id format → 422
+[1A[2K[150/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:335:7 › F4 — Dossier CRUD (E2E) › F4.10 — nonexistent standard_type_id → 404
+[1A[2K[151/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:346:7 › F4 — Dossier CRUD (E2E) › F4.11 — list returns array shape
+[1A[2K[152/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:356:7 › F4 — Dossier CRUD (E2E) › F4.12 — get detail malformed uuid → 422
+[1A[2K[153/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:363:7 › F4 — Dossier CRUD (E2E) › F4.13 — PATCH invalid status → 422
+[1A[2K[154/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:371:7 › F4 — Dossier CRUD (E2E) › F4.14 — DELETE soft-cancel returns 204 even for nonexistent (silent)
+[1A[2K[155/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:378:7 › F4 — Dossier CRUD (E2E) › F4.15 — list response items have documents array
+[1A[2K[156/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:396:7 › F5 — Provider overdue queue (E2E) › F5.1 — /dashboard/provider/overdue page route exists
+[1A[2K[157/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:403:7 › F5 — Provider overdue queue (E2E) › F5.2 — endpoint requires auth
+[1A[2K[158/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:408:7 › F5 — Provider overdue queue (E2E) › F5.3 — business role gets 403
+[1A[2K[159/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:415:7 › F5 — Provider overdue queue (E2E) › F5.4 — provider role returns 200 + items list
+[1A[2K[160/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:427:7 › F5 — Provider overdue queue (E2E) › F5.5 — limit=0 returns empty list
+[1A[2K[161/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:437:7 › F5 — Provider overdue queue (E2E) › F5.6 — negative limit → 422 (validation gate added today)
+[1A[2K[162/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:444:7 › F5 — Provider overdue queue (E2E) › F5.7 — huge limit > 500 → 422
+[1A[2K[163/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:451:7 › F5 — Provider overdue queue (E2E) › F5.8 — items have required shape fields
+[1A[2K[164/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:466:7 › F5 — Provider overdue queue (E2E) › F5.9 — items sorted by deadline asc (oldest first)
+[1A[2K[165/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:478:7 › F5 — Provider overdue queue (E2E) › F5.10 — provider dashboard route accessible
+[1A[2K[166/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:490:7 › F6 — Admin auth refactor (E2E) › F6.1 — JWT admin can list standards via /auth/admin/standard-types
+[1A[2K[167/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:498:7 › F6 — Admin auth refactor (E2E) › F6.2 — JWT admin can list industries via /auth/admin/industry-schemas
+[1A[2K[168/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:506:7 › F6 — Admin auth refactor (E2E) › F6.3 — business token rejected from admin endpoint
+[1A[2K[169/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:513:7 › F6 — Admin auth refactor (E2E) › F6.4 — no auth → 401
+[1A[2K[170/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:518:7 › F6 — Admin auth refactor (E2E) › F6.5 — garbage token → 403 (treated as opaque)
+[1A[2K[171/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:525:7 › F6 — Admin auth refactor (E2E) › F6.6 — admin endpoint mounted at /auth/admin/* (not /api/)
+[1A[2K[172/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:531:7 › F6 — Admin auth refactor (E2E) › F6.7 — opaque admin route also mounted for analytics (regression sanity)
+[1A[2K[173/328] [desktop-chromium] › e2e/22-token-isolation.spec.ts:56:5 › no page reads aminra_admin_token outside the allowed central files
+[1A[2K[174/328] [desktop-chromium] › e2e/22-token-isolation.spec.ts:77:5 › no page reads aminra_user_token outside the allowed central files
+[1A[2K[175/328] [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout purges cross-context session state
+[1A[2K[176/328] [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token
+[1A[2K[177/328] [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:36:7 › provider dossier + score › dossier + score endpoints return shape
+[1A[2K[178/328] [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:75:7 › provider dossier + score › PUT /received/{id}/status rejects status='approved'
+[1A[2K[179/328] [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:96:7 › provider dossier + score › provider page /businesses/[id] renders score + folder
+[1A[2K[180/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:24:7 › PWA + web push › manifest, icons, sw.js all served
+[1A[2K[181/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:51:7 › PWA + web push › VAPID public key endpoint returns key
+[1A[2K[182/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:61:7 › PWA + web push › subscribe endpoint requires auth
+[1A[2K[183/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:72:7 › PWA + web push › subscribe + unsubscribe with auth round-trips
+[1A[2K[184/328] [desktop-chromium] › e2e/26-register-validation.spec.ts:20:7 › register validation › BE 422 with arrayed detail returns parseable msg
+[1A[2K[185/328] [desktop-chromium] › e2e/26-register-validation.spec.ts:36:7 › register validation › static guard: register pages import shared apiError helpers
+[1A[2K[186/328] [desktop-chromium] › e2e/26-register-validation.spec.ts:65:7 › register validation › valid password completes register successfully
+[1A[2K[187/328] [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:38:7 › template content integrity › no two doc_types serve the same template content
+[1A[2K[188/328] [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:86:7 › template content integrity › template download returns no-store headers (prevent stale browser cache)
+[1A[2K[189/328] [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:117:7 › template content integrity › backend _find_template_file uses exact canonical filename
+[1A[2K[190/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:23:7 › admin file preview › view DOCX template returns PDF for inline preview (LibreOffice conversion)
+[1A[2K[191/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:48:7 › admin file preview › view template-file via query-string token (for new-tab UX)
+[1A[2K[192/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:61:7 › admin file preview › repeated PDF requests return identical content (cache deterministic)
+[1A[2K[193/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:77:7 › admin file preview › view rejects missing/garbage auth
+[1A[2K[194/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:94:7 › admin file preview › view rejects path-traversal in filename
+[1A[2K[195/328] [desktop-chromium] › e2e/29-portfolio-deep-link.spec.ts:36:7 › portfolio deep-link to company folder › submissions page lands on company folder when ?company= passed
+[1A[2K[196/328] [desktop-chromium] › e2e/29-portfolio-deep-link.spec.ts:80:7 › portfolio deep-link to company folder › portfolio link includes ?company= deep-link (static check)
+[1A[2K[197/328] [desktop-chromium] › e2e/29-portfolio-deep-link.spec.ts:99:7 › portfolio deep-link to company folder › UI flow: click 'Xem hồ sơ' on portfolio → lands on company folder
+[1A[2K[198/328] [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:26:7 › admin user edit UX › AdminUserManager imports parseApiError + validatePassword
+[1A[2K[199/328] [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:38:7 › admin user edit UX › modal supports ESC + backdrop close + focus first input
+[1A[2K[200/328] [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:53:7 › admin user edit UX › password placeholder + helper text match BE rule (10+ chars upper/lower/digit)
+[1A[2K[201/328] [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:65:7 › admin user edit UX › edit mode shows email as read-only field (not just title)
+[1A[2K[202/328] [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:73:7 › admin user edit UX › role-change confirm + 'Pending' status hidden for business
+[1A[2K[203/328] [desktop-chromium] › e2e/30-admin-user-edit-ux.spec.ts:84:7 › admin user edit UX › save button uses navy disabled bg (not gray-on-gray)
+[1A[2K[204/328] [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:21:7 › revision panel visibility logic › source: panel returns null when no action + no history
+[1A[2K[205/328] [desktop-chromium] › e2e/31-revision-panel-visibility.spec.ts:45:7 › revision panel visibility logic › source: form conditions still align with backend ALLOWED_FROM_STATUSES
+[1A[2K[206/328] [desktop-chromium] › e2e/32-chat-removed.spec.ts:25:7 › chat removed (submission_comments) › backend /comments endpoints return 404
+[1A[2K[207/328] [desktop-chromium] › e2e/32-chat-removed.spec.ts:51:7 › chat removed (submission_comments) › OpenAPI advertises no /comments paths
+[1A[2K[208/328] [desktop-chromium] › e2e/32-chat-removed.spec.ts:60:7 › chat removed (submission_comments) › FE submissions page has no chat UI / state references
+[1A[2K[209/328] [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:37:7 › Phase 1 Batch 1 — workflow integrity › static guards — code reflects all batch 1 fixes
+[1A[2K[210/328] [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:74:7 › Phase 1 Batch 1 — workflow integrity › DB-level: status CHECK constraint blocks garbage values
+[1A[2K[211/328] [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:99:7 › Phase 1 Batch 1 — workflow integrity › approve-final rejects when no evaluation saved (W3-M11)
+[1A[2K[212/328] [desktop-chromium] › e2e/33-batch1-workflow-integrity.spec.ts:127:7 › Phase 1 Batch 1 — workflow integrity › audit_logs trigger blocks UPDATE/DELETE (decision #4)
+[1A[2K[213/328] [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:24:7 › Phase 1 Batch 4 — file + LLM safety › static guards — code reflects all batch 4 fixes
+[1A[2K[214/328] [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:59:7 › Phase 1 Batch 4 — file + LLM safety › /ingest rejects unauthenticated
+[1A[2K[215/328] [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:74:7 › Phase 1 Batch 4 — file + LLM safety › /evaluate rejects unauthenticated
+[1A[2K[216/328] [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:89:7 › Phase 1 Batch 4 — file + LLM safety › /rewrite rejects unauthenticated
+[1A[2K[217/328] [desktop-chromium] › e2e/34-batch4-file-llm-safety.spec.ts:98:7 › Phase 1 Batch 4 — file + LLM safety › /generate-document rejects unauthenticated
+[1A[2K[218/328] [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:20:7 › Phase 1 Batch 5 — state + scoring › static guards — code reflects all batch 5 fixes
+[1A[2K[219/328] [desktop-chromium] › e2e/35-batch5-state-scoring.spec.ts:68:7 › Phase 1 Batch 5 — state + scoring › transition matrix is sane: terminal states cannot transition out
+[1A[2K[220/328] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/members/page.tsx
+[1A[2K[221/328] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/auditors/page.tsx
+[1A[2K[222/328] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/audits/page.tsx
+[1A[2K[223/328] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/audits/templates/page.tsx
+[1A[2K[224/328] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/submissions/page.tsx
+[1A[2K[225/328] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in components/AdminPage.tsx
+[1A[2K[226/328] [desktop-chromium] › e2e/37-submit-location.spec.ts:22:7 › 37 — submit-location static guard › documents/page.tsx không còn submit state hay modal
+[1A[2K[227/328] [desktop-chromium] › e2e/37-submit-location.spec.ts:59:7 › 37 — submit-location static guard › submissions/page.tsx có đầy đủ submit state, handlers, và isBusiness guard
+[1A[2K[228/328] [desktop-chromium] › e2e/37-submit-location.spec.ts:117:7 › 37 — submit-location static guard › submissions/page.tsx gọi fetchSubs sau submit — không dùng alert làm UX chính
+[1A[2K[229/328] [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:42:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data
+[1A[2K[230/328] [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:56:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints
+[1A[2K[231/328] [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:76:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+[1A[2K[232/328] [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:14:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+[1A[2K  1) [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:14:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/40-supply-chain-create-contracts.spec.ts:16:19
+
+    Error Context: test-results/40-supply-chain-create-con-2ae9e-ach-backend-through-api-api-desktop-chromium/error-context.md
+
+
+[1A[2K[233/328] [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations
+[1A[2K[desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › landing — no critical a11y violations
+[a11y:landing] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+
+[1A[2K[234/328] [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations
+[1A[2K[desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › business-login — no critical a11y violations
+[a11y:business-login] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+
+[1A[2K[235/328] [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations
+[1A[2K[desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › provider-login — no critical a11y violations
+[a11y:provider-login] 1 violations: [
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 3,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  }
+]
+
+[1A[2K[236/328] [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › forgot-password — no critical a11y violations
+[1A[2K[237/328] [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › privacy — no critical a11y violations
+[1A[2K[238/328] [desktop-chromium] › e2e/accessibility.spec.ts:27:9 › Layer 3 — Accessibility (public pages) › terms — no critical a11y violations
+[1A[2K[239/328] [desktop-chromium] › e2e/accessibility.spec.ts:55:7 › Layer 3 — Accessibility (public pages) › verify page (404 state) — no critical a11y violations
+[1A[2K[240/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:17:7 › Valid Keycloak token › business user token validates against BE /auth/me
+[1A[2K[241/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:30:7 › Valid Keycloak token › auditor user token validates
+[1A[2K[242/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:35:7 › Valid Keycloak token › cb_admin user token validates
+[1A[2K[243/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:39:7 › Valid Keycloak token › platform_admin user token validates
+[1A[2K[244/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:43:7 › Valid Keycloak token › token contains email claim
+[1A[2K[245/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:50:7 › Valid Keycloak token › token contains tenant_id mapper claim
+[1A[2K[246/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:57:7 › Valid Keycloak token › token contains is_owner mapper claim
+[1A[2K[247/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:64:7 › Valid Keycloak token › token contains status mapper claim
+[1A[2K[248/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:71:7 › Valid Keycloak token › token contains realm_access.roles claim
+[1A[2K[249/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:78:7 › Valid Keycloak token › token contains aminra-backend in audience
+[1A[2K[250/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:91:7 › Token rejection › BE rejects missing Authorization header
+[1A[2K[251/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:97:7 › Token rejection › BE rejects empty Bearer token
+[1A[2K[252/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:105:7 › Token rejection › BE rejects malformed Bearer token
+[1A[2K[253/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:113:7 › Token rejection › BE rejects token with tampered signature
+[1A[2K[254/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:123:7 › Token rejection › BE rejects token with tampered payload
+[1A[2K[255/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:139:7 › Token rejection › BE rejects garbage token structure
+[1A[2K[256/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:147:7 › Token rejection › BE rejects token issued by wrong realm
+[1A[2K[257/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:168:7 › Token rejection › BE 401 response includes detail field
+[1A[2K[258/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:182:7 › Token lifecycle › access token expires (refresh) after refresh grant produces new token
+[1A[2K[259/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:202:7 › Token lifecycle › refresh token rotation produces new refresh token
+[1A[2K[260/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:218:7 › Token lifecycle › refresh with invalid refresh_token rejected
+[1A[2K[261/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:233:7 › Token lifecycle › token has expires_in within realm policy bounds
+[1A[2K[262/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:242:7 › Token lifecycle › token has iat claim near current time
+[1A[2K[263/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:255:7 › Account state › disabled user cannot direct-grant login
+[1A[2K[264/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:272:7 › Account state › suspended user has accessToken empty in fixture
+[1A[2K[265/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:281:7 › Authentication failures › wrong password rejected
+[1A[2K[266/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:298:7 › Authentication failures › non-existent user rejected
+[1A[2K[267/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:315:7 › Authentication failures › empty password rejected
+[1A[2K[268/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:332:7 › Authentication failures › missing client_id rejected
+[1A[2K[269/328] [desktop-chromium] › e2e/keycloak/01-token-validation.spec.ts:348:7 › Authentication failures › wrong client_id rejected
+[1A[2K[270/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:26:7 › Business login page UI › renders AMINRA-owned form fields
+[1A[2K[271/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:35:7 › Business login page UI › Keycloak CTA starts OIDC redirect
+[1A[2K[272/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:48:7 › Business login page UI › forgot password link routes to AMINRA reset request page
+[1A[2K[273/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:56:7 › Provider login page UI › renders AMINRA-owned provider form with visible Keycloak SSO
+[1A[2K[274/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:70:8 › Password reset pages › email-reset flow is SMTP-dependent and intentionally deferred
+[1A[2K[275/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:74:7 › OIDC callback page › direct visit without code shows error fallback or exits callback
+[1A[2K[276/328] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:85:7 › OIDC callback page › callback with invalid code shows error
+[1A[2K[277/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:44:7 › Signature attacks › alg=none attack rejected
+[1A[2K[278/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:51:7 › Signature attacks › HS256 with public-key-as-secret rejected (alg confusion)
+[1A[2K[279/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:60:7 › Signature attacks › ES256 algorithm rejected (not in whitelist)
+[1A[2K[280/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:69:7 › Signature attacks › signature byte-flipped rejected
+[1A[2K[281/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:78:7 › Signature attacks › signature truncated rejected
+[1A[2K[282/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:85:7 › Signature attacks › signature replaced with junk rejected
+[1A[2K[283/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:99:7 › Claim tampering › modified email claim rejected (signature break)
+[1A[2K[284/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:106:7 › Claim tampering › modified tenant_id rejected
+[1A[2K[285/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:113:7 › Claim tampering › modified is_owner claim rejected
+[1A[2K[286/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:120:7 › Claim tampering › escalated role claim rejected
+[1A[2K[287/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:131:7 › Claim tampering › aud changed to attacker rejected
+[1A[2K[288/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:138:7 › Claim tampering › iss changed rejected
+[1A[2K[289/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:149:7 › Claim tampering › exp extended forever rejected
+[1A[2K[290/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:160:7 › Claim tampering › status claim modified rejected
+[1A[2K[291/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:177:7 › Kid header attacks › missing kid rejected
+[1A[2K[292/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:185:7 › Kid header attacks › empty kid rejected
+[1A[2K[293/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:192:7 › Kid header attacks › kid SQL injection payload rejected
+[1A[2K[294/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:203:7 › Kid header attacks › kid path traversal rejected
+[1A[2K[295/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:214:7 › Kid header attacks › kid enormous string rejected
+[1A[2K[296/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:232:7 › Token structure attacks › token with extra dots rejected
+[1A[2K[297/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:238:7 › Token structure attacks › token with NULL byte rejected
+[1A[2K[298/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:251:7 › Token structure attacks › token with whitespace rejected
+[1A[2K[299/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:258:7 › Token structure attacks › missing one segment rejected
+[1A[2K[300/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:265:7 › Token structure attacks › Bearer prefix in token value rejected
+[1A[2K[301/328] [desktop-chromium] › e2e/keycloak/03-attacker-scenarios.spec.ts:274:7 › Token structure attacks › non-Bearer scheme rejected
+[1A[2K[302/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:19:7 › Cross-tenant isolation › two business users in different tenants have different tenant_id claim
+[1A[2K[303/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:33:7 › Cross-tenant isolation › user A tenant_id matches their fixture spec
+[1A[2K[304/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:40:7 › Cross-tenant isolation › user B tenant_id matches their fixture spec
+[1A[2K[305/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:47:7 › Cross-tenant isolation › auditor has tenant_id null (no tenant binding)
+[1A[2K[306/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:55:7 › Cross-tenant isolation › platform admin has tenant_id null
+[1A[2K[307/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:67:7 › Role-based claims › business user has only business role
+[1A[2K[308/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:77:7 › Role-based claims › auditor user has only auditor role
+[1A[2K[309/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:87:7 › Role-based claims › cb_admin user has only cb_admin role
+[1A[2K[310/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:97:7 › Role-based claims › platform_admin user has only platform_admin role
+[1A[2K[311/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:114:7 › Token uniqueness › two different users have different access tokens
+[1A[2K[312/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:120:7 › Token uniqueness › same user logged in twice has different access tokens
+[1A[2K[313/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:144:7 › Admin actions on users › disabling user invalidates future logins
+[1A[2K[314/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:162:7 › Admin actions on users › logout-all-sessions endpoint exists for admin
+[1A[2K[315/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:173:7 › Concurrent token operations › two users refresh tokens simultaneously without crossover
+[1A[2K[316/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:208:7 › Realm OIDC discovery › OIDC discovery endpoint reachable
+[1A[2K[317/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:219:7 › Realm OIDC discovery › JWKs endpoint returns at least one key
+[1A[2K[318/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:230:7 › Realm OIDC discovery › JWKs keys have RSA kty
+[1A[2K[319/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:240:7 › Realm OIDC discovery › issuer in discovery doc matches token iss claim
+[1A[2K[320/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:252:7 › Realm OIDC discovery › token endpoint URL in discovery doc is correct
+[1A[2K[321/328] [desktop-chromium] › e2e/keycloak/04-multi-user.spec.ts:261:7 › Realm OIDC discovery › authorization endpoint URL exists
+[1A[2K[322/328] [desktop-chromium] › e2e/visual-regression.spec.ts:34:9 › Layer 2 — Visual regression (public pages) › landing matches baseline
+[1A[2K[323/328] [desktop-chromium] › e2e/visual-regression.spec.ts:34:9 › Layer 2 — Visual regression (public pages) › business-login matches baseline
+[1A[2K[324/328] [desktop-chromium] › e2e/visual-regression.spec.ts:34:9 › Layer 2 — Visual regression (public pages) › provider-login matches baseline
+[1A[2K[325/328] [desktop-chromium] › e2e/visual-regression.spec.ts:34:9 › Layer 2 — Visual regression (public pages) › forgot-password matches baseline
+[1A[2K[326/328] [desktop-chromium] › e2e/visual-regression.spec.ts:34:9 › Layer 2 — Visual regression (public pages) › privacy matches baseline
+[1A[2K[327/328] [desktop-chromium] › e2e/visual-regression.spec.ts:34:9 › Layer 2 — Visual regression (public pages) › terms matches baseline
+[1A[2K[328/328] [desktop-chromium] › e2e/visual-regression.spec.ts:51:7 › Layer 2 — Visual regression (public pages) › verify page — 404 state
+[1A[2K  1 failed
+    [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:14:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+  30 skipped
+  297 passed (6.3m)
+
+# Finished: 2026-09-17T07:11:53-04:00
+# Exit code: 1

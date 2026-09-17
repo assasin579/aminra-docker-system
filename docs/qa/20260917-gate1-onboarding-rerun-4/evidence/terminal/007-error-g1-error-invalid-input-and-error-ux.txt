@@ -1,0 +1,21 @@
+# Domain: error
+# Gate: G1-ERROR invalid input and error UX
+# Started: 2026-09-17T06:49:42-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/26-register-validation.spec.ts e2e/36-batch6-parse-api-error.spec.ts --project=desktop-chromium --reporter=line
+
+
+Running 9 tests using 1 worker
+
+[1A[2K[1/9] [desktop-chromium] › e2e/26-register-validation.spec.ts:20:7 › register validation › BE 422 with arrayed detail returns parseable msg
+[1A[2K[2/9] [desktop-chromium] › e2e/26-register-validation.spec.ts:36:7 › register validation › static guard: register pages import shared apiError helpers
+[1A[2K[3/9] [desktop-chromium] › e2e/26-register-validation.spec.ts:65:7 › register validation › valid password completes register successfully
+[1A[2K[4/9] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/members/page.tsx
+[1A[2K[5/9] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/auditors/page.tsx
+[1A[2K[6/9] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/audits/page.tsx
+[1A[2K[7/9] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/audits/templates/page.tsx
+[1A[2K[8/9] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in app/submissions/page.tsx
+[1A[2K[9/9] [desktop-chromium] › e2e/36-batch6-parse-api-error.spec.ts:29:9 › Phase 1 Batch 6 — UX cleanup › parseApiError used in components/AdminPage.tsx
+[1A[2K  9 passed (5.0s)
+
+# Finished: 2026-09-17T06:49:50-04:00
+# Exit code: 0

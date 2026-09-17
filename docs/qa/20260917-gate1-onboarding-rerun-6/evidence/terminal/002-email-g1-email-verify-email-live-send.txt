@@ -1,0 +1,15 @@
+# Domain: email
+# Gate: G1-EMAIL verify-email live-send
+# Started: 2026-09-17T07:02:05-04:00
+# Command: bash scripts/qa/keycloak-email-live-send-check.sh
+
+[qa-email] admin token obtained: yes
+[qa-email] configuring realm=aminra smtp_host=aminra-qa-smtp smtp_port=2525 from=qa-no-reply@aminra.local
+[qa-email] realm SMTP configured
+[qa-email] found test user: demo-platform-admin@demo.aminra.vn
+[qa-email] triggering VERIFY_EMAIL execute-actions-email
+[qa-email] VERIFY_EMAIL execute-actions-email accepted by Keycloak
+[qa-email] live-send gate complete; inspect SMTP capture logs for SMTP_CAPTURE_BEGIN/END
+
+# Finished: 2026-09-17T07:02:06-04:00
+# Exit code: 0

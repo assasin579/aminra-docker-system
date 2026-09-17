@@ -1,0 +1,16 @@
+# Domain: runtime
+# Gate: G1-RUNTIME health public login
+# Started: 2026-09-17T06:40:06-04:00
+# Command: docker compose ps aminra-backend aminra-frontend postgres-db qdrant-db redis keycloak && curl -fsS http://127.0.0.1:8100/health && curl -fsS -o /dev/null -w 'public_business_login=%{http_code}\n' 'https://aminra.org/business/login'
+
+NAME                                     IMAGE                                                                     COMMAND                  SERVICE           CREATED        STATUS                 PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend                                       "/app/entrypoint.sh …"   aminra-backend    2 hours ago    Up 2 hours (healthy)   0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend                                      "docker-entrypoint.s…"   aminra-frontend   2 hours ago    Up 2 hours (healthy)   0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak                                             "/opt/keycloak/bin/k…"   keycloak          18 hours ago   Up 5 hours (healthy)   8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       sha256:9747d5f263b1f6a675bca7dd2c62d1c31642f5f08e280d1794d8243d78f82a1d   "docker-entrypoint.s…"   postgres-db       5 days ago     Up 5 hours (healthy)   5432/tcp
+aminra-docker-system-qdrant-db-1         sha256:695d809244e0e2ee8c30e6efe579c6aa55f1c670036009ff68baa7170a3f1118   "./entrypoint.sh"        qdrant-db         5 days ago     Up 5 hours (healthy)   6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                                                          "docker-entrypoint.s…"   redis             10 days ago    Up 5 hours (healthy)   6379/tcp
+{"status":"ok","service":"Aminra Halal Certification AI","database":"connected","qdrant":"connected"}public_business_login=200
+
+# Finished: 2026-09-17T06:40:07-04:00
+# Exit code: 0

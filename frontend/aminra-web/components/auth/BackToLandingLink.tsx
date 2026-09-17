@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 type BackToLandingLinkProps = {
   href?: string;
   label?: string;
@@ -10,7 +8,7 @@ export function BackToLandingLink({
   label = "Về trang chủ",
 }: BackToLandingLinkProps) {
   return (
-    <Link
+    <a
       href={href}
       aria-label={label}
       data-auth-exit="landing"
@@ -19,6 +17,6 @@ export function BackToLandingLink({
     >
       <span aria-hidden="true">←</span>
       <span>{label}</span>
-    </Link>
+    </a>
   );
 }

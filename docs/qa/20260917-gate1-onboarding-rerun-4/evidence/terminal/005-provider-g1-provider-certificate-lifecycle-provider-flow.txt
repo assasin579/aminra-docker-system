@@ -1,0 +1,35 @@
+# Domain: provider
+# Gate: G1-PROVIDER certificate lifecycle provider flow
+# Started: 2026-09-17T06:49:16-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/04-provider-flow.spec.ts e2e/14-cuj-cert-lifecycle.spec.ts e2e/18-mvp-demo-provider-admin.spec.ts --project=desktop-chromium --reporter=line
+
+
+Running 22 tests using 1 worker
+
+[1A[2K[1/22] [desktop-chromium] › e2e/04-provider-flow.spec.ts:4:7 › 04. Provider user workflow › Provider can list received submissions
+[1A[2K[2/22] [desktop-chromium] › e2e/04-provider-flow.spec.ts:12:7 › 04. Provider user workflow › Provider can view audit list
+[1A[2K[3/22] [desktop-chromium] › e2e/04-provider-flow.spec.ts:20:7 › 04. Provider user workflow › Provider can view audit templates
+[1A[2K[4/22] [desktop-chromium] › e2e/04-provider-flow.spec.ts:28:7 › 04. Provider user workflow › Provider is blocked from business-owned pending NCR queue
+[1A[2K[5/22] [desktop-chromium] › e2e/04-provider-flow.spec.ts:36:7 › 04. Provider user workflow › Provider can view certificate registry
+[1A[2K[6/22] [desktop-chromium] › e2e/04-provider-flow.spec.ts:44:7 › 04. Provider user workflow › Provider can view auditor list
+[1A[2K[7/22] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert
+[1A[2K[8/22] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert
+[1A[2K[9/22] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced)
+[1A[2K[10/22] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible
+[1A[2K[11/22] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider
+[1A[2K[12/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:43:7 › MVP Flow 12: Provider login + dashboard › Provider seeded login works
+[1A[2K[13/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:49:7 › MVP Flow 12: Provider login + dashboard › Provider /received endpoint accessible
+[1A[2K[14/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:58:7 › MVP Flow 12: Provider login + dashboard › Provider cb-stats accessible
+[1A[2K[15/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:71:7 › MVP Flow 13: Provider request revision › Request revision endpoint validates auth + fails for non-existent submission
+[1A[2K[16/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:90:7 › MVP Flow 13: Provider request revision › Business gets 403 trying to request revision
+[1A[2K[17/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:111:7 › MVP Flow 14: Assign auditor › Assign endpoint mounted (auth-gated)
+[1A[2K[18/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:123:7 › MVP Flow 15: Issue cert › Issue cert endpoint requires provider owner role
+[1A[2K[19/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:144:7 › MVP Flow 16: Cert revoke › Revoke without reason returns 400 from validation
+[1A[2K[20/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:164:7 › MVP Flow 17: Auditor visits queue › Auditor can list visits
+[1A[2K[21/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:178:7 › MVP Flow 18-20: Admin dashboard + queue + provider approve › Admin endpoints reject unauthenticated
+[1A[2K[22/22] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:190:7 › MVP Flow 18-20: Admin dashboard + queue + provider approve › Admin pages accessible at frontend URL
+[1A[2K  1 skipped
+  21 passed (15.0s)
+
+# Finished: 2026-09-17T06:49:34-04:00
+# Exit code: 0

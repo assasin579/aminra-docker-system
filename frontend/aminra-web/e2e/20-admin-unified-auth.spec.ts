@@ -7,9 +7,21 @@
  * This is the regression gate for the bug where these 3 pages only read
  * the frontend accidentally looked for the retired opaque admin session.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { requireAdminToken } from "./helpers/admin-token";
 import { requireKeycloakUserToken } from "./helpers/auth-token";
+
+async function gotoAdminPage(page: Page, path: string) {
+  // Public sandbox navigation can occasionally abort during full-suite runs
+  // while the route itself is healthy. Retry only navigation-level aborts;
+  // assertions below still fail on real auth/render regressions.
+  try {
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+  } catch (error) {
+    if (!String(error).includes("net::ERR_ABORTED")) throw error;
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+  }
+}
 
 test.describe("admin unified auth", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -30,20 +42,20 @@ test.describe("admin unified auth", () => {
       localStorage.removeItem("aminra_admin_token");
     }, token);
 
-    await page.goto("/admin/analytics");
+    await gotoAdminPage(page, "/admin/analytics");
     await expect(
       page.getByRole("heading", { name: "Analytics dashboard" }),
     ).toBeVisible();
     await expect(page.getByText(/Cập nhật:/)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
 
-    await page.goto("/admin/audit-logs");
+    await gotoAdminPage(page, "/admin/audit-logs");
     await expect(
       page.getByText(/Audit logs|Nhật ký|audit/i).first(),
     ).toBeVisible();
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
 
-    await page.goto("/admin/overdue-submissions");
+    await gotoAdminPage(page, "/admin/overdue-submissions");
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
   });
 

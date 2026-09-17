@@ -1,0 +1,248 @@
+# Domain: business
+# Gate: G1-BUSINESS first value and supply chain contracts
+# Started: 2026-09-17T06:00:47-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/03-business-flow.spec.ts e2e/10-supply-chain.spec.ts e2e/40-supply-chain-create-contracts.spec.ts --project=desktop-chromium --reporter=line
+
+
+Running 12 tests using 1 worker
+
+[1A[2K[1/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+[1A[2K  1) [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-fa86d-view-empty-submissions-list-desktop-chromium/error-context.md
+
+
+[1A[2K[2/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+[1A[2K  2) [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-850ba-ss-can-view-company-profile-desktop-chromium/error-context.md
+
+
+[1A[2K[3/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+[1A[2K  3) [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-cdbee--can-update-company-profile-desktop-chromium/error-context.md
+
+
+[1A[2K[4/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+[1A[2K  4) [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-f4f57-ed-after-feature-retirement-desktop-chromium/error-context.md
+
+
+[1A[2K[5/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+[1A[2K  5) [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-89f97-Business-can-list-documents-desktop-chromium/error-context.md
+
+
+[1A[2K[6/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+[1A[2K  6) [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-f2423-d-from-admin-users-endpoint-desktop-chromium/error-context.md
+
+
+[1A[2K[7/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+[1A[2K  7) [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--d330d-Business-can-list-suppliers-desktop-chromium/error-context.md
+
+
+[1A[2K[8/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+[1A[2K  8) [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--db656-Business-can-list-materials-desktop-chromium/error-context.md
+
+
+[1A[2K[9/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+[1A[2K  9) [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--a5cb8-n-Business-can-list-batches-desktop-chromium/error-context.md
+
+
+[1A[2K[10/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:25:7 › 10. Supply chain + Certificate verification › Public verify bogus cert number → 404
+[1A[2K[11/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+[1A[2K  10) [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--a65d9-cations-endpoint-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[12/12] [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:32:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+[1A[2K  11) [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:32:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+
+    Error: {"error":"invalid_grant","error_description":"Invalid user credentials"}
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      24 |     data: form.toString(),
+      25 |   });
+    > 26 |   expect(resp.status(), await resp.text()).toBe(200);
+         |                                            ^
+      27 |   const body = await resp.json();
+      28 |   return body.access_token;
+      29 | }
+        at getBusinessToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/40-supply-chain-create-contracts.spec.ts:26:44)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/40-supply-chain-create-contracts.spec.ts:34:19
+
+    Error Context: test-results/40-supply-chain-create-con-2ae9e-ach-backend-through-api-api-desktop-chromium/error-context.md
+
+
+[1A[2K  11 failed
+    [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+    [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+    [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+    [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+    [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+    [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+    [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+    [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+    [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+    [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+    [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:32:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+  1 passed (26.5s)
+
+# Finished: 2026-09-17T06:01:16-04:00
+# Exit code: 1

@@ -6,7 +6,7 @@ const BACKEND = process.env.BACKEND_URL || "http://aminra-backend:8000";
 const KEYCLOAK_URL =
   process.env.KEYCLOAK_URL ||
   process.env.NEXT_PUBLIC_KEYCLOAK_URL ||
-  "https://auth.silvergem.org";
+  "https://auth.aminra.org";
 const KEYCLOAK_REALM =
   process.env.KEYCLOAK_REALM ||
   process.env.NEXT_PUBLIC_KEYCLOAK_REALM ||

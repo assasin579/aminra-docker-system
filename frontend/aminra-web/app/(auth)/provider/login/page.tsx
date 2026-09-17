@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BackToLandingLink } from "@/components/auth/BackToLandingLink";
-import { KeycloakSsoButton } from "@/components/KeycloakSsoButton";
 import { useUserAuth } from "@/components/UserAuthContext";
 
 export default function ProviderLoginPage() {
@@ -199,12 +198,6 @@ export default function ProviderLoginPage() {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
-
-        <KeycloakSsoButton
-          returnTo="/dashboard/provider"
-          label="Đăng nhập bằng Keycloak"
-          hint="Dành cho tổ chức chứng nhận đã được AMINRA cấp tài khoản"
-        />
 
         <div
           className="mt-6 pt-5 text-center"

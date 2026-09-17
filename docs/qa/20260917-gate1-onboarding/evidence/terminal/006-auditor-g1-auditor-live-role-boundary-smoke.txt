@@ -1,0 +1,247 @@
+# Domain: auditor
+# Gate: G1-AUDITOR live role boundary smoke
+# Started: 2026-09-17T06:01:53-04:00
+# Command: cid=$(docker compose ps -q aminra-backend); docker cp backend/tests/. "$cid":/app/tests; docker compose exec -T aminra-backend pytest tests/test_role_boundaries_live_smoke.py tests/test_unauth_route_boundaries.py -q
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, anyio-4.15.1, Faker-40.39.0, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 44 items
+
+tests/test_role_boundaries_live_smoke.py [31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[33ms[0m[33ms[0m[33ms[0m[31m                    [ 27%][0m
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m   [100%][0m
+
+==================================== ERRORS ====================================
+[31m[1m_ ERROR at setup of test_business_cannot_access_admin_surfaces[/auth/admin/analytics] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:77: in business_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mbiz-demo-1@demo.aminra.vn[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_business_cannot_access_admin_surfaces[/auth/admin/overdue-submissions] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:77: in business_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mbiz-demo-1@demo.aminra.vn[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_business_cannot_access_admin_surfaces[/auth/admin/audit-logs] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:77: in business_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mbiz-demo-1@demo.aminra.vn[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_business_cannot_access_admin_surfaces[/auth/admin/pending-providers] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:77: in business_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mbiz-demo-1@demo.aminra.vn[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/analytics] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:82: in provider_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mcb-demo@demo.aminra.vn[39;49;00m[33m"[39;49;00m, PROVIDER_DEMO_PW)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/overdue-submissions] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:82: in provider_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mcb-demo@demo.aminra.vn[39;49;00m[33m"[39;49;00m, PROVIDER_DEMO_PW)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/audit-logs] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:82: in provider_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mcb-demo@demo.aminra.vn[39;49;00m[33m"[39;49;00m, PROVIDER_DEMO_PW)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_provider_cannot_access_platform_admin_surfaces[/auth/admin/pending-providers] _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:82: in provider_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mcb-demo@demo.aminra.vn[39;49;00m[33m"[39;49;00m, PROVIDER_DEMO_PW)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[31m[1m_ ERROR at setup of test_business_cannot_issue_certificate_provider_only_action _[0m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:77: in business_token
+    [0m[94mreturn[39;49;00m _token([33m"[39;49;00m[33mbiz-demo-1@demo.aminra.vn[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mtests/test_role_boundaries_live_smoke.py[0m:56: in _token
+    [0m[94mwith[39;49;00m urllib.request.urlopen(req, timeout=[94m15[39;49;00m) [94mas[39;49;00m resp:  [90m# noqa: S310 - controlled test URL[39;49;00m[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:216: in urlopen
+    [0m[94mreturn[39;49;00m opener.open(url, data, timeout)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:525: in open
+    [0mresponse = meth(req, response)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:634: in http_response
+    [0mresponse = [96mself[39;49;00m.parent.error([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:563: in error
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m._call_chain(*args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:496: in _call_chain
+    [0mresult = func(*args)[90m[39;49;00m
+             ^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/urllib/request.py[0m:643: in http_error_default
+    [0m[94mraise[39;49;00m HTTPError(req.full_url, code, msg, hdrs, fp)[90m[39;49;00m
+[1m[31mE   urllib.error.HTTPError: HTTP Error 401: Unauthorized[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_business_cannot_access_admin_surfaces[/auth/admin/analytics][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_business_cannot_access_admin_surfaces[/auth/admin/overdue-submissions][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_business_cannot_access_admin_surfaces[/auth/admin/audit-logs][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_business_cannot_access_admin_surfaces[/auth/admin/pending-providers][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_provider_cannot_access_platform_admin_surfaces[/auth/admin/analytics][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_provider_cannot_access_platform_admin_surfaces[/auth/admin/overdue-submissions][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_provider_cannot_access_platform_admin_surfaces[/auth/admin/audit-logs][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_provider_cannot_access_platform_admin_surfaces[/auth/admin/pending-providers][0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31mERROR[0m tests/test_role_boundaries_live_smoke.py::[1mtest_business_cannot_issue_certificate_provider_only_action[0m - urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[31m=================== [32m32 passed[0m, [33m3 skipped[0m, [31m[1m9 errors[0m[31m in 4.56s[0m[31m ====================[0m
+
+# Finished: 2026-09-17T06:02:03-04:00
+# Exit code: 1

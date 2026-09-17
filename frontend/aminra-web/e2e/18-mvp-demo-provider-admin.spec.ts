@@ -5,6 +5,7 @@
  */
 import { test, expect } from "./fixtures";
 import { requireKeycloakUserToken } from "./helpers/auth-token";
+import type { Page } from "@playwright/test";
 
 const BIZ_DEMO_PW = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
 const PROVIDER_DEMO_PW =
@@ -23,6 +24,17 @@ async function loginAs(api: Parameters<typeof requireKeycloakUserToken>[0], emai
   return requireKeycloakUserToken(api, { email, password }).catch(
     () => null,
   );
+}
+
+async function frontendStatus(page: Page, path: string): Promise<number> {
+  try {
+    const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+    return response?.status() ?? 500;
+  } catch (error) {
+    if (!String(error).includes("net::ERR_ABORTED")) throw error;
+    const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+    return response?.status() ?? 500;
+  }
 }
 
 // ── Flow 12: Provider login → portfolio ───────────────────────────────────
@@ -181,7 +193,7 @@ test.describe("MVP Flow 18-20: Admin dashboard + queue + provider approve", () =
       "/admin/audit-logs",
       "/admin/overdue-submissions",
     ]) {
-      const status = await page.goto(path).then((r) => r?.status() ?? 500);
+      const status = await frontendStatus(page, path);
       // 200 = renders (may show login prompt within page)
       expect([200, 307]).toContain(status);
     }

@@ -1,0 +1,24 @@
+# Domain: business
+# Gate: G1-BUSINESS first value and supply chain contracts
+# Started: 2026-09-17T06:49:08-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/03-business-flow.spec.ts e2e/10-supply-chain.spec.ts e2e/40-supply-chain-create-contracts.spec.ts --project=desktop-chromium --reporter=line
+
+
+Running 12 tests using 1 worker
+
+[1A[2K[1/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+[1A[2K[2/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+[1A[2K[3/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+[1A[2K[4/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+[1A[2K[5/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+[1A[2K[6/12] [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+[1A[2K[7/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+[1A[2K[8/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+[1A[2K[9/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+[1A[2K[10/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:25:7 › 10. Supply chain + Certificate verification › Public verify bogus cert number → 404
+[1A[2K[11/12] [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+[1A[2K[12/12] [desktop-chromium] › e2e/40-supply-chain-create-contracts.spec.ts:14:7 › Supply-chain FE proxy create-contract smoke › process, supplier, and batch create flows reach backend through /api/api
+[1A[2K  12 passed (5.9s)
+
+# Finished: 2026-09-17T06:49:16-04:00
+# Exit code: 0

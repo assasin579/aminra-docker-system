@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BackToLandingLink } from "@/components/auth/BackToLandingLink";
-import { KeycloakSsoButton } from "@/components/KeycloakSsoButton";
 import { useUserAuth } from "@/components/UserAuthContext";
 
 export default function BusinessLoginPage() {
@@ -172,12 +171,6 @@ export default function BusinessLoginPage() {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
-
-        <KeycloakSsoButton
-          returnTo="/dashboard/business"
-          label="Đăng nhập bằng Keycloak"
-          hint="Dùng tài khoản AMINRA đã xác thực email / MFA"
-        />
 
         <div
           className="mt-6 pt-5 text-center"

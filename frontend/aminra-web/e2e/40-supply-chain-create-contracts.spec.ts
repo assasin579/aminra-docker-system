@@ -1,31 +1,13 @@
 import { test, expect, request as playwrightRequest, APIRequestContext } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
 const FRONTEND_URL = (process.env.FRONTEND_URL || "http://127.0.0.1:3100").replace(/\/$/, "");
-const KEYCLOAK_URL = (process.env.KEYCLOAK_TOKEN_URL || "http://127.0.0.1:8180").replace(/\/$/, "");
-const REALM = process.env.KEYCLOAK_REALM || "aminra";
-const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || "aminra-frontend";
-const DEMO_EMAIL = process.env.DEMO_BUSINESS_EMAIL || "biz-demo-1@demo.aminra.vn";
-const DEMO_PW = process.env.DEMO_PW || "DemoP@ss2026";
+const DEMO_EMAIL = process.env.PW_BIZ_EMAIL || process.env.DEMO_BUSINESS_EMAIL || "biz-demo-1@demo.aminra.vn";
+const DEMO_PW = process.env.PW_BIZ_PASSWORD || process.env.DEMO_PW;
 
 async function getBusinessToken(api: APIRequestContext): Promise<string> {
-  const form = new URLSearchParams({
-    grant_type: "password",
-    client_id: CLIENT_ID,
-    username: DEMO_EMAIL,
-    password: DEMO_PW,
-  });
-  const resp = await api.post(`${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`, {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "X-Forwarded-Proto": process.env.KEYCLOAK_PUBLIC_PROTO || "https",
-      "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.aminra.org",
-      "X-Forwarded-Port": process.env.KEYCLOAK_PUBLIC_PORT || "443",
-    },
-    data: form.toString(),
-  });
-  expect(resp.status(), await resp.text()).toBe(200);
-  const body = await resp.json();
-  return body.access_token;
+  if (!DEMO_PW) test.skip(true, "business demo password not configured (PW_BIZ_PASSWORD or DEMO_PW)");
+  return requireKeycloakUserToken(api, { email: DEMO_EMAIL, password: DEMO_PW as string });
 }
 
 test.describe("Supply-chain FE proxy create-contract smoke", () => {

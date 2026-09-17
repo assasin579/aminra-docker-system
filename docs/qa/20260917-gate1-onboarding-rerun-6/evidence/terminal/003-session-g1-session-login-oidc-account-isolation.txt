@@ -1,0 +1,24 @@
+# Domain: session
+# Gate: G1-SESSION login oidc account isolation
+# Started: 2026-09-17T07:02:06-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/keycloak/02-login-ui-flow.spec.ts e2e/22-token-isolation.spec.ts e2e/23-cross-context-logout.spec.ts --project=desktop-chromium --reporter=line
+
+
+Running 11 tests using 1 worker
+
+[1A[2K[1/11] [desktop-chromium] › e2e/22-token-isolation.spec.ts:56:5 › no page reads aminra_admin_token outside the allowed central files
+[1A[2K[2/11] [desktop-chromium] › e2e/22-token-isolation.spec.ts:77:5 › no page reads aminra_user_token outside the allowed central files
+[1A[2K[3/11] [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout purges cross-context session state
+[1A[2K[4/11] [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token
+[1A[2K[5/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:26:7 › Business login page UI › renders AMINRA-owned form fields
+[1A[2K[6/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:35:7 › Business login page UI › Keycloak CTA starts OIDC redirect
+[1A[2K[7/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:48:7 › Business login page UI › forgot password link routes to AMINRA reset request page
+[1A[2K[8/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:56:7 › Provider login page UI › renders AMINRA-owned provider form with visible Keycloak SSO
+[1A[2K[9/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:70:8 › Password reset pages › email-reset flow is SMTP-dependent and intentionally deferred
+[1A[2K[10/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:74:7 › OIDC callback page › direct visit without code shows error fallback or exits callback
+[1A[2K[11/11] [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:85:7 › OIDC callback page › callback with invalid code shows error
+[1A[2K  1 skipped
+  10 passed (23.7s)
+
+# Finished: 2026-09-17T07:02:33-04:00
+# Exit code: 0

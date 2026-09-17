@@ -1,0 +1,4 @@
+# Domain: inventory
+# Gate: G1-INVENTORY acceptance matrix
+# Status: BLOCKED
+acceptance-matrix.md missing; run inventory extraction first

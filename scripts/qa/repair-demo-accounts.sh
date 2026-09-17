@@ -111,20 +111,23 @@ def ensure_user(email: str, role_name: str, new_pw: str, first_name: str, last_n
     print(f"PASS: repaired {email} role={role_name} password=REDACTED")
     return new_pw
 
+business_pw = gen_pw()
 provider_pw = gen_pw()
 admin_demo_pw = gen_pw()
+business_pw = ensure_user("biz-demo-1@demo.aminra.vn", "business", business_pw, "Business", "Demo")
 provider_pw = ensure_user("cb-demo@demo.aminra.vn", "cb_admin", provider_pw, "Provider", "Demo")
 admin_demo_pw = ensure_user("demo-platform-admin@demo.aminra.vn", "platform_admin", admin_demo_pw, "Platform", "Admin")
 
 # Preserve existing file comments/order lightly and write only relevant keys without printing values.
 QA.parent.mkdir(parents=True, exist_ok=True)
 existing = load_env(QA)
+existing["DEMO_PW"] = business_pw
+existing["PW_BIZ_PASSWORD"] = business_pw
 existing["PROVIDER_DEMO_PW"] = provider_pw
+existing["PW_PROVIDER_PASSWORD"] = provider_pw
 existing["ADMIN_DEMO_PW"] = admin_demo_pw
 existing["TEST_ADMIN_EMAIL"] = "demo-platform-admin@demo.aminra.vn"
 existing["TEST_ADMIN_PASSWORD"] = admin_demo_pw
-if "DEMO_PW" not in existing:
-    existing["DEMO_PW"] = env.get("DEMO_PW", "DemoP@ss2026")
 lines = ["# Local QA demo credentials. Do not commit. Values intentionally not printed by repair script."]
 for k in sorted(existing):
     lines.append(f"{k}={existing[k]}")

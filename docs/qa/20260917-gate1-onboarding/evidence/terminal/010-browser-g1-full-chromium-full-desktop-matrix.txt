@@ -1,0 +1,1598 @@
+# Domain: browser
+# Gate: G1-FULL-CHROMIUM full desktop matrix
+# Started: 2026-09-17T06:04:25-04:00
+# Command: cd frontend/aminra-web && npx playwright test --project=desktop-chromium --reporter=line
+
+
+Running 328 tests using 1 worker
+
+[1A[2K[1/328] [desktop-chromium] › e2e/01-health.spec.ts:4:7 › 01. Infrastructure health › Backend /health returns ok + db + qdrant
+[1A[2K[2/328] [desktop-chromium] › e2e/01-health.spec.ts:13:7 › 01. Infrastructure health › Frontend landing renders with expected title
+[1A[2K[3/328] [desktop-chromium] › e2e/01-health.spec.ts:18:7 › 01. Infrastructure health › OpenAPI spec has ≥100 paths
+[1A[2K[4/328] [desktop-chromium] › e2e/02-auth.spec.ts:5:7 › 02. Authentication flows › Seeded business Keycloak login returns JWT
+[1A[2K  1) [desktop-chromium] › e2e/02-auth.spec.ts:5:7 › 02. Authentication flows › Seeded business Keycloak login returns JWT
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/02-auth-02-Authentication--4341f--Keycloak-login-returns-JWT-desktop-chromium/error-context.md
+
+
+[1A[2K[5/328] [desktop-chromium] › e2e/02-auth.spec.ts:10:7 › 02. Authentication flows › /auth/me returns correct email for business token
+[1A[2K  2) [desktop-chromium] › e2e/02-auth.spec.ts:10:7 › 02. Authentication flows › /auth/me returns correct email for business token
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/02-auth-02-Authentication--ec86b-ct-email-for-business-token-desktop-chromium/error-context.md
+
+
+[1A[2K[6/328] [desktop-chromium] › e2e/02-auth.spec.ts:23:7 › 02. Authentication flows › Wrong password rejected 401
+[1A[2K  3) [desktop-chromium] › e2e/02-auth.spec.ts:23:7 › 02. Authentication flows › Wrong password rejected 401
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/02-auth-02-Authentication-flows-Wrong-password-rejected-401-desktop-chromium/error-context.md
+
+
+[1A[2K[7/328] [desktop-chromium] › e2e/02-auth.spec.ts:31:7 › 02. Authentication flows › Nonexistent email rejected
+[1A[2K[8/328] [desktop-chromium] › e2e/02-auth.spec.ts:39:7 › 02. Authentication flows › Duplicate email returns 409/422
+[1A[2K  4) [desktop-chromium] › e2e/02-auth.spec.ts:39:7 › 02. Authentication flows › Duplicate email returns 409/422
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/02-auth-02-Authentication--fc065-icate-email-returns-409-422-desktop-chromium/error-context.md
+
+
+[1A[2K[9/328] [desktop-chromium] › e2e/02-auth.spec.ts:46:7 › 02. Authentication flows › Admin Keycloak token is available
+[1A[2K[10/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+[1A[2K  5) [desktop-chromium] › e2e/03-business-flow.spec.ts:4:7 › 03. Business user workflow › Business can view empty submissions list
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-fa86d-view-empty-submissions-list-desktop-chromium/error-context.md
+
+
+[1A[2K[11/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+[1A[2K  6) [desktop-chromium] › e2e/03-business-flow.spec.ts:13:7 › 03. Business user workflow › Business can view company profile
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-850ba-ss-can-view-company-profile-desktop-chromium/error-context.md
+
+
+[1A[2K[12/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+[1A[2K  7) [desktop-chromium] › e2e/03-business-flow.spec.ts:20:7 › 03. Business user workflow › Business can update company profile
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-cdbee--can-update-company-profile-desktop-chromium/error-context.md
+
+
+[1A[2K[13/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+[1A[2K  8) [desktop-chromium] › e2e/03-business-flow.spec.ts:28:7 › 03. Business user workflow › Business self-assessment templates stay removed after feature retirement
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-f4f57-ed-after-feature-retirement-desktop-chromium/error-context.md
+
+
+[1A[2K[14/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+[1A[2K  9) [desktop-chromium] › e2e/03-business-flow.spec.ts:37:7 › 03. Business user workflow › Business can list documents
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-89f97-Business-can-list-documents-desktop-chromium/error-context.md
+
+
+[1A[2K[15/328] [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+[1A[2K  10) [desktop-chromium] › e2e/03-business-flow.spec.ts:44:7 › 03. Business user workflow › Business blocked from admin users endpoint
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/03-business-flow-03-Busine-f2423-d-from-admin-users-endpoint-desktop-chromium/error-context.md
+
+
+[1A[2K[16/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:4:7 › 04. Provider user workflow › Provider can list received submissions
+[1A[2K  11) [desktop-chromium] › e2e/04-provider-flow.spec.ts:4:7 › 04. Provider user workflow › Provider can list received submissions
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/04-provider-flow-04-Provid-0c58e-n-list-received-submissions-desktop-chromium/error-context.md
+
+
+[1A[2K[17/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:12:7 › 04. Provider user workflow › Provider can view audit list
+[1A[2K  12) [desktop-chromium] › e2e/04-provider-flow.spec.ts:12:7 › 04. Provider user workflow › Provider can view audit list
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/04-provider-flow-04-Provid-c7890-rovider-can-view-audit-list-desktop-chromium/error-context.md
+
+
+[1A[2K[18/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:20:7 › 04. Provider user workflow › Provider can view audit templates
+[1A[2K  13) [desktop-chromium] › e2e/04-provider-flow.spec.ts:20:7 › 04. Provider user workflow › Provider can view audit templates
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/04-provider-flow-04-Provid-88edf-er-can-view-audit-templates-desktop-chromium/error-context.md
+
+
+[1A[2K[19/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:28:7 › 04. Provider user workflow › Provider is blocked from business-owned pending NCR queue
+[1A[2K  14) [desktop-chromium] › e2e/04-provider-flow.spec.ts:28:7 › 04. Provider user workflow › Provider is blocked from business-owned pending NCR queue
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/04-provider-flow-04-Provid-4d245-ess-owned-pending-NCR-queue-desktop-chromium/error-context.md
+
+
+[1A[2K[20/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:36:7 › 04. Provider user workflow › Provider can view certificate registry
+[1A[2K  15) [desktop-chromium] › e2e/04-provider-flow.spec.ts:36:7 › 04. Provider user workflow › Provider can view certificate registry
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/04-provider-flow-04-Provid-7ecbb-n-view-certificate-registry-desktop-chromium/error-context.md
+
+
+[1A[2K[21/328] [desktop-chromium] › e2e/04-provider-flow.spec.ts:44:7 › 04. Provider user workflow › Provider can view auditor list
+[1A[2K  16) [desktop-chromium] › e2e/04-provider-flow.spec.ts:44:7 › 04. Provider user workflow › Provider can view auditor list
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/04-provider-flow-04-Provid-8363a-vider-can-view-auditor-list-desktop-chromium/error-context.md
+
+
+[1A[2K[22/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:4:7 › 05. Admin workflow › Admin can list pending providers
+[1A[2K[23/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:13:7 › 05. Admin workflow › Admin can list doc types
+[1A[2K[24/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:20:7 › 05. Admin workflow › Admin can list templates
+[1A[2K[25/328] [desktop-chromium] › e2e/05-admin-flow.spec.ts:27:7 › 05. Admin workflow › Admin can list placeholders
+[1A[2K[26/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › / renders with title
+[1A[2K[27/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /landing renders with title
+[1A[2K[28/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /business/login renders with title
+[1A[2K[29/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /business/register renders with title
+[1A[2K[30/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /provider/login renders with title
+[1A[2K[31/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:14:9 › 06. Public-facing UI pages › /provider/register renders with title
+[1A[2K[32/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:21:7 › 06. Public-facing UI pages › Business login form has email + password fields
+[1A[2K[33/328] [desktop-chromium] › e2e/06-public-ui.spec.ts:29:7 › 06. Public-facing UI pages › Business register form has required fields
+[1A[2K[34/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /dashboard/business → redirect to login when not authed
+[1A[2K[35/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /dashboard/provider → redirect to login when not authed
+[1A[2K[36/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /submissions → redirect to login when not authed
+[1A[2K[37/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /certificates → redirect to login when not authed
+[1A[2K[38/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /documents → redirect to login when not authed
+[1A[2K[39/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /supply-chain/batches → redirect to login when not authed
+[1A[2K[40/328] [desktop-chromium] › e2e/07-protected-ui.spec.ts:15:9 › 07. Protected UI — redirect when not logged in › /audits → redirect to login when not authed
+[1A[2K[41/328] [desktop-chromium] › e2e/08-login-ui.spec.ts:4:7 › 08. UI login form — business › Login form renders with email + password + submit button
+[1A[2K[42/328] [desktop-chromium] › e2e/08-login-ui.spec.ts:24:7 › 08. UI login form — business › Form exposes editable email + password controls
+[1A[2K[43/328] [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page
+[1A[2K  17) [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/landing$/[39m
+    Received string:  [31m"https://aminra.org/business/login"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 10000ms[22m
+    [2m    13 × unexpected value "https://aminra.org/business/login"[22m
+
+
+      42 |
+      43 |     await exit.click();
+    > 44 |     await expect(page).toHaveURL(/\/landing$/);
+         |                        ^
+      45 |   });
+      46 | });
+      47 |
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/08-login-ui.spec.ts:44:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/08-login-ui-08-UI-login-fo-6f4f9--return-to-the-landing-page-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/08-login-ui-08-UI-login-fo-6f4f9--return-to-the-landing-page-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/08-login-ui-08-UI-login-fo-6f4f9--return-to-the-landing-page-desktop-chromium/error-context.md
+
+
+[1A[2K[44/328] [desktop-chromium] › e2e/09-rag-chat.spec.ts:4:7 › 09. RAG / AI chat › Topics endpoint returns filters
+[1A[2K[45/328] [desktop-chromium] › e2e/09-rag-chat.spec.ts:11:7 › 09. RAG / AI chat › Stats endpoint returns vector count
+[1A[2K[46/328] [desktop-chromium] › e2e/09-rag-chat.spec.ts:19:7 › 09. RAG / AI chat › Chat endpoint responds (may be slow)
+[1A[2K[47/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+[1A[2K  18) [desktop-chromium] › e2e/10-supply-chain.spec.ts:4:7 › 10. Supply chain + Certificate verification › Business can list suppliers
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--d330d-Business-can-list-suppliers-desktop-chromium/error-context.md
+
+
+[1A[2K[48/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+[1A[2K  19) [desktop-chromium] › e2e/10-supply-chain.spec.ts:11:7 › 10. Supply chain + Certificate verification › Business can list materials
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--db656-Business-can-list-materials-desktop-chromium/error-context.md
+
+
+[1A[2K[49/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+[1A[2K  20) [desktop-chromium] › e2e/10-supply-chain.spec.ts:18:7 › 10. Supply chain + Certificate verification › Business can list batches
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--a5cb8-n-Business-can-list-batches-desktop-chromium/error-context.md
+
+
+[1A[2K[50/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:25:7 › 10. Supply chain + Certificate verification › Public verify bogus cert number → 404
+[1A[2K[51/328] [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+[1A[2K  21) [desktop-chromium] › e2e/10-supply-chain.spec.ts:32:7 › 10. Supply chain + Certificate verification › Notifications endpoint accessible
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/10-supply-chain-10-Supply--a65d9-cations-endpoint-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[52/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:10:7 › 11. Submission revisions cycle › Revisions endpoint reachable for valid submission
+[1A[2K  22) [desktop-chromium] › e2e/11-revision-cycle.spec.ts:10:7 › 11. Submission revisions cycle › Revisions endpoint reachable for valid submission
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/11-revision-cycle-11-Submi-0aed2-chable-for-valid-submission-desktop-chromium/error-context.md
+
+
+[1A[2K[53/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:38:7 › 11. Submission revisions cycle › Provider rejects request-revision for unauthorized submission with 403/404
+[1A[2K  23) [desktop-chromium] › e2e/11-revision-cycle.spec.ts:38:7 › 11. Submission revisions cycle › Provider rejects request-revision for unauthorized submission with 403/404
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/11-revision-cycle-11-Submi-db3f6-zed-submission-with-403-404-desktop-chromium/error-context.md
+
+
+[1A[2K[54/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:58:7 › 11. Submission revisions cycle › Business cannot request-revision (RBAC enforced)
+[1A[2K  24) [desktop-chromium] › e2e/11-revision-cycle.spec.ts:58:7 › 11. Submission revisions cycle › Business cannot request-revision (RBAC enforced)
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/11-revision-cycle-11-Submi-11700-est-revision-RBAC-enforced--desktop-chromium/error-context.md
+
+
+[1A[2K[55/328] [desktop-chromium] › e2e/11-revision-cycle.spec.ts:73:7 › 11. Submission revisions cycle › Resubmit endpoint validates submission exists
+[1A[2K  25) [desktop-chromium] › e2e/11-revision-cycle.spec.ts:73:7 › 11. Submission revisions cycle › Resubmit endpoint validates submission exists
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/11-revision-cycle-11-Submi-7ec3a-validates-submission-exists-desktop-chromium/error-context.md
+
+
+[1A[2K[56/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:15:7 › CUJ-7: Password reset › Forgot password endpoint returns generic OK for any email
+[1A[2K[57/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:26:7 › CUJ-7: Password reset › Forgot password for existing user emits same generic message (no leak)
+[1A[2K[58/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:38:7 › CUJ-7: Password reset › Verify-reset-token rejects invalid token
+[1A[2K[59/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:45:7 › CUJ-7: Password reset › Reset-password rejects weak password
+[1A[2K[60/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:54:7 › CUJ-7: Password reset › Reset-password rejects invalid token even with strong password
+[1A[2K[61/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:63:7 › CUJ-7: Password reset › Forgot-password page accessible without auth
+[1A[2K[62/328] [desktop-chromium] › e2e/12-cuj-password-reset.spec.ts:71:7 › CUJ-7: Password reset › Reset-password page renders invalid state without token
+[1A[2K[63/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:13:7 › CUJ-6: GDPR rights › Data export returns JSON bundle for authenticated user
+[1A[2K  26) [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:13:7 › CUJ-6: GDPR rights › Data export returns JSON bundle for authenticated user
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/13-cuj-gdpr-rights-CUJ-6-G-37451-ndle-for-authenticated-user-desktop-chromium/error-context.md
+
+
+[1A[2K[64/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:31:7 › CUJ-6: GDPR rights › Data export rejects unauthenticated
+[1A[2K[65/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:36:7 › CUJ-6: GDPR rights › Request deletion returns generic message
+[1A[2K  27) [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:36:7 › CUJ-6: GDPR rights › Request deletion returns generic message
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/13-cuj-gdpr-rights-CUJ-6-G-2765d-ion-returns-generic-message-desktop-chromium/error-context.md
+
+
+[1A[2K[66/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:49:7 › CUJ-6: GDPR rights › Confirm deletion with invalid token returns 400
+[1A[2K[67/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:56:7 › CUJ-6: GDPR rights › Privacy policy page lists Nghị định 13/2023
+[1A[2K[68/328] [desktop-chromium] › e2e/13-cuj-gdpr-rights.spec.ts:62:7 › CUJ-6: GDPR rights › Terms page caps liability at 12 months fees
+[1A[2K[69/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:10:7 › CUJ-10: Cert lifecycle › Public verify endpoint returns 404 for unknown cert
+[1A[2K[70/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:19:7 › CUJ-10: Cert lifecycle › Verify page shows 'không tìm thấy' for unknown cert
+[1A[2K[71/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced)
+[1A[2K  28) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:26:7 › CUJ-10: Cert lifecycle › Revocation requires reason (validation enforced)
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--750eb-reason-validation-enforced--desktop-chromium/error-context.md
+
+
+[1A[2K[72/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible
+[1A[2K  29) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:48:7 › CUJ-10: Cert lifecycle › Cert lifecycle stats endpoint accessible
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--f3c53-e-stats-endpoint-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[73/328] [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider
+[1A[2K  30) [desktop-chromium] › e2e/14-cuj-cert-lifecycle.spec.ts:61:7 › CUJ-10: Cert lifecycle › Cert page (auth-required) renders for provider
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/14-cuj-cert-lifecycle-CUJ--65aa5-quired-renders-for-provider-desktop-chromium/error-context.md
+
+
+[1A[2K[74/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:7:7 › CUJ-3: Onsite audit › Audit visits list endpoint accessible to provider
+[1A[2K  31) [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:7:7 › CUJ-3: Onsite audit › Audit visits list endpoint accessible to provider
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/16-cuj-onsite-audit-CUJ-3--e918c-oint-accessible-to-provider-desktop-chromium/error-context.md
+
+
+[1A[2K[75/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:18:7 › CUJ-3: Onsite audit › Audit visits endpoint rejects business role
+[1A[2K  32) [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:18:7 › CUJ-3: Onsite audit › Audit visits endpoint rejects business role
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/16-cuj-onsite-audit-CUJ-3--6f445-point-rejects-business-role-desktop-chromium/error-context.md
+
+
+[1A[2K[76/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:25:7 › CUJ-3: Onsite audit › Audit checklist templates endpoint accessible
+[1A[2K  33) [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:25:7 › CUJ-3: Onsite audit › Audit checklist templates endpoint accessible
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/16-cuj-onsite-audit-CUJ-3--fb559-mplates-endpoint-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[77/328] [desktop-chromium] › e2e/16-cuj-onsite-audit.spec.ts:36:7 › CUJ-3: Onsite audit › Provider audits page redirects auth-required for unauthenticated
+[1A[2K[78/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:19:7 › MVP Flow 1: Public verify cert › API returns valid=true for seeded demo cert
+[1A[2K[79/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:33:7 › MVP Flow 1: Public verify cert › Verify page renders cert details + green check
+[1A[2K[80/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:59:7 › MVP Flow 2: Halal advisor chat › Topics endpoint reachable
+[1A[2K[81/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:70:7 › MVP Flow 2: Halal advisor chat › Chat page renders without auth
+[1A[2K[82/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:83:7 › MVP Flow 5: Public cert PDF download › Cert PDF endpoint requires token (security)
+[1A[2K[83/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:95:7 › MVP Flow 6: Business registration + login › Business login with seeded demo account works
+[1A[2K[84/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:117:7 › MVP Flow 6: Business registration + login › Business login page renders form
+[1A[2K[85/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:127:7 › MVP Flow 8: Submissions list (business view) › my-submissions returns array for authenticated business
+[1A[2K[86/328] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:156:7 › MVP Flow 11: Submissions page renders › Page redirects to login or renders
+[1A[2K[87/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:31:7 › MVP Flow 12: Provider login + dashboard › Provider seeded login works
+[1A[2K[88/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:37:7 › MVP Flow 12: Provider login + dashboard › Provider /received endpoint accessible
+[1A[2K[89/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:46:7 › MVP Flow 12: Provider login + dashboard › Provider cb-stats accessible
+[1A[2K[90/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:59:7 › MVP Flow 13: Provider request revision › Request revision endpoint validates auth + fails for non-existent submission
+[1A[2K[91/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:78:7 › MVP Flow 13: Provider request revision › Business gets 403 trying to request revision
+[1A[2K[92/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:99:7 › MVP Flow 14: Assign auditor › Assign endpoint mounted (auth-gated)
+[1A[2K[93/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:111:7 › MVP Flow 15: Issue cert › Issue cert endpoint requires provider owner role
+[1A[2K[94/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:132:7 › MVP Flow 16: Cert revoke › Revoke without reason returns 400 from validation
+[1A[2K[95/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:152:7 › MVP Flow 17: Auditor visits queue › Auditor can list visits
+[1A[2K[96/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:166:7 › MVP Flow 18-20: Admin dashboard + queue + provider approve › Admin endpoints reject unauthenticated
+[1A[2K[97/328] [desktop-chromium] › e2e/18-mvp-demo-provider-admin.spec.ts:178:7 › MVP Flow 18-20: Admin dashboard + queue + provider approve › Admin pages accessible at frontend URL
+[1A[2K[98/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › landing: mobile responsive checks
+[1A[2K[99/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-login: mobile responsive checks
+[1A[2K[100/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › business-register: mobile responsive checks
+[1A[2K[101/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-login: mobile responsive checks
+[1A[2K[102/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › provider-register: mobile responsive checks
+[1A[2K[103/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › forgot-password: mobile responsive checks
+[1A[2K[104/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › reset-password: mobile responsive checks
+[1A[2K[105/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › privacy: mobile responsive checks
+[1A[2K[106/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › terms: mobile responsive checks
+[1A[2K[107/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › chat: mobile responsive checks
+[1A[2K[108/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-active: mobile responsive checks
+[1A[2K[109/328] [desktop-chromium] › e2e/19-mobile-responsive-audit.spec.ts:179:7 › verify-cert-404: mobile responsive checks
+[1A[2K[110/328] [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:22:7 › admin unified auth › Keycloak platform_admin token unlocks analytics + audit-logs + overdue
+[1A[2K[111/328] [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:50:7 › admin unified auth › non-admin JWT is rejected by admin endpoints (regression)
+[1A[2K  34) [desktop-chromium] › e2e/20-admin-unified-auth.spec.ts:50:7 › admin unified auth › non-admin JWT is rejected by admin endpoints (regression)
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/20-admin-unified-auth.spec.ts:55:26
+
+    Error Context: test-results/20-admin-unified-auth-admi-47f82-admin-endpoints-regression--desktop-chromium/error-context.md
+
+
+[1A[2K[112/328] [desktop-chromium] › e2e/21-admin-pages-token-pattern.spec.ts:32:5 › admin pages use shared readAdminToken helper
+[1A[2K[113/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:21:7 › F1 — Industry classification (E2E) › F1.1 — public industry list endpoint accessible by business
+[1A[2K  35) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:21:7 › F1 — Industry classification (E2E) › F1.1 — public industry list endpoint accessible by business
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-32e59-oint-accessible-by-business-desktop-chromium/error-context.md
+
+
+[1A[2K[114/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:28:7 › F1 — Industry classification (E2E) › F1.2 — industry list returns enabled-only by default
+[1A[2K  36) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:28:7 › F1 — Industry classification (E2E) › F1.2 — industry list returns enabled-only by default
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-8748b-rns-enabled-only-by-default-desktop-chromium/error-context.md
+
+
+[1A[2K[115/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:40:7 › F1 — Industry classification (E2E) › F1.3 — onboarding page loads
+[1A[2K[116/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:47:7 › F1 — Industry classification (E2E) › F1.4 — business-select with no auth → 401
+[1A[2K[117/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:54:7 › F1 — Industry classification (E2E) › F1.5 — business-select with provider role → 403
+[1A[2K  37) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:54:7 › F1 — Industry classification (E2E) › F1.5 — business-select with provider role → 403
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-96294-ct-with-provider-role-→-403-desktop-chromium/error-context.md
+
+
+[1A[2K[118/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:63:7 › F1 — Industry classification (E2E) › F1.6 — get industry by code accessible
+[1A[2K  38) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:63:7 › F1 — Industry classification (E2E) › F1.6 — get industry by code accessible
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-31976-industry-by-code-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[119/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:78:7 › F1 — Industry classification (E2E) › F1.7 — industry get nonexistent → 404
+[1A[2K  39) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:78:7 › F1 — Industry classification (E2E) › F1.7 — industry get nonexistent → 404
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-92428-ustry-get-nonexistent-→-404-desktop-chromium/error-context.md
+
+
+[1A[2K[120/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:85:7 › F1 — Industry classification (E2E) › F1.8 — admin endpoint /auth/admin/industry-schemas requires admin
+[1A[2K  40) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:85:7 › F1 — Industry classification (E2E) › F1.8 — admin endpoint /auth/admin/industry-schemas requires admin
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-09802-stry-schemas-requires-admin-desktop-chromium/error-context.md
+
+
+[1A[2K[121/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:92:7 › F1 — Industry classification (E2E) › F1.9 — settings/company page mounts
+[1A[2K[122/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:99:7 › F1 — Industry classification (E2E) › F1.10 — create-document page accessible
+[1A[2K[123/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:109:7 › F2 — Standards admin (E2E) › F2.1 — /admin/standards page route exists
+[1A[2K[124/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:114:7 › F2 — Standards admin (E2E) › F2.2 — public /standard-types list accessible
+[1A[2K  41) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:114:7 › F2 — Standards admin (E2E) › F2.2 — public /standard-types list accessible
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-22669-ndard-types-list-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[125/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:121:7 › F2 — Standards admin (E2E) › F2.3 — admin endpoint requires admin
+[1A[2K  42) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:121:7 › F2 — Standards admin (E2E) › F2.3 — admin endpoint requires admin
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-7d2d1-min-endpoint-requires-admin-desktop-chromium/error-context.md
+
+
+[1A[2K[126/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:128:7 › F2 — Standards admin (E2E) › F2.4 — admin endpoint with no auth → 401
+[1A[2K[127/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:133:7 › F2 — Standards admin (E2E) › F2.5 — standard by code accessible
+[1A[2K  43) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:133:7 › F2 — Standards admin (E2E) › F2.5 — standard by code accessible
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-6db69-standard-by-code-accessible-desktop-chromium/error-context.md
+
+
+[1A[2K[128/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:140:7 › F2 — Standards admin (E2E) › F2.6 — standard by nonexistent code → 404
+[1A[2K  44) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:140:7 › F2 — Standards admin (E2E) › F2.6 — standard by nonexistent code → 404
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-af0a3-d-by-nonexistent-code-→-404-desktop-chromium/error-context.md
+
+
+[1A[2K[129/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:147:7 › F2 — Standards admin (E2E) › F2.7 — standards by-industry filter route
+[1A[2K  45) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:147:7 › F2 — Standards admin (E2E) › F2.7 — standards by-industry filter route
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-a5ef9-ds-by-industry-filter-route-desktop-chromium/error-context.md
+
+
+[1A[2K[130/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:154:7 › F2 — Standards admin (E2E) › F2.8 — POST create standard requires admin
+[1A[2K  46) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:154:7 › F2 — Standards admin (E2E) › F2.8 — POST create standard requires admin
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-91c1d-ate-standard-requires-admin-desktop-chromium/error-context.md
+
+
+[1A[2K[131/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:162:7 › F2 — Standards admin (E2E) › F2.9 — PATCH standard requires admin
+[1A[2K  47) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:162:7 › F2 — Standards admin (E2E) › F2.9 — PATCH standard requires admin
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-6cc35-TCH-standard-requires-admin-desktop-chromium/error-context.md
+
+
+[1A[2K[132/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:173:7 › F2 — Standards admin (E2E) › F2.10 — DELETE soft-disable requires admin
+[1A[2K  48) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:173:7 › F2 — Standards admin (E2E) › F2.10 — DELETE soft-disable requires admin
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-21b51-soft-disable-requires-admin-desktop-chromium/error-context.md
+
+
+[1A[2K[133/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:186:7 › F3 — Industry↔Standard mapping (E2E) › F3.1 — /admin/industries page route exists
+[1A[2K[134/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:191:7 › F3 — Industry↔Standard mapping (E2E) › F3.2 — PUT mapping requires admin
+[1A[2K  49) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:191:7 › F3 — Industry↔Standard mapping (E2E) › F3.2 — PUT mapping requires admin
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-19444--PUT-mapping-requires-admin-desktop-chromium/error-context.md
+
+
+[1A[2K[135/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:202:7 › F3 — Industry↔Standard mapping (E2E) › F3.3 — PUT mapping with no auth → 401
+[1A[2K[136/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:210:7 › F3 — Industry↔Standard mapping (E2E) › F3.4 — PUT mapping nonexistent industry → 404 (with admin)
+[1A[2K[137/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:222:7 › F3 — Industry↔Standard mapping (E2E) › F3.5 — admin can list all industries with available_standards
+[1A[2K[138/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:230:7 › F3 — Industry↔Standard mapping (E2E) › F3.6 — PUT mapping validates uuid format on standard_type_id
+[1A[2K[139/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:242:7 › F3 — Industry↔Standard mapping (E2E) › F3.7 — public industry list includes available_standards field
+[1A[2K  50) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:242:7 › F3 — Industry↔Standard mapping (E2E) › F3.7 — public industry list includes available_standards field
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-298b1-s-available-standards-field-desktop-chromium/error-context.md
+
+
+[1A[2K[140/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:254:7 › F3 — Industry↔Standard mapping (E2E) › F3.8 — PUT mapping malformed industry uuid → 422
+[1A[2K[141/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:271:7 › F4 — Dossier CRUD (E2E) › F4.1 — /dossiers list page route exists
+[1A[2K[142/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:276:7 › F4 — Dossier CRUD (E2E) › F4.2 — /dossiers/new page route exists
+[1A[2K[143/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:281:7 › F4 — Dossier CRUD (E2E) › F4.3 — /dossiers/[id] page renders 200 (even for non-existent)
+[1A[2K[144/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:288:7 › F4 — Dossier CRUD (E2E) › F4.4 — list endpoint requires auth
+[1A[2K[145/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:293:7 › F4 — Dossier CRUD (E2E) › F4.5 — create endpoint requires auth
+[1A[2K[146/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:300:7 › F4 — Dossier CRUD (E2E) › F4.6 — provider role cannot create dossier
+[1A[2K  51) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:300:7 › F4 — Dossier CRUD (E2E) › F4.6 — provider role cannot create dossier
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-4aa07--role-cannot-create-dossier-desktop-chromium/error-context.md
+
+
+[1A[2K[147/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:308:7 › F4 — Dossier CRUD (E2E) › F4.7 — empty title rejected
+[1A[2K  52) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:308:7 › F4 — Dossier CRUD (E2E) › F4.7 — empty title rejected
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-298da-F4-7-—-empty-title-rejected-desktop-chromium/error-context.md
+
+
+[1A[2K[148/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:316:7 › F4 — Dossier CRUD (E2E) › F4.8 — title > 255 chars rejected
+[1A[2K  53) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:316:7 › F4 — Dossier CRUD (E2E) › F4.8 — title > 255 chars rejected
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-0353f--—-title-255-chars-rejected-desktop-chromium/error-context.md
+
+
+[1A[2K[149/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:327:7 › F4 — Dossier CRUD (E2E) › F4.9 — invalid standard_type_id format → 422
+[1A[2K  54) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:327:7 › F4 — Dossier CRUD (E2E) › F4.9 — invalid standard_type_id format → 422
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-88cff-andard-type-id-format-→-422-desktop-chromium/error-context.md
+
+
+[1A[2K[150/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:335:7 › F4 — Dossier CRUD (E2E) › F4.10 — nonexistent standard_type_id → 404
+[1A[2K  55) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:335:7 › F4 — Dossier CRUD (E2E) › F4.10 — nonexistent standard_type_id → 404
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-050fb-tent-standard-type-id-→-404-desktop-chromium/error-context.md
+
+
+[1A[2K[151/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:346:7 › F4 — Dossier CRUD (E2E) › F4.11 — list returns array shape
+[1A[2K  56) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:346:7 › F4 — Dossier CRUD (E2E) › F4.11 — list returns array shape
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-0b8e3--—-list-returns-array-shape-desktop-chromium/error-context.md
+
+
+[1A[2K[152/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:356:7 › F4 — Dossier CRUD (E2E) › F4.12 — get detail malformed uuid → 422
+[1A[2K  57) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:356:7 › F4 — Dossier CRUD (E2E) › F4.12 — get detail malformed uuid → 422
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-4a23e-detail-malformed-uuid-→-422-desktop-chromium/error-context.md
+
+
+[1A[2K[153/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:363:7 › F4 — Dossier CRUD (E2E) › F4.13 — PATCH invalid status → 422
+[1A[2K  58) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:363:7 › F4 — Dossier CRUD (E2E) › F4.13 — PATCH invalid status → 422
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-7551b--PATCH-invalid-status-→-422-desktop-chromium/error-context.md
+
+
+[1A[2K[154/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:371:7 › F4 — Dossier CRUD (E2E) › F4.14 — DELETE soft-cancel returns 204 even for nonexistent (silent)
+[1A[2K  59) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:371:7 › F4 — Dossier CRUD (E2E) › F4.14 — DELETE soft-cancel returns 204 even for nonexistent (silent)
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-76b70-ven-for-nonexistent-silent--desktop-chromium/error-context.md
+
+
+[1A[2K[155/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:378:7 › F4 — Dossier CRUD (E2E) › F4.15 — list response items have documents array
+[1A[2K  60) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:378:7 › F4 — Dossier CRUD (E2E) › F4.15 — list response items have documents array
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-938d5--items-have-documents-array-desktop-chromium/error-context.md
+
+
+[1A[2K[156/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:396:7 › F5 — Provider overdue queue (E2E) › F5.1 — /dashboard/provider/overdue page route exists
+[1A[2K[157/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:403:7 › F5 — Provider overdue queue (E2E) › F5.2 — endpoint requires auth
+[1A[2K[158/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:408:7 › F5 — Provider overdue queue (E2E) › F5.3 — business role gets 403
+[1A[2K  61) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:408:7 › F5 — Provider overdue queue (E2E) › F5.3 — business role gets 403
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-37093--3-—-business-role-gets-403-desktop-chromium/error-context.md
+
+
+[1A[2K[159/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:415:7 › F5 — Provider overdue queue (E2E) › F5.4 — provider role returns 200 + items list
+[1A[2K  62) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:415:7 › F5 — Provider overdue queue (E2E) › F5.4 — provider role returns 200 + items list
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-d55e0-role-returns-200-items-list-desktop-chromium/error-context.md
+
+
+[1A[2K[160/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:427:7 › F5 — Provider overdue queue (E2E) › F5.5 — limit=0 returns empty list
+[1A[2K  63) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:427:7 › F5 — Provider overdue queue (E2E) › F5.5 — limit=0 returns empty list
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-b946c--limit-0-returns-empty-list-desktop-chromium/error-context.md
+
+
+[1A[2K[161/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:437:7 › F5 — Provider overdue queue (E2E) › F5.6 — negative limit → 422 (validation gate added today)
+[1A[2K  64) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:437:7 › F5 — Provider overdue queue (E2E) › F5.6 — negative limit → 422 (validation gate added today)
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-d5296-alidation-gate-added-today--desktop-chromium/error-context.md
+
+
+[1A[2K[162/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:444:7 › F5 — Provider overdue queue (E2E) › F5.7 — huge limit > 500 → 422
+[1A[2K  65) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:444:7 › F5 — Provider overdue queue (E2E) › F5.7 — huge limit > 500 → 422
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-4d057-F5-7-—-huge-limit-500-→-422-desktop-chromium/error-context.md
+
+
+[1A[2K[163/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:451:7 › F5 — Provider overdue queue (E2E) › F5.8 — items have required shape fields
+[1A[2K  66) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:451:7 › F5 — Provider overdue queue (E2E) › F5.8 — items have required shape fields
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-7f950--have-required-shape-fields-desktop-chromium/error-context.md
+
+
+[1A[2K[164/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:466:7 › F5 — Provider overdue queue (E2E) › F5.9 — items sorted by deadline asc (oldest first)
+[1A[2K  67) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:466:7 › F5 — Provider overdue queue (E2E) › F5.9 — items sorted by deadline asc (oldest first)
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.prov (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:51:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-d8a12--deadline-asc-oldest-first--desktop-chromium/error-context.md
+
+
+[1A[2K[165/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:478:7 › F5 — Provider overdue queue (E2E) › F5.10 — provider dashboard route accessible
+[1A[2K[166/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:490:7 › F6 — Admin auth refactor (E2E) › F6.1 — JWT admin can list standards via /auth/admin/standard-types
+[1A[2K[167/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:498:7 › F6 — Admin auth refactor (E2E) › F6.2 — JWT admin can list industries via /auth/admin/industry-schemas
+[1A[2K[168/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:506:7 › F6 — Admin auth refactor (E2E) › F6.3 — business token rejected from admin endpoint
+[1A[2K  68) [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:506:7 › F6 — Admin auth refactor (E2E) › F6.3 — business token rejected from admin endpoint
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at Object.biz (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/fixtures.ts:39:19)
+
+    Error Context: test-results/22-session-2026-05-10-feat-08a27-ejected-from-admin-endpoint-desktop-chromium/error-context.md
+
+
+[1A[2K[169/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:513:7 › F6 — Admin auth refactor (E2E) › F6.4 — no auth → 401
+[1A[2K[170/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:518:7 › F6 — Admin auth refactor (E2E) › F6.5 — garbage token → 403 (treated as opaque)
+[1A[2K[171/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:525:7 › F6 — Admin auth refactor (E2E) › F6.6 — admin endpoint mounted at /auth/admin/* (not /api/)
+[1A[2K[172/328] [desktop-chromium] › e2e/22-session-2026-05-10-features.spec.ts:531:7 › F6 — Admin auth refactor (E2E) › F6.7 — opaque admin route also mounted for analytics (regression sanity)
+[1A[2K[173/328] [desktop-chromium] › e2e/22-token-isolation.spec.ts:56:5 › no page reads aminra_admin_token outside the allowed central files
+[1A[2K[174/328] [desktop-chromium] › e2e/22-token-isolation.spec.ts:77:5 › no page reads aminra_user_token outside the allowed central files
+[1A[2K[175/328] [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:20:5 › UserAuthContext.logout purges cross-context session state
+[1A[2K[176/328] [desktop-chromium] › e2e/23-cross-context-logout.spec.ts:39:5 › AdminAuthContext.logout removes aminra_user_token
+[1A[2K[177/328] [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:36:7 › provider dossier + score › dossier + score endpoints return shape
+[1A[2K  69) [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:36:7 › provider dossier + score › dossier + score endpoints return shape
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/24-business-dossier-score.spec.ts:37:26
+
+    Error Context: test-results/24-business-dossier-score--5ada1-core-endpoints-return-shape-desktop-chromium/error-context.md
+
+
+[1A[2K[178/328] [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:75:7 › provider dossier + score › PUT /received/{id}/status rejects status='approved'
+[1A[2K  70) [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:75:7 › provider dossier + score › PUT /received/{id}/status rejects status='approved'
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/24-business-dossier-score.spec.ts:78:26
+
+    Error Context: test-results/24-business-dossier-score--fe8e9-us-rejects-status-approved--desktop-chromium/error-context.md
+
+
+[1A[2K[179/328] [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:96:7 › provider dossier + score › provider page /businesses/[id] renders score + folder
+[1A[2K  71) [desktop-chromium] › e2e/24-business-dossier-score.spec.ts:96:7 › provider dossier + score › provider page /businesses/[id] renders score + folder
+
+    Error: Keycloak token grant failed for cb-demo@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/24-business-dossier-score.spec.ts:100:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/24-business-dossier-score--c9a75-ses-id-renders-score-folder-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/24-business-dossier-score--c9a75-ses-id-renders-score-folder-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/24-business-dossier-score--c9a75-ses-id-renders-score-folder-desktop-chromium/error-context.md
+
+
+[1A[2K[180/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:24:7 › PWA + web push › manifest, icons, sw.js all served
+[1A[2K[181/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:51:7 › PWA + web push › VAPID public key endpoint returns key
+[1A[2K[182/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:61:7 › PWA + web push › subscribe endpoint requires auth
+[1A[2K[183/328] [desktop-chromium] › e2e/25-pwa-push.spec.ts:72:7 › PWA + web push › subscribe + unsubscribe with auth round-trips
+[1A[2K  72) [desktop-chromium] › e2e/25-pwa-push.spec.ts:72:7 › PWA + web push › subscribe + unsubscribe with auth round-trips
+
+    Error: Keycloak token grant failed for biz-demo-1@demo.aminra.vn (401); backend /auth/login is retired
+
+       at helpers/auth-token.ts:82
+
+      80 |   const login = await keycloakPasswordGrant(request, credentials);
+      81 |   if (!login.ok()) {
+    > 82 |     throw new Error(
+         |           ^
+      83 |       `Keycloak token grant failed for ${credentials.email} (${login.status()}); backend /auth/login is retired`,
+      84 |     );
+      85 |   }
+        at requireKeycloakUserToken (/home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/helpers/auth-token.ts:82:11)
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/25-pwa-push.spec.ts:74:26
+
+    Error Context: test-results/25-pwa-push-PWA-web-push-s-17153-cribe-with-auth-round-trips-desktop-chromium/error-context.md
+
+
+[1A[2K[184/328] [desktop-chromium] › e2e/26-register-validation.spec.ts:20:7 › register validation › BE 422 with arrayed detail returns parseable msg
+[1A[2K[185/328] [desktop-chromium] › e2e/26-register-validation.spec.ts:36:7 › register validation › static guard: register pages import shared apiError helpers
+[1A[2K[186/328] [desktop-chromium] › e2e/26-register-validation.spec.ts:65:7 › register validation › valid password completes register successfully
+[1A[2K[187/328] [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:38:7 › template content integrity › no two doc_types serve the same template content
+[1A[2K[188/328] [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:86:7 › template content integrity › template download returns no-store headers (prevent stale browser cache)
+[1A[2K[189/328] [desktop-chromium] › e2e/27-template-content-integrity.spec.ts:117:7 › template content integrity › backend _find_template_file uses exact canonical filename
+[1A[2K[190/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:23:7 › admin file preview › view DOCX template returns PDF for inline preview (LibreOffice conversion)
+[1A[2K[191/328] [desktop-chromium] › e2e/28-admin-template-view.spec.ts:48:7 › admin file preview › view template-file via query-string token (for new-tab UX)
+[1A[2K[192/328] [desktop-chromium] › e2e/28-ad

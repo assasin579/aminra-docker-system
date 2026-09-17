@@ -1,0 +1,20 @@
+# Domain: auditor
+# Gate: G1-AUDITOR live role boundary smoke
+# Started: 2026-09-17T07:15:55-04:00
+# Command: cid=$(docker compose ps -q aminra-backend); docker cp backend/tests/. "$cid":/app/tests; docker cp .qa/aminra-demo-credentials.env "$cid":/tmp/aminra-demo-credentials.env; docker compose exec -T aminra-backend sh -lc 'set -a; . /tmp/aminra-demo-credentials.env; set +a; pytest tests/test_role_boundaries_live_smoke.py tests/test_unauth_route_boundaries.py -q'
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, anyio-4.15.1, Faker-40.39.0, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 44 items
+
+tests/test_role_boundaries_live_smoke.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                    [ 27%][0m
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m   [100%][0m
+
+[32m============================== [32m[1m44 passed[0m[32m in 4.35s[0m[32m ==============================[0m
+
+# Finished: 2026-09-17T07:16:04-04:00
+# Exit code: 0

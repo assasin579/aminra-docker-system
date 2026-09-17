@@ -1,0 +1,150 @@
+# Domain: frontend
+# Gate: G1-FRONTEND lint build contracts
+# Started: 2026-09-17T06:37:38-04:00
+# Command: cd frontend/aminra-web && npm run lint && npm run build && npm test -- --run
+
+
+> aminra-web@0.1.0 lint
+> eslint . --max-warnings=0
+
+
+> aminra-web@0.1.0 build
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+[@sentry/nextjs] Importing `withSentryConfig` from `@sentry/nextjs` is deprecated and will stop working in v11. Import it from `@sentry/nextjs/config` instead:
+  import { withSentryConfig } from '@sentry/nextjs/config';
+[@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead. (Not supported with Turbopack.)
+✓ Running next.config.ts took 906ms
+- Experiments (use with caution):
+  · clientTraceMetadata
+  ✓ webpackBuildWorker
+
+  Creating an optimized production build ...
+[@sentry/nextjs] Importing `withSentryConfig` from `@sentry/nextjs` is deprecated and will stop working in v11. Import it from `@sentry/nextjs/config` instead:
+  import { withSentryConfig } from '@sentry/nextjs/config';
+[@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead. (Not supported with Turbopack.)
+✓ Compiled successfully in 1721ms
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 473ms
+  Running TypeScript ...
+  Finished TypeScript in 8.5s ...
+  Collecting page data using 4 workers ...
+  Generating static pages using 4 workers (0/46) ...
+  Generating static pages using 4 workers (11/46)
+  Generating static pages using 4 workers (22/46)
+  Generating static pages using 4 workers (34/46)
+✓ Generating static pages using 4 workers (46/46) in 2.0s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /account/confirm-deletion
+├ ƒ /admin
+├ ○ /admin/analytics
+├ ○ /admin/audit-logs
+├ ○ /admin/industries
+├ ○ /admin/overdue-submissions
+├ ○ /admin/standards
+├ ƒ /api/[...path]
+├ ƒ /api/auth/login
+├ ƒ /api/auth/refresh
+├ ƒ /api/chat
+├ ƒ /api/upload
+├ ○ /auditors
+├ ○ /audits
+├ ƒ /audits/[id]
+├ ○ /audits/templates
+├ ○ /auth/callback
+├ ○ /business/login
+├ ○ /business/onboarding/industry-select
+├ ○ /business/register
+├ ƒ /businesses/[id]
+├ ○ /certificates
+├ ○ /chat
+├ ○ /create-document
+├ ○ /dashboard/business
+├ ○ /dashboard/provider
+├ ○ /dashboard/provider/overdue
+├ ○ /documents
+├ ○ /dossiers
+├ ƒ /dossiers/[id]
+├ ○ /dossiers/new
+├ ○ /forgot-password
+├ ƒ /invite/[token]
+├ ○ /landing
+├ ○ /members
+├ ○ /portfolio
+├ ○ /privacy
+├ ○ /provider/login
+├ ○ /provider/register
+├ ○ /reset-password
+├ ○ /settings
+├ ○ /settings/company
+├ ○ /settings/data-export
+├ ○ /submissions
+├ ƒ /supplier-portal/[token]
+├ ○ /supply-chain/batches
+├ ○ /supply-chain/materials
+├ ○ /supply-chain/process
+├ ○ /terms
+├ ƒ /trace/[code]
+├ ○ /upload
+└ ƒ /verify/[cert_number]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> aminra-web@0.1.0 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/supply-chain-eligible-suppliers.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 3449[2mms[22m[39m
+     [33m[2m✓[22m[39m fetches CB-eligible suppliers for the material dropdown and shows policy copy [33m 2067[2mms[22m[39m
+     [33m[2m✓[22m[39m refetches eligible suppliers by material category and hides scope-mismatched suppliers [33m 1124[2mms[22m[39m
+ [32m✓[39m __tests__/admin-analytics.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 4093[2mms[22m[39m
+     [33m[2m✓[22m[39m renders all sections from API response [33m 1406[2mms[22m[39m
+     [33m[2m✓[22m[39m displays cert bucket labels [33m 534[2mms[22m[39m
+     [33m[2m✓[22m[39m top actions section lists action codes + counts [33m 717[2mms[22m[39m
+     [33m[2m✓[22m[39m shows backend error [33m 417[2mms[22m[39m
+     [33m[2m✓[22m[39m calls /api/auth/admin/analytics with bearer token [33m 773[2mms[22m[39m
+ [32m✓[39m __tests__/auth-callback-page.test.tsx [2m([22m[2m42 tests[22m[2m)[22m[33m 4471[2mms[22m[39m
+     [33m[2m✓[22m[39m renders error message when OIDC flag is off [33m 613[2mms[22m[39m
+     [33m[2m✓[22m[39m offers 'Quay lại đăng nhập' button when flag off [33m 726[2mms[22m[39m
+ [32m✓[39m __tests__/submit-application.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 5060[2mms[22m[39m
+     [33m[2m✓[22m[39m business user thấy button Gửi hồ sơ mới trong trang submissions [33m 1276[2mms[22m[39m
+     [33m[2m✓[22m[39m fetch providers và docs đồng thời khi click button [33m 388[2mms[22m[39m
+     [33m[2m✓[22m[39m modal mở sau khi fetch xong [33m 359[2mms[22m[39m
+     [33m[2m✓[22m[39m selectedDocs được pre-select toàn bộ docs trả về [33m 383[2mms[22m[39m
+     [33m[2m✓[22m[39m empty state khi không có docs — hiện link Upload tài liệu [33m 343[2mms[22m[39m
+     [33m[2m✓[22m[39m gửi đúng payload khi chọn đủ provider + docs [33m 653[2mms[22m[39m
+     [33m[2m✓[22m[39m modal đóng và fetchSubs được gọi sau khi submit thành công [33m 484[2mms[22m[39m
+     [33m[2m✓[22m[39m hiện alert và giữ modal khi API trả lỗi [33m 335[2mms[22m[39m
+     [33m[2m✓[22m[39m uncheck một doc → counter giảm → button label cập nhật [33m 467[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-module-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 3007[2mms[22m[39m
+     [33m[2m✓[22m[39m hides traceability/process links when those modules are disabled for the tenant [33m 1842[2mms[22m[39m
+     [33m[2m✓[22m[39m shows supply-chain links when their modules are enabled [33m 613[2mms[22m[39m
+     [33m[2m✓[22m[39m fails open to preserve current demo navigation when module API is unavailable [33m 538[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-admin-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2669[2mms[22m[39m
+     [33m[2m✓[22m[39m renders admin-only navigation on /admin even when /auth/me projects the platform admin as provider [33m 1599[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps provider portal navigation outside /admin, with an explicit Admin Panel escape hatch [33m 713[2mms[22m[39m
+     [33m[2m✓[22m[39m does not show admin navigation on /admin unless Keycloak realm authority is present [33m 339[2mms[22m[39m
+ [32m✓[39m __tests__/verify-blockchain.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 3275[2mms[22m[39m
+     [33m[2m✓[22m[39m shows pending message when blockchain.anchored=false [33m 1240[2mms[22m[39m
+     [33m[2m✓[22m[39m shows Polygon badge + tx hash + PolygonScan link when anchored [33m 1066[2mms[22m[39m
+     [33m[2m✓[22m[39m shows Bitcoin badge when chain=bitcoin [33m 418[2mms[22m[39m
+ [32m✓[39m __tests__/certificates-status-guardrails.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 3348[2mms[22m[39m
+     [33m[2m✓[22m[39m PUTs status changes through the API client with bearer auth and JSON body [33m 2798[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI errors and keeps the confirmation modal open [33m 521[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-process-create.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2133[2mms[22m[39m
+     [33m[2m✓[22m[39m POSTs the modal name to the backend proxy with bearer auth and JSON content-type [33m 978[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI save errors instead of showing a false success [33m 649[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI create errors instead of failing silently [33m 481[2mms[22m[39m
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+ [32m✓[39m __tests__/landing-keycloak-cta.test.tsx [2m([22m[2m2 tests[22m

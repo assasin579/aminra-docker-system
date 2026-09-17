@@ -1,0 +1,24 @@
+# Domain: output
+# Gate: G1-OUTPUT public artifact correctness
+# Started: 2026-09-17T06:49:50-04:00
+# Command: cd frontend/aminra-web && npx playwright test e2e/17-mvp-demo-public.spec.ts e2e/38-demo-spine-keycloak.spec.ts --project=desktop-chromium --reporter=line
+
+
+Running 12 tests using 1 worker
+
+[1A[2K[1/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:19:7 › MVP Flow 1: Public verify cert › API returns valid=true for seeded demo cert
+[1A[2K[2/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:33:7 › MVP Flow 1: Public verify cert › Verify page renders cert details + green check
+[1A[2K[3/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:59:7 › MVP Flow 2: Halal advisor chat › Topics endpoint reachable
+[1A[2K[4/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:70:7 › MVP Flow 2: Halal advisor chat › Chat page renders without auth
+[1A[2K[5/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:83:7 › MVP Flow 5: Public cert PDF download › Cert PDF endpoint requires token (security)
+[1A[2K[6/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:95:7 › MVP Flow 6: Business registration + login › Business login with seeded demo account works
+[1A[2K[7/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:117:7 › MVP Flow 6: Business registration + login › Business login page renders form
+[1A[2K[8/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:127:7 › MVP Flow 8: Submissions list (business view) › my-submissions returns array for authenticated business
+[1A[2K[9/12] [desktop-chromium] › e2e/17-mvp-demo-public.spec.ts:156:7 › MVP Flow 11: Submissions page renders › Page redirects to login or renders
+[1A[2K[10/12] [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:42:7 › P0 browser/API demo spine with Keycloak › anonymous public pages and public APIs render safe demo data
+[1A[2K[11/12] [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:56:7 › P0 browser/API demo spine with Keycloak › business token can reach protected demo spine endpoints
+[1A[2K[12/12] [desktop-chromium] › e2e/38-demo-spine-keycloak.spec.ts:76:7 › P0 browser/API demo spine with Keycloak › provider token can reach provider demo spine endpoints and business is denied provider-only action
+[1A[2K  12 passed (21.0s)
+
+# Finished: 2026-09-17T06:50:14-04:00
+# Exit code: 0

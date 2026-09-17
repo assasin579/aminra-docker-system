@@ -1,0 +1,12 @@
+# Domain: accounts
+# Gate: G1-ACCOUNTS repair before full browser matrix
+# Started: 2026-09-17T07:05:28-04:00
+# Command: bash scripts/qa/repair-demo-accounts.sh
+
+PASS: repaired biz-demo-1@demo.aminra.vn role=business password=[REDACTED]
+PASS: repaired cb-demo@demo.aminra.vn role=cb_admin password=[REDACTED]
+PASS: repaired demo-platform-admin@demo.aminra.vn role=platform_admin password=[REDACTED]
+PASS: updated /home/user/Documents/aminra-docker-system/.qa/aminra-demo-credentials.env mode=600 values=REDACTED
+
+# Finished: 2026-09-17T07:05:31-04:00
+# Exit code: 0
