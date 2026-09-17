@@ -13,8 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=0 \
     HF_HOME=/opt/aminra/hf-cache \
     TRANSFORMERS_CACHE=/opt/aminra/hf-cache \
-    SENTENCE_TRANSFORMERS_HOME=/opt/aminra/sentence-transformers \
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    SENTENCE_TRANSFORMERS_HOME=/opt/aminra/sentence-transformers
 
 # System deps. Keep this before Python deps so source-only rebuilds never touch it.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -46,8 +45,8 @@ model = os.environ.get("EMBED_MODEL", "intfloat/multilingual-e5-base")
 SentenceTransformer(model)
 PY
 
-# Install Playwright Chromium + system deps. Browser artifacts live outside /root
-# so app containers can run without per-user cache warmup.
-RUN playwright install --with-deps chromium
+# Install Playwright Chromium headless shell + system deps. Keep default browser
+# cache path to match Playwright's lean chromium-headless-shell install behavior.
+RUN playwright install --with-deps --only-shell --no-progress chromium
 
 RUN mkdir -p /app/docs /app/data /app/doc_text_cache
