@@ -189,9 +189,13 @@ def create_user(
         timeout=10.0,
     )
     if pw_resp.status_code not in (200, 204):
+        try:
+            delete_user(user_id)
+        except Exception:
+            pass
         raise KeycloakAdminError(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Keycloak reset_password failed ({pw_resp.status_code})",
+            detail=f"Keycloak reset_password failed ({pw_resp.status_code}): {pw_resp.text[:200]}",
         )
 
     role_resp = httpx.get(
@@ -200,6 +204,10 @@ def create_user(
         timeout=5.0,
     )
     if role_resp.status_code != 200:
+        try:
+            delete_user(user_id)
+        except Exception:
+            pass
         raise KeycloakAdminError(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Keycloak get_role({role}) failed ({role_resp.status_code})",
@@ -213,6 +221,10 @@ def create_user(
         timeout=5.0,
     )
     if grant_resp.status_code not in (200, 204):
+        try:
+            delete_user(user_id)
+        except Exception:
+            pass
         raise KeycloakAdminError(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Keycloak grant_role failed ({grant_resp.status_code})",

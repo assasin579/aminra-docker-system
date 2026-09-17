@@ -39,5 +39,6 @@ export function validatePassword(pw: string): string | null {
   if (!/[A-Z]/.test(pw)) return "Mật khẩu phải có ít nhất 1 chữ hoa (A-Z)";
   if (!/[a-z]/.test(pw)) return "Mật khẩu phải có ít nhất 1 chữ thường (a-z)";
   if (!/[0-9]/.test(pw)) return "Mật khẩu phải có ít nhất 1 chữ số (0-9)";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt";
   return null;
 }

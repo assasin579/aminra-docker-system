@@ -126,7 +126,11 @@ services:
       # ADR-005 Phase 3a dual-auth — flag off until FE migration complete
       - AUTH_KEYCLOAK_ENABLED=${AUTH_KEYCLOAK_ENABLED:-false}
       - KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8180}
-      - KEYCLOAK_ADMIN_URL=${KEYCLOAK_ADMIN_URL:-http://localhost:8180}
+      # Use the same realm host as KEYCLOAK_URL unless explicitly overridden.
+      # If KEYCLOAK_URL points at production/public auth, Admin REST token and
+      # execute-actions-email must use that same realm; otherwise bearer tokens
+      # from a local/internal Keycloak are rejected by the public admin endpoint.
+      - KEYCLOAK_ADMIN_URL=${KEYCLOAK_ADMIN_URL:-${KEYCLOAK_URL:-http://keycloak:8080}}
       - KEYCLOAK_PUBLIC_URL=${KEYCLOAK_PUBLIC_URL:-https://auth.aminra.org}
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - KEYCLOAK_REALM=aminra

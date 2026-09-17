@@ -80,6 +80,7 @@ async def register_business(
     Post-creation, user logs in via Keycloak SSO. PG profile row is JIT
     auto-provisioned on first /auth/me call (see keycloak_validator.enrich_keycloak_claims).
     """
+    keycloak_user_id: str | None = None
     try:
         keycloak_user_id = keycloak_admin.create_user(
             email=req.email,
@@ -92,6 +93,14 @@ async def register_business(
         )
         keycloak_admin.send_verify_email(keycloak_user_id)
     except keycloak_admin.KeycloakAdminError as e:
+        if keycloak_user_id is not None:
+            try:
+                keycloak_admin.delete_user(keycloak_user_id)
+            except keycloak_admin.KeycloakAdminError as cleanup_error:
+                log.warning(
+                    "[auth] Failed to cleanup business registration after email error: "
+                    f"{req.email} (sub={keycloak_user_id}): {cleanup_error.detail}"
+                )
         if "409" in str(e.detail) or "exists" in str(e.detail).lower():
             raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
         raise
@@ -113,6 +122,7 @@ async def register_provider(
     req: ProviderRegisterRequest, _: None = Depends(rate_limit_api)
 ):
     """Create provider user in Keycloak with status=pending (admin approval required)."""
+    keycloak_user_id: str | None = None
     try:
         keycloak_user_id = keycloak_admin.create_user(
             email=req.email,
@@ -125,6 +135,14 @@ async def register_provider(
         )
         keycloak_admin.send_verify_email(keycloak_user_id)
     except keycloak_admin.KeycloakAdminError as e:
+        if keycloak_user_id is not None:
+            try:
+                keycloak_admin.delete_user(keycloak_user_id)
+            except keycloak_admin.KeycloakAdminError as cleanup_error:
+                log.warning(
+                    "[auth] Failed to cleanup provider registration after email error: "
+                    f"{req.email} (sub={keycloak_user_id}): {cleanup_error.detail}"
+                )
         if "409" in str(e.detail) or "exists" in str(e.detail).lower():
             raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
         raise

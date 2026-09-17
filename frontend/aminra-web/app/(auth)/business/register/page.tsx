@@ -249,7 +249,7 @@ export default function BusinessRegisterPage() {
                 onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
               />
               <p className="text-xs mt-1.5" style={{ color: "#94A3B8" }}>
-                Tối thiểu 10 ký tự, có chữ hoa, chữ thường và số.
+                Tối thiểu 10 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.
               </p>
             </div>
             <div>

@@ -264,9 +264,9 @@ def test_create_user_location_header_parsing(_seeded_token, monkeypatch, locatio
 
 
 def test_create_user_password_step_fails_after_create_succeeds(_seeded_token, monkeypatch):
-    """User created, password reset 502 → ghost user in Keycloak.
-    create_user MUST raise so caller knows to compensate (delete user
-    via keycloak_admin._delete_user — Phase 4 followup TODO)."""
+    """User created, password reset 502 → no ghost Keycloak user remains."""
+    deleted = []
+    monkeypatch.setattr(ka, "delete_user", lambda user_id: deleted.append(user_id))
     monkeypatch.setattr(ka.httpx, "post",
                         lambda *a, **kw: _resp(201, headers={"Location": "/users/uid-1"}))
     monkeypatch.setattr(ka.httpx, "put",
@@ -278,10 +278,14 @@ def test_create_user_password_step_fails_after_create_succeeds(_seeded_token, mo
                        tenant_id="t", is_owner=True, user_status="active")
     assert exc.value.status_code == 502
     assert "reset_password" in exc.value.detail
+    assert "db down" in exc.value.detail
+    assert deleted == ["uid-1"]
 
 
 def test_create_user_role_lookup_404(_seeded_token, monkeypatch):
-    """Caller passed a role that doesn't exist in the realm → 404."""
+    """Caller passed a role that doesn't exist in the realm → cleanup partial user."""
+    deleted = []
+    monkeypatch.setattr(ka, "delete_user", lambda user_id: deleted.append(user_id))
     monkeypatch.setattr(ka.httpx, "post",
                         lambda *a, **kw: _resp(201, headers={"Location": "/users/uid-1"}))
     monkeypatch.setattr(ka.httpx, "put", lambda *a, **kw: _resp(204))
@@ -291,12 +295,14 @@ def test_create_user_role_lookup_404(_seeded_token, monkeypatch):
         ka.create_user(email="u@x", password="x", role="nonexistent",
                        tenant_id="t", is_owner=True, user_status="active")
     assert exc.value.status_code == 502
+    assert deleted == ["uid-1"]
 
 
 def test_create_user_role_grant_step_fails(_seeded_token, monkeypatch):
-    """User + password OK, role grant 403 (admin-cli missing permission).
-    Ghost user with no role — admin should investigate role mappings."""
+    """User + password OK, role grant 403 → cleanup partial user."""
     posts = {"n": 0}
+    deleted = []
+    monkeypatch.setattr(ka, "delete_user", lambda user_id: deleted.append(user_id))
 
     def fake_post(*a, **kw):
         posts["n"] += 1
@@ -313,6 +319,7 @@ def test_create_user_role_grant_step_fails(_seeded_token, monkeypatch):
                        tenant_id="t", is_owner=True, user_status="active")
     assert exc.value.status_code == 502
     assert "grant_role" in exc.value.detail
+    assert deleted == ["uid-1"]
 
 
 # ═════════════════════════════════════════════════════════════════════════════
