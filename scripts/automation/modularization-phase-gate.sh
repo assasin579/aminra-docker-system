@@ -7,7 +7,7 @@ set -euo pipefail
 #   verify-only       run static/backend/frontend gates only; no commit/migrate/deploy
 #   build-only        build heavyweight backend base + backend/frontend images; no deploy
 #   hot-restart-local sync backend files into the running container and restart; no image claim
-#   immutable-deploy  verify, optionally commit, migrate, build fresh images, recreate services, smoke
+#   immutable-deploy  verify, optionally commit, build fresh images, migrate, recreate services, smoke
 #
 # The script is intentionally bounded. It never loops into new feature work and
 # exits on first failed gate so AMINRA runtime stability is preserved.
@@ -21,16 +21,52 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/run.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-MODE="${MODE:-immutable-deploy}"
+MODE="${1:-${MODE:-immutable-deploy}}"
+if [[ "$#" -gt 1 ]]; then
+  echo "ERROR: expected at most one mode argument; got $#" >&2
+  echo "Run: $0 --help" >&2
+  exit 64
+fi
+case "$MODE" in
+  verify-only|build-only|hot-restart-local|immutable-deploy) ;;
+  -h|--help|help)
+    cat <<'EOF'
+Usage: scripts/automation/modularization-phase-gate.sh [verify-only|build-only|hot-restart-local|immutable-deploy]
+
+Modes:
+  verify-only       run static/backend/frontend gates only; no commit/migrate/deploy/build
+  build-only        build heavyweight backend base + backend/frontend images; no deploy
+  hot-restart-local verify, sync backend files into running container, restart backend, smoke
+  immutable-deploy  verify, optionally commit, build fresh images, migrate, recreate services, smoke
+
+If no positional mode is provided, MODE env var is used; default remains immutable-deploy.
+Set REBUILD_BACKEND_BASE=true when backend/Dockerfile.base, requirements.txt,
+OS/Python dependencies, Playwright install behavior, or model preload inputs change.
+EOF
+    exit 0
+    ;;
+  *)
+    echo "ERROR: unknown MODE=$MODE" >&2
+    echo "Run: $0 --help" >&2
+    exit 64
+    ;;
+esac
 COMMIT_MESSAGE="${COMMIT_MESSAGE:-feat(modules): add tenant module registry and guarded rollout}"
 SKIP_COMMIT="${SKIP_COMMIT:-false}"
 STABILITY_SAMPLES="${STABILITY_SAMPLES:-12}"
 STABILITY_INTERVAL_SECONDS="${STABILITY_INTERVAL_SECONDS:-5}"
 STAGE_TIMEOUT_SECONDS="${STAGE_TIMEOUT_SECONDS:-600}"
 BUILD_TIMEOUT_SECONDS="${BUILD_TIMEOUT_SECONDS:-1800}"
+BUILD_RETRIES="${BUILD_RETRIES:-3}"
+REBUILD_BACKEND_BASE="${REBUILD_BACKEND_BASE:-auto}"
 BACKEND_BASE_IMAGE="${BACKEND_BASE_IMAGE:-aminra-backend-base:local}"
 BACKEND_APP_IMAGE="${BACKEND_APP_IMAGE:-aminra-docker-system-aminra-backend:latest}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-aminra-docker-system-aminra-frontend:latest}"
+
+if ! [[ "$BUILD_RETRIES" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: BUILD_RETRIES must be a positive integer; got '$BUILD_RETRIES'" >&2
+  exit 64
+fi
 
 BACKEND_FILES=(
   backend/alembic/versions/041_module_registry.py
@@ -85,6 +121,23 @@ run_timeout() {
   timeout --preserve-status --kill-after=30s "$seconds" "$@"
 }
 
+run_timeout_retry() {
+  local seconds="$1"; shift
+  local attempt=1
+  while true; do
+    if run_timeout "$seconds" "$@"; then
+      return 0
+    fi
+    if [[ "$attempt" -ge "$BUILD_RETRIES" ]]; then
+      echo "ERROR: command failed after $attempt attempt(s): $*" >&2
+      return 1
+    fi
+    echo "WARN: command failed on attempt $attempt/$BUILD_RETRIES; retrying after 10s: $*" >&2
+    attempt=$((attempt + 1))
+    sleep 10
+  done
+}
+
 compose_exec() {
   docker compose exec -T "$@"
 }
@@ -95,6 +148,29 @@ backend_container_id() {
 
 image_id() {
   docker image inspect --format '{{.Id}}' "$1" 2>/dev/null || true
+}
+
+docker_build_probe() {
+  section "Docker BuildKit write probe"
+  local probe_dir probe_image
+  probe_dir="$(mktemp -d)"
+  probe_image="aminra-docker-write-probe:${TS}"
+  cleanup_docker_build_probe() {
+    rm -rf "$probe_dir"
+    docker image rm -f "$probe_image" >/dev/null 2>&1 || true
+  }
+  trap cleanup_docker_build_probe EXIT
+
+  cat > "$probe_dir/Dockerfile" <<'EOF'
+FROM scratch
+LABEL org.aminra.phase_gate_probe="true"
+EOF
+
+  run_timeout "$STAGE_TIMEOUT_SECONDS" docker build -t "$probe_image" "$probe_dir"
+  docker image inspect "$probe_image" >/dev/null
+  cleanup_docker_build_probe
+  trap - EXIT
+  echo "docker-build-probe=PASS" | tee "$LOG_DIR/docker-build-probe.txt"
 }
 
 sync_backend_files_into_container() {
@@ -215,17 +291,44 @@ Verified: backend focused pytest, frontend focused vitest, frontend lint, py_com
 }
 
 build_images() {
+  docker_build_probe
+
   section "Image IDs before build"
   printf 'backend-base-before=%s\n' "$(image_id "$BACKEND_BASE_IMAGE")" | tee "$LOG_DIR/image-before.txt"
   printf 'backend-app-before=%s\n' "$(image_id "$BACKEND_APP_IMAGE")" | tee -a "$LOG_DIR/image-before.txt"
   printf 'frontend-before=%s\n' "$(image_id "$FRONTEND_IMAGE")" | tee -a "$LOG_DIR/image-before.txt"
 
-  run_timeout "$BUILD_TIMEOUT_SECONDS" docker build \
-    -f backend/Dockerfile.base \
-    -t "$BACKEND_BASE_IMAGE" \
-    backend
+  case "$REBUILD_BACKEND_BASE" in
+    true)
+      run_timeout_retry "$BUILD_TIMEOUT_SECONDS" docker build \
+        -f backend/Dockerfile.base \
+        -t "$BACKEND_BASE_IMAGE" \
+        backend
+      ;;
+    false)
+      if [[ -z "$(image_id "$BACKEND_BASE_IMAGE")" ]]; then
+        echo "ERROR: REBUILD_BACKEND_BASE=false but $BACKEND_BASE_IMAGE is missing" >&2
+        exit 75
+      fi
+      echo "REBUILD_BACKEND_BASE=false; reusing existing $BACKEND_BASE_IMAGE" | tee "$LOG_DIR/backend-base-build-skip.txt"
+      ;;
+    auto)
+      if [[ -n "$(image_id "$BACKEND_BASE_IMAGE")" ]]; then
+        echo "REBUILD_BACKEND_BASE=auto and $BACKEND_BASE_IMAGE exists; reusing existing base image" | tee "$LOG_DIR/backend-base-build-skip.txt"
+      else
+        run_timeout_retry "$BUILD_TIMEOUT_SECONDS" docker build \
+          -f backend/Dockerfile.base \
+          -t "$BACKEND_BASE_IMAGE" \
+          backend
+      fi
+      ;;
+    *)
+      echo "ERROR: REBUILD_BACKEND_BASE must be one of: auto, true, false" >&2
+      exit 64
+      ;;
+  esac
 
-  run_timeout "$BUILD_TIMEOUT_SECONDS" docker compose build aminra-backend aminra-frontend
+  run_timeout_retry "$BUILD_TIMEOUT_SECONDS" docker compose build aminra-backend aminra-frontend
 
   section "Image IDs after build"
   printf 'backend-base-after=%s\n' "$(image_id "$BACKEND_BASE_IMAGE")" | tee "$LOG_DIR/image-after.txt"
@@ -273,6 +376,7 @@ post_deploy_checks() {
 
 section "Preflight status"
 echo "MODE=$MODE" | tee "$LOG_DIR/mode.txt"
+printf 'BUILD_RETRIES=%s\nREBUILD_BACKEND_BASE=%s\n' "$BUILD_RETRIES" "$REBUILD_BACKEND_BASE" | tee "$LOG_DIR/build-policy.txt"
 git branch --show-current | tee "$LOG_DIR/git-branch.txt"
 git status --short | tee "$LOG_DIR/git-status-before.txt"
 docker compose ps | tee "$LOG_DIR/docker-ps-before.txt"
@@ -293,8 +397,8 @@ case "$MODE" in
   immutable-deploy)
     verify_gates
     stage_and_commit
-    migrate_db
     build_images
+    migrate_db
     deploy_images
     post_deploy_checks
     ;;
