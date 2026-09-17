@@ -90,17 +90,18 @@ async def register_business(
             user_status="active",
             company_name=req.company_name,
         )
+        keycloak_admin.send_verify_email(keycloak_user_id)
     except keycloak_admin.KeycloakAdminError as e:
         if "409" in str(e.detail) or "exists" in str(e.detail).lower():
             raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
         raise
 
-    log.info(f"[auth] Business registered in Keycloak: {req.email} (sub={keycloak_user_id})")
+    log.info(f"[auth] Business registered in Keycloak and verification email triggered: {req.email} (sub={keycloak_user_id})")
     return RegisterBusinessResponse(
         user_id=keycloak_user_id,
         email=req.email,
         status="active",
-        message="Đăng ký thành công. Vui lòng đăng nhập qua Keycloak SSO.",
+        message="Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác minh email trước khi đăng nhập.",
     )
 
 
@@ -122,17 +123,18 @@ async def register_provider(
             user_status="pending",
             company_name=req.company_name,
         )
+        keycloak_admin.send_verify_email(keycloak_user_id)
     except keycloak_admin.KeycloakAdminError as e:
         if "409" in str(e.detail) or "exists" in str(e.detail).lower():
             raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
         raise
 
-    log.info(f"[auth] Provider registered in Keycloak (pending): {req.email} (sub={keycloak_user_id})")
+    log.info(f"[auth] Provider registered in Keycloak (pending) and verification email triggered: {req.email} (sub={keycloak_user_id})")
     return RegisterProviderResponse(
         user_id=keycloak_user_id,
         email=req.email,
         status="pending",
-        message="Tài khoản của bạn đang chờ xét duyệt. Admin sẽ xem xét và thông báo kết quả.",
+        message="Tài khoản của bạn đang chờ xét duyệt. Vui lòng xác minh email; admin sẽ xem xét và thông báo kết quả.",
     )
 
 

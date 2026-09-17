@@ -294,6 +294,30 @@ def set_required_actions(user_id: str, actions: list[str]) -> None:
         )
 
 
+def send_verify_email(user_id: str, *, lifespan_seconds: int = 60 * 60 * 24) -> None:
+    """Trigger Keycloak's VERIFY_EMAIL execute-actions email for a new user.
+
+    Registration-created users have `requiredActions=[VERIFY_EMAIL]`; without this
+    email they cannot complete setup, and password-grant login fails with
+    `resolve_required_actions` / "Account is not fully set up".
+    """
+    resp = httpx.put(
+        f"{_ADMIN_BASE}/users/{user_id}/execute-actions-email",
+        headers=_admin_headers(),
+        params={"lifespan": lifespan_seconds},
+        json=["VERIFY_EMAIL"],
+        timeout=10.0,
+    )
+    if resp.status_code not in (200, 204):
+        raise KeycloakAdminError(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "Keycloak execute-actions-email VERIFY_EMAIL failed "
+                f"({resp.status_code}): {resp.text[:200]}"
+            ),
+        )
+
+
 def delete_user(user_id: str) -> None:
     """Delete a Keycloak user by UUID. Idempotent — a 404 is treated as success
     so callers can safely run this after a partial deletion."""

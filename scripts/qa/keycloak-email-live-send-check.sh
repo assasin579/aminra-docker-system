@@ -55,6 +55,24 @@ echo "[qa-email] admin token obtained: yes"
 echo "[qa-email] configuring realm=$KEYCLOAK_REALM smtp_host=$SMTP_HOST smtp_port=$SMTP_PORT from=$SMTP_FROM"
 
 realm_json=$(curl -fsS -H "Authorization: Bearer $ADMIN_TOKEN" "$KEYCLOAK_ADMIN_BASE_URL/admin/realms/$KEYCLOAK_REALM")
+restore_file=$(mktemp)
+printf '%s' "$realm_json" > "$restore_file"
+cleanup() {
+  local exit_code=$?
+  if [[ "${QA_KEEP_SMTP_CONFIG:-0}" != "1" && -s "$restore_file" ]]; then
+    curl -fsS -X PUT \
+      -H "Authorization: Bearer $ADMIN_TOKEN" \
+      -H "Content-Type: application/json" \
+      --data @"$restore_file" \
+      "$KEYCLOAK_ADMIN_BASE_URL/admin/realms/$KEYCLOAK_REALM" >/dev/null || \
+      echo "WARN: failed to restore pre-test Keycloak SMTP config" >&2
+    echo "[qa-email] restored pre-test Keycloak SMTP config"
+  fi
+  rm -f "$restore_file"
+  exit "$exit_code"
+}
+trap cleanup EXIT
+
 updated_realm=$(REALM_JSON="$realm_json" SMTP_HOST="$SMTP_HOST" SMTP_PORT="$SMTP_PORT" SMTP_FROM="$SMTP_FROM" python3 - <<'PY'
 import json, os
 realm=json.loads(os.environ['REALM_JSON'])

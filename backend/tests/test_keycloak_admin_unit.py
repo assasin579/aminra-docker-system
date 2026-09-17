@@ -244,3 +244,33 @@ def test_set_required_actions_failure(monkeypatch, _seeded_token):
     with pytest.raises(ka.KeycloakAdminError) as exc:
         ka.set_required_actions("u1", [])
     assert exc.value.status_code == 502
+
+
+# ── execute-actions email ───────────────────────────────────────────────────
+
+
+def test_send_verify_email_triggers_keycloak_execute_actions(monkeypatch, _seeded_token):
+    captured: dict = {}
+
+    def fake_put(url, **kwargs):
+        captured["url"] = url
+        captured["params"] = kwargs.get("params")
+        captured["body"] = kwargs["json"]
+        return _resp(204)
+
+    monkeypatch.setattr(ka.httpx, "put", fake_put)
+    ka.send_verify_email("user-uuid-1")
+
+    assert captured["url"].endswith("/users/user-uuid-1/execute-actions-email")
+    assert captured["body"] == ["VERIFY_EMAIL"]
+    assert captured["params"]["lifespan"] >= 300
+
+
+def test_send_verify_email_failure_is_502(monkeypatch, _seeded_token):
+    monkeypatch.setattr(ka.httpx, "put", lambda *a, **kw: _resp(500, text="smtp down"))
+
+    with pytest.raises(ka.KeycloakAdminError) as exc:
+        ka.send_verify_email("user-uuid-1")
+
+    assert exc.value.status_code == 502
+    assert "execute-actions-email" in str(exc.value.detail)

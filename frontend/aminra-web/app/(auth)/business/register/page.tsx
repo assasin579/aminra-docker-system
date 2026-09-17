@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useUserAuth } from "@/components/UserAuthContext";
 import { parseApiError, validatePassword } from "@/lib/apiError";
 
+type Step = "form" | "success";
+
 export default function BusinessRegisterPage() {
-  const router = useRouter();
-  const { loginBusiness } = useUserAuth();
+  const [step, setStep] = useState<Step>("form");
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const [form, setForm] = useState({
     email: "",
@@ -53,15 +53,72 @@ export default function BusinessRegisterPage() {
           parseApiError(body, `Đăng ký thất bại (HTTP ${res.status})`),
         );
       }
-      // Auto-login after register
-      await loginBusiness(form.email.trim(), form.password);
-      router.replace("/dashboard/business");
+      setPendingEmail(form.email.trim());
+      setStep("success");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng ký thất bại");
     } finally {
       setLoading(false);
     }
   };
+
+  if (step === "success") {
+    return (
+      <div className="w-full max-w-md text-center" data-page>
+        <div
+          className="rounded-2xl p-10 animate-section"
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div
+            className="w-16 h-16 rounded-full grid place-items-center mx-auto mb-5"
+            style={{
+              background: "rgba(10,31,68,0.1)",
+              border: "1px solid rgba(10,31,68,0.25)",
+            }}
+          >
+            <svg
+              className="w-8 h-8"
+              style={{ color: "#0A1F44" }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold mb-3" style={{ color: "#0A1F44" }}>
+            Kiểm tra email để hoàn tất đăng ký
+          </h2>
+          <p className="text-sm mb-2" style={{ color: "#6B7280" }}>
+            AMINRA đã tạo tài khoản cho{" "}
+            <strong style={{ color: "#0A1F44" }}>{pendingEmail}</strong>.
+          </p>
+          <p className="text-sm" style={{ color: "#6B7280" }}>
+            Vui lòng mở email xác minh từ AMINRA trước khi đăng nhập. Nếu chưa
+            thấy email, hãy kiểm tra Spam/Promotions hoặc thử đăng ký lại sau
+            vài phút.
+          </p>
+          <Link
+            href="/business/login"
+            className="btn-lift inline-block mt-6 px-6 py-2.5 rounded-xl text-sm font-medium text-white"
+            style={{ background: "#0A1F44" }}
+          >
+            Về trang đăng nhập
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const inputStyle = {
     background: "#FFFFFF",

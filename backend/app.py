@@ -1315,14 +1315,26 @@ async def admin_delete_user(user_id: str, request: Request):
         if not row:
             raise HTTPException(404, "User không tồn tại")
 
-        kc_sub = row["keycloak_sub"]
-        # Fall back to email lookup for users created before keycloak_sub backfill
-        if not kc_sub and row["email"]:
+        kc_candidates: list[str] = []
+        if row["keycloak_sub"]:
+            kc_candidates.append(str(row["keycloak_sub"]))
+
+        # Also look up by email even when keycloak_sub is present. Historical
+        # admin cleanup rows can have a stale/wrong keycloak_sub; deleting only
+        # by stale sub can leave a disabled Keycloak identity that still owns the
+        # email and blocks future self-registration.
+        if row["email"]:
             try:
-                kc_sub = keycloak_admin.find_user_by_email(row["email"])
-            except keycloak_admin.KeycloakAdminError:
-                kc_sub = None
-        if kc_sub:
+                email_kc_sub = keycloak_admin.find_user_by_email(row["email"])
+                if email_kc_sub and email_kc_sub not in kc_candidates:
+                    kc_candidates.append(email_kc_sub)
+            except keycloak_admin.KeycloakAdminError as e:
+                log.warning(
+                    "Keycloak email lookup failed for admin delete %s: %s — continuing with known sub candidates",
+                    row["email"], e.detail,
+                )
+
+        for kc_sub in kc_candidates:
             try:
                 keycloak_admin.delete_user(str(kc_sub))
             except keycloak_admin.KeycloakAdminError as e:

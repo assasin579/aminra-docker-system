@@ -62,7 +62,7 @@ test.describe("register validation", () => {
     }
   });
 
-  test("valid password completes register successfully", async ({
+  test("valid password completes register and asks user to verify email", async ({
     request,
   }) => {
     const r = await request.post("/api/auth/business/register", {
@@ -76,6 +76,19 @@ test.describe("register validation", () => {
     const body = await r.json();
     expect(body.email).toBeTruthy();
     expect(body.status).toBe("active");
-    expect(body.message).toContain("Đăng ký thành công");
+    expect(body.message).toContain("xác minh email");
+  });
+
+  test("static guard: business register does not auto-login before email verification", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const src = await readFile(
+      join(process.cwd(), "app/(auth)/business/register/page.tsx"),
+      "utf8",
+    );
+
+    expect(src).not.toContain("loginBusiness(form.email.trim(), form.password)");
+    expect(src).toContain('type Step = "form" | "success"');
+    expect(src).toContain("email xác minh");
   });
 });
