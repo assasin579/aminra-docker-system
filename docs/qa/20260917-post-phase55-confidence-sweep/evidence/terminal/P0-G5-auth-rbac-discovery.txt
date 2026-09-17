@@ -1,0 +1,61 @@
+# Auth/RBAC candidate scripts/tests discovery
+scripts/keycloak-bootstrap.sh
+scripts/keycloak-configure-mfa.sh
+scripts/keycloak-email-config-check.sh
+scripts/pre_demo_check.sh
+scripts/qa/check-keycloak-account-login.sh
+scripts/qa/keycloak-email-live-send-check.sh
+scripts/qa/repair-demo-accounts.sh
+scripts/seed_demo_data.py
+backend/tests/__pycache__/test_dual_auth_unit.cpython-311-pytest-9.1.1.pyc
+backend/tests/__pycache__/test_keycloak_cross_tenant_attack.cpython-311-pytest-9.1.1.pyc
+backend/tests/test_admin_analytics.py
+backend/tests/test_admin_crud_unit.py
+backend/tests/test_admin_user_password_reset.py
+backend/tests/test_auth_invite_canonical_invited_by.py
+backend/tests/test_demo_account_login_smoke_script.py
+backend/tests/test_dual_auth_cross_tenant_unit.py
+backend/tests/test_dual_auth_fast_path.py
+backend/tests/test_dual_auth_unit.py
+backend/tests/test_keycloak_admin_edge.py
+backend/tests/test_keycloak_admin_unit.py
+backend/tests/test_keycloak_cross_tenant_attack.py
+backend/tests/test_keycloak_jwks_edge.py
+backend/tests/test_keycloak_token_security.py
+backend/tests/test_role_boundaries_live_smoke.py
+backend/tests/test_unauth_route_boundaries.py
+frontend/aminra-web/e2e/02-auth.spec.ts
+frontend/aminra-web/e2e/05-admin-flow.spec.ts
+frontend/aminra-web/e2e/08-login-ui.spec.ts
+frontend/aminra-web/e2e/17-mvp-demo-public.spec.ts
+frontend/aminra-web/e2e/18-mvp-demo-provider-admin.spec.ts
+frontend/aminra-web/e2e/20-admin-unified-auth.spec.ts
+frontend/aminra-web/e2e/21-admin-pages-token-pattern.spec.ts
+frontend/aminra-web/e2e/28-admin-template-view.spec.ts
+frontend/aminra-web/e2e/30-admin-user-edit-ux.spec.ts
+frontend/aminra-web/e2e/38-demo-spine-keycloak.spec.ts
+frontend/aminra-web/e2e/helpers/admin-token.ts
+frontend/aminra-web/e2e/helpers/auth-token.ts
+frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts
+frontend/aminra-web/e2e/keycloak/helpers/admin-api.ts
+frontend/aminra-web/e2e/visual-regression.spec.ts-snapshots/business-login-desktop-chromium-linux.png
+frontend/aminra-web/e2e/visual-regression.spec.ts-snapshots/provider-login-desktop-chromium-linux.png
+frontend/aminra-web/__tests__/AdminAuthContext.test.tsx
+frontend/aminra-web/__tests__/UserAuthContext-keycloak.test.tsx
+frontend/aminra-web/__tests__/UserAuthContext-logout-contract.test.ts
+frontend/aminra-web/__tests__/admin-analytics.test.tsx
+frontend/aminra-web/__tests__/admin-user-password-reset-session.test.ts
+frontend/aminra-web/__tests__/auth-callback-page.test.tsx
+frontend/aminra-web/__tests__/auth-oidc.test.ts
+frontend/aminra-web/__tests__/auth-post-login-route.test.ts
+frontend/aminra-web/__tests__/auth-session-cleanup.test.ts
+frontend/aminra-web/__tests__/auth-token-cleanup-guardrails.test.ts
+frontend/aminra-web/__tests__/components/KeycloakSsoButton.test.tsx
+frontend/aminra-web/__tests__/landing-keycloak-cta.test.tsx
+frontend/aminra-web/__tests__/normal-user-auth-owned-by-app-contract.test.ts
+frontend/aminra-web/__tests__/service-worker-auth-cache.test.ts
+frontend/aminra-web/__tests__/sidebar-admin-navigation-contract.test.tsx
+--- credential env file presence (names only) ---
+.env present
+.qa/aminra-demo-credentials.env present
+.qa/credentials.local.json missing

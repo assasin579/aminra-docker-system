@@ -1,0 +1,21 @@
+# P1 Gate 7 frontend supply-chain focused tests
+
+> aminra-web@0.1.0 test
+> vitest run supply-chain-eligible-suppliers.test.tsx supply-chain-failure-guardrails.test.ts supply-chain-process-create.test.tsx public-trace-proxy-cache-contract.test.ts
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/supply-chain-failure-guardrails.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m __tests__/public-trace-proxy-cache-contract.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 329[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-process-create.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1576[2mms[22m[39m
+     [33m[2m✓[22m[39m POSTs the modal name to the backend proxy with bearer auth and JSON content-type [33m 963[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces FastAPI save errors instead of showing a false success [33m 365[2mms[22m[39m
+ [32m✓[39m __tests__/supply-chain-eligible-suppliers.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2374[2mms[22m[39m
+     [33m[2m✓[22m[39m fetches CB-eligible suppliers for the material dropdown and shows policy copy [33m 1482[2mms[22m[39m
+     [33m[2m✓[22m[39m refetches eligible suppliers by material category and hides scope-mismatched suppliers [33m 706[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 03:55:01
+[2m   Duration [22m 8.02s[2m (transform 2.01s, setup 2.42s, import 3.07s, tests 4.31s, environment 14.09s)[22m

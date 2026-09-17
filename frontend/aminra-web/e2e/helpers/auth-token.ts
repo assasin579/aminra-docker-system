@@ -1,6 +1,6 @@
 import { APIRequestContext } from "@playwright/test";
 
-const DEFAULT_KEYCLOAK_URL = "https://auth.silvergem.org";
+const DEFAULT_KEYCLOAK_URL = "https://auth.aminra.org";
 const DEFAULT_REALM = "aminra";
 const DEFAULT_CLIENT_ID = "aminra-frontend";
 
@@ -45,7 +45,7 @@ function keycloakForwardedHeaders(tokenUrl: string): Record<string, string> | un
   }
   return {
     "X-Forwarded-Proto": process.env.KEYCLOAK_PUBLIC_PROTO || "https",
-    "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.silvergem.org",
+    "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.aminra.org",
     "X-Forwarded-Port": process.env.KEYCLOAK_PUBLIC_PORT || "443",
   };
 }

@@ -1,0 +1,3 @@
+# P0 Gate 3 backend Playwright/PDF dependency sanity
+playwright 1.56.0
+browser_text AMINRA QA

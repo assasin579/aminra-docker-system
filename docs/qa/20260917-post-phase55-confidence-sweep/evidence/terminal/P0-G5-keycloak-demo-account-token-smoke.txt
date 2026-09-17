@@ -1,0 +1,5 @@
+# P0 Gate 5 Keycloak demo account token smoke (redacted)
+FAIL: cb-demo@demo.aminra.vn: expected_role=provider missing from token roles
+FAIL: auditor-demo@demo.aminra.vn: login failed: invalid_grant Invalid user credentials
+PASS: demo-platform-admin@demo.aminra.vn login ok password=REDACTED expected_role=platform_admin
+PASS: biz-demo-1@demo.aminra.vn login ok password=REDACTED expected_role=business

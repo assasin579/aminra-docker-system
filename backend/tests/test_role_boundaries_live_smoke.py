@@ -39,7 +39,7 @@ def _token(email: str, password: str = DEMO_PW) -> str:
         "password": password,
     }).encode()
     # The backend validates tokens against KEYCLOAK_URL, which is the browser/public
-    # issuer (`https://auth.silvergem.org` in the demo stack). When this smoke
+    # issuer (`https://auth.aminra.org` in the demo stack). When this smoke
     # test runs inside Docker, it still posts to the container-local Keycloak URL;
     # forwarding headers make Keycloak mint a token with the same issuer the
     # backend expects, without routing secrets through Cloudflare/public auth.
@@ -48,7 +48,7 @@ def _token(email: str, password: str = DEMO_PW) -> str:
         data=data,
         headers={
             "X-Forwarded-Proto": os.getenv("KEYCLOAK_PUBLIC_PROTO", "https"),
-            "X-Forwarded-Host": os.getenv("KEYCLOAK_PUBLIC_HOST", "auth.silvergem.org"),
+            "X-Forwarded-Host": os.getenv("KEYCLOAK_PUBLIC_HOST", "auth.aminra.org"),
             "X-Forwarded-Port": os.getenv("KEYCLOAK_PUBLIC_PORT", "443"),
         },
         method="POST",

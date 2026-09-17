@@ -1,0 +1,154 @@
+# P0 Gate 4 login/browser smoke on public aminra.org
+PW_BASE_URL=https://aminra.org
+
+Running 10 tests using 1 worker
+
+  ✘   1 [desktop-chromium] › e2e/08-login-ui.spec.ts:4:7 › 08. UI login form — business › Login form renders with email + password + submit button (5ms)
+  ✘   2 [desktop-chromium] › e2e/08-login-ui.spec.ts:24:7 › 08. UI login form — business › Form exposes editable email + password controls (4ms)
+  ✘   3 [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page (9ms)
+  ✘   4 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:22:7 › Business login page UI › renders AMINRA-owned form fields (5ms)
+  ✘   5 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:31:7 › Business login page UI › Keycloak CTA starts OIDC redirect (5ms)
+  ✘   6 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:39:7 › Business login page UI › forgot password link routes to AMINRA reset request page (8ms)
+  ✘   7 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:47:7 › Provider login page UI › renders AMINRA-owned provider form with visible Keycloak SSO (5ms)
+  -   8 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:61:8 › Password reset pages › email-reset flow is SMTP-dependent and intentionally deferred
+  ✘   9 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:65:7 › OIDC callback page › direct visit without code shows error fallback or exits callback (6ms)
+  ✘  10 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:76:7 › OIDC callback page › callback with invalid code shows error (6ms)
+
+
+  1) [desktop-chromium] › e2e/08-login-ui.spec.ts:4:7 › 08. UI login form — business › Login form renders with email + password + submit button
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/08-login-ui-08-UI-login-fo-10a97-mail-password-submit-button-desktop-chromium/error-context.md
+
+  2) [desktop-chromium] › e2e/08-login-ui.spec.ts:24:7 › 08. UI login form — business › Form exposes editable email + password controls
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/08-login-ui-08-UI-login-fo-598b5-ble-email-password-controls-desktop-chromium/error-context.md
+
+  3) [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/08-login-ui-08-UI-login-fo-6f4f9--return-to-the-landing-page-desktop-chromium/error-context.md
+
+  4) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:22:7 › Business login page UI › renders AMINRA-owned form fields
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/keycloak-02-login-ui-flow--dda1e-rs-AMINRA-owned-form-fields-desktop-chromium/error-context.md
+
+  5) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:31:7 › Business login page UI › Keycloak CTA starts OIDC redirect
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/keycloak-02-login-ui-flow--0e96a-ak-CTA-starts-OIDC-redirect-desktop-chromium/error-context.md
+
+  6) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:39:7 › Business login page UI › forgot password link routes to AMINRA reset request page
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/keycloak-02-login-ui-flow--a4e18-o-AMINRA-reset-request-page-desktop-chromium/error-context.md
+
+  7) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:47:7 › Provider login page UI › renders AMINRA-owned provider form with visible Keycloak SSO
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/keycloak-02-login-ui-flow--199a5-m-with-visible-Keycloak-SSO-desktop-chromium/error-context.md
+
+  8) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:65:7 › OIDC callback page › direct visit without code shows error fallback or exits callback
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/keycloak-02-login-ui-flow--844a3--fallback-or-exits-callback-desktop-chromium/error-context.md
+
+  9) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:76:7 › OIDC callback page › callback with invalid code shows error
+
+    Error: browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/keycloak-02-login-ui-flow--6a7fb-th-invalid-code-shows-error-desktop-chromium/error-context.md
+
+  9 failed
+    [desktop-chromium] › e2e/08-login-ui.spec.ts:4:7 › 08. UI login form — business › Login form renders with email + password + submit button
+    [desktop-chromium] › e2e/08-login-ui.spec.ts:24:7 › 08. UI login form — business › Form exposes editable email + password controls
+    [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:22:7 › Business login page UI › renders AMINRA-owned form fields
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:31:7 › Business login page UI › Keycloak CTA starts OIDC redirect
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:39:7 › Business login page UI › forgot password link routes to AMINRA reset request page
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:47:7 › Provider login page UI › renders AMINRA-owned provider form with visible Keycloak SSO
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:65:7 › OIDC callback page › direct visit without code shows error fallback or exits callback
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:76:7 › OIDC callback page › callback with invalid code shows error
+  1 skipped

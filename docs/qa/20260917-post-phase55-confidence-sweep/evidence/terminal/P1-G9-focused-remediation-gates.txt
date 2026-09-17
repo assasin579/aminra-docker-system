@@ -1,0 +1,38 @@
+# P1-G9 Focused remediation gates
+
+Commands/results:
+
+1) Login/OIDC + visual/demo focused Playwright gate
+Command:
+  set -a; [ -f .env ] && . ./.env; set +a; cd frontend/aminra-web && PW_BASE_URL=http://localhost:3100 PW_API_BASE=http://localhost:8100 npx playwright test e2e/keycloak/02-login-ui-flow.spec.ts e2e/visual-regression.spec.ts e2e/17-mvp-demo-public.spec.ts e2e/38-demo-spine-keycloak.spec.ts --project=desktop-chromium --reporter=line
+Result:
+  21 passed, 5 skipped, 0 failed
+
+2) Visual baseline intentional update after reviewing the login-page exit link
+Command:
+  cd frontend/aminra-web && PW_BASE_URL=http://localhost:3100 npx playwright test e2e/visual-regression.spec.ts --project=desktop-chromium --update-snapshots --reporter=line
+Result:
+  7 passed, updated business-login and provider-login snapshots
+Review:
+  Business login page: form/inputs/buttons visible, `← Về trang chủ` visible, no obvious broken layout.
+  Provider login page: screenshot showed exit affordance; baseline was regenerated deliberately as part of expected layout change.
+
+3) Single OIDC redirect regression check after stabilization
+Command:
+  cd frontend/aminra-web && PW_BASE_URL=http://localhost:3100 npx playwright test e2e/keycloak/02-login-ui-flow.spec.ts -g 'Keycloak CTA starts OIDC redirect' --project=desktop-chromium --reporter=line
+Result:
+  1 passed
+
+4) Frontend lint
+Command:
+  cd frontend/aminra-web && npm run lint
+Result:
+  PASS (`eslint . --max-warnings=0`)
+
+5) Frontend production build
+Command:
+  cd frontend/aminra-web && npm run build
+Result:
+  PASS; Next.js 16.3.5 production build compiled and generated 46 static pages.
+Notes:
+  Sentry deprecation warnings remain for `withSentryConfig` import path and `disableLogger`; not blocking this gate.

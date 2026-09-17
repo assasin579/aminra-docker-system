@@ -1,0 +1,210 @@
+# P2 Gate 11 docs consistency smoke
+Thu Sep 17 04:06:47 AM EDT 2026
+--- docs/qa report/status files ---
+status.tsv present
+report.md present
+--- stale legacy domain references in deploy/docs/scripts (silvergem) ---
+docs/dev-setup.md:197:- Cloudflare tunnel preview: https://dev-web.silvergem.org
+docs/qa/2026-09-13-manager-happy-edge-testcases.md:212:- **What was tested:** `120` requests, concurrency `30`, public URL `https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/...`.
+docs/qa/current-test-baseline.md:8:- Runtime health/smoke: canonical demo URLs are `http://localhost:3100` for local and `https://dev-web.silvergem.org` for public sandbox demo.
+docs/qa/current-test-baseline.md:9:- `fe.silvergem.org`: non-canonical legacy/hostname path with known 502/tunnel drift; keep out of demo scripts/docs until ownership is fixed. Do not use it as a release/demo gate unless explicitly testing hostname drift.
+docs/qa/current-test-baseline.md:25:- `https://dev-web.silvergem.org` reachable.
+docs/qa/2026-09-17-post-phase55-system-test-plan.md:258:- No redirect to legacy `auth.silvergem.org`.
+docs/qa/2026-09-17-post-phase55-system-test-plan.md:517:- Keycloak issuer/domain regresses to `auth.silvergem.org`.
+docs/qa/customer-ready-full-system-test-plan.md:6:Canonical sandbox URL: `https://dev-web.silvergem.org`
+docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md:7:**Canonical public sandbox URL:** `https://dev-web.silvergem.org`
+docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md:97:curl -sS -o /tmp/aminra-public.html -w 'HTTP %{http_code}\n' https://dev-web.silvergem.org/
+docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md:698:curl -sS -o /tmp/aminra-public-home.html -w 'HTTP %{http_code}\n' https://dev-web.silvergem.org/
+docs/qa/2026-09-11-supply-chain-traceability-production-qa-execution.md:699:curl -sS -o /tmp/aminra-trace-invalid.html -w 'HTTP %{http_code}\n' https://dev-web.silvergem.org/api/supply-chain/public/trace/ABC123
+docs/plans/2026-09-13-load-chaos-deploy-dependency-security-to-8of10.md:23:1. Public trace SLO: `dev-web.silvergem.org` path `/api/api/supply-chain/batches/trace/*` reaches p95 `<800ms` under the established load profile, with Cloudflare/cache status `HIT` or explicit cache-eligible evidence af
+docs/plans/2026-09-13-load-chaos-deploy-dependency-security-to-8of10.md:97:- docs mentioning `dev-web.silvergem.org`, Cloudflare, or tunnel
+docs/plans/2026-09-13-load-chaos-deploy-dependency-security-to-8of10.md:119:and http.host == "dev-web.silvergem.org"
+docs/plans/2026-09-09-password-reset-session-invalidation.md:128:2. Login via `dev-web.silvergem.org/admin`.
+docs/qa/2026-09-08-crud-users-org-editor-business/browser-role-pages-smoke.cjs:7:const KC_URL = process.env.KEYCLOAK_URL || 'https://auth.silvergem.org';
+docs/qa/2026-09-08-crud-users-org-editor-business/live-crud-smoke.py:71:"X-Forwarded-Host": os.getenv("KEYCLOAK_PUBLIC_HOST", "auth.silvergem.org"),
+docs/qa/2026-09-13-edge-cdn-fix/report.md:30:GET https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/*
+docs/qa/2026-09-08-admin-account-regression/report.md:5:**PASS for controlled sandbox admin usage on `https://dev-web.silvergem.org/admin`.**
+docs/qa/2026-09-08-admin-account-regression/report.md:85:`6 / 6` checks passed on `https://dev-web.silvergem.org/admin`:
+docs/qa/2026-09-11-supply-chain-traceability-production/report.md:52:- Public sandbox URL: `https://dev-web.silvergem.org` → `HTTP 200`
+docs/qa/2026-09-11-supply-chain-traceability-production/report.md:399:curl -sS -o ... -w 'HTTP %{http_code}\n' https://dev-web.silvergem.org/
+docs/qa/2026-09-11-supply-chain-traceability-production/report.md:400:curl -sS -o ... -w 'HTTP %{http_code}\n' https://dev-web.silvergem.org/api/supply-chain/public/trace/ABC123
+docs/qa/2026-09-11-supply-chain-traceability-production/report.md:401:curl -sS -o ... -w 'HTTP %{http_code}\n' 'https://dev-web.silvergem.org/api/supply-chain/public/trace/%27%20OR%201%3D1--'
+docs/qa/2026-09-13-production-readiness/task5-chaos-recovery-preflight-runbook.md:67:- Local frontend and public `https://dev-web.silvergem.org`: HTTP 200
+docs/qa/2026-09-13-production-readiness/task5-chaos-recovery-preflight-runbook.md:75:1. Confirm environment is **non-production sandbox** and that `dev-web.silvergem.org` disruption is acceptable.
+docs/qa/2026-09-13-production-readiness/task5-chaos-recovery-preflight-runbook.md:194:curl -fsS https://auth.silvergem.org/realms/aminra/.well-known/openid-configuration | tee evidence/keycloak-001-discovery-before.json
+docs/qa/2026-09-13-production-readiness/task5-chaos-recovery-preflight-runbook.md:197:curl -k -sS -o evidence/keycloak-003-discovery-during.body -w 'HTTP %{http_code}\n' https://auth.silvergem.org/realms/aminra/.well-known/openid-configuration | tee evidence/keycloak-003-discovery-during.status
+docs/qa/2026-09-13-production-readiness/task5-chaos-recovery-preflight-runbook.md:198:curl -sS -o evidence/keycloak-004-public-during.body -w 'HTTP %{http_code}\n' https://dev-web.silvergem.org | tee evidence/keycloak-004-public-during.status
+docs/qa/2026-09-13-production-readiness/task5-chaos-recovery-preflight-runbook.md:201:curl -fsS https://auth.silvergem.org/realms/aminra/.well-known/openid-configuration | tee evidence/keycloak-006-discovery-after.json
+docs/qa/2026-09-12-customer-ready-full-system/report.md:25:- Public `dev-web.silvergem.org` trace profile still **FAILS** p95: `1831.8ms` with `cf-cache-status: DYNAMIC`; local proxy cache marker is `x-aminra-proxy-cache: hit`. This is now classified as **public edge/tunnel/cach
+docs/qa/2026-09-07-login-all-account-types/QA_LOGIN_AUTH_RBAC_REPORT.md:4:Environment: local Docker stack (`frontend localhost:3100`, `backend localhost:8100`, `keycloak localhost:8180`, issuer `https://auth.silvergem.org/realms/aminra`).
+docs/qa/2026-09-07-login-all-account-types/QA_LOGIN_AUTH_RBAC_REPORT.md:45:BACKEND_URL=http://localhost:8100 KEYCLOAK_URL=http://localhost:8180 KEYCLOAK_PUBLIC_PROTO=https KEYCLOAK_PUBLIC_HOST=auth.silvergem.org KEYCLOAK_PUBLIC_PORT=443 python3 docs/qa/2026-09-07-login-all-account-types/runtime
+docs/qa/2026-09-07-login-all-account-types/QA_LOGIN_AUTH_RBAC_REPORT.md:67:Failure: `test_keycloak_token_security.py::test_issuer_mismatch[https://auth.silvergem.org/realms/aminra]` expected issuer mismatch but used the currently configured issuer value; likely a stale/incorrect test parameter,
+docs/qa/2026-09-07-login-all-account-types/runtime-login-matrix.py:20:KC_URL = os.getenv("KEYCLOAK_URL", "https://auth.silvergem.org").rstrip("/")
+docs/qa/2026-09-07-login-all-account-types/runtime-login-matrix.py:59:"X-Forwarded-Host": os.getenv("KEYCLOAK_PUBLIC_HOST", "auth.silvergem.org"),
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:12:- **Controlled sandbox demo:** GO on `localhost:3100` and `https://dev-web.silvergem.org`.
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:16:- **Public hostname caveat:** `https://fe.silvergem.org` remains FAIL/502; do not use as demo URL.
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:25:- `https://dev-web.silvergem.org/landing`: HTTP 200.
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:26:- `https://fe.silvergem.org/`: HTTP 502.
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:74:- Runtime smoke with known-bad hostname: `raw/runtime-smoke-with-fe-hostname.log` → PASS 12 / FAIL 1 due `fe.silvergem.org` 502.
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:124:### P1 — `fe.silvergem.org` 502
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:128:- Recommended fix: either fix tunnel/hostname mapping or remove `fe.silvergem.org` from AMINRA demo docs until ownership is clarified.
+docs/qa/2026-09-04-aminra-baseline-admin-functional/report.md:144:Proceed with a controlled sandbox demo only if using `localhost:3100` or `dev-web.silvergem.org`, deterministic demo users, and no real customer documents. Do not present AMINRA as customer-pilot ready until Keycloak ema
+docs/qa/2026-09-04-aminra-remediation/demo-url-canonical.md:8:- Public sandbox demo: `https://dev-web.silvergem.org`
+docs/qa/2026-09-04-aminra-remediation/demo-url-canonical.md:10:Do **not** use `https://fe.silvergem.org` for AMINRA demo scripts, sales walkthroughs, or release gates until the hostname/tunnel ownership is fixed and explicitly re-promoted.
+docs/qa/2026-09-04-aminra-remediation/demo-url-canonical.md:14:- `dev-web.silvergem.org` passes the runtime smoke path.
+docs/qa/2026-09-04-aminra-remediation/demo-url-canonical.md:15:- `fe.silvergem.org` is a known 502/hostname-drift path from the 2026-09-04 QA pass.
+docs/qa/2026-09-04-aminra-remediation/demo-url-canonical.md:20:- Default smoke/public URL must stay `https://dev-web.silvergem.org`.
+docs/qa/2026-09-04-aminra-remediation/demo-url-canonical.md:21:- `fe.silvergem.org` may be tested only by explicit override, e.g. `AMINRA_SMOKE_PUBLIC_URLS='https://dev-web.silvergem.org https://fe.silvergem.org' bash scripts/qa/runtime-smoke.sh`, and failures there are hostname-dri
+docs/qa/2026-09-04-aminra-remediation/report.md:10:- **Controlled sandbox demo:** GO on `http://localhost:3100` and `https://dev-web.silvergem.org`.
+docs/qa/2026-09-04-aminra-remediation/report.md:19:3. P1 demo URL canonical decision: `dev-web.silvergem.org` is canonical public sandbox; `fe.silvergem.org` is non-canonical/legacy drift.
+docs/qa/2026-09-04-aminra-remediation/report.md:53:- Test ran inside `aminra-backend` container and obtained tokens from container-local Keycloak. Without forwarded proto/host headers, Keycloak minted tokens with issuer `http://auth.silvergem.org:8080/realms/aminra`, whi
+docs/qa/2026-09-04-aminra-remediation/report.md:74:- Canonical public sandbox demo URL: `https://dev-web.silvergem.org`
+docs/qa/2026-09-04-aminra-remediation/report.md:75:- `https://fe.silvergem.org` remains non-canonical/legacy hostname drift until explicitly fixed and re-promoted.
+docs/qa/2026-09-04-aminra-remediation/report.md:130:- Public URLs checked: `https://dev-web.silvergem.org` only.
+docs/qa/2026-09-12-improvement-follow-up-load-split/report.md:18:- public frontend proxy: `dev-web.silvergem.org`
+docs/qa/2026-09-11-production-risk-closure/chaos-drill-plan.md:110:- whether public `dev-web.silvergem.org` traffic can be disrupted.
+docs/qa/2026-09-12-p0-gates-after-pytestini-seed-auth-fixes/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-p0-gates-after-pytestini-seed-auth-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-p0-gates-after-pytestini-seed-auth-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-p0-gates-after-pytestini-seed-auth-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-p0-auth-after-demo-repair/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:35:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:36:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:37:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-improvement-follow-up/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-p0-gates-after-lifecycle-fixes/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-p0-gates-after-lifecycle-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-p0-gates-after-lifecycle-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-p0-gates-after-lifecycle-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-11-production-risk-closure/evidence/terminal/42-nondestructive-resilience-after-sla-fix.txt:30:issuer= https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-11-production-risk-closure/evidence/terminal/40-nondestructive-resilience-dependency-checks.txt:30:issuer= https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-11-production-risk-closure/evidence/terminal/84-p12-chaos-keycloak-outage-recovery.txt:22:{'issuer': 'http://auth.silvergem.org:8180/realms/aminra', 'token_endpoint_present': True}
+docs/qa/2026-09-11-production-risk-closure/evidence/backups/p12-pre-chaos-postgres.sql:1392:89a80ffb-44b3-4165-90b7-ad76a57c4342	4deb5b2e-349f-4510-96c4-d2a3d4c71ec7	LOT-001	Bánh mì Halal	dde0e043-57c9-4121-8d6c-612923ced07b	completed	2026-09-12 05:54:36.554857+07	2026-09-12 05:55:20.736302+07	100	https://dev-w
+docs/qa/2026-09-12-improvement-follow-up-load-split/evidence/terminal/002-public-trace-split-load-profile-timeout-classified.txt:3:{"codes": {"200": 200}, "concurrency": 50, "errors": 0, "max_ms": 4299.1, "name": "public_frontend_proxy", "p50_ms": 1167.6, "p95_ms": 2538.5, "pass": false, "requests": 200, "target_ms": 800.0, "url": "https://dev-web.s
+docs/qa/2026-09-04-aminra-remediation/raw/staged-secret-scan-local.txt:52:+- Test ran inside `aminra-backend` container and obtained tokens from container-local Keycloak. Without forwarded proto/host headers, Keycloak minted tokens with issuer `http://auth.silvergem.org:8080/realms/aminra`, wh
+docs/qa/2026-09-04-aminra-remediation/raw/runtime-smoke-canonical-after-remediation.log:5:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-04-aminra-remediation/raw/runtime-smoke-canonical-after-remediation.log:6:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-04-aminra-remediation/raw/runtime-smoke-canonical-after-remediation.log:25:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-04-aminra-remediation/raw/pre-commit-final-scan-local.txt:53:+- Test ran inside `aminra-backend` container and obtained tokens from container-local Keycloak. Without forwarded proto/host headers, Keycloak minted tokens with issuer `http://auth.silvergem.org:8080/realms/aminra`, wh
+docs/qa/20260917-post-phase55-confidence-sweep/evidence/raw/public-login-oidc-smoke.js:27:if (redirectUrl.includes('auth.silvergem.org')) throw new Error('legacy auth domain found');
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/035-09-load-chaos-deploy-public-trace-load-profile.txt:12:url=f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{ids[0]}'
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:35:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:36:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:37:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-improvement-follow-up-critical/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:35:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:36:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:37:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-p0-gates-after-marker-fix/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-with-fe-hostname.log:5:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-with-fe-hostname.log:6:public urls: https://dev-web.silvergem.org https://fe.silvergem.org
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-with-fe-hostname.log:25:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-with-fe-hostname.log:26:✗ https://fe.silvergem.org returns 502 (public tunnel/hostname drift or origin unavailable)
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-with-fe-hostname.log:41:- https://fe.silvergem.org returns 502 (public tunnel/hostname drift or origin unavailable)
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-localhost-devweb.log:5:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-localhost-devweb.log:6:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/runtime-smoke-localhost-devweb.log:25:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-04-aminra-baseline-admin-functional/raw/playwright-screenshots.log:3:screenshot https://dev-web.silvergem.org/landing -> ../../docs/qa/2026-09-04-aminra-baseline-admin-functional/evidence/screenshots/TC-FUNC-003_landing-dev-web.png
+docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-customer-ready-full-system-rerun-final-harness/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:35:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:36:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:37:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-p0-gates-after-boundary-spine-fixes/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:35:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:36:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/016-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:37:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/035-09-load-chaos-deploy-public-trace-load-profile.txt:3:{"codes": {"200": 200}, "concurrency": 50, "errors": 0, "max_ms": 2166.6, "name": "public_frontend_proxy", "p50_ms": 1221.8, "p95_ms": 1831.8, "pass": false, "requests": 200, "sample_errors": [], "target_ms": 800.0, "url
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:35:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e -> 200 expected 200
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:36:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123 -> 404 expected 404
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:37:https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1-- -> 404 expected 404
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-customer-ready-full-system/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-13-production-readiness/evidence/edge-cdn/004-public-trace-split-slo-rerun.txt:5:{"codes": {"200": 120}, "concurrency": 30, "errors": 0, "max_ms": 2252.0, "name": "public_frontend_proxy", "p50_ms": 670.9, "p95_ms": 1650.5, "pass": false, "requests": 120, "target_ms": 800.0, "url": "https://dev-web.si
+docs/qa/2026-09-13-production-readiness/evidence/task5/002-readonly-runtime-smoke.txt:7:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-13-production-readiness/evidence/task5/002-readonly-runtime-smoke.txt:8:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-13-production-readiness/evidence/task5/002-readonly-runtime-smoke.txt:27:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/034-09-load-chaos-deploy-public-trace-load-profile.txt:12:url=f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{ids[0]}'
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-customer-ready-full-system-rerun-fixed/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-13-smtp-live/evidence/007-smtp-capture-after-trigger.txt:13:http://auth.silvergem.org:8180/realms/aminra/login-actions/action-token?key=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIwMTc5NjdmMS0xOGJlLTRmNWItYWRiMC01Y2RhM2E3YWI1NDEifQ.eyJleHAiOjE3ODkzMjQ5OTEsImlhdCI6MTc4OTI4M
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-customer-ready-full-system-rerun-all/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/002-00-env-docker-compose-health-and-http-smoke.txt:4:# Command: docker compose ps; echo '--- backend health ---'; curl -fsS http://127.0.0.1:8100/health; echo; echo '--- local FE ---'; curl -I -s http://127.0.0.1:3100 | head -12; echo '--- public FE ---'; curl -I -s https:
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:17:(f'https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/{trace_id}', 200),
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:18:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/ABC123', 404),
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/015-03-supply-chain-trace-public-trace-valid-invalid-smoke.txt:19:('https://dev-web.silvergem.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--', 404),
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/003-00-env-runtime-smoke-script.txt:10:keycloak: https://auth.silvergem.org/realms/aminra
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/003-00-env-runtime-smoke-script.txt:11:public urls: https://dev-web.silvergem.org
+docs/qa/2026-09-12-p0-gates-after-env-source-fix/evidence/terminal/003-00-env-runtime-smoke-script.txt:30:✓ https://dev-web.silvergem.org returns 200
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:2:"base": "https://dev-web.silvergem.org",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:3:"finalUrl": "https://dev-web.silvergem.org/admin",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:47:"url": "https://dev-web.silvergem.org/admin",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:51:"url": "https://dev-web.silvergem.org/admin",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:55:"url": "https://dev-web.silvergem.org/api/auth/me",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:59:"url": "https://dev-web.silvergem.org/admin?_rsc=1ljou",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:63:"url": "https://dev-web.silvergem.org/admin?_rsc=1o8c2",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:67:"url": "https://dev-web.silvergem.org/api/api/feature-flags/me",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:71:"url": "https://dev-web.silvergem.org/api/api/notifications/unread-count",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:75:"url": "https://dev-web.silvergem.org/api/admin/templates/halal_policy/files",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:79:"url": "https://dev-web.silvergem.org/api/admin/templates/halal_policy",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:83:"url": "https://dev-web.silvergem.org/admin/industries?_rsc=17qrm",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:87:"url": "https://dev-web.silvergem.org/api/admin/templates/halal_policy/template-files",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:91:"url": "https://dev-web.silvergem.org/api/admin/templates/halal_policy/revisions",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:95:"url": "https://dev-web.silvergem.org/admin/standards?_rsc=17qrm",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:99:"url": "https://dev-web.silvergem.org/admin/overdue-submissions?_rsc=17qrm",
+docs/qa/2026-09-08-admin-account-regression/evidence/raw/admin-browser-smoke.json:103:"url": "https://dev-web.silvergem.org/admin/audit-logs?_rsc=17qrm",
+TOTAL_MATCHES=276
+--- README/AGENTS project brain links existence ---
+AGENTS.md: missing
+/home/user/Documents/all-docs/MASTER_INDEX.md: present

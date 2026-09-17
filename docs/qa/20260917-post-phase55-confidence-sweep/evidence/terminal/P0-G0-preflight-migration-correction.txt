@@ -1,0 +1,6 @@
+# Corrected migration verification via project wrapper
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+041_module_registry (head)
+--- note ---
+direct container alembic current lacks env URL and is not valid as a product failure

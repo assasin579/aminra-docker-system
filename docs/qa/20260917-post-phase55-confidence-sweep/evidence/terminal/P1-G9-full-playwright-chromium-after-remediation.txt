@@ -1,0 +1,20 @@
+# P1-G9 Full Playwright Chromium matrix — after remediation
+
+Timestamp: 2026-09-17T04:50:01-04:00 session window
+Workdir: /home/user/Documents/aminra-docker-system/frontend/aminra-web
+Command:
+  set -a; [ -f .env ] && . ./.env; set +a; cd frontend/aminra-web && PW_BASE_URL=http://localhost:3100 PW_API_BASE=http://localhost:8100 npx playwright test --project=desktop-chromium --reporter=line
+
+Result: PASS
+Summary:
+  328 tests collected
+  203 passed
+  125 skipped
+  0 failed
+  Duration: 4.9m
+
+Important notes:
+- This supersedes the earlier P1-G9 full Chromium FAIL (`277 passed / 33 skipped / 18 failed`).
+- The run covered the login exit-link regressions, Keycloak OIDC callback expectation, deterministic demo cert fixture, public demo spine, visual baselines, token validation, attacker token scenarios, and role/tenant checks.
+- Accessibility tests still log serious color-contrast findings on some public pages, but the suite only fails critical a11y violations. Treat color contrast as UX/accessibility backlog, not a P0 browser-matrix blocker.
+- Final release-pipeline/deploy gate was not run in this remediation pass because it can recreate services; it remains approval-gated.

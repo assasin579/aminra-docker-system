@@ -1,0 +1,47 @@
+# P0 Gate 4 login/browser smoke rerun after installing Chromium
+PW_BASE_URL=https://aminra.org
+
+Running 10 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › e2e/08-login-ui.spec.ts:4:7 › 08. UI login form — business › Login form renders with email + password + submit button (3.3s)
+  ✓   2 [desktop-chromium] › e2e/08-login-ui.spec.ts:24:7 › 08. UI login form — business › Form exposes editable email + password controls (2.1s)
+  ✓   3 [desktop-chromium] › e2e/08-login-ui.spec.ts:34:7 › 08. UI login form — business › Login page lets unauthenticated users return to the landing page (4.4s)
+  ✓   4 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:22:7 › Business login page UI › renders AMINRA-owned form fields (3.3s)
+  ✘   5 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:31:7 › Business login page UI › Keycloak CTA starts OIDC redirect (5.4s)
+  ✓   6 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:39:7 › Business login page UI › forgot password link routes to AMINRA reset request page (3.2s)
+  ✓   7 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:47:7 › Provider login page UI › renders AMINRA-owned provider form with visible Keycloak SSO (3.3s)
+  -   8 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:61:8 › Password reset pages › email-reset flow is SMTP-dependent and intentionally deferred
+  ✓   9 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:65:7 › OIDC callback page › direct visit without code shows error fallback or exits callback (2.0s)
+  ✓  10 [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:76:7 › OIDC callback page › callback with invalid code shows error (3.6s)
+
+
+  1) [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:31:7 › Business login page UI › Keycloak CTA starts OIDC redirect
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"redirect_uri=http%3A%2F%2Flocalhost%3A3100%2Fauth%2Fcallback"[39m
+    Received string:    [31m"https://auth.aminra.org/realms/aminra/protocol/openid-connect/auth?client_id=aminra-frontend&redirect_uri=https%3A%2F%2Faminra.org%2Fauth%2Fcallback&response_type=code&scope=openid+profile+email&state=30d2db89f3f1480aa1688dfa5327b479&code_challenge=D3lImcUb5bmPzHGwKzU8RLOhHn2Uzl2Xc59WKplMGV4&code_challenge_method=S256&prompt=login"[39m
+
+      34 |     await page.waitForURL(/\/realms\/aminra\//, { timeout: 15000 });
+      35 |     expect(page.url()).toContain("client_id=aminra-frontend");
+    > 36 |     expect(page.url()).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3100%2Fauth%2Fcallback");
+         |                        ^
+      37 |   });
+      38 |
+      39 |   test("forgot password link routes to AMINRA reset request page", async ({ page }) => {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/keycloak/02-login-ui-flow.spec.ts:36:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--0e96a-ak-CTA-starts-OIDC-redirect-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/keycloak-02-login-ui-flow--0e96a-ak-CTA-starts-OIDC-redirect-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/keycloak-02-login-ui-flow--0e96a-ak-CTA-starts-OIDC-redirect-desktop-chromium/error-context.md
+
+  1 failed
+    [desktop-chromium] › e2e/keycloak/02-login-ui-flow.spec.ts:31:7 › Business login page UI › Keycloak CTA starts OIDC redirect
+  1 skipped
+  8 passed (34.9s)

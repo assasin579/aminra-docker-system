@@ -12,6 +12,10 @@ import { test, expect } from "./helpers/fixtures";
 
 const FE_URL = process.env.PW_BASE_URL ?? "http://localhost:3100";
 
+function expectedCallbackUrl(): string {
+  return encodeURIComponent(`${new URL(FE_URL).origin}/auth/callback`);
+}
+
 async function expectVisibleKeycloakSso(page: any) {
   await expect(page.getByTestId("keycloak-sso-button")).toBeVisible();
   await expect(page.getByTestId("keycloak-account-cta")).toHaveCount(0);
@@ -30,10 +34,15 @@ test.describe("Business login page UI", () => {
 
   test("Keycloak CTA starts OIDC redirect", async ({ page }) => {
     await page.goto(`${FE_URL}/business/login`);
-    await page.getByTestId("keycloak-sso-button").click();
-    await page.waitForURL(/\/realms\/aminra\//, { timeout: 15000 });
+    await page.waitForLoadState("networkidle");
+    const ssoButton = page.getByTestId("keycloak-sso-button");
+    await expect(ssoButton).toBeEnabled();
+    await Promise.all([
+      page.waitForURL(/\/realms\/aminra\//, { timeout: 15000 }),
+      ssoButton.click(),
+    ]);
     expect(page.url()).toContain("client_id=aminra-frontend");
-    expect(page.url()).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3100%2Fauth%2Fcallback");
+    expect(page.url()).toContain(`redirect_uri=${expectedCallbackUrl()}`);
   });
 
   test("forgot password link routes to AMINRA reset request page", async ({ page }) => {

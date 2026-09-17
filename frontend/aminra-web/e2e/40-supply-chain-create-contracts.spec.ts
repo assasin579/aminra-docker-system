@@ -18,7 +18,7 @@ async function getBusinessToken(api: APIRequestContext): Promise<string> {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "X-Forwarded-Proto": process.env.KEYCLOAK_PUBLIC_PROTO || "https",
-      "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.silvergem.org",
+      "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.aminra.org",
       "X-Forwarded-Port": process.env.KEYCLOAK_PUBLIC_PORT || "443",
     },
     data: form.toString(),

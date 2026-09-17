@@ -1,0 +1,11 @@
+# P2 Gate 10 light public perf smoke
+Thu Sep 17 04:06:29 AM EDT 2026
+https://aminra.org/	200	0.540601	0.088631	0.166334	20434
+https://aminra.org/landing	200	0.434000	0.085407	0.166229	50396
+https://aminra.org/business/login	200	0.197953	0.060339	0.104628	22545
+https://aminra.org/provider/login	200	0.180818	0.055945	0.097849	23129
+https://aminra.org/health	404	0.427769	0.097542	0.177096	21535
+https://aminra.org/api/health	200	0.316558	0.067049	0.152456	101
+--- thresholds: public pages should be < 3s and non-5xx; API health may be 404 if not publicly mounted ---
+FAILURES=https://aminra.org/health returned 404
+WARNINGS=none

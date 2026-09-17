@@ -57,7 +57,13 @@ test.describe("MVP Flow 1: Public verify cert", () => {
 
 test.describe("MVP Flow 2: Halal advisor chat", () => {
   test("Topics endpoint reachable", async ({ api }) => {
-    const res = await api.get("/topics");
+    let res = await api.get("/topics");
+    // Public Next/Cloudflare routing exposes backend topics behind /api/topics,
+    // while direct backend/local smoke uses /topics. Keep the test environment-
+    // aware without weakening the assertion: one canonical endpoint must be 200.
+    if (res.status() === 404) {
+      res = await api.get("/api/topics");
+    }
     expect(res.status()).toBe(200);
   });
 

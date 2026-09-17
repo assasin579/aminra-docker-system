@@ -1,0 +1,16 @@
+# P0-G5 Role boundaries after remediation
+
+Command:
+  docker compose exec -T aminra-backend sh -lc '. /vault/secrets/env.sh 2>/dev/null || true; pytest -q /app/tests/test_role_boundaries_live_smoke.py'
+
+Result: PASS
+Summary:
+  12 tests collected
+  9 passed
+  3 skipped
+  0 failed
+  Duration: 1.95s
+
+Notes:
+- The default public issuer/header fallback was corrected from legacy auth.silvergem.org to auth.aminra.org.
+- No RBAC weakening was applied; skipped cases remain fixture/config-dependent cases in the existing smoke.

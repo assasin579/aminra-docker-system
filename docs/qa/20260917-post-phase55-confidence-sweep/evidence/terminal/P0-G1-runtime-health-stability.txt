@@ -1,0 +1,26 @@
+# P0 Gate 1 runtime health + stability
+Thu Sep 17 03:44:13 AM EDT 2026
+--- single-shot health ---
+backend 200
+frontend-local 200
+public-root 200
+business-login 200
+provider-login 200
+redis PONG
+keycloak-discovery 200
+--- 12-sample loop ---
+sample 01/12: healthy
+sample 02/12: healthy
+sample 03/12: healthy
+sample 04/12: healthy
+sample 05/12: healthy
+sample 06/12: healthy
+sample 07/12: healthy
+sample 08/12: healthy
+sample 09/12: healthy
+sample 10/12: healthy
+sample 11/12: healthy
+sample 12/12: healthy
+--- recent fatal scan ---
+fatal-patterns-found=NO
+failures=0

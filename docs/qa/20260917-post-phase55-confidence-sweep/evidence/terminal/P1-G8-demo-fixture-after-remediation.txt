@@ -1,0 +1,17 @@
+# P1-G8 Demo fixture after remediation
+
+Actions:
+- Attempted full `seed_demo_data.py --reset` first; it was blocked by the audit-log append-only trigger during destructive delete. Correct behavior: did not bypass the trigger.
+- Used an idempotent repair approach instead: repaired demo user projections and deterministic public fixture data without weakening audit immutability.
+- Ran existing deterministic public trace fixture script: `python3 scripts/qa/seed-public-trace-fixture.py`.
+
+Verification:
+  http://localhost:8100/api/submissions/certificates/public/HALAL-2026-DEMO -> 200
+  http://localhost:3100/verify/HALAL-2026-DEMO -> 200
+  http://localhost:8100/topics -> 200
+
+Focused Playwright evidence:
+  `e2e/17-mvp-demo-public.spec.ts` + `e2e/38-demo-spine-keycloak.spec.ts` passed inside the focused remediation gate.
+
+Security note:
+- Public cert PDF endpoint remains token-protected; public cert verification only exposes safe public verification data.

@@ -1,0 +1,37 @@
+# P1 Gate 7/8 backend core auth/security focused suites
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, anyio-4.15.1, Faker-40.39.0, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 152 items
+
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m   [ 21%][0m
+tests/test_keycloak_token_security.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 43%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                   [ 78%][0m
+tests/test_admin_user_password_reset.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                           [ 82%][0m
+tests/test_keycloak_cross_tenant_attack.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m    [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_ test_intended_public_routes_remain_reachable[/api/submissions/certificates/public/HALAL-2026-DEMO] _[0m
+[1m[31mtests/test_unauth_route_boundaries.py[0m:80: in test_intended_public_routes_remain_reachable
+    [0m[94massert[39;49;00m resp.status_code == [94m200[39;49;00m, [33mf[39;49;00m[33m"[39;49;00m[33m{[39;49;00mpath[33m}[39;49;00m[33m returned [39;49;00m[33m{[39;49;00mresp.status_code[33m}[39;49;00m[33m: [39;49;00m[33m{[39;49;00mresp.text[:[94m300[39;49;00m][33m}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE   AssertionError: /api/submissions/certificates/public/HALAL-2026-DEMO returned 404: {"detail":"Chứng nhận không tồn tại"}[0m
+[1m[31mE   assert 404 == 200[0m
+[1m[31mE    +  where 404 = <Response [404 Not Found]>.status_code[0m
+[31m[1m__ test_admin_user_editor_uses_reset_password_route_not_profile_put_password ___[0m
+[1m[31mtests/test_admin_user_password_reset.py[0m:131: in test_admin_user_editor_uses_reset_password_route_not_profile_put_password
+    [0mtext = ADMIN_USER_MANAGER.read_text(encoding=[33m"[39;49;00m[33mutf-8[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/pathlib.py[0m:1058: in read_text
+    [0m[94mwith[39;49;00m [96mself[39;49;00m.open(mode=[33m'[39;49;00m[33mr[39;49;00m[33m'[39;49;00m, encoding=encoding, errors=errors) [94mas[39;49;00m f:[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/pathlib.py[0m:1044: in open
+    [0m[94mreturn[39;49;00m io.open([96mself[39;49;00m, mode, buffering, encoding, errors, newline)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory: '/app/frontend/aminra-web/components/AdminUserManager.tsx'[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_unauth_route_boundaries.py::[1mtest_intended_public_routes_remain_reachable[/api/submissions/certificates/public/HALAL-2026-DEMO][0m - AssertionError: /api/submissions/certificates/public/HALAL-2026-DEMO return...
+[31mFAILED[0m tests/test_admin_user_password_reset.py::[1mtest_admin_user_editor_uses_reset_password_route_not_profile_put_password[0m - FileNotFoundError: [Errno 2] No such file or directory: '/app/frontend/amin...
+[31m======================== [31m[1m2 failed[0m, [32m150 passed[0m[31m in 16.44s[0m[31m ========================[0m
