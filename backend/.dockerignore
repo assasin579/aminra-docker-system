@@ -1,0 +1,46 @@
+# Keep backend Docker context deterministic and small.
+# Do not copy local caches, generated QA evidence, secrets, or uploaded runtime data.
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+credentials*
+*secret*
+*token*
+
+.venv/
+venv/
+node_modules/
+.next/
+dist/
+build/
+
+logs/
+*.log
+*.sqlite
+*.db
+*.tar
+*.zip
+
+# Runtime/upload/cache dirs are mounted as volumes in compose.
+docs/
+data/
+reviews/
+admin_templates/
+doc_text_cache/
+
+# Local editor / OS noise.
+.git/
+.gitignore
+.DS_Store

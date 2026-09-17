@@ -1,0 +1,53 @@
+# syntax=docker/dockerfile:1
+# AMINRA backend heavyweight runtime base.
+#
+# Build this image only when OS/Python dependencies, Playwright, or the embedding
+# model preload changes. The app image in backend/Dockerfile layers only source
+# files on top, so normal feature deploys do not re-export the heavyweight
+# LibreOffice/Torch/Playwright/model layers.
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=0 \
+    HF_HOME=/opt/aminra/hf-cache \
+    TRANSFORMERS_CACHE=/opt/aminra/hf-cache \
+    SENTENCE_TRANSFORMERS_HOME=/opt/aminra/sentence-transformers \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# System deps. Keep this before Python deps so source-only rebuilds never touch it.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+      curl build-essential \
+      libmagic1 \
+      libreoffice-writer-nogui \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install CPU-only torch first to avoid CUDA wheels.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+# Pre-download the embedding model into a deterministic runtime cache path.
+ARG EMBED_MODEL=intfloat/multilingual-e5-base
+ENV EMBED_MODEL=${EMBED_MODEL}
+RUN --mount=type=cache,target=/root/.cache/huggingface \
+    python - <<'PY'
+from sentence_transformers import SentenceTransformer
+import os
+model = os.environ.get("EMBED_MODEL", "intfloat/multilingual-e5-base")
+SentenceTransformer(model)
+PY
+
+# Install Playwright Chromium + system deps. Browser artifacts live outside /root
+# so app containers can run without per-user cache warmup.
+RUN playwright install --with-deps chromium
+
+RUN mkdir -p /app/docs /app/data /app/doc_text_cache

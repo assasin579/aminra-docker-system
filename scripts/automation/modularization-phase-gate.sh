@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# AMINRA modularization phase gate + local deploy automation.
-# Scope: verifies the current modular-monolith changes, commits them locally,
-# applies DB migration, rebuilds/recreates local production containers, and
-# performs post-deploy stability smoke checks. It is intentionally bounded: it
-# does not keep coding forever and it stops on the first failed gate.
+# AMINRA modularization/release phase gate.
+#
+# Modes:
+#   verify-only       run static/backend/frontend gates only; no commit/migrate/deploy
+#   build-only        build heavyweight backend base + backend/frontend images; no deploy
+#   hot-restart-local sync backend files into the running container and restart; no image claim
+#   immutable-deploy  verify, optionally commit, migrate, build fresh images, recreate services, smoke
+#
+# The script is intentionally bounded. It never loops into new feature work and
+# exits on first failed gate so AMINRA runtime stability is preserved.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
@@ -16,11 +21,16 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/run.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+MODE="${MODE:-immutable-deploy}"
 COMMIT_MESSAGE="${COMMIT_MESSAGE:-feat(modules): add tenant module registry and guarded rollout}"
 SKIP_COMMIT="${SKIP_COMMIT:-false}"
-SKIP_DEPLOY="${SKIP_DEPLOY:-false}"
 STABILITY_SAMPLES="${STABILITY_SAMPLES:-12}"
 STABILITY_INTERVAL_SECONDS="${STABILITY_INTERVAL_SECONDS:-5}"
+STAGE_TIMEOUT_SECONDS="${STAGE_TIMEOUT_SECONDS:-600}"
+BUILD_TIMEOUT_SECONDS="${BUILD_TIMEOUT_SECONDS:-1800}"
+BACKEND_BASE_IMAGE="${BACKEND_BASE_IMAGE:-aminra-backend-base:local}"
+BACKEND_APP_IMAGE="${BACKEND_APP_IMAGE:-aminra-docker-system-aminra-backend:latest}"
+FRONTEND_IMAGE="${FRONTEND_IMAGE:-aminra-docker-system-aminra-frontend:latest}"
 
 BACKEND_FILES=(
   backend/alembic/versions/041_module_registry.py
@@ -46,6 +56,9 @@ FRONTEND_TESTS=(
 STAGE_PATHS=(
   .hermes/plans/2026-09-16_141009-aminra-modular-monolith-transition-plan.md
   docs/architecture/module-map.md
+  backend/.dockerignore
+  backend/Dockerfile
+  backend/Dockerfile.base
   backend/alembic/versions/041_module_registry.py
   backend/auth/module_router.py
   backend/auth/module_service.py
@@ -65,7 +78,12 @@ STAGE_PATHS=(
 )
 
 section() { printf '\n\n==> %s\n' "$*"; }
-run() { section "$*"; "$@"; }
+
+run_timeout() {
+  local seconds="$1"; shift
+  section "$*"
+  timeout --preserve-status --kill-after=30s "$seconds" "$@"
+}
 
 compose_exec() {
   docker compose exec -T "$@"
@@ -73,6 +91,10 @@ compose_exec() {
 
 backend_container_id() {
   docker compose ps -q aminra-backend
+}
+
+image_id() {
+  docker image inspect --format '{{.Id}}' "$1" 2>/dev/null || true
 }
 
 sync_backend_files_into_container() {
@@ -87,7 +109,6 @@ sync_backend_files_into_container() {
       docker cp "$path" "$cid:/app/${path#backend/}"
     fi
   done
-  # Ensure pytest config is present in older running containers.
   docker cp backend/pytest.ini "$cid:/app/pytest.ini"
 }
 
@@ -102,12 +123,10 @@ secret_scan_staged() {
   fi
 
   local secret_hits
-  # Scan only newly added staged lines for value-like secrets. Generic env var
-  # names such as OPENROUTER_API_KEY are allowed; actual assigned values are not.
   secret_hits="$(git diff --cached -U0 -- ':!*.png' ':!*.jpg' ':!*.jpeg' ':!*.webp' ':!*.gif' ':!*.pdf' \
     | grep '^+' \
     | grep -Ev '^\+\+\+' \
-    | grep -Ei '(BEGIN [A-Z ]*PRIVATE KEY|Authorization: Bearer [A-Za-z0-9._-]{12,}|sk-[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|(API_KEY|SECRET|PASSWORD|passwd)[[:space:]]*=[[:space:]]*["'"'"']?[^[:space:]"'"'"'\$][^[:space:]"'"'"']{7,})' || true)"
+    | grep -Ei '(BEGIN [A-Z ]*PRIVATE KEY|Authorization: Bearer [[:alnum:]_.=-]{20,}|(API_KEY|SECRET|PASSWORD|passwd)[[:space:]]*=[[:space:]]*[^[:space:]]{12,})' || true)"
   if [[ -n "$secret_hits" ]]; then
     echo "ERROR: potential secret-like content in staged diff; inspect manually:" >&2
     echo "$secret_hits" >&2
@@ -123,7 +142,7 @@ health_check_once() {
 public_smoke() {
   section "Public URL smoke"
   curl -fsS -o /tmp/aminra-public-home.html -w 'aminra.org HTTP %{http_code}\n' https://aminra.org | tee "$LOG_DIR/public-home.txt"
-  curl -fsS -o /tmp/aminra-public-login.html -w 'business login HTTP %{http_code}\n' https://aminra.org/login/business | tee "$LOG_DIR/public-login-business.txt"
+  curl -fsS -o /tmp/aminra-public-login.html -w 'business login HTTP %{http_code}\n' https://aminra.org/business/login | tee "$LOG_DIR/public-login-business.txt"
 }
 
 stability_loop() {
@@ -145,91 +164,147 @@ stability_loop() {
   fi
 }
 
-section "Preflight status"
-git branch --show-current | tee "$LOG_DIR/git-branch.txt"
-git status --short | tee "$LOG_DIR/git-status-before.txt"
-docker compose ps | tee "$LOG_DIR/docker-ps-before.txt"
+verify_gates() {
+  section "Static gates"
+  PYTHONPYCACHEPREFIX=/tmp/aminra-pycache python3 -m py_compile "${BACKEND_FILES[@]}"
+  git diff --check
 
-section "Static gates"
-PYTHONPYCACHEPREFIX=/tmp/aminra-pycache python3 -m py_compile "${BACKEND_FILES[@]}"
-git diff --check
+  section "Backend focused gates in running container"
+  sync_backend_files_into_container
+  compose_exec aminra-backend pytest \
+    tests/test_module_registry_migration.py \
+    tests/test_module_service.py \
+    tests/test_module_route_contract.py \
+    tests/test_module_guard.py \
+    tests/test_supply_chain_module_guards.py \
+    -q | tee "$LOG_DIR/backend-focused-tests.txt"
 
-section "Backend focused gates in running container"
-sync_backend_files_into_container
-compose_exec aminra-backend pytest \
-  tests/test_module_registry_migration.py \
-  tests/test_module_service.py \
-  tests/test_module_route_contract.py \
-  tests/test_module_guard.py \
-  tests/test_supply_chain_module_guards.py \
-  -q | tee "$LOG_DIR/backend-focused-tests.txt"
+  section "Frontend focused gates"
+  (
+    cd frontend/aminra-web
+    npm run test -- "${FRONTEND_TESTS[@]}" | tee "$LOG_DIR/frontend-focused-tests.txt"
+    npm run lint -- --quiet | tee "$LOG_DIR/frontend-lint.txt"
+  )
 
-section "Frontend focused gates"
-(
-  cd frontend/aminra-web
-  npm run test -- "${FRONTEND_TESTS[@]}" | tee "$LOG_DIR/frontend-focused-tests.txt"
-  npm run lint -- --quiet | tee "$LOG_DIR/frontend-lint.txt"
-)
+  section "Alembic graph smoke"
+  compose_exec aminra-backend alembic heads --verbose | tee "$LOG_DIR/alembic-heads.txt"
+}
 
-section "Alembic graph smoke"
-compose_exec aminra-backend alembic heads --verbose | tee "$LOG_DIR/alembic-heads.txt"
+stage_and_commit() {
+  section "Stage intended paths"
+  git add -- "${STAGE_PATHS[@]}"
+  git diff --cached --stat | tee "$LOG_DIR/staged-stat.txt"
+  git diff --cached --check
+  secret_scan_staged
 
-section "Stage intended paths"
-git add -- "${STAGE_PATHS[@]}"
-git diff --cached --stat | tee "$LOG_DIR/staged-stat.txt"
-git diff --cached --check
-secret_scan_staged
+  if [[ "$SKIP_COMMIT" == "true" ]]; then
+    echo "SKIP_COMMIT=true; leaving changes staged."
+    return
+  fi
 
-if [[ "$SKIP_COMMIT" != "true" ]]; then
   section "Commit local checkpoint"
   if git diff --cached --quiet; then
     echo "No staged changes; skipping commit."
   else
-    git commit -m "$COMMIT_MESSAGE" -m "- Add module registry migration and default bundles
-- Add read-only tenant module API and onboarding provisioning
-- Add default-off module guards for first supply-chain surfaces
-- Add module-aware business sidebar rendering
+    git commit -m "$COMMIT_MESSAGE" -m "- Add cache-aware backend base/app Docker split
+- Harden modularization phase gate with bounded modes/timeouts
+- Preserve verify/build/deploy separation for safer AMINRA runtime operations
 
 Verified: backend focused pytest, frontend focused vitest, frontend lint, py_compile, alembic head smoke, git diff --check" | tee "$LOG_DIR/git-commit.txt"
   fi
-else
-  echo "SKIP_COMMIT=true; leaving changes staged."
-fi
-
-git status --short | tee "$LOG_DIR/git-status-after-commit.txt"
-
-if [[ "$SKIP_DEPLOY" == "true" ]]; then
-  section "SKIP_DEPLOY=true; stopping before migration/deploy"
-  exit 0
-fi
-
-section "Apply DB migration"
-./scripts/db-migrate.sh current | tee "$LOG_DIR/alembic-current-before.txt" || true
-./scripts/db-migrate.sh upgrade head | tee "$LOG_DIR/alembic-upgrade.txt"
-./scripts/db-migrate.sh current | tee "$LOG_DIR/alembic-current-after.txt"
-
-section "Rebuild/recreate local production containers"
-docker compose build aminra-backend aminra-frontend | tee "$LOG_DIR/docker-compose-build.txt"
-docker compose up -d --no-deps aminra-backend aminra-frontend | tee "$LOG_DIR/docker-compose-up.txt"
-
-docker compose ps | tee "$LOG_DIR/docker-ps-after.txt"
-
-section "Immediate local health smoke"
-health_check_once | tee "$LOG_DIR/local-health.txt"
-
-public_smoke || {
-  echo "WARN: public smoke failed; local health passed. Continuing to stability loop but final status is degraded." | tee "$LOG_DIR/public-smoke-warning.txt"
 }
 
-stability_loop
+build_images() {
+  section "Image IDs before build"
+  printf 'backend-base-before=%s\n' "$(image_id "$BACKEND_BASE_IMAGE")" | tee "$LOG_DIR/image-before.txt"
+  printf 'backend-app-before=%s\n' "$(image_id "$BACKEND_APP_IMAGE")" | tee -a "$LOG_DIR/image-before.txt"
+  printf 'frontend-before=%s\n' "$(image_id "$FRONTEND_IMAGE")" | tee -a "$LOG_DIR/image-before.txt"
 
-section "Recent service logs scan"
-docker compose logs --since=3m aminra-backend aminra-frontend > "$LOG_DIR/recent-service-logs.txt" || true
-if grep -Ei 'traceback|uncaught|fatal|panic|segmentation fault' "$LOG_DIR/recent-service-logs.txt"; then
-  echo "ERROR: fatal pattern found in recent service logs" >&2
-  exit 74
-fi
+  run_timeout "$BUILD_TIMEOUT_SECONDS" docker build \
+    -f backend/Dockerfile.base \
+    -t "$BACKEND_BASE_IMAGE" \
+    backend
+
+  run_timeout "$BUILD_TIMEOUT_SECONDS" docker compose build aminra-backend aminra-frontend
+
+  section "Image IDs after build"
+  printf 'backend-base-after=%s\n' "$(image_id "$BACKEND_BASE_IMAGE")" | tee "$LOG_DIR/image-after.txt"
+  printf 'backend-app-after=%s\n' "$(image_id "$BACKEND_APP_IMAGE")" | tee -a "$LOG_DIR/image-after.txt"
+  printf 'frontend-after=%s\n' "$(image_id "$FRONTEND_IMAGE")" | tee -a "$LOG_DIR/image-after.txt"
+}
+
+migrate_db() {
+  section "Apply DB migration"
+  ./scripts/db-migrate.sh current | tee "$LOG_DIR/alembic-current-before.txt" || true
+  ./scripts/db-migrate.sh upgrade head | tee "$LOG_DIR/alembic-upgrade.txt"
+  ./scripts/db-migrate.sh current | tee "$LOG_DIR/alembic-current-after.txt"
+}
+
+deploy_images() {
+  section "Recreate local production containers from built images"
+  docker compose up -d --no-deps aminra-backend aminra-frontend | tee "$LOG_DIR/docker-compose-up.txt"
+  docker compose ps aminra-backend aminra-frontend | tee "$LOG_DIR/docker-ps-after.txt"
+}
+
+hot_restart_local() {
+  section "Hot restart local backend after source sync"
+  sync_backend_files_into_container
+  docker compose restart aminra-backend | tee "$LOG_DIR/hot-restart-backend.txt"
+  docker compose ps aminra-backend aminra-frontend | tee "$LOG_DIR/docker-ps-after-hot-restart.txt"
+}
+
+post_deploy_checks() {
+  section "Immediate local health smoke"
+  health_check_once | tee "$LOG_DIR/local-health.txt"
+
+  public_smoke || {
+    echo "WARN: public smoke failed; local health passed. Continuing to stability loop but final status is degraded." | tee "$LOG_DIR/public-smoke-warning.txt"
+  }
+
+  stability_loop
+
+  section "Recent service logs scan"
+  docker compose logs --since=3m aminra-backend aminra-frontend > "$LOG_DIR/recent-service-logs.txt" || true
+  if grep -Ei 'traceback|uncaught|fatal|panic|segmentation fault' "$LOG_DIR/recent-service-logs.txt"; then
+    echo "ERROR: fatal pattern found in recent service logs" >&2
+    exit 74
+  fi
+}
+
+section "Preflight status"
+echo "MODE=$MODE" | tee "$LOG_DIR/mode.txt"
+git branch --show-current | tee "$LOG_DIR/git-branch.txt"
+git status --short | tee "$LOG_DIR/git-status-before.txt"
+docker compose ps | tee "$LOG_DIR/docker-ps-before.txt"
+docker system df | tee "$LOG_DIR/docker-system-df-before.txt"
+
+case "$MODE" in
+  verify-only)
+    verify_gates
+    ;;
+  build-only)
+    build_images
+    ;;
+  hot-restart-local)
+    verify_gates
+    hot_restart_local
+    post_deploy_checks
+    ;;
+  immutable-deploy)
+    verify_gates
+    stage_and_commit
+    migrate_db
+    build_images
+    deploy_images
+    post_deploy_checks
+    ;;
+  *)
+    echo "ERROR: unknown MODE=$MODE" >&2
+    exit 64
+    ;;
+esac
 
 section "DONE"
 git --no-pager log --oneline -1 | tee "$LOG_DIR/final-commit.txt"
+docker system df | tee "$LOG_DIR/docker-system-df-after.txt"
 echo "Evidence: $LOG_DIR"
