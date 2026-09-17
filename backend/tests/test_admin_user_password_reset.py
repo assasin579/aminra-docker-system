@@ -1,12 +1,6 @@
-"""Regression coverage for admin-managed user password reset.
-
-The admin user editor has a password field. After Keycloak cutover, profile
-PUT ignored that field, causing false-success password changes. Password resets
-must call a dedicated Keycloak reset-password proxy endpoint instead.
-"""
+"""Regression coverage for Keycloak-owned credential management."""
 from __future__ import annotations
 
-import re
 import time
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -17,7 +11,6 @@ from auth import keycloak_admin as ka
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if (BACKEND_ROOT / "app.py").exists():
-    # In the backend container tests live under /app/tests.
     APP_FILE = BACKEND_ROOT / "app.py"
     ADMIN_USER_MANAGER = BACKEND_ROOT / "frontend" / "aminra-web" / "components" / "AdminUserManager.tsx"
 else:
@@ -102,37 +95,26 @@ def test_keycloak_admin_reset_user_password_maps_password_history_error(monkeypa
     assert "RecentlyUsedPass" not in str(exc.value.detail)
 
 
-def test_admin_backend_exposes_dedicated_reset_password_route():
+def test_admin_backend_deprecates_app_side_password_reset_route():
     text = APP_FILE.read_text(encoding="utf-8")
 
     assert '@app.post("/admin/users/{user_id}/reset-password")' in text
-    assert "class AdminResetPasswordRequest" in text
-    assert "new_password: str" in text
-    assert "keycloak_admin.reset_user_password" in text
-    assert re.search(r"SELECT\s+[^\n]*keycloak_sub[^\n]*email", text, re.IGNORECASE)
-    assert "sessions_revoked" in text
-    assert "self_reset" in text
-    assert "admin_claims" in text
+    reset_start = text.index("async def admin_reset_user_password")
+    reset_body = text[reset_start : text.index("\n\n@app.put", reset_start)]
+    guard_pos = reset_body.index("_raise_keycloak_only_account_management()")
+    assert "_require_admin(request)" in reset_body[:guard_pos]
+    assert "keycloak_admin.reset_user_password" not in reset_body[:guard_pos]
+    assert '"identity_lifecycle_owner": "keycloak"' in text
 
 
-def test_admin_profile_update_contract_does_not_accept_password_field():
-    text = APP_FILE.read_text(encoding="utf-8")
-    match = re.search(
-        r"class AdminUpdateUserRequest\(BaseModel\):(?P<body>.*?)\n\nclass AdminResetPasswordRequest",
-        text,
-        re.DOTALL,
-    )
-    assert match, "AdminUpdateUserRequest block not found"
-    assert "password:" not in match.group("body")
-    assert "new_password" not in match.group("body")
-
-
-def test_admin_user_editor_uses_reset_password_route_not_profile_put_password():
+def test_admin_user_editor_has_no_password_reset_or_profile_mutation_ui():
     text = ADMIN_USER_MANAGER.read_text(encoding="utf-8")
 
-    assert "/admin/users/${editTarget.id}/reset-password" in text
-    assert "new_password: form.password" in text
+    assert 'data-identity-owner="keycloak"' in text
+    assert "Open in Keycloak" in text
+    assert "reset mật khẩu" in text
+    assert "/admin/users/${editTarget.id}/reset-password" not in text
+    assert "new_password: form.password" not in text
     assert "body.password = form.password" not in text
-    # Password-only edit must be a valid save instead of showing "no changes".
-    assert "profileBody" in text
-    assert "passwordChanged" in text
+    assert "passwordChanged" not in text
+    assert "profileBody" not in text

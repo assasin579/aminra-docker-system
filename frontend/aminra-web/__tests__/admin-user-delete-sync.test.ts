@@ -2,20 +2,16 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-describe("admin user delete Keycloak sync contract", () => {
+describe("admin user delete is no longer app-owned", () => {
   const src = readFileSync(join(process.cwd(), "components/AdminUserManager.tsx"), "utf8");
 
-  it("does not show false delete success when backend rejects Keycloak cleanup", () => {
-    const deleteHandler = src.match(/const handleDelete = async \(id: string\) => \{[\s\S]*?^\s{2}\};/m)?.[0] ?? "";
-
-    expect(deleteHandler).toContain("const res = await fetch");
-    expect(deleteHandler).toContain("method: \"DELETE\"");
-    expect(deleteHandler).toContain("if (!res.ok)");
-    expect(deleteHandler).toContain("const err = await res.json().catch(() => ({}))");
-    expect(deleteHandler).toContain("parseApiError(err");
-    expect(deleteHandler).toContain("Dữ liệu chưa bị xoá");
-
-    const errorBranch = deleteHandler.match(/if \(!res\.ok\) \{[\s\S]*?return;[\s\S]*?\}/)?.[0] ?? "";
-    expect(errorBranch).toContain("return;");
+  it("removes destructive delete UX from AMINRA Admin and points operators to Keycloak", () => {
+    expect(src).toContain('data-identity-owner="keycloak"');
+    expect(src).toContain("Open in Keycloak");
+    expect(src).toContain("Tạo/xoá/vô hiệu hoá user");
+    expect(src).not.toContain("handleDelete");
+    expect(src).not.toContain('method: "DELETE"');
+    expect(src).not.toContain("Xác nhận xoá user");
+    expect(src).not.toContain("Dữ liệu chưa bị xoá");
   });
 });
