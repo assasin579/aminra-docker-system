@@ -249,8 +249,10 @@ def test_set_required_actions_failure(monkeypatch, _seeded_token):
 # ── execute-actions email ───────────────────────────────────────────────────
 
 
-def test_send_verify_email_triggers_keycloak_execute_actions(monkeypatch, _seeded_token):
+def test_send_verify_email_triggers_keycloak_execute_actions_via_public_url(monkeypatch, _seeded_token):
     captured: dict = {}
+    monkeypatch.setattr(ka, "KEYCLOAK_PUBLIC_URL", "https://auth.aminra.org")
+    monkeypatch.setattr(ka, "_PUBLIC_ADMIN_BASE", "https://auth.aminra.org/admin/realms/aminra")
 
     def fake_put(url, **kwargs):
         captured["url"] = url
@@ -261,9 +263,20 @@ def test_send_verify_email_triggers_keycloak_execute_actions(monkeypatch, _seede
     monkeypatch.setattr(ka.httpx, "put", fake_put)
     ka.send_verify_email("user-uuid-1")
 
-    assert captured["url"].endswith("/users/user-uuid-1/execute-actions-email")
+    assert captured["url"] == "https://auth.aminra.org/admin/realms/aminra/users/user-uuid-1/execute-actions-email"
     assert captured["body"] == ["VERIFY_EMAIL"]
     assert captured["params"]["lifespan"] >= 300
+
+
+def test_send_verify_email_rejects_private_or_port_8180_public_url(monkeypatch, _seeded_token):
+    monkeypatch.setattr(ka, "KEYCLOAK_PUBLIC_URL", "http://auth.aminra.org:8180")
+    monkeypatch.setattr(ka, "_PUBLIC_ADMIN_BASE", "http://auth.aminra.org:8180/admin/realms/aminra")
+
+    with pytest.raises(ka.KeycloakAdminError) as exc:
+        ka.send_verify_email("user-uuid-1")
+
+    assert exc.value.status_code == 500
+    assert "public HTTPS" in str(exc.value.detail)
 
 
 def test_send_verify_email_failure_is_502(monkeypatch, _seeded_token):

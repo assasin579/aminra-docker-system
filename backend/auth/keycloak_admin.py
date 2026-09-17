@@ -17,17 +17,22 @@ import os
 import threading
 import time
 from typing import Optional
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import HTTPException, status
 
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
+KEYCLOAK_ADMIN_URL = os.getenv("KEYCLOAK_ADMIN_URL", KEYCLOAK_URL).rstrip("/")
+KEYCLOAK_PUBLIC_URL = os.getenv("KEYCLOAK_PUBLIC_URL", KEYCLOAK_URL).rstrip("/")
 KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "aminra")
 ADMIN_CLI_CLIENT_ID = os.getenv("KEYCLOAK_ADMIN_CLI_CLIENT_ID", "aminra-admin-cli")
 ADMIN_CLI_SECRET = os.getenv("KEYCLOAK_ADMIN_CLI_SECRET", "")
+ALLOW_PRIVATE_EMAIL_ACTION_URL = os.getenv("KEYCLOAK_ALLOW_PRIVATE_EMAIL_ACTION_URL", "0") == "1"
 
-_TOKEN_URL = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
-_ADMIN_BASE = f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}"
+_TOKEN_URL = f"{KEYCLOAK_ADMIN_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+_ADMIN_BASE = f"{KEYCLOAK_ADMIN_URL}/admin/realms/{KEYCLOAK_REALM}"
+_PUBLIC_ADMIN_BASE = f"{KEYCLOAK_PUBLIC_URL}/admin/realms/{KEYCLOAK_REALM}"
 
 _token_cache: dict[str, object] = {"token": None, "expires_at": 0.0}
 _token_lock = threading.Lock()
@@ -294,6 +299,34 @@ def set_required_actions(user_id: str, actions: list[str]) -> None:
         )
 
 
+def _ensure_public_email_action_url() -> None:
+    """Fail closed before generating user-facing Keycloak action links.
+
+    Keycloak builds VERIFY_EMAIL/reset links from the request URL used for
+    `execute-actions-email`. Calling that endpoint through localhost, Docker DNS,
+    or the host-only 8180 port leaks non-public links into real customer email.
+    """
+    if ALLOW_PRIVATE_EMAIL_ACTION_URL:
+        return
+
+    parsed = urlparse(KEYCLOAK_PUBLIC_URL)
+    hostname = (parsed.hostname or "").lower()
+    private_hosts = {"localhost", "127.0.0.1", "0.0.0.0", "keycloak"}
+    if (
+        parsed.scheme != "https"
+        or parsed.port == 8180
+        or hostname in private_hosts
+        or hostname.endswith(".local")
+    ):
+        raise KeycloakAdminError(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "Keycloak email action URL must be public HTTPS; "
+                f"refusing to generate user-facing link from {KEYCLOAK_PUBLIC_URL!r}"
+            ),
+        )
+
+
 def send_verify_email(user_id: str, *, lifespan_seconds: int = 60 * 60 * 24) -> None:
     """Trigger Keycloak's VERIFY_EMAIL execute-actions email for a new user.
 
@@ -301,8 +334,9 @@ def send_verify_email(user_id: str, *, lifespan_seconds: int = 60 * 60 * 24) -> 
     email they cannot complete setup, and password-grant login fails with
     `resolve_required_actions` / "Account is not fully set up".
     """
+    _ensure_public_email_action_url()
     resp = httpx.put(
-        f"{_ADMIN_BASE}/users/{user_id}/execute-actions-email",
+        f"{_PUBLIC_ADMIN_BASE}/users/{user_id}/execute-actions-email",
         headers=_admin_headers(),
         params={"lifespan": lifespan_seconds},
         json=["VERIFY_EMAIL"],

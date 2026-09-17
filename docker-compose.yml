@@ -126,6 +126,8 @@ services:
       # ADR-005 Phase 3a dual-auth — flag off until FE migration complete
       - AUTH_KEYCLOAK_ENABLED=${AUTH_KEYCLOAK_ENABLED:-false}
       - KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8180}
+      - KEYCLOAK_ADMIN_URL=${KEYCLOAK_ADMIN_URL:-http://localhost:8180}
+      - KEYCLOAK_PUBLIC_URL=${KEYCLOAK_PUBLIC_URL:-https://auth.aminra.org}
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - KEYCLOAK_REALM=aminra
       - KEYCLOAK_AUDIENCE=aminra-backend
