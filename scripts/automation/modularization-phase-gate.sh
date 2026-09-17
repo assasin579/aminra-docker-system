@@ -215,6 +215,24 @@ health_check_once() {
   curl -fsS -o /tmp/aminra-frontend-health.html -w 'HTTP %{http_code}\n' http://127.0.0.1:3100 | tee /tmp/aminra-frontend-health.txt
 }
 
+wait_for_local_services() {
+  section "Wait for local service health"
+  local deadline=$((SECONDS + 120))
+  local backend_status frontend_status
+  while (( SECONDS < deadline )); do
+    backend_status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${COMPOSE_PROJECT_NAME:-aminra-docker-system}-aminra-backend-1" 2>/dev/null || true)"
+    frontend_status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${COMPOSE_PROJECT_NAME:-aminra-docker-system}-aminra-frontend-1" 2>/dev/null || true)"
+    printf 'backend=%s frontend=%s\n' "${backend_status:-missing}" "${frontend_status:-missing}"
+    if [[ "$backend_status" == "healthy" && "$frontend_status" == "healthy" ]]; then
+      return 0
+    fi
+    sleep 3
+  done
+  echo "ERROR: services did not become healthy before local smoke" >&2
+  docker compose ps aminra-backend aminra-frontend >&2 || true
+  exit 76
+}
+
 public_smoke() {
   section "Public URL smoke"
   curl -fsS -o /tmp/aminra-public-home.html -w 'aminra.org HTTP %{http_code}\n' https://aminra.org | tee "$LOG_DIR/public-home.txt"
@@ -357,6 +375,8 @@ hot_restart_local() {
 }
 
 post_deploy_checks() {
+  wait_for_local_services
+
   section "Immediate local health smoke"
   health_check_once | tee "$LOG_DIR/local-health.txt"
 
