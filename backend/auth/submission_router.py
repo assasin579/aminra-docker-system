@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from asyncpg import Connection
 
 from auth.db import get_db
-from auth.identity import resolve_canonical_user_id
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_business_owner
 from auth.notification_router import notify
 from services.audit_log import log_audit
@@ -70,11 +70,14 @@ class ResubmitIn(BaseModel):
 # ── Helper: access filter for owner vs auditor ──────────────────────────────
 
 
-def _provider_filter(user: dict, alias: str = "s"):
-    """Return (where_clause, param) for owner vs auditor access."""
+async def _provider_filter(user: dict, db, alias: str = "s"):
+    """Return (where_clause, canonical AMINRA user/tenant id) for owner vs auditor access."""
     col = "provider_id" if user.get("is_owner") else "auditor_id"
     prefix = f"{alias}." if alias else ""
-    return f"{prefix}{col} = $1", user["sub"]
+    param = await resolve_canonical_tenant_id(user, db) if user.get("is_owner") else await resolve_canonical_user_id(user, db)
+    if not param:
+        raise HTTPException(404, "User not found")
+    return f"{prefix}{col} = $1", param
 
 
 # W3-M2 — full submission state transition matrix.
@@ -119,7 +122,7 @@ async def cb_stats(
         raise HTTPException(403)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    pid = user.get("tenant_id") or user["sub"]
+    pid = await resolve_canonical_tenant_id(user, db)
 
     # Portfolio size
     portfolio = await db.fetchval(
@@ -246,7 +249,7 @@ async def provider_stats(
     if user["role"] != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
 
-    where, param = _provider_filter(user)
+    where, param = await _provider_filter(user, db)
 
     # Counts by status
     counts = await db.fetchrow(
@@ -329,9 +332,9 @@ async def provider_overdue(
 
     kwargs = {"limit": limit}
     if user.get("is_owner"):
-        kwargs["provider_id"] = user["sub"]
+        kwargs["provider_id"] = await resolve_canonical_tenant_id(user, db)
     else:
-        kwargs["auditor_id"] = user["sub"]
+        kwargs["auditor_id"] = await resolve_canonical_user_id(user, db)
 
     items = await list_overdue_submissions(db, **kwargs)
     return {"items": items, "count": len(items)}
@@ -382,7 +385,7 @@ async def submit_documents(
             raise HTTPException(400, "Một số tài liệu không hợp lệ")
 
     # Get business company name
-    biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", owner["sub"])
+    biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", await resolve_canonical_user_id(owner, db))
     company_name = biz["company_name"] if biz else ""
 
     row = await db.fetchrow(
@@ -440,7 +443,7 @@ async def cert_timeline(
 ):
     if user["role"] != "business":
         raise HTTPException(403)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
 
     rows = await db.fetch(
         """
@@ -494,7 +497,7 @@ async def request_renewal(
         raise HTTPException(400)
     if user["role"] != "business":
         raise HTTPException(403)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
 
     cert = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND business_tenant=$2", cert_id, tenant_id)
     if not cert:
@@ -604,7 +607,7 @@ async def received_submissions(
     if user["role"] != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
 
-    where, param = _provider_filter(user)
+    where, param = await _provider_filter(user, db)
     rows = await db.fetch(
         f"""SELECT s.id, s.business_tenant, s.status, s.notes, s.auditor_notes,
                   s.submitted_at, s.updated_at, s.company_name,
@@ -659,10 +662,10 @@ async def submission_documents(
         sub = await db.fetchrow(
             "SELECT document_ids FROM submissions WHERE id=$1 AND business_tenant=$2",
             submission_id,
-            user.get("tenant_id"),
+            await resolve_canonical_tenant_id(user, db),
         )
     elif user["role"] == "provider":
-        where, param = _provider_filter(user, alias="")
+        where, param = await _provider_filter(user, db, alias="")
         sub = await db.fetchrow(
             f"SELECT document_ids FROM submissions WHERE id = $1 AND {where.replace('$1', '$2')}", submission_id, param
         )
@@ -744,7 +747,7 @@ async def update_submission_status(
     # W3-M2 — enforce transition matrix before mutating
     _validate_transition(prev_status, req.status)
 
-    where, param = _provider_filter(user, alias="")
+    where, param = await _provider_filter(user, db, alias="")
     result = await db.execute(
         f"UPDATE submissions SET status = $1, auditor_notes = $2, updated_at = NOW() WHERE id = $3 AND {where.replace('$1', '$4')}",
         req.status,
@@ -816,7 +819,7 @@ async def provider_request_revision(
         raise HTTPException(403, "Chỉ tổ chức cấp chứng nhận")
 
     # Auditor or owner of the CB — both can request revision on their assigned submissions
-    where, param = _provider_filter(user, alias="")
+    where, param = await _provider_filter(user, db, alias="")
     sub_check = await db.fetchrow(
         f"SELECT id FROM submissions WHERE id = $2 AND {where.replace('$1', '$1')}",
         param,
@@ -826,7 +829,7 @@ async def provider_request_revision(
         raise HTTPException(404, "Không tìm thấy hồ sơ trong phạm vi của bạn")
 
     # Lookup requester display name
-    me = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", user["sub"])
+    me = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", await resolve_canonical_user_id(user, db))
     requester_name = (me["company_name"] if me else None) or user.get("email", "Provider")
 
     doc_feedback = [
@@ -1004,19 +1007,19 @@ async def get_revision_history(
 
     # Decision #2 — non-owner business members CAN read sibling revisions
     # within their own tenant (intra-tenant collaboration).
-    is_business = user["role"] == "business" and str(sub["business_tenant"]) == user.get("tenant_id")
+    is_business = user["role"] == "business" and str(sub["business_tenant"]) == await resolve_canonical_tenant_id(user, db)
     # C9 fix — auditor must be the assigned auditor (or CB owner). Old code
     # let any auditor across any CB read any submission's history.
     is_provider_owner = (
         user["role"] == "provider"
         and user.get("is_owner")
-        and str(sub["provider_id"]) == (user.get("tenant_id") or user["sub"])
+        and str(sub["provider_id"]) == (await resolve_canonical_tenant_id(user, db))
     )
     is_assigned_auditor = (
         user["role"] == "provider"
         and not user.get("is_owner")
         and sub["auditor_id"] is not None
-        and str(sub["auditor_id"]) == user["sub"]
+        and str(sub["auditor_id"]) == str(await resolve_canonical_user_id(user, db))
     )
     if not (is_business or is_provider_owner or is_assigned_auditor):
         raise HTTPException(403, "Không có quyền xem hồ sơ này")
@@ -1039,8 +1042,7 @@ async def assign_auditor(
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được gán auditor")
 
-    # Verify auditor belongs to this provider's team. `user["sub"]` is the
-    # Keycloak UUID; resolve to AMINRA users.id so the tenant scoping matches.
+    # Verify auditor belongs to this provider's team using canonical AMINRA user/tenant ids.
     provider_owner_id = await resolve_canonical_user_id(user, db)
     auditor = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
@@ -1101,16 +1103,16 @@ async def _check_submission_access(submission_id: str, user: dict, db):
     _validate_uuid(submission_id)
     if user["role"] == "business":
         row = await db.fetchrow(
-            "SELECT id FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, user.get("tenant_id")
+            "SELECT id FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, await resolve_canonical_tenant_id(user, db)
         )
     elif user["role"] == "provider":
         if user.get("is_owner"):
             row = await db.fetchrow(
-                "SELECT id FROM submissions WHERE id=$1 AND provider_id=$2", submission_id, user["sub"]
+                "SELECT id FROM submissions WHERE id=$1 AND provider_id=$2", submission_id, await resolve_canonical_tenant_id(user, db)
             )
         else:
             row = await db.fetchrow(
-                "SELECT id FROM submissions WHERE id=$1 AND auditor_id=$2", submission_id, user["sub"]
+                "SELECT id FROM submissions WHERE id=$1 AND auditor_id=$2", submission_id, await resolve_canonical_user_id(user, db)
             )
     else:
         row = None
@@ -1209,12 +1211,12 @@ async def save_evaluation(
             await db.execute("UPDATE submissions SET status='reviewing', updated_at=NOW() WHERE id=$1", submission_id)
 
         # Get evaluator name
-        evaluator = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", user["sub"])
+        evaluator = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", await resolve_canonical_user_id(user, db))
         eval_name = evaluator["company_name"] if evaluator else "Auditor"
         score_text = f"Điểm: {req.score}/100" if req.score is not None else ""
 
         # Notify provider owner
-        if str(sub_info["provider_id"]) != user["sub"]:
+        if str(sub_info["provider_id"]) != str(await resolve_canonical_tenant_id(user, db)):
             await notify(
                 db,
                 str(sub_info["provider_id"]),
@@ -1238,7 +1240,7 @@ async def save_evaluation(
                 "/submissions",
             )
 
-    log.info(f"[eval] {user['sub']} scored submission {submission_id}: {req.score}")
+    log.info(f"[eval] {user.get('email')} scored submission {submission_id}: {req.score}")
     return {"message": "Đã lưu đánh giá", "score": req.score}
 
 
@@ -1256,7 +1258,7 @@ async def approve_final(
     if user["role"] != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
 
-    where, param = _provider_filter(user, alias="")
+    where, param = await _provider_filter(user, db, alias="")
     sub = await db.fetchrow(
         f"SELECT * FROM submissions WHERE id=$1 AND {where.replace('$1', '$2')}", submission_id, param
     )
@@ -1344,7 +1346,7 @@ async def approve_final(
         )
 
     # Get names
-    approver = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", user["sub"])
+    approver = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", await resolve_canonical_user_id(user, db))
     approver_name = approver["company_name"] if approver else "Auditor"
 
     # Notify business owner with congratulations
@@ -1362,7 +1364,7 @@ async def approve_final(
         )
 
     # Also notify provider owner if auditor approved
-    if not user.get("is_owner") and str(sub["provider_id"]) != user["sub"]:
+    if not user.get("is_owner") and str(sub["provider_id"]) != str(await resolve_canonical_tenant_id(user, db)):
         await notify(
             db,
             str(sub["provider_id"]),
@@ -1372,7 +1374,7 @@ async def approve_final(
             "/submissions",
         )
 
-    log.info(f"[submission] {submission_id} approved by {user['sub']}")
+    log.info(f"[submission] {submission_id} approved by {user.get('email')}")
     return {"message": f"Đã phê duyệt hồ sơ từ {sub['company_name']}. Doanh nghiệp sẽ hoàn tất hồ sơ."}
 
 
@@ -1401,7 +1403,7 @@ async def replace_submission_document(
     sub = await db.fetchrow(
         "SELECT id, document_ids, status, archived_at FROM submissions WHERE id=$1 AND business_tenant=$2",
         submission_id,
-        user.get("tenant_id"),
+        await resolve_canonical_tenant_id(user, db),
     )
     if not sub:
         raise HTTPException(404)
@@ -1414,7 +1416,7 @@ async def replace_submission_document(
 
     # Verify new doc belongs to tenant
     new_doc = await db.fetchrow(
-        "SELECT id FROM documents WHERE id=$1 AND tenant_id=$2", new_doc_id, user.get("tenant_id")
+        "SELECT id FROM documents WHERE id=$1 AND tenant_id=$2", new_doc_id, await resolve_canonical_tenant_id(user, db)
     )
     if not new_doc:
         raise HTTPException(400, "Tài liệu mới không hợp lệ")
@@ -1541,7 +1543,7 @@ async def finalize_submission(
         raise HTTPException(403, "Chỉ chủ doanh nghiệp được hoàn tất hồ sơ")
 
     sub = await db.fetchrow(
-        "SELECT * FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, user.get("tenant_id")
+        "SELECT * FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, await resolve_canonical_tenant_id(user, db)
     )
     if not sub:
         raise HTTPException(404)
@@ -1556,7 +1558,7 @@ async def finalize_submission(
         submission_id,
     )
 
-    log.info(f"[submission] {submission_id} finalized (archived) by business {user['sub']}")
+    log.info(f"[submission] {submission_id} finalized (archived) by business {user.get('email')}")
     return {"message": "Đã lưu và hoàn tất hồ sơ"}
 
 
@@ -1589,7 +1591,7 @@ async def set_deadline(
         "UPDATE submissions SET deadline=$1, updated_at=NOW() WHERE id=$2 AND provider_id=$3",
         deadline_val,
         submission_id,
-        user["sub"],
+        await resolve_canonical_tenant_id(user, db),
     )
     if result == "UPDATE 0":
         raise HTTPException(404)

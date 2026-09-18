@@ -15,6 +15,7 @@ from asyncpg import Connection
 from auth.db import get_db
 from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from services.audit_log import log_audit
 from services.certificate_pdf import CertificateData, generate_pdf
 
@@ -81,7 +82,9 @@ async def issue_certificate_for_company(
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được cấp chứng nhận")
 
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
 
     # All currently-active dossiers must be approved before cert can be issued.
     # Terminal-state 'rejected' submissions are historical and don't block future certs.
@@ -251,7 +254,7 @@ async def list_certificates(
     """List certificates — provider sees issued, business sees received."""
     if user["role"] == "provider":
         rows = await db.fetch(
-            "SELECT * FROM halal_certificates WHERE issued_by=$1 ORDER BY created_at DESC", user["sub"]
+            "SELECT * FROM halal_certificates WHERE issued_by=$1 ORDER BY created_at DESC", await resolve_canonical_tenant_id(user, db)
         )
     elif user["role"] == "business":
         rows = await db.fetch(
@@ -288,7 +291,9 @@ async def cert_registry(
     """Provider owner: full cert registry with filters and stats."""
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
 
     # Stats
     stats = await db.fetchrow(
@@ -477,7 +482,10 @@ async def update_cert_status(
     if new_status not in ("active", "suspended", "revoked"):
         raise HTTPException(400, "Status: active | suspended | revoked")
 
-    row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2", cert_id, user["sub"])
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
+    row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2", cert_id, provider_id)
     if not row:
         raise HTTPException(404)
 
@@ -494,7 +502,7 @@ async def update_cert_status(
                 db,
                 cert_id=cert_id,
                 reason=req.get("reason", ""),
-                revoked_by_user_id=user["sub"],
+                revoked_by_user_id=await resolve_canonical_user_id(user, db),
             )
         except InvalidRevocation as e:
             raise HTTPException(400, f"Cần có lý do khi thu hồi: {e}")
@@ -558,10 +566,14 @@ async def download_certificate_pdf(
         raise HTTPException(404)
 
     # Access check
-    if user["role"] == "provider" and str(row["issued_by"]) != user["sub"]:
-        raise HTTPException(403)
-    if user["role"] == "business" and str(row["business_tenant"]) != user.get("tenant_id"):
-        raise HTTPException(403)
+    if user["role"] == "provider":
+        provider_id = await resolve_canonical_tenant_id(user, db)
+        if str(row["issued_by"]) != str(provider_id):
+            raise HTTPException(403)
+    if user["role"] == "business":
+        tenant_id = await resolve_canonical_tenant_id(user, db)
+        if str(row["business_tenant"]) != str(tenant_id):
+            raise HTTPException(403)
 
     if not row["pdf_path"]:
         raise HTTPException(404, "PDF chưa được tạo")

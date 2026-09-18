@@ -13,7 +13,7 @@ from .jwt_utils import (
     require_business_owner,
 )
 from . import keycloak_admin
-from .identity import get_or_reconcile_user_from_keycloak_claims, resolve_canonical_user_id
+from .identity import get_or_reconcile_user_from_keycloak_claims, resolve_canonical_tenant_id, resolve_canonical_user_id
 from .rate_limit import rate_limit_api
 from .models import (
     BusinessRegisterRequest,
@@ -203,7 +203,7 @@ async def invite_member(
     if not owner_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Owner user not found")
 
-    tenant_id = owner["tenant_id"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     current_count = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
         tenant_id,
@@ -282,7 +282,7 @@ async def create_invite_link(
     db: Connection = Depends(get_db),
 ):
     """Create invite link — member sets their own password when accepting."""
-    tenant_id = owner["tenant_id"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     current_count = await db.fetchval("SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id)
     if current_count >= MAX_MEMBERS:
         raise HTTPException(422, f"Đã đạt giới hạn {MAX_MEMBERS} thành viên")
@@ -425,7 +425,7 @@ async def get_member_permissions(
 ):
     _validate_uuid(member_id)
     row = await db.fetchrow(
-        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, owner["tenant_id"]
+        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, await resolve_canonical_tenant_id(owner, db)
     )
     if not row:
         raise HTTPException(404, "Thành viên không tồn tại")
@@ -453,7 +453,7 @@ async def update_member_permissions(
     """Owner sets permissions for a member."""
     _validate_uuid(member_id)
     row = await db.fetchrow(
-        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, owner["tenant_id"]
+        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, await resolve_canonical_tenant_id(owner, db)
     )
     if not row:
         raise HTTPException(404, "Thành viên không tồn tại")
@@ -487,7 +487,7 @@ async def list_members(
         FROM users WHERE tenant_id = $1 AND is_owner = false
         ORDER BY created_at
         """,
-        owner["tenant_id"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     return MembersResponse(
         members=[
@@ -534,7 +534,7 @@ async def update_member(
         idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
-    params.extend([member_id, owner["tenant_id"]])
+    params.extend([member_id, await resolve_canonical_tenant_id(owner, db)])
     result = await db.execute(
         f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx} AND tenant_id = ${idx + 1} AND is_owner = false",
         *params,
@@ -553,10 +553,10 @@ async def export_ihc(
     db: Connection = Depends(get_db),
 ):
     """Export Internal Halal Committee document as DOCX."""
-    tenant_id = owner["tenant_id"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
 
     # Get owner info
-    owner_row = await db.fetchrow("SELECT company_name, email FROM users WHERE id = $1", owner["sub"])
+    owner_row = await db.fetchrow("SELECT company_name, email FROM users WHERE id = $1", await resolve_canonical_user_id(owner, db))
     company_name = owner_row["company_name"] if owner_row else "N/A"
 
     # Get all members
@@ -661,7 +661,7 @@ async def remove_member(
     row = await db.fetchrow(
         "SELECT keycloak_sub FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
         member_id,
-        owner["tenant_id"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
@@ -672,7 +672,7 @@ async def remove_member(
     result = await db.execute(
         "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
         member_id,
-        owner["tenant_id"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     if result == "DELETE 0":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
@@ -696,9 +696,9 @@ async def invite_auditor(
     if not owner_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Owner user not found")
 
-    tenant_id = owner["tenant_id"] or owner_id
+    tenant_id = await resolve_canonical_tenant_id(owner, db) or owner_id
     # Auto-fix: set tenant_id on provider if missing
-    if not owner["tenant_id"]:
+    if not await resolve_canonical_tenant_id(owner, db):
         await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", owner_id)
 
     current = await db.fetchval(
@@ -757,7 +757,7 @@ async def list_auditors(
     owner: dict = Depends(require_provider_owner),
     db: Connection = Depends(get_db),
 ):
-    tenant_id = owner["tenant_id"] or owner["sub"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     rows = await db.fetch(
         """SELECT id, email, company_name, status, created_at, department
            FROM users WHERE tenant_id = $1 AND is_owner = false AND role = 'provider'
@@ -788,7 +788,7 @@ async def update_auditor(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(auditor_id)
-    tenant_id = owner["tenant_id"] or owner["sub"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     updates, params, idx = [], [], 1
 
     if "display_name" in req and req["display_name"]:
@@ -835,7 +835,7 @@ async def remove_auditor(
     row = await db.fetchrow(
         "SELECT keycloak_sub FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
         auditor_id,
-        owner["tenant_id"] or owner["sub"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     if not row:
         raise HTTPException(404, "Auditor not found")
@@ -846,7 +846,7 @@ async def remove_auditor(
     result = await db.execute(
         "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
         auditor_id,
-        owner["tenant_id"] or owner["sub"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     if result == "DELETE 0":
         raise HTTPException(404, "Auditor not found")
@@ -864,17 +864,20 @@ async def list_auditor_certificates(
     """List certificate files for an auditor."""
     _validate_uuid(auditor_id)
     # Verify auditor belongs to this provider
+    owner_tenant_id = await resolve_canonical_tenant_id(owner, db)
+    if not owner_tenant_id:
+        raise HTTPException(404, "User not found")
     row = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
         auditor_id,
-        owner["tenant_id"] or owner["sub"],
+        owner_tenant_id,
     )
     if not row:
         raise HTTPException(404, "Auditor không tồn tại")
 
     from pathlib import Path as _P
 
-    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(owner_tenant_id) / "certificates" / auditor_id
     if not cert_dir.exists():
         return {"certificates": []}
 
@@ -906,7 +909,7 @@ async def upload_auditor_certificate(
     row = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
         auditor_id,
-        owner["tenant_id"] or owner["sub"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     if not row:
         raise HTTPException(404, "Auditor không tồn tại")
@@ -930,7 +933,7 @@ async def upload_auditor_certificate(
     from pathlib import Path as _P
     import uuid as _uuid
 
-    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(owner_tenant_id) / "certificates" / auditor_id
     cert_dir.mkdir(parents=True, exist_ok=True)
 
     file_id = str(_uuid.uuid4())[:8]
@@ -948,6 +951,7 @@ async def view_auditor_certificate(
     cert_id: str,
     request: Request,
     token: str | None = None,
+    db: Connection = Depends(get_db),
 ):
     """View certificate as PDF (convert if needed). Supports ?token= for window.open."""
     from auth.jwt_utils import decode_token as _decode
@@ -963,10 +967,13 @@ async def view_auditor_certificate(
     if user.get("role") != "provider":
         raise HTTPException(403)
 
-    tenant_id = user.get("tenant_id") or user.get("sub")
+    # Certificate storage is tenant-scoped; never fall back to Keycloak sub.
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    if not tenant_id:
+        raise HTTPException(404, "User not found")
     from pathlib import Path as _P
 
-    cert_dir = _P("docs") / tenant_id / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(tenant_id) / "certificates" / auditor_id
 
     target = None
     if cert_dir.exists():
@@ -1048,7 +1055,7 @@ async def delete_auditor_certificate(
     """Delete a certificate file."""
     from pathlib import Path as _P
 
-    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(owner_tenant_id) / "certificates" / auditor_id
     if cert_dir.exists():
         for f in cert_dir.iterdir():
             if f.name.startswith(cert_id):
@@ -1073,7 +1080,7 @@ async def list_minutes(
     db: Connection = Depends(get_db),
 ):
     """List all meeting minutes for the tenant."""
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     if not minutes_dir.exists():
         return {"minutes": []}
 
@@ -1103,7 +1110,7 @@ async def upload_minutes(
     file: UploadFile = File(...),
 ):
     """Upload a meeting minutes file."""
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     minutes_dir.mkdir(parents=True, exist_ok=True)
 
     doc_uuid = str(_uuid.uuid4())[:8]
@@ -1145,7 +1152,7 @@ async def view_minutes(
         raise HTTPException(401, "Not authenticated")
     if owner.get("role") != "business" or not owner.get("is_owner"):
         raise HTTPException(403, "Business owner access required")
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     if not minutes_dir.exists():
         raise HTTPException(404, "Không tìm thấy biên bản")
 
@@ -1227,7 +1234,7 @@ async def delete_minutes(
     db: Connection = Depends(get_db),
 ):
     """Delete a minutes file."""
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     if not minutes_dir.exists():
         raise HTTPException(404, "Không tìm thấy biên bản")
 
@@ -1308,7 +1315,7 @@ async def update_company_profile(
         req.manager_name,
         target_id,
     )
-    log.info(f"[auth] Company profile updated by {owner['sub']}")
+    log.info(f"[auth] Company profile updated by {owner.get('email')}")
     return {"message": "Đã cập nhật thông tin công ty"}
 
 
@@ -1374,7 +1381,7 @@ async def get_notification_preferences(
 ):
     row = await db.fetchrow(
         "SELECT notify_eval_done, notify_submission_reply FROM users WHERE id = $1",
-        user["sub"],
+        await resolve_canonical_user_id(user, db),
     )
     if not row:
         raise HTTPException(404)
@@ -1397,7 +1404,7 @@ async def update_notification_preferences(
         """UPDATE users SET notify_eval_done = $1, notify_submission_reply = $2 WHERE id = $3""",
         body.get("notify_eval_done", True),
         body.get("notify_submission_reply", True),
-        user["sub"],
+        await resolve_canonical_user_id(user, db),
     )
     return {"message": "Đã cập nhật cài đặt thông báo"}
 

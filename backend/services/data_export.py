@@ -61,16 +61,20 @@ SECRET_FIELDS: set[str] = {"password_hash"}
 async def export_user_data(db, user: dict) -> dict:
     """Build a complete export bundle for a single user.
 
-    `user` is the JWT payload (sub, email, role, tenant_id, is_owner).
+    `user` is the authenticated user context; app FKs are resolved to canonical AMINRA IDs.
     """
-    if not user or not user.get("sub"):
+    if not user:
         raise ValueError("user is required")
 
-    user_id = user["sub"]
-    role = user.get("role")
-    tenant_id = user.get("tenant_id")
+    from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 
-    profile = await _profile(db, user)
+    user_id = await resolve_canonical_user_id(user, db)
+    if not user_id:
+        raise ValueError("canonical user is required")
+    role = user.get("role")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+
+    profile = await _profile(db, user_id, user)
     notifications = await _notifications(db, user_id)
     audit_logs = await _audit_logs(db, user_id)
 
@@ -87,7 +91,7 @@ async def export_user_data(db, user: dict) -> dict:
     return {
         "export_format_version": EXPORT_FORMAT_VERSION,
         "exported_at": datetime.now(timezone.utc).isoformat(),
-        "user_id": user_id,
+        "user_id": str(user_id),
         "data_subject": {
             "profile": profile,
             "notifications": notifications,
@@ -108,8 +112,7 @@ async def export_user_data(db, user: dict) -> dict:
 # ── Sections ────────────────────────────────────────────────────────────────
 
 
-async def _profile(db, user: dict) -> dict:
-    user_id = user["sub"]
+async def _profile(db, user_id, user: dict) -> dict:
     row = await db.fetchrow(
         """
         SELECT id, email, role, status, company_name, company_code, is_owner,
@@ -128,7 +131,7 @@ async def _profile(db, user: dict) -> dict:
     # backfilled. A data-rights export must still identify the requesting data
     # subject, but must not invent tenant-owned rows.
     return {
-        "id": user_id,
+        "id": str(user_id),
         "email": user.get("email"),
         "role": user.get("role"),
         "status": user.get("status"),

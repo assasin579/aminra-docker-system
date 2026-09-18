@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from auth.db import get_db
 from auth.jwt_utils import get_current_user, decode_token
 from auth.permissions import check_permission_db
+from auth.identity import resolve_canonical_tenant_id
 from .models import (
     CertificateOut,
     CertificateRiskAlertOut,
@@ -61,10 +62,13 @@ def _require_business(user: dict):
     return user.get("tenant_id")
 
 
-def _require_provider(user: dict) -> str:
-    if user.get("role") != "provider" or not user.get("sub"):
+async def _require_provider(user: dict, db) -> str:
+    if user.get("role") != "provider":
         raise HTTPException(403, "Chỉ CB/provider được cập nhật hiệu lực chứng nhận NCC")
-    return str(user.get("sub"))
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
+    return str(provider_id)
 
 
 async def _provider_authority_for_supplier(db, provider_id: str, supplier, target_status: str) -> str:
@@ -256,7 +260,7 @@ async def upsert_supplier_eligibility(
     db=Depends(get_db),
 ):
     _validate_uuid(sid)
-    provider_id = _require_provider(user)
+    provider_id = await _require_provider(user, db)
     supplier = await db.fetchrow("SELECT id, tenant_id, name FROM suppliers WHERE id=$1", sid)
     if not supplier:
         raise HTTPException(404, "Nhà cung cấp không tồn tại")

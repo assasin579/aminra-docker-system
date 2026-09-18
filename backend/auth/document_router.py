@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 from uuid import uuid4 as _uuid4
 
 from auth.db import get_db
-from auth.identity import resolve_canonical_user_id
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, decode_token
 from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
@@ -184,7 +184,7 @@ async def list_documents(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
@@ -285,7 +285,7 @@ async def list_revisions(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
@@ -340,7 +340,7 @@ async def promote_document(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "SELECT id, doc_type FROM documents WHERE id = $1 AND tenant_id = $2",
         doc_id,
@@ -355,7 +355,7 @@ async def promote_document(
         doc_id,
     )
 
-    log.info(f"[documents] Promoted {doc_id} (type={row['doc_type']}) by {user['sub']}")
+    log.info(f"[documents] Promoted {doc_id} (type={row['doc_type']}) by {user.get('email')}")
     return {"message": "Đã chọn phiên bản này làm tài liệu chính thức"}
 
 
@@ -369,7 +369,7 @@ async def get_document(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     # Tier-1 #24: include approval columns (always SELECT, conditionally surface)
     row = await db.fetchrow(
         """
@@ -453,7 +453,7 @@ async def preview_document(
                      AND $1 = ANY(s.document_ids)
                )""",
             doc_id,
-            user["sub"],
+            await resolve_canonical_user_id(user, db),
         )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -567,7 +567,7 @@ async def get_document_file(
                      AND $1 = ANY(s.document_ids)
                )""",
             doc_id,
-            user["sub"],
+            await resolve_canonical_user_id(user, db),
         )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -598,14 +598,14 @@ async def upload_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await check_permission_db(user, "can_upload")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
     content = await validate_upload(file)
     file_size = len(content)
 
-    tenant_dir = UPLOAD_DIR / tenant_id
+    tenant_dir = UPLOAD_DIR / str(tenant_id)
     tenant_dir.mkdir(parents=True, exist_ok=True)
     doc_uuid = str(_uuid4())
     safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in (file.filename or "file")).strip()
@@ -625,7 +625,7 @@ async def upload_document(
         str(save_path),
         file_size,
         mime,
-        user["sub"],
+        await resolve_canonical_user_id(user, db),
         tenant_id,
         doc_type,
     )
@@ -738,7 +738,7 @@ async def evaluate_existing_document(
     if lang not in ("vi", "en"):
         lang = "vi"
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "SELECT file_path, original_filename, doc_type, status FROM documents WHERE id = $1 AND tenant_id = $2",
         doc_id,
@@ -778,7 +778,7 @@ async def delete_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await check_permission_db(user, "can_delete")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "SELECT id, file_path FROM documents WHERE id = $1 AND tenant_id = $2",
         doc_id,
@@ -795,7 +795,7 @@ async def delete_document(
         p.unlink(missing_ok=True)
 
     await db.execute("DELETE FROM documents WHERE id = $1", doc_id)
-    log.info(f"[documents] Deleted {doc_id} by {user['sub']}")
+    log.info(f"[documents] Deleted {doc_id} by {user.get('email')}")
     return {"message": "Đã xoá tài liệu"}
 
 
@@ -828,7 +828,7 @@ async def dashboard_stats(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
@@ -970,7 +970,7 @@ class _SupersedeRequest(BaseModel):
 async def _require_versioning_flag(db, user) -> None:
     """404 when feature flag is OFF (deliberately not 403 — fewer surface
     leaks during rollout). Tenant-scoped flag resolution per migration 016."""
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not await is_feature_enabled(db, tenant_id, "document_versioning_v1"):
         raise HTTPException(404)
 
@@ -1058,7 +1058,7 @@ async def submit_for_approval(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
     await check_permission_db(user, "can_edit")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if row["approval_status"] != "draft":
         raise HTTPException(
@@ -1082,7 +1082,7 @@ async def submit_for_approval(
             request=request,
             metadata={"prev_status": "draft", "new_status": "pending_approval"},
         )
-    log.info(f"[documents] {doc_id} submitted for approval by {user.get('sub')}")
+    log.info(f"[documents] {doc_id} submitted for approval by {user.get('email')}")
     return {"message": "Đã trình duyệt", "approval_status": "pending_approval"}
 
 
@@ -1101,7 +1101,7 @@ async def approve_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
     await check_permission_db(user, "can_approve_documents")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if row["approval_status"] != "pending_approval":
         raise HTTPException(
@@ -1152,7 +1152,7 @@ async def approve_document(
                 "retention_period_days": retention,
             },
         )
-    log.info(f"[documents] {doc_id} approved by {user.get('sub')}")
+    log.info(f"[documents] {doc_id} approved by {user.get('email')}")
     return {
         "message": "Đã phê duyệt",
         "approval_status": "approved",
@@ -1176,7 +1176,7 @@ async def reject_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
     await check_permission_db(user, "can_approve_documents")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if row["approval_status"] != "pending_approval":
         raise HTTPException(
@@ -1197,7 +1197,7 @@ async def reject_document(
             request=request,
             metadata={"reason": body.reason},
         )
-    log.info(f"[documents] {doc_id} rejected by {user.get('sub')}: {body.reason[:80]}")
+    log.info(f"[documents] {doc_id} rejected by {user.get('email')}: {body.reason[:80]}")
     return {"message": "Đã từ chối", "approval_status": "draft"}
 
 
@@ -1225,7 +1225,7 @@ async def supersede_document(
     except ValueError as e:
         raise HTTPException(422, str(e))
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     old_row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if old_row["approval_status"] != "approved":
         raise HTTPException(409, "Chỉ có thể thay thế tài liệu đã được phê duyệt")
@@ -1259,7 +1259,7 @@ async def supersede_document(
                 "new_version_number": next_version,
             },
         )
-    log.info(f"[documents] {doc_id} superseded by {body.new_document_id} (actor={user.get('sub')})")
+    log.info(f"[documents] {doc_id} superseded by {body.new_document_id} (actor={user.get('email')})")
     return {
         "message": "Đã thay thế phiên bản",
         "old_document_id": doc_id,
@@ -1280,7 +1280,7 @@ async def get_versions(
     if user.get("role") != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     await _load_doc_in_tenant(db, doc_id, tenant_id)  # 404 if missing/cross-tenant
 
     # Recursive CTE to walk both directions: ancestors (parent chain) + descendants
@@ -1342,7 +1342,7 @@ async def get_approval_status(
     if user.get("role") != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     block = _approval_block(row)
     # Look up approver name if available (denormalized for UI)

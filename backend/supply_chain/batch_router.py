@@ -15,6 +15,7 @@ from fastapi.responses import Response
 from auth.db import get_db
 from auth.jwt_utils import get_current_user
 from auth.permissions import check_permission_db
+from auth.identity import resolve_canonical_user_id
 from .models import BatchCreate, BatchUpdate, BatchStepUpdate, BatchOut
 from .eligibility_service import assert_supplier_eligible
 
@@ -692,7 +693,7 @@ async def approve_step(bid: str, step_id: str, user=Depends(get_current_user), d
     if _record_get(b, "integrity_hash"):
         raise HTTPException(403, "Lô hàng đã được seal — không thể thay đổi")
     # Allow: owner OR assigned member
-    if not user.get("is_owner") and str(_record_get(b, "assigned_to")) != user.get("sub"):
+    if not user.get("is_owner") and str(_record_get(b, "assigned_to")) != str(await resolve_canonical_user_id(user, db)):
         raise HTTPException(403, "Bạn chưa được ủy quyền xác nhận lô hàng này")
 
     step = await db.fetchrow("SELECT status FROM batch_steps WHERE id=$1 AND batch_id=$2", step_id, bid)
@@ -727,7 +728,7 @@ async def approve_batch(bid: str, user=Depends(get_current_user), db=Depends(get
     if not row:
         raise HTTPException(404)
     # Allow: owner OR assigned member
-    if not user.get("is_owner") and str(_record_get(row, "assigned_to")) != user.get("sub"):
+    if not user.get("is_owner") and str(_record_get(row, "assigned_to")) != str(await resolve_canonical_user_id(user, db)):
         raise HTTPException(403, "Bạn chưa được ủy quyền xác nhận lô hàng này")
     if row["status"] != "completed":
         raise HTTPException(400, "Lô hàng chưa hoàn thành")
