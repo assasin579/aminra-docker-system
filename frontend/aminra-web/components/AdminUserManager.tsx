@@ -45,6 +45,17 @@ type DeleteImpact = {
   recommended_action: string;
 };
 
+type RelatedFileCleanup = {
+  cleanup: {
+    scope: string;
+    deleted_files: number;
+    cleared_document_rows: number;
+    missing_files: number;
+    skipped_files: number;
+  };
+  safe_next_step: string;
+};
+
 function timeAgo(iso: string) {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (d === 0) return "Hôm nay";
@@ -66,6 +77,8 @@ export default function AdminUserManager({ token }: { token: string }) {
   const [fetchError, setFetchError] = useState("");
   const [impactLoadingId, setImpactLoadingId] = useState<string | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<DeleteImpact | null>(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupResult, setCleanupResult] = useState<RelatedFileCleanup | null>(null);
 
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -100,19 +113,63 @@ export default function AdminUserManager({ token }: { token: string }) {
   const loadDeleteImpact = useCallback(async (user: User) => {
     setImpactLoadingId(user.id);
     setFetchError("");
+    setDeleteImpact(null);
+    setCleanupResult(null);
     try {
       const res = await fetch(`${API}/admin/users/${user.id}/delete-impact`, {
         headers: authHdr,
       });
       if (!res.ok) {
-        setFetchError(`Không tải được cảnh báo xóa Keycloak (HTTP ${res.status})`);
+        let detail = "";
+        try {
+          const err = await res.json();
+          detail = typeof err?.detail === "string" ? `: ${err.detail}` : "";
+        } catch {
+          detail = "";
+        }
+        setFetchError(`Không tải được cảnh báo xóa Keycloak (HTTP ${res.status})${detail}`);
         return;
       }
       setDeleteImpact(await res.json());
+    } catch (error) {
+      setFetchError(
+        `Không tải được cảnh báo xóa Keycloak: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
+      );
     } finally {
       setImpactLoadingId(null);
     }
   }, [token]);
+
+  const cleanupRelatedFiles = useCallback(async () => {
+    if (!deleteImpact) return;
+    setCleanupLoading(true);
+    setFetchError("");
+    setCleanupResult(null);
+    try {
+      const res = await fetch(`${API}/admin/users/${deleteImpact.user.id}/related-files/cleanup`, {
+        method: "POST",
+        headers: authHdr,
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const err = await res.json();
+          detail = typeof err?.detail === "string" ? `: ${err.detail}` : "";
+        } catch {
+          detail = "";
+        }
+        setFetchError(`Không xóa được file liên quan (HTTP ${res.status})${detail}`);
+        return;
+      }
+      setCleanupResult(await res.json());
+    } catch (error) {
+      setFetchError(
+        `Không xóa được file liên quan: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
+      );
+    } finally {
+      setCleanupLoading(false);
+    }
+  }, [deleteImpact, token]);
 
   useEffect(() => {
     fetchUsers();
@@ -220,6 +277,79 @@ export default function AdminUserManager({ token }: { token: string }) {
           style={{ background: "rgba(239,68,68,0.08)", color: "#991B1B" }}
         >
           {fetchError}
+        </div>
+      )}
+
+      {deleteImpact && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 rounded-xl p-4 text-sm"
+          style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", color: "#0A1F44" }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-semibold">Cảnh báo trước khi xóa Keycloak account</p>
+              <p className="mt-1 text-xs font-medium" style={{ color: "#0A1F44" }}>
+                {deleteImpact.user.email}
+              </p>
+              <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                Risk: {deleteImpact.risk_level} · hard_delete_safe={String(deleteImpact.hard_delete_safe)} · recommended_action={deleteImpact.recommended_action}
+              </p>
+            </div>
+            <button
+              onClick={() => setDeleteImpact(null)}
+              className="rounded-lg px-3 py-1 text-xs font-semibold"
+              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#0A1F44" }}
+            >
+              Đóng
+            </button>
+          </div>
+          {deleteImpact.deletion_warnings.length > 0 ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs" style={{ color: "#7C2D12" }}>
+              {deleteImpact.deletion_warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-xs" style={{ color: "#047857" }}>
+              Không tìm thấy dữ liệu nghiệp vụ liên quan; projection có thể được purge sau khi xóa Keycloak nếu admin xác nhận.
+            </p>
+          )}
+
+          <div
+            className="mt-4 rounded-xl p-3"
+            style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(245,158,11,0.22)" }}
+          >
+            <p className="text-xs leading-relaxed" style={{ color: "#475569" }}>
+              Bước dọn file chỉ xóa file vật lý do user này upload trong thư mục upload hợp lệ.
+              DB projection/document rows vẫn được giữ để audit; file ngoài UPLOAD_DIR sẽ bị bỏ qua fail-closed.
+            </p>
+            <button
+              onClick={cleanupRelatedFiles}
+              disabled={cleanupLoading}
+              className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "#991B1B", color: "#FFFFFF", opacity: cleanupLoading ? 0.65 : 1 }}
+            >
+              {cleanupLoading ? "Đang tìm và xóa file..." : "Tìm và xóa file liên quan"}
+            </button>
+          </div>
+
+          {cleanupResult && (
+            <div
+              className="mt-3 rounded-xl px-3 py-2 text-xs"
+              style={{ background: "rgba(16,185,129,0.10)", color: "#047857", border: "1px solid rgba(16,185,129,0.22)" }}
+            >
+              <p className="font-semibold">
+                Đã xóa {cleanupResult.cleanup.deleted_files} file · cleared_document_rows={cleanupResult.cleanup.cleared_document_rows}
+              </p>
+              <p className="mt-1">
+                missing_files={cleanupResult.cleanup.missing_files} · skipped_files={cleanupResult.cleanup.skipped_files}
+              </p>
+              <p className="mt-1">{cleanupResult.cleanup.scope}</p>
+              <p className="mt-1">{cleanupResult.safe_next_step}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -358,39 +488,6 @@ export default function AdminUserManager({ token }: { token: string }) {
         )}
       </div>
 
-      {deleteImpact && (
-        <div
-          className="mt-4 rounded-xl p-4 text-sm"
-          style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", color: "#0A1F44" }}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-semibold">Cảnh báo trước khi xóa Keycloak account</p>
-              <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
-                Risk: {deleteImpact.risk_level} · hard_delete_safe={String(deleteImpact.hard_delete_safe)} · recommended_action={deleteImpact.recommended_action}
-              </p>
-            </div>
-            <button
-              onClick={() => setDeleteImpact(null)}
-              className="rounded-lg px-3 py-1 text-xs font-semibold"
-              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#0A1F44" }}
-            >
-              Đóng
-            </button>
-          </div>
-          {deleteImpact.deletion_warnings.length > 0 ? (
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs" style={{ color: "#7C2D12" }}>
-              {deleteImpact.deletion_warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-xs" style={{ color: "#047857" }}>
-              Không tìm thấy dữ liệu nghiệp vụ liên quan; projection có thể được purge sau khi xóa Keycloak nếu admin xác nhận.
-            </p>
-          )}
-        </div>
-      )}
       <p className="text-xs mt-2" style={{ color: "#6B7280" }}>
         {total} projection · identity_source=keycloak
       </p>

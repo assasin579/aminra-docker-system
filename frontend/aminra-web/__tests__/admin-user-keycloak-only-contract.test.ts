@@ -25,7 +25,10 @@ describe("Admin user management is Keycloak-only", () => {
     expect(src).not.toContain("openEdit");
     expect(src).not.toContain("handleSave");
     expect(src).not.toContain("handleDelete");
-    expect(src).not.toContain('method: "POST"');
+    const postTargets = Array.from(src.matchAll(/fetch\(`\$\{API\}([^`]+)`,\s*\{\s*method: "POST"/g)).map(
+      (match) => match[1],
+    );
+    expect(postTargets).toEqual(["/admin/users/${deleteImpact.user.id}/related-files/cleanup"]);
     expect(src).not.toContain('method: "PUT"');
     expect(src).not.toContain('method: "DELETE"');
     expect(src).not.toContain("reset-password");

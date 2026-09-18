@@ -1138,6 +1138,71 @@ def _identity_projection_warning(label: str, count: int, delete_rule: str) -> st
     return f"{label}: {count} related record(s)."
 
 
+async def _cleanup_user_uploaded_document_files(
+    conn,
+    user_id: str,
+    *,
+    upload_root: Path = UPLOAD_DIR,
+) -> dict[str, Any]:
+    """Delete physical uploaded-document files owned by a user projection.
+
+    Scope is deliberately narrow: remove binaries referenced by documents.user_id
+    and keep the documents rows as audit/evaluation records. Paths outside the
+    configured upload root are skipped fail-closed to avoid arbitrary-file delete.
+    """
+    rows = await conn.fetch(
+        """SELECT id, file_path
+             FROM documents WHERE user_id = $1 AND file_path IS NOT NULL""",
+        user_id,
+    )
+    upload_root_resolved = upload_root.resolve()
+    deleted_document_ids: list[Any] = []
+    deleted_paths: list[str] = []
+    skipped_paths: list[str] = []
+    missing_paths: list[str] = []
+
+    for row in rows:
+        raw_path = row.get("file_path") if hasattr(row, "get") else row["file_path"]
+        if not raw_path:
+            continue
+        candidate = Path(str(raw_path))
+        try:
+            resolved = candidate.resolve(strict=False)
+            if not resolved.is_relative_to(upload_root_resolved):
+                skipped_paths.append(str(candidate))
+                continue
+            if not resolved.exists():
+                missing_paths.append(str(candidate))
+                continue
+            if not resolved.is_file():
+                skipped_paths.append(str(candidate))
+                continue
+            resolved.unlink()
+            deleted_document_ids.append(row["id"])
+            deleted_paths.append(str(candidate))
+        except OSError:
+            skipped_paths.append(str(candidate))
+
+    if deleted_document_ids:
+        await conn.execute(
+            """UPDATE documents
+                  SET file_path = NULL, file_size = 0
+                WHERE id = ANY($1::uuid[])""",
+            deleted_document_ids,
+        )
+
+    return {
+        "scope": "documents.user_id physical files only; DB rows kept for audit",
+        "deleted_files": len(deleted_paths),
+        "cleared_document_rows": len(deleted_document_ids),
+        "missing_files": len(missing_paths),
+        "skipped_files": len(skipped_paths),
+        "deleted_paths": deleted_paths,
+        "missing_paths": missing_paths,
+        "skipped_paths": skipped_paths,
+    }
+
+
 def _validate_admin_reset_password(new_password: str) -> None:
     if len(new_password) < 10:
         raise HTTPException(400, "Mật khẩu tối thiểu 10 ký tự")
@@ -1252,6 +1317,30 @@ async def admin_user_delete_impact(user_id: str, request: Request):
         "hard_delete_safe": hard_delete_safe,
         "deletion_warnings": deletion_warnings,
         "recommended_action": recommended_action,
+    }
+
+
+@app.post("/admin/users/{user_id}/related-files/cleanup")
+async def admin_cleanup_user_related_files(user_id: str, request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email
+                 FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+
+        cleanup = await _cleanup_user_uploaded_document_files(conn, user_id)
+
+    return {
+        "user": dict(user),
+        "cleanup": cleanup,
+        "safe_next_step": "Delete/disable the Keycloak account only after reviewing skipped_files and missing_files.",
     }
 
 
