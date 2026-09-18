@@ -1103,6 +1103,41 @@ def _raise_keycloak_only_account_management() -> None:
     raise HTTPException(status_code=410, detail=KEYCLOAK_ONLY_ACCOUNT_MANAGEMENT_DETAIL)
 
 
+USER_DELETE_IMPACT_SPECS = [
+    ("documents_uploaded", "documents", "user_id", "cascade"),
+    ("documents_approved", "documents", "approver_id", "set_null"),
+    ("documents_reviewed", "documents", "reviewed_by", "blocking"),
+    ("submissions_as_provider", "submissions", "provider_id", "blocking"),
+    ("submissions_as_auditor", "submissions", "auditor_id", "blocking"),
+    ("submission_comments", "submission_comments", "author_id", "blocking"),
+    ("submission_evaluations", "submission_evaluations", "auditor_id", "blocking"),
+    ("submission_revision_requests", "submission_revision_requests", "requester_id", "blocking"),
+    ("certificates_issued", "halal_certificates", "issued_by", "blocking"),
+    ("certificates_revoked", "halal_certificates", "revoked_by", "set_null"),
+    ("audit_logs", "audit_logs", "user_id", "set_null"),
+    ("audit_visits_as_provider", "audit_visits", "provider_id", "blocking"),
+    ("audit_visits_as_auditor", "audit_visits", "auditor_id", "blocking"),
+    ("audit_ncr_closed", "audit_ncr", "closed_by", "blocking"),
+    ("notifications", "notifications", "user_id", "cascade"),
+    ("push_subscriptions", "push_subscriptions", "user_id", "cascade"),
+    ("member_invites_for_tenant", "member_invites", "tenant_id", "cascade"),
+    ("supplier_eligibility_provider_refs", "supplier_eligibilities", "provider_id", "set_null"),
+    ("supplier_eligibility_changed_by_refs", "supplier_eligibilities", "changed_by", "set_null"),
+]
+
+
+def _identity_projection_warning(label: str, count: int, delete_rule: str) -> str | None:
+    if count <= 0:
+        return None
+    if delete_rule == "blocking":
+        return f"{label}: {count} reference(s) would block hard DB deletion and must be kept for audit."
+    if delete_rule == "cascade":
+        return f"{label}: {count} reference(s) could be cascade-deleted by a hard DB delete; keep projection unless explicitly purging test data."
+    if delete_rule == "set_null":
+        return f"{label}: {count} reference(s) would lose actor linkage if DB row is hard-deleted."
+    return f"{label}: {count} related record(s)."
+
+
 def _validate_admin_reset_password(new_password: str) -> None:
     if len(new_password) < 10:
         raise HTTPException(400, "Mật khẩu tối thiểu 10 ký tự")
@@ -1145,11 +1180,79 @@ async def admin_list_users(
         rows = await conn.fetch(
             f"""SELECT id, email, keycloak_sub, role, company_name, company_code,
                        status, is_owner, tenant_id, created_at,
+                       COALESCE(identity_status, 'linked') AS identity_status,
+                       keycloak_deleted_at,
                        'keycloak'::text AS identity_source
                 FROM users {where} ORDER BY created_at DESC""",
             *params,
         )
     return {"users": [dict(r) for r in rows], "total": len(rows)}
+
+
+@app.get("/admin/users/{user_id}/delete-impact")
+async def admin_user_delete_impact(user_id: str, request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email, keycloak_sub, role, status, is_owner, tenant_id,
+                      COALESCE(identity_status, 'linked') AS identity_status,
+                      keycloak_deleted_at
+               FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+
+        impact: dict[str, int] = {}
+        by_rule = {"blocking": 0, "cascade": 0, "set_null": 0}
+        deletion_warnings: list[str] = []
+        for label, table_name, column_name, delete_rule in USER_DELETE_IMPACT_SPECS:
+            count = await conn.fetchval(
+                f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = $1",
+                user_id,
+            )
+            count = int(count or 0)
+            impact[label] = count
+            by_rule[delete_rule] = by_rule.get(delete_rule, 0) + count
+            warning = _identity_projection_warning(label, count, delete_rule)
+            if warning:
+                deletion_warnings.append(warning)
+
+        tenant_members = await conn.fetchval(
+            "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND id <> $1",
+            user_id,
+        )
+        tenant_members = int(tenant_members or 0)
+        impact["tenant_members"] = tenant_members
+        if tenant_members:
+            deletion_warnings.append(
+                f"tenant_members: {tenant_members} member account projection(s) belong to this business tenant."
+            )
+
+    hard_delete_safe = not any(impact.values())
+    risk_level = "none" if hard_delete_safe else ("high" if by_rule["blocking"] or tenant_members else "medium")
+    recommended_action = (
+        "delete_keycloak_identity_and_keep_projection"
+        if not hard_delete_safe
+        else "delete_keycloak_identity_then_optionally_purge_zero-impact_projection"
+    )
+    return {
+        "user": dict(user),
+        "keycloak": {
+            "source_of_truth": "keycloak",
+            "keycloak_sub": user["keycloak_sub"],
+            "identity_status": user["identity_status"],
+            "keycloak_deleted_at": user["keycloak_deleted_at"],
+        },
+        "impact": impact,
+        "risk_level": risk_level,
+        "hard_delete_safe": hard_delete_safe,
+        "deletion_warnings": deletion_warnings,
+        "recommended_action": recommended_action,
+    }
 
 
 @app.post("/admin/users")

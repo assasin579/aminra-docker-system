@@ -13,6 +13,9 @@ describe("Admin user management is Keycloak-only", () => {
     expect(src).toContain("Keycloak là nơi duy nhất quản lý user/account");
     expect(src).toContain("Open in Keycloak");
     expect(src).toContain("identity_source");
+    expect(src).toContain("identity_status");
+    expect(src).toContain("keycloak_deleted_at");
+    expect(src).toContain("Keycloak missing");
   });
 
   it("does not expose admin-side create/edit/delete/reset account actions", () => {

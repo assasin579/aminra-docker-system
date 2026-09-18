@@ -3,7 +3,7 @@
  */
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { VerifyContent } from "@/app/verify/[cert_number]/page";
+import { VerifyContent } from "@/app/verify/[cert_number]/VerifyContent";
 
 function renderPage(certNumber: string) {
   // Test the inner content component directly — avoids React 19 `use(Promise)`

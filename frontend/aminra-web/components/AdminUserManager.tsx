@@ -9,6 +9,8 @@ interface User {
   email: string;
   keycloak_sub: string | null;
   identity_source?: "keycloak" | string;
+  identity_status: "linked" | "missing_in_keycloak" | "disabled_in_keycloak" | "unknown";
+  keycloak_deleted_at: string | null;
   role: "business" | "provider";
   company_name: string;
   company_code: string | null;
@@ -26,6 +28,21 @@ const STATUS_CFG = {
 const ROLE_CFG = {
   business: { label: "Doanh nghiệp", color: "#0A1F44" },
   provider: { label: "Tổ chức", color: "#0EA5E9" },
+};
+const IDENTITY_STATUS_CFG = {
+  linked: { label: "Keycloak linked", bg: "rgba(16,185,129,0.1)", color: "#047857" },
+  missing_in_keycloak: { label: "Keycloak missing", bg: "rgba(239,68,68,0.1)", color: "#991B1B" },
+  disabled_in_keycloak: { label: "Keycloak disabled", bg: "rgba(245,158,11,0.1)", color: "#B45309" },
+  unknown: { label: "Keycloak unknown", bg: "rgba(100,116,139,0.1)", color: "#475569" },
+};
+
+type DeleteImpact = {
+  user: User;
+  impact: Record<string, number>;
+  risk_level: "none" | "medium" | "high" | string;
+  hard_delete_safe: boolean;
+  deletion_warnings: string[];
+  recommended_action: string;
 };
 
 function timeAgo(iso: string) {
@@ -47,6 +64,8 @@ export default function AdminUserManager({ token }: { token: string }) {
   const [total, setTotal] = useState(0);
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const [impactLoadingId, setImpactLoadingId] = useState<string | null>(null);
+  const [deleteImpact, setDeleteImpact] = useState<DeleteImpact | null>(null);
 
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -77,6 +96,23 @@ export default function AdminUserManager({ token }: { token: string }) {
       setFetching(false);
     }
   }, [filterRole, filterStatus, search, token]);
+
+  const loadDeleteImpact = useCallback(async (user: User) => {
+    setImpactLoadingId(user.id);
+    setFetchError("");
+    try {
+      const res = await fetch(`${API}/admin/users/${user.id}/delete-impact`, {
+        headers: authHdr,
+      });
+      if (!res.ok) {
+        setFetchError(`Không tải được cảnh báo xóa Keycloak (HTTP ${res.status})`);
+        return;
+      }
+      setDeleteImpact(await res.json());
+    } finally {
+      setImpactLoadingId(null);
+    }
+  }, [token]);
 
   useEffect(() => {
     fetchUsers();
@@ -233,7 +269,7 @@ export default function AdminUserManager({ token }: { token: string }) {
           <table className="w-full text-sm">
             <thead style={{ background: "#F5F1E8" }}>
               <tr>
-                {["Email / Tên", "Loại", "Trạng thái projection", "Keycloak", "Ngày tạo"].map(
+                {["Email / Tên", "Loại", "Trạng thái projection", "Keycloak", "Ngày tạo", "Preflight"].map(
                   (h) => (
                     <th
                       key={h}
@@ -250,6 +286,7 @@ export default function AdminUserManager({ token }: { token: string }) {
               {users.map((u, i) => {
                 const st = STATUS_CFG[u.status] ?? STATUS_CFG.active;
                 const rl = ROLE_CFG[u.role] ?? ROLE_CFG.business;
+                const identity = IDENTITY_STATUS_CFG[u.identity_status] ?? IDENTITY_STATUS_CFG.unknown;
                 return (
                   <tr
                     key={u.id}
@@ -285,15 +322,33 @@ export default function AdminUserManager({ token }: { token: string }) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-xs font-medium" style={{ color: u.keycloak_sub ? "#0A1F44" : "#991B1B" }}>
-                        {u.keycloak_sub ? "linked" : "missing link"}
-                      </p>
-                      <p className="text-[11px] font-mono" style={{ color: "#94A3B8" }}>
+                      <span
+                        className="px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ background: identity.bg, color: identity.color }}
+                      >
+                        {identity.label}
+                      </span>
+                      <p className="text-[11px] font-mono mt-1" style={{ color: "#94A3B8" }}>
                         {u.keycloak_sub ?? "projection-only"}
                       </p>
+                      {u.keycloak_deleted_at && (
+                        <p className="text-[11px] mt-0.5" style={{ color: "#991B1B" }}>
+                          deleted {timeAgo(u.keycloak_deleted_at)}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: "#6B7280" }}>
                       {timeAgo(u.created_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => loadDeleteImpact(u)}
+                        disabled={impactLoadingId === u.id}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                        style={{ background: "#F5F1E8", color: "#0A1F44", border: "1px solid #E2E8F0" }}
+                      >
+                        {impactLoadingId === u.id ? "Đang kiểm tra..." : "Đánh giá trước khi xóa"}
+                      </button>
                     </td>
                   </tr>
                 );
@@ -302,6 +357,40 @@ export default function AdminUserManager({ token }: { token: string }) {
           </table>
         )}
       </div>
+
+      {deleteImpact && (
+        <div
+          className="mt-4 rounded-xl p-4 text-sm"
+          style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", color: "#0A1F44" }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-semibold">Cảnh báo trước khi xóa Keycloak account</p>
+              <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                Risk: {deleteImpact.risk_level} · hard_delete_safe={String(deleteImpact.hard_delete_safe)} · recommended_action={deleteImpact.recommended_action}
+              </p>
+            </div>
+            <button
+              onClick={() => setDeleteImpact(null)}
+              className="rounded-lg px-3 py-1 text-xs font-semibold"
+              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#0A1F44" }}
+            >
+              Đóng
+            </button>
+          </div>
+          {deleteImpact.deletion_warnings.length > 0 ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs" style={{ color: "#7C2D12" }}>
+              {deleteImpact.deletion_warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-xs" style={{ color: "#047857" }}>
+              Không tìm thấy dữ liệu nghiệp vụ liên quan; projection có thể được purge sau khi xóa Keycloak nếu admin xác nhận.
+            </p>
+          )}
+        </div>
+      )}
       <p className="text-xs mt-2" style={{ color: "#6B7280" }}>
         {total} projection · identity_source=keycloak
       </p>

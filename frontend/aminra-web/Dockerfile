@@ -30,8 +30,10 @@ ENV NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=$NEXT_PUBLIC_KEYCLOAK_CLIENT_ID
 ARG BACKEND_URL=http://aminra-backend:8000
 ENV BACKEND_URL=$BACKEND_URL
 
-# Build the application
-RUN npm run build
+# Build the application. Next 16 defaults to Turbopack, but Alpine build
+# images can fall back to WASM SWC where Turbopack is unsupported; force
+# Webpack for deterministic container builds.
+RUN npm run build -- --webpack
 
 # Production image, copy all the files and run next
 FROM base AS runner

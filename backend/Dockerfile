@@ -14,6 +14,7 @@ COPY templates/ ./templates/
 COPY templates_docx/ ./templates_docx/
 COPY templates_html/ ./templates_html/
 COPY supply_chain/ ./supply_chain/
+COPY scripts/ ./scripts/
 COPY alembic.ini .
 COPY alembic/ ./alembic/
 COPY app.py .

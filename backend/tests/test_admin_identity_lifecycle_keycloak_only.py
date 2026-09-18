@@ -1,6 +1,8 @@
 from pathlib import Path
 
-APP_FILE = Path(__file__).resolve().parents[1] / "app.py"
+ROOT = Path(__file__).resolve().parents[1]
+APP_FILE = ROOT / "app.py"
+SYNC_SCRIPT = ROOT / "scripts" / "keycloak_db_projection_sync.py"
 
 
 def _app_source() -> str:
@@ -47,6 +49,34 @@ def test_admin_user_list_is_read_only_projection_with_keycloak_reference():
     list_body = _function_block(src, "admin_list_users")
     assert "keycloak_sub" in list_body
     assert "identity_source" in list_body
+    assert "identity_status" in list_body
+    assert "keycloak_deleted_at" in list_body
     assert "UPDATE users" not in list_body
     assert "DELETE FROM users" not in list_body
     assert "keycloak_admin." not in list_body
+
+
+def test_admin_delete_impact_endpoint_is_read_only_preflight():
+    src = _app_source()
+
+    assert '@app.get("/admin/users/{user_id}/delete-impact")' in src
+    body = _function_block(src, "admin_user_delete_impact")
+    assert "_require_admin(request)" in body
+    assert "deletion_warnings" in body
+    assert "recommended_action" in body
+    assert "hard_delete_safe" in body
+    assert "DELETE FROM users" not in body
+    assert "UPDATE users" not in body
+    assert "keycloak_admin.delete" not in body
+
+
+def test_keycloak_projection_sync_script_is_mark_only_not_destructive():
+    text = SYNC_SCRIPT.read_text(encoding="utf-8")
+
+    assert "--apply" in text
+    assert "identity_status" in text
+    assert "missing_in_keycloak" in text
+    assert "keycloak_deleted_at" in text
+    assert "DELETE FROM users" not in text
+    assert "keycloak_admin.delete" not in text
+    assert ".delete(" not in text
