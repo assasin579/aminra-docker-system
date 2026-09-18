@@ -13,7 +13,7 @@ from .jwt_utils import (
     require_business_owner,
 )
 from . import keycloak_admin
-from .identity import resolve_canonical_user_id
+from .identity import get_or_reconcile_user_from_keycloak_claims, resolve_canonical_user_id
 from .rate_limit import rate_limit_api
 from .models import (
     BusinessRegisterRequest,
@@ -168,78 +168,9 @@ async def register_provider(
 
 @router.get("/me", response_model=UserProfile)
 async def get_me(user: dict = Depends(get_current_user), db: Connection = Depends(get_db)):
-    # Keycloak-issued tokens carry Keycloak's UUID as `sub`, not AMINRA DB
-    # user id. Look up by email instead when user came from Keycloak.
-    if user.get("_keycloak"):
-        import uuid
-
-        # Link by keycloak_sub (JWT `sub` = Keycloak user UUID) — durable link.
-        # Email fallback for accounts created pre-Phase 4b (before keycloak_sub column existed).
-        kc_sub = None
-        try:
-            kc_sub = uuid.UUID(str(user.get("sub", "")))
-        except (ValueError, TypeError):
-            kc_sub = None
-
-        row = None
-        if kc_sub:
-            row = await db.fetchrow("SELECT * FROM users WHERE keycloak_sub = $1", kc_sub)
-        if not row:
-            row = await db.fetchrow("SELECT * FROM users WHERE email = $1", user["email"])
-            # Backfill keycloak_sub on legacy row (linked by email).
-            if row and kc_sub and row.get("keycloak_sub") != kc_sub:
-                await db.execute("UPDATE users SET keycloak_sub = $1 WHERE id = $2", kc_sub, row["id"])
-
-        if not row:
-            # JIT auto-provision: Trust JWT claims (signed by Keycloak).
-            # tenant_id from JWT may be a non-UUID slug — only persist if valid UUID;
-            # for owners, post-INSERT UPDATE tenant_id = id (owner = own tenant root).
-            tenant_uuid = None
-            raw_tenant = user.get("tenant_id")
-            if raw_tenant:
-                try:
-                    tenant_uuid = uuid.UUID(str(raw_tenant))
-                except (ValueError, TypeError):
-                    tenant_uuid = None
-
-            kc_role = user.get("role") or "business"
-            db_role = "business" if kc_role == "business" else "provider"
-            is_owner = bool(user.get("is_owner", True))
-
-            # Read industry_schema_code from Keycloak user attribute (set via
-            # admin REST when seeding demo accounts or onboarding).
-            industry_uuid = None
-            industry_code = user.get("industry_schema_code")
-            if industry_code:
-                industry_uuid = await db.fetchval(
-                    "SELECT id FROM industry_schemas WHERE code = $1", industry_code
-                )
-
-            row = await db.fetchrow(
-                """
-                INSERT INTO users (email, keycloak_sub, role, company_name,
-                                   status, is_owner, tenant_id, industry_schema_id)
-                VALUES ($1, $2, $3::user_role, $4, $5::user_status, $6, $7, $8)
-                ON CONFLICT (email) DO UPDATE SET keycloak_sub = EXCLUDED.keycloak_sub
-                RETURNING *
-                """,
-                user["email"],
-                kc_sub,
-                db_role,
-                user.get("company_name") or user["email"].split("@")[0],
-                user.get("status") or "active",
-                is_owner,
-                tenant_uuid,
-                industry_uuid,
-            )
-            # Owner without explicit tenant_id → set tenant_id = own id (own tenant root)
-            if is_owner and row["tenant_id"] is None:
-                await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
-                row = await db.fetchrow("SELECT * FROM users WHERE id = $1", row["id"])
-    else:
-        row = await db.fetchrow("SELECT * FROM users WHERE id = $1", user["sub"])
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    # /auth/me is the reconciliation gate: Keycloak identity wins for account
+    # linkage/status, AMINRA returns the canonical application profile row.
+    row = await get_or_reconcile_user_from_keycloak_claims(user, db)
 
     member_count = None
     if row["role"] == "business" and row["is_owner"]:

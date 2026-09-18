@@ -196,6 +196,7 @@ def _claims_to_user_via_jwt(claims: dict) -> dict:
     realm_roles = (claims.get("realm_access") or {}).get("roles") or []
     return {
         "sub": claims.get("sub"),
+        "keycloak_sub": claims.get("sub"),
         "email": claims["email"],
         "role": _normalize_role_to_pg(_pick_app_role(realm_roles)),
         "is_owner": is_owner,
@@ -230,14 +231,15 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
 
     async with db_pool.acquire() as db:
         row = await db.fetchrow(
-            "SELECT id, email, role, status, tenant_id, is_owner, company_name "
-            "FROM users WHERE email = $1",
-            email,
+            "SELECT id, email, keycloak_sub, role, status, tenant_id, is_owner, company_name "
+            "FROM users WHERE lower(email) = $1",
+            email.lower(),
         )
 
     if not row:
         return {
             "sub": claims.get("sub"),
+            "keycloak_sub": claims.get("sub"),
             "email": email,
             "role": _normalize_role_to_pg(keycloak_role),
             "is_owner": False,
@@ -257,7 +259,9 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         )
 
     return {
-        "sub": str(row["id"]),
+        "sub": str(row["id"]),  # legacy app-id shape kept until all routers use app_user_id
+        "keycloak_sub": claims.get("sub"),
+        "app_user_id": str(row["id"]),
         "email": row["email"],
         "role": db_role,
         "is_owner": bool(row["is_owner"]),

@@ -1118,6 +1118,10 @@ async def approve_document(
         raise HTTPException(422, f"retention_period_days phải >= {RETENTION_FLOOR_DAYS} (5 năm)")
 
     # Trigger auto-computes retention_expires_at; we just SET the inputs.
+    approver_id = await resolve_canonical_user_id(user, db)
+    if not approver_id:
+        raise HTTPException(404, "User not found")
+
     async with db.transaction():
         await db.execute(
             """
@@ -1131,7 +1135,7 @@ async def approve_document(
              WHERE id = $1
             """,
             doc_id,
-            user.get("sub"),
+            approver_id,
             eff,
             nxt,
             retention,
