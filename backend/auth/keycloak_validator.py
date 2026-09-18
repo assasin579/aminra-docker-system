@@ -237,15 +237,18 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         )
 
     if not row:
+        is_owner_raw = claims.get("is_owner")
+        is_owner = is_owner_raw is True or str(is_owner_raw).lower() == "true"
         return {
             "sub": claims.get("sub"),
             "keycloak_sub": claims.get("sub"),
             "email": email,
             "role": _normalize_role_to_pg(keycloak_role),
-            "is_owner": False,
-            "status": "pending",
+            "is_owner": is_owner,
+            "status": claims.get("status") or "pending",
             "tenant_id": None,
             "realm_roles": realm_roles,
+            "company_name": claims.get("company_name"),
             "_keycloak": True,
         }
 

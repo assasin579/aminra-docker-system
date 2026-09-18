@@ -64,6 +64,36 @@ async def test_attacker_cannot_substitute_tenant_in_db_when_jwt_has_tenant():
     db.fetchrow.assert_not_called()
 
 
+
+
+@pytest.mark.asyncio
+async def test_new_business_owner_without_db_row_preserves_keycloak_owner_claims():
+    """Fresh self-registration has no PG row until first /auth/me reconciliation.
+
+    Business owners intentionally have no tenant_id in Keycloak because AMINRA
+    repairs owner tenant_id=id after creating the app projection row. Missing
+    tenant_id must not make the fallback path demote the user to
+    is_owner=False/pending, otherwise owner-only UI such as `/members` is hidden.
+    """
+    pool, db = _mock_pool(row=None)
+    claims = _claims(
+        None,
+        email="fresh-owner@example.com",
+        is_owner="true",
+        status="active",
+        realm_access={"roles": ["business"]},
+    )
+    claims.pop("tenant_id")
+
+    out = await kv.enrich_keycloak_claims(claims, pool)
+
+    assert out["role"] == "business"
+    assert out["is_owner"] is True
+    assert out["status"] == "active"
+    assert out["tenant_id"] is None
+    db.fetchrow.assert_called_once()
+
+
 @pytest.mark.asyncio
 async def test_attacker_strips_tenant_to_force_db_lookup():
     """Attacker (controlling realm config) drops tenant_id mapper.
