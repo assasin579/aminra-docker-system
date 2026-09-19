@@ -1,13 +1,13 @@
 """Track Keycloak identity projection status on app users.
 
-Revision ID: 042_user_identity_projection_status
+Revision ID: 042_identity_projection_status
 Revises: 041_module_registry
 Create Date: 2026-09-18
 """
 
 from alembic import op
 
-revision = "042_user_identity_projection_status"
+revision = "042_identity_projection_status"
 down_revision = "041_module_registry"
 branch_labels = None
 depends_on = None

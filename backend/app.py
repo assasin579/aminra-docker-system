@@ -1092,6 +1092,11 @@ class AdminKeycloakEmailCleanupRequest(BaseModel):
     confirm_delete: bool = False
 
 
+class AdminUserReferenceCleanupRequest(BaseModel):
+    # Explicit operator selection only. Empty means no-op is rejected.
+    selected_references: list[str]
+
+
 KEYCLOAK_ONLY_ACCOUNT_MANAGEMENT_DETAIL = {
     "detail": "User/account lifecycle is managed in Keycloak only. Use the Keycloak Admin Console for create, delete, disable, password reset, email verification, roles, and identity repair. AMINRA Admin only displays a read-only app profile projection.",
     "identity_lifecycle_owner": "keycloak",
@@ -1124,6 +1129,460 @@ USER_DELETE_IMPACT_SPECS = [
     ("supplier_eligibility_provider_refs", "supplier_eligibilities", "provider_id", "set_null"),
     ("supplier_eligibility_changed_by_refs", "supplier_eligibilities", "changed_by", "set_null"),
 ]
+
+REFERENCE_CLEANUP_ACTIONS = {
+    "uploaded_document_files": {
+        "label": "File vật lý đã upload",
+        "impact_key": "documents_uploaded",
+        "action": "delete_physical_files_keep_document_rows",
+        "warning": "Chỉ xóa file vật lý trong UPLOAD_DIR; giữ documents DB rows để audit/evaluation.",
+    },
+    "notifications": {
+        "label": "Thông báo nội bộ",
+        "impact_key": "notifications",
+        "table": "notifications",
+        "column": "user_id",
+        "action": "delete_rows",
+        "warning": "Xóa notification chỉ thuộc account đã mất Keycloak.",
+    },
+    "push_subscriptions": {
+        "label": "Push subscriptions",
+        "impact_key": "push_subscriptions",
+        "table": "push_subscriptions",
+        "column": "user_id",
+        "action": "delete_rows",
+        "warning": "Xóa endpoint push stale để thiết bị cũ không nhận notification.",
+    },
+}
+
+REFERENCE_LABELS = {
+    "documents_uploaded": "Tài liệu user đã upload",
+    "documents_approved": "Tài liệu user đã approve",
+    "documents_reviewed": "Lịch sử review tài liệu",
+    "submissions_as_provider": "Hồ sơ user là provider",
+    "submissions_as_auditor": "Hồ sơ user là auditor",
+    "submission_comments": "Bình luận hồ sơ",
+    "submission_evaluations": "Đánh giá hồ sơ",
+    "submission_revision_requests": "Yêu cầu chỉnh sửa hồ sơ",
+    "certificates_issued": "Chứng nhận đã cấp",
+    "certificates_revoked": "Chứng nhận đã thu hồi",
+    "audit_logs": "Audit logs",
+    "audit_visits_as_provider": "Audit visits với vai trò provider",
+    "audit_visits_as_auditor": "Audit visits với vai trò auditor",
+    "audit_ncr_closed": "Audit NCR đã đóng",
+    "notifications": "Thông báo nội bộ",
+    "push_subscriptions": "Push subscriptions",
+    "member_invites_for_tenant": "Invite thành viên theo tenant",
+    "supplier_eligibility_provider_refs": "Supplier eligibility provider refs",
+    "supplier_eligibility_changed_by_refs": "Supplier eligibility changed-by refs",
+    "tenant_members": "Thành viên thuộc tenant",
+}
+
+DELETION_CASE_POLICY: dict[str, dict[str, str]] = {
+    "documents_uploaded": {
+        "action": "delete_physical_files_keep_document_rows",
+        "risk_level": "medium",
+        "reason": "Xóa file vật lý fail-closed trong UPLOAD_DIR; giữ documents rows để audit/evaluation.",
+    },
+    "notifications": {
+        "action": "hard_delete",
+        "risk_level": "low",
+        "reason": "Ephemeral notification stale sau khi Keycloak identity đã bị xóa.",
+    },
+    "push_subscriptions": {
+        "action": "hard_delete",
+        "risk_level": "low",
+        "reason": "Push endpoint stale không còn owner identity hợp lệ.",
+    },
+    "documents_approved": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Actor FK nullable/set-null; tách khỏi live projection nhưng giữ document evidence.",
+    },
+    "certificates_revoked": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Revoked-by FK nullable/set-null; giữ certificate evidence.",
+    },
+    "supplier_eligibility_provider_refs": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Provider FK nullable/set-null; giữ eligibility record.",
+    },
+    "supplier_eligibility_changed_by_refs": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Changed-by FK nullable/set-null; giữ eligibility audit state.",
+    },
+    "audit_logs": {
+        "action": "retain_append_only_audit",
+        "risk_level": "high",
+        "reason": "audit_logs có immutable trigger; không update/delete để bảo toàn audit trail.",
+    },
+    "tenant_members": {
+        "action": "blocked",
+        "risk_level": "blocker",
+        "reason": "Tenant còn member projections; cần xử lý member lifecycle trước khi cleanup owner projection.",
+    },
+}
+
+IMPACT_SPEC_BY_KEY = {
+    key: {"table_name": table_name, "column_name": column_name, "delete_rule": delete_rule}
+    for key, table_name, column_name, delete_rule in USER_DELETE_IMPACT_SPECS
+}
+IMPACT_SPEC_BY_KEY["tenant_members"] = {"table_name": "users", "column_name": "tenant_id", "delete_rule": "blocking"}
+
+
+class AdminAccountDeletionRunRequest(BaseModel):
+    confirmation_phrase: str
+
+
+def _admin_actor_from_claims(claims: dict[str, Any]) -> str:
+    return str(claims.get("email") or claims.get("preferred_username") or claims.get("sub") or "unknown_admin")
+
+
+def _case_risk_level(items: list[dict[str, Any]]) -> str:
+    order = {"low": 1, "medium": 2, "high": 3, "blocker": 4}
+    highest = "low"
+    for item in items:
+        if order.get(str(item.get("risk_level")), 1) > order[highest]:
+            highest = str(item.get("risk_level"))
+    return highest
+
+
+def _build_account_deletion_case_items(
+    impact: dict[str, int],
+    *,
+    identity_status: str,
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for reference_key, count_value in impact.items():
+        count = int(count_value or 0)
+        if count <= 0:
+            continue
+        spec = IMPACT_SPEC_BY_KEY.get(reference_key, {})
+        policy = DELETION_CASE_POLICY.get(reference_key)
+        if not policy:
+            policy = {
+                "action": "manual_review_required",
+                "risk_level": "high",
+                "reason": "Không có policy tự động cho reference này; fail-closed để admin review.",
+            }
+        status = "pending"
+        if identity_status != "missing_in_keycloak":
+            status = "blocked"
+        elif policy["action"] in {"retain_append_only_audit", "retain_business_record"}:
+            status = "skipped"
+        elif policy["action"] in {"blocked", "manual_review_required"}:
+            status = "blocked"
+        items.append(
+            {
+                "reference_key": reference_key,
+                "label": REFERENCE_LABELS.get(reference_key, reference_key),
+                "table_name": spec.get("table_name"),
+                "column_name": spec.get("column_name"),
+                "record_count": count,
+                "action": policy["action"],
+                "risk_level": policy["risk_level"],
+                "status": status,
+                "reason": policy["reason"],
+            }
+        )
+    return items
+
+
+def _row_dict(row: Any | None) -> dict[str, Any] | None:
+    return dict(row) if row is not None else None
+
+
+async def _insert_account_deletion_case(
+    conn,
+    *,
+    user: Any,
+    items: list[dict[str, Any]],
+    created_by: str,
+) -> dict[str, Any]:
+    risk_level = _case_risk_level(items)
+    status = "blocked" if any(item["status"] == "blocked" for item in items) else "assessment_ready"
+    confirmation_phrase = f"CONFIRM CLEANUP {user['email']}"
+    case = await conn.fetchrow(
+        """
+        INSERT INTO account_deletion_cases (
+            user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+            created_by, confirmation_phrase
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                  created_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+        """,
+        user["id"],
+        user["email"],
+        user["identity_status"],
+        status,
+        risk_level,
+        created_by,
+        confirmation_phrase,
+    )
+    case_id = case["id"]
+    for item in items:
+        await conn.execute(
+            """
+            INSERT INTO account_deletion_case_items (
+                case_id, reference_key, label, table_name, column_name, record_count,
+                action, risk_level, status, reason, before_snapshot
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+            """,
+            case_id,
+            item["reference_key"],
+            item["label"],
+            item.get("table_name"),
+            item.get("column_name"),
+            item["record_count"],
+            item["action"],
+            item["risk_level"],
+            item["status"],
+            item["reason"],
+            _json.dumps({"record_count": item["record_count"]}),
+        )
+    await conn.execute(
+        """UPDATE users
+              SET account_cleanup_status = $2, account_cleanup_case_id = $3
+            WHERE id = $1""",
+        user["id"],
+        "blocked" if status == "blocked" else "assessment_ready",
+        case_id,
+    )
+    return dict(case)
+
+
+async def _execute_account_deletion_case_items(
+    conn,
+    user_id: str,
+    *,
+    case_id: str,
+    identity_status: str,
+    items: list[dict[str, Any]],
+    upload_root: Path = UPLOAD_DIR,
+) -> dict[str, Any]:
+    if identity_status != "missing_in_keycloak":
+        raise HTTPException(409, "Deletion case cleanup is allowed only after identity_status=missing_in_keycloak")
+
+    completed = 0
+    skipped = 0
+    blocked = 0
+    failed = 0
+    item_results: dict[str, Any] = {}
+    for item in items:
+        reference_key = item["reference_key"]
+        action = item["action"]
+        status = item.get("status", "pending")
+        if status == "completed":
+            skipped += 1
+            continue
+        if action in {"retain_append_only_audit", "retain_business_record"}:
+            skipped += 1
+            item_results[reference_key] = {"status": "skipped", "action": action, "reason": item.get("reason")}
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'skipped', after_result = $3::jsonb, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                _json.dumps(item_results[reference_key]),
+            )
+            continue
+        if action in {"blocked", "manual_review_required"}:
+            blocked += 1
+            item_results[reference_key] = {"status": "blocked", "action": action, "reason": item.get("reason")}
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'blocked', after_result = $3::jsonb, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                _json.dumps(item_results[reference_key]),
+            )
+            continue
+        try:
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'running', updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+            )
+            if action == "delete_physical_files_keep_document_rows":
+                result = await _cleanup_user_uploaded_document_files(conn, user_id, upload_root=upload_root)
+            elif action == "hard_delete":
+                table_name = item["table_name"]
+                column_name = item["column_name"]
+                await conn.execute(f"DELETE FROM {table_name} WHERE {column_name} = $1", user_id)
+                result = {"scope": f"{table_name}.{column_name}", "action": action}
+            elif action == "detach_user_reference":
+                table_name = item["table_name"]
+                column_name = item["column_name"]
+                await conn.execute(f"UPDATE {table_name} SET {column_name} = NULL WHERE {column_name} = $1", user_id)
+                result = {"scope": f"{table_name}.{column_name}", "action": action}
+            else:
+                blocked += 1
+                result = {"status": "blocked", "action": action, "reason": "Unsupported deletion-case action"}
+                await conn.execute(
+                    """UPDATE account_deletion_case_items
+                          SET status = 'blocked', after_result = $3::jsonb, updated_at = NOW()
+                        WHERE case_id = $1 AND reference_key = $2""",
+                    case_id,
+                    reference_key,
+                    _json.dumps(result),
+                )
+                item_results[reference_key] = result
+                continue
+            completed += 1
+            result["status"] = "completed"
+            item_results[reference_key] = result
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'completed', after_result = $3::jsonb, error_message = NULL, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                _json.dumps(result, default=str),
+            )
+        except Exception as exc:  # noqa: BLE001 - per-item failure must be captured for retry
+            failed += 1
+            item_results[reference_key] = {"status": "failed", "error": str(exc)}
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'failed', error_message = $3, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                str(exc),
+            )
+
+    if failed:
+        case_status = "partially_completed" if completed or skipped else "failed"
+    elif blocked:
+        case_status = "blocked"
+    else:
+        case_status = "completed"
+    user_cleanup_status = {
+        "completed": "cleaned",
+        "partially_completed": "partially_cleaned",
+        "blocked": "blocked",
+        "failed": "failed",
+    }[case_status]
+    await conn.execute(
+        """UPDATE account_deletion_cases
+              SET status = $2::varchar,
+                  completed_at = CASE WHEN $2::varchar IN ('completed', 'partially_completed', 'blocked') THEN NOW() ELSE completed_at END,
+                  updated_at = NOW(), last_error = $3
+            WHERE id = $1""",
+        case_id,
+        case_status,
+        None if not failed else "One or more cleanup items failed; inspect account_deletion_case_items.",
+    )
+    if user_cleanup_status == "cleaned":
+        await conn.execute(
+            """UPDATE users
+                  SET account_cleanup_status = 'cleaned', account_cleanup_case_id = $2
+                WHERE id = $1""",
+            user_id,
+            case_id,
+        )
+    else:
+        await conn.execute(
+            """UPDATE users
+                  SET account_cleanup_status = $3, account_cleanup_case_id = $2
+                WHERE id = $1""",
+            user_id,
+            case_id,
+            user_cleanup_status,
+        )
+    return {
+        "case_status": case_status,
+        "completed_items": completed,
+        "skipped_items": skipped,
+        "blocked_items": blocked,
+        "failed_items": failed,
+        "item_results": item_results,
+        "users_projection_deleted": False,
+        "documents_db_rows_deleted": False,
+    }
+
+
+def _build_reference_cleanup_options(impact: dict[str, int], identity_status: str) -> list[dict[str, Any]]:
+    options: list[dict[str, Any]] = []
+    cleanup_by_impact_key = {spec["impact_key"]: key for key, spec in REFERENCE_CLEANUP_ACTIONS.items()}
+    for impact_key, count in impact.items():
+        count = int(count or 0)
+        if count <= 0:
+            continue
+        cleanup_key = cleanup_by_impact_key.get(impact_key)
+        if cleanup_key:
+            spec = REFERENCE_CLEANUP_ACTIONS[cleanup_key]
+            enabled = identity_status == "missing_in_keycloak"
+            options.append(
+                {
+                    "key": cleanup_key,
+                    "label": spec["label"],
+                    "count": count,
+                    "action": spec["action"],
+                    "enabled": enabled,
+                    "warning": spec["warning"] if enabled else "Chỉ cho phép cleanup sau khi projection được mark missing_in_keycloak.",
+                }
+            )
+        else:
+            options.append(
+                {
+                    "key": impact_key,
+                    "label": REFERENCE_LABELS.get(impact_key, impact_key),
+                    "count": count,
+                    "action": "keep_audit_record",
+                    "enabled": False,
+                    "warning": "Business/audit reference không được xóa từ cleanup nhanh; cần quy trình riêng nếu muốn purge.",
+                }
+            )
+    return options
+
+
+async def _cleanup_selected_user_references(
+    conn,
+    user_id: str,
+    *,
+    identity_status: str,
+    selected_references: list[str],
+    upload_root: Path = UPLOAD_DIR,
+) -> dict[str, Any]:
+    selected = list(dict.fromkeys(selected_references or []))
+    if not selected:
+        raise HTTPException(400, "selected_references must contain at least one checked reference")
+    if identity_status != "missing_in_keycloak":
+        raise HTTPException(409, "Reference cleanup is allowed only after identity_status=missing_in_keycloak")
+
+    unknown = [key for key in selected if key not in REFERENCE_CLEANUP_ACTIONS]
+    if unknown:
+        raise HTTPException(400, {"unsupported_references": unknown})
+
+    cleanup: dict[str, Any] = {}
+    for key in selected:
+        spec = REFERENCE_CLEANUP_ACTIONS[key]
+        if key == "uploaded_document_files":
+            result = await _cleanup_user_uploaded_document_files(conn, user_id, upload_root=upload_root)
+            result["action"] = spec["action"]
+            cleanup[key] = result
+            continue
+        table_name = spec["table"]
+        column_name = spec["column"]
+        await conn.execute(f"DELETE FROM {table_name} WHERE {column_name} = $1", user_id)
+        cleanup[key] = {"action": spec["action"], "scope": f"{table_name}.{column_name}"}
+
+    return {
+        "selected_references": selected,
+        "cleanup": cleanup,
+        "users_projection_deleted": False,
+        "documents_db_rows_deleted": False,
+    }
 
 
 def _identity_projection_warning(label: str, count: int, delete_rule: str) -> str | None:
@@ -1286,10 +1745,13 @@ async def admin_user_delete_impact(user_id: str, request: Request):
             if warning:
                 deletion_warnings.append(warning)
 
-        tenant_members = await conn.fetchval(
-            "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND id <> $1",
-            user_id,
-        )
+        tenant_members = 0
+        if user["tenant_id"]:
+            tenant_members = await conn.fetchval(
+                "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND id <> $2",
+                user["tenant_id"],
+                user_id,
+            )
         tenant_members = int(tenant_members or 0)
         impact["tenant_members"] = tenant_members
         if tenant_members:
@@ -1313,6 +1775,7 @@ async def admin_user_delete_impact(user_id: str, request: Request):
             "keycloak_deleted_at": user["keycloak_deleted_at"],
         },
         "impact": impact,
+        "cleanup_options": _build_reference_cleanup_options(impact, user["identity_status"]),
         "risk_level": risk_level,
         "hard_delete_safe": hard_delete_safe,
         "deletion_warnings": deletion_warnings,
@@ -1342,6 +1805,168 @@ async def admin_cleanup_user_related_files(user_id: str, request: Request):
         "cleanup": cleanup,
         "safe_next_step": "Delete/disable the Keycloak account only after reviewing skipped_files and missing_files.",
     }
+
+
+@app.post("/admin/users/{user_id}/related-references/cleanup")
+async def admin_cleanup_user_related_references(
+    user_id: str,
+    request: Request,
+    body: AdminUserReferenceCleanupRequest,
+):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email,
+                      COALESCE(identity_status, 'linked') AS identity_status,
+                      keycloak_deleted_at
+                 FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+
+        result = await _cleanup_selected_user_references(
+            conn,
+            user_id,
+            identity_status=user["identity_status"],
+            selected_references=body.selected_references,
+        )
+
+    return {
+        "user": dict(user),
+        **result,
+        "safe_next_step": "Review cleanup results. Keep users projection for audit unless a separate zero-impact purge is approved.",
+    }
+
+
+@app.post("/admin/account-deletion-cases/{case_id}/run")
+async def admin_run_account_deletion_case(
+    case_id: str,
+    request: Request,
+    body: AdminAccountDeletionRunRequest,
+):
+    claims = _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        case = await conn.fetchrow(
+            """SELECT id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                      created_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+                 FROM account_deletion_cases WHERE id = $1""",
+            case_id,
+        )
+        if not case:
+            raise HTTPException(404, "Account deletion case not found")
+        if body.confirmation_phrase != case["confirmation_phrase"]:
+            raise HTTPException(409, "Confirmation phrase does not match this deletion case")
+        user = await conn.fetchrow(
+            """SELECT id, email, COALESCE(identity_status, 'linked') AS identity_status
+                 FROM users WHERE id = $1""",
+            case["user_id"],
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+        items = [dict(row) for row in await conn.fetch(
+            """SELECT reference_key, label, table_name, column_name, record_count,
+                      action, risk_level, status, reason
+                 FROM account_deletion_case_items
+                WHERE case_id = $1
+                ORDER BY created_at, reference_key""",
+            case_id,
+        )]
+        await conn.execute(
+            """UPDATE account_deletion_cases
+                  SET status = 'running', approved_by = $2, updated_at = NOW()
+                WHERE id = $1""",
+            case_id,
+            _admin_actor_from_claims(claims),
+        )
+        result = await _execute_account_deletion_case_items(
+            conn,
+            str(user["id"]),
+            case_id=case_id,
+            identity_status=user["identity_status"],
+            items=items,
+        )
+        updated_case = await conn.fetchrow(
+            """SELECT id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                      created_by, approved_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+                 FROM account_deletion_cases WHERE id = $1""",
+            case_id,
+        )
+    return {"case": dict(updated_case), "result": result}
+
+
+@app.get("/admin/account-deletion-cases/{case_id}")
+async def admin_get_account_deletion_case(case_id: str, request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        case = await conn.fetchrow(
+            """SELECT id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                      created_by, approved_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+                 FROM account_deletion_cases WHERE id = $1""",
+            case_id,
+        )
+        if not case:
+            raise HTTPException(404, "Account deletion case not found")
+        items = [dict(row) for row in await conn.fetch(
+            """SELECT id, reference_key, label, table_name, column_name, record_count,
+                      action, risk_level, status, reason, before_snapshot, after_result, error_message,
+                      created_at, updated_at
+                 FROM account_deletion_case_items
+                WHERE case_id = $1
+                ORDER BY created_at, reference_key""",
+            case_id,
+        )]
+    return {"case": dict(case), "items": items}
+
+
+@app.post("/admin/users/{user_id}/deletion-case")
+async def admin_create_account_deletion_case(user_id: str, request: Request):
+    claims = _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email, keycloak_sub, role, status, is_owner, tenant_id,
+                      COALESCE(identity_status, 'linked') AS identity_status,
+                      keycloak_deleted_at
+                 FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+        impact: dict[str, int] = {}
+        for label, table_name, column_name, _delete_rule in USER_DELETE_IMPACT_SPECS:
+            impact[label] = int(
+                await conn.fetchval(f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = $1", user_id) or 0
+            )
+        tenant_members = 0
+        if user["tenant_id"]:
+            tenant_members = int(
+                await conn.fetchval(
+                    "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND id <> $2",
+                    user["tenant_id"],
+                    user_id,
+                ) or 0
+            )
+        impact["tenant_members"] = tenant_members
+        items = _build_account_deletion_case_items(impact, identity_status=user["identity_status"])
+        case = await _insert_account_deletion_case(
+            conn,
+            user=user,
+            items=items,
+            created_by=_admin_actor_from_claims(claims),
+        )
+    return {"case": case, "items": items, "impact": impact}
 
 
 @app.post("/admin/users")

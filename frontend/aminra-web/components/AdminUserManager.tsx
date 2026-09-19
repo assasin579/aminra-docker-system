@@ -39,21 +39,53 @@ const IDENTITY_STATUS_CFG = {
 type DeleteImpact = {
   user: User;
   impact: Record<string, number>;
+  cleanup_options?: Array<{
+    key: string;
+    label: string;
+    count: number;
+    action: string;
+    enabled: boolean;
+    warning: string;
+  }>;
   risk_level: "none" | "medium" | "high" | string;
   hard_delete_safe: boolean;
   deletion_warnings: string[];
   recommended_action: string;
 };
 
-type RelatedFileCleanup = {
-  cleanup: {
-    scope: string;
-    deleted_files: number;
-    cleared_document_rows: number;
-    missing_files: number;
-    skipped_files: number;
-  };
+type RelatedReferenceCleanup = {
+  selected_references: string[];
+  cleanup: Record<string, Record<string, unknown>>;
+  users_projection_deleted: boolean;
+  documents_db_rows_deleted: boolean;
   safe_next_step: string;
+};
+
+type AccountDeletionCaseItem = {
+  reference_key: string;
+  label: string;
+  action: string;
+  record_count: number;
+  status: string;
+  risk_level?: string;
+  reason?: string;
+};
+
+type AccountDeletionCaseResponse = {
+  case: {
+    id: string;
+    status: string;
+    risk_level: string;
+    confirmation_phrase: string;
+  };
+  items?: AccountDeletionCaseItem[];
+  result?: {
+    case_status: string;
+    completed_items: number;
+    skipped_items: number;
+    blocked_items: number;
+    failed_items?: number;
+  };
 };
 
 function timeAgo(iso: string) {
@@ -78,7 +110,11 @@ export default function AdminUserManager({ token }: { token: string }) {
   const [impactLoadingId, setImpactLoadingId] = useState<string | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<DeleteImpact | null>(null);
   const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [cleanupResult, setCleanupResult] = useState<RelatedFileCleanup | null>(null);
+  const [cleanupResult, setCleanupResult] = useState<RelatedReferenceCleanup | null>(null);
+  const [selectedReferences, setSelectedReferences] = useState<string[]>([]);
+  const [deletionCaseLoading, setDeletionCaseLoading] = useState(false);
+  const [deletionCase, setDeletionCase] = useState<AccountDeletionCaseResponse | null>(null);
+  const [deletionCaseMessage, setDeletionCaseMessage] = useState("");
 
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -115,6 +151,9 @@ export default function AdminUserManager({ token }: { token: string }) {
     setFetchError("");
     setDeleteImpact(null);
     setCleanupResult(null);
+    setDeletionCase(null);
+    setDeletionCaseMessage("");
+    setSelectedReferences([]);
     try {
       const res = await fetch(`${API}/admin/users/${user.id}/delete-impact`, {
         headers: authHdr,
@@ -140,15 +179,16 @@ export default function AdminUserManager({ token }: { token: string }) {
     }
   }, [token]);
 
-  const cleanupRelatedFiles = useCallback(async () => {
-    if (!deleteImpact) return;
+  const cleanupSelectedReferences = useCallback(async () => {
+    if (!deleteImpact || selectedReferences.length === 0) return;
     setCleanupLoading(true);
     setFetchError("");
     setCleanupResult(null);
     try {
-      const res = await fetch(`${API}/admin/users/${deleteImpact.user.id}/related-files/cleanup`, {
+      const res = await fetch(`${API}/admin/users/${deleteImpact.user.id}/related-references/cleanup`, {
         method: "POST",
-        headers: authHdr,
+        headers: { ...authHdr, "Content-Type": "application/json" },
+        body: JSON.stringify({ selected_references: selectedReferences }),
       });
       if (!res.ok) {
         let detail = "";
@@ -158,18 +198,93 @@ export default function AdminUserManager({ token }: { token: string }) {
         } catch {
           detail = "";
         }
-        setFetchError(`Không xóa được file liên quan (HTTP ${res.status})${detail}`);
+        setFetchError(`Không xóa được reference đã chọn (HTTP ${res.status})${detail}`);
         return;
       }
       setCleanupResult(await res.json());
     } catch (error) {
       setFetchError(
-        `Không xóa được file liên quan: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
+        `Không xóa được reference đã chọn: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
       );
     } finally {
       setCleanupLoading(false);
     }
+  }, [deleteImpact, selectedReferences, token]);
+
+  const createDeletionCase = useCallback(async () => {
+    if (!deleteImpact) return;
+    setDeletionCaseLoading(true);
+    setFetchError("");
+    setDeletionCaseMessage("");
+    try {
+      const res = await fetch(`${API}/admin/users/${deleteImpact.user.id}/deletion-case`, {
+        method: "POST",
+        headers: { ...authHdr, "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const err = await res.json();
+          detail = typeof err?.detail === "string" ? `: ${err.detail}` : "";
+        } catch {
+          detail = "";
+        }
+        setFetchError(`Không tạo được hồ sơ cleanup an toàn (HTTP ${res.status})${detail}`);
+        return;
+      }
+      setDeletionCase(await res.json());
+    } catch (error) {
+      setFetchError(
+        `Không tạo được hồ sơ cleanup an toàn: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
+      );
+    } finally {
+      setDeletionCaseLoading(false);
+    }
   }, [deleteImpact, token]);
+
+  const runDeletionCase = useCallback(async () => {
+    if (!deletionCase) return;
+    setDeletionCaseLoading(true);
+    setFetchError("");
+    setDeletionCaseMessage("");
+    try {
+      const res = await fetch(`${API}/admin/account-deletion-cases/${deletionCase.case.id}/run`, {
+        method: "POST",
+        headers: { ...authHdr, "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation_phrase: deletionCase.case.confirmation_phrase }),
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const err = await res.json();
+          detail = typeof err?.detail === "string" ? `: ${err.detail}` : "";
+        } catch {
+          detail = "";
+        }
+        setFetchError(`Không chạy được hồ sơ cleanup an toàn (HTTP ${res.status})${detail}`);
+        return;
+      }
+      const payload = await res.json();
+      setDeletionCase(payload);
+      setDeletionCaseMessage(`Case ${payload?.result?.case_status ?? payload?.case?.status ?? "updated"}`);
+    } catch (error) {
+      setFetchError(
+        `Không chạy được hồ sơ cleanup an toàn: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
+      );
+    } finally {
+      setDeletionCaseLoading(false);
+    }
+  }, [deletionCase, token]);
+
+  const toggleSelectedReference = useCallback((key: string) => {
+    setSelectedReferences((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    );
+  }, []);
+
+  const cleanupOptions = deleteImpact?.cleanup_options ?? [];
+  const selectableCleanupOptions = cleanupOptions.filter((option) => option.enabled);
+  const lockedCleanupOptions = cleanupOptions.filter((option) => !option.enabled);
 
   useEffect(() => {
     fetchUsers();
@@ -321,17 +436,77 @@ export default function AdminUserManager({ token }: { token: string }) {
             className="mt-4 rounded-xl p-3"
             style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(245,158,11,0.22)" }}
           >
-            <p className="text-xs leading-relaxed" style={{ color: "#475569" }}>
-              Bước dọn file chỉ xóa file vật lý do user này upload trong thư mục upload hợp lệ.
-              DB projection/document rows vẫn được giữ để audit; file ngoài UPLOAD_DIR sẽ bị bỏ qua fail-closed.
+            <p className="text-xs font-semibold" style={{ color: "#0A1F44" }}>
+              Dọn reference liên quan tới account đã bị xóa khỏi Keycloak
             </p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: "#475569" }}>
+              Không tự động xóa hàng loạt. Admin phải chọn từng checkbox; users projection và business/audit records mặc định được giữ lại.
+            </p>
+            {cleanupOptions.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                {selectableCleanupOptions.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#047857" }}>
+                      Có thể chọn để cleanup nhanh
+                    </p>
+                    {selectableCleanupOptions.map((option) => (
+                      <label
+                        key={option.key}
+                        className="flex items-start gap-2 rounded-lg p-2 text-xs"
+                        style={{ background: "rgba(255,255,255,0.85)", color: "#0A1F44" }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedReferences.includes(option.key)}
+                          disabled={cleanupLoading}
+                          onChange={() => toggleSelectedReference(option.key)}
+                        />
+                        <span>
+                          <span className="font-semibold">{option.label}</span> · {option.count} record(s) · {option.action}
+                          <span className="block mt-0.5">{option.warning}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(14,165,233,0.08)", color: "#0A1F44", border: "1px solid rgba(14,165,233,0.18)" }}>
+                    Không có reference nào đủ điều kiện cleanup nhanh cho projection này. Các dòng bên dưới là audit/business record hoặc chưa đạt điều kiện an toàn nên không có checkbox để xóa.
+                  </p>
+                )}
+
+                {lockedCleanupOptions.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#7C2D12" }}>
+                      Giữ lại / cần quy trình riêng
+                    </p>
+                    {lockedCleanupOptions.map((option) => (
+                      <div
+                        key={option.key}
+                        className="rounded-lg p-2 text-xs"
+                        style={{ background: "rgba(148,163,184,0.08)", color: "#64748B", border: "1px solid rgba(148,163,184,0.18)" }}
+                      >
+                        <span className="font-semibold">{option.label}</span> · {option.count} record(s) · {option.action}
+                        <span className="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(124,45,18,0.10)", color: "#7C2D12" }}>
+                          Không xóa nhanh
+                        </span>
+                        <span className="block mt-0.5">{option.warning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-xs" style={{ color: "#047857" }}>
+                Không có reference có thể cleanup bằng thao tác nhanh.
+              </p>
+            )}
             <button
-              onClick={cleanupRelatedFiles}
-              disabled={cleanupLoading}
+              onClick={cleanupSelectedReferences}
+              disabled={cleanupLoading || selectedReferences.length === 0}
               className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold"
-              style={{ background: "#991B1B", color: "#FFFFFF", opacity: cleanupLoading ? 0.65 : 1 }}
+              style={{ background: "#991B1B", color: "#FFFFFF", opacity: cleanupLoading || selectedReferences.length === 0 ? 0.55 : 1 }}
             >
-              {cleanupLoading ? "Đang tìm và xóa file..." : "Tìm và xóa file liên quan"}
+              {cleanupLoading ? "Đang xóa reference đã chọn..." : "Xóa reference đã chọn"}
             </button>
           </div>
 
@@ -341,13 +516,67 @@ export default function AdminUserManager({ token }: { token: string }) {
               style={{ background: "rgba(16,185,129,0.10)", color: "#047857", border: "1px solid rgba(16,185,129,0.22)" }}
             >
               <p className="font-semibold">
-                Đã xóa {cleanupResult.cleanup.deleted_files} file · cleared_document_rows={cleanupResult.cleanup.cleared_document_rows}
+                Đã dọn {cleanupResult.selected_references.length} nhóm reference · users_projection_deleted={String(cleanupResult.users_projection_deleted)} · documents_db_rows_deleted={String(cleanupResult.documents_db_rows_deleted)}
               </p>
-              <p className="mt-1">
-                missing_files={cleanupResult.cleanup.missing_files} · skipped_files={cleanupResult.cleanup.skipped_files}
-              </p>
-              <p className="mt-1">{cleanupResult.cleanup.scope}</p>
+              <p className="mt-1">Selected: {cleanupResult.selected_references.join(", ")}</p>
               <p className="mt-1">{cleanupResult.safe_next_step}</p>
+            </div>
+          )}
+
+          {lockedCleanupOptions.length > 0 && (
+            <div
+              className="mt-4 rounded-xl p-3 text-xs"
+              style={{ background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.22)", color: "#0A1F44" }}
+            >
+              <p className="font-semibold">Quy trình riêng cho reference quan trọng</p>
+              <p className="mt-1 leading-relaxed" style={{ color: "#475569" }}>
+                Tạo hồ sơ cleanup an toàn để hệ thống dry-run policy, giữ audit log append-only, detach reference nullable, và ghi evidence cho từng bước. Không xóa users projection hoặc document DB rows bằng luồng này.
+              </p>
+              <button
+                onClick={createDeletionCase}
+                disabled={deletionCaseLoading}
+                className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold"
+                style={{ background: "#0A1F44", color: "#FFFFFF", opacity: deletionCaseLoading ? 0.65 : 1 }}
+              >
+                {deletionCaseLoading ? "Đang xử lý hồ sơ..." : "Tạo hồ sơ xử lý an toàn"}
+              </button>
+
+              {deletionCase && (
+                <div
+                  className="mt-3 rounded-lg p-3"
+                  style={{ background: "rgba(255,255,255,0.82)", border: "1px solid rgba(14,165,233,0.18)" }}
+                >
+                  <p className="font-semibold">
+                    Hồ sơ cleanup: {deletionCase.case.id} · status={deletionCase.case.status} · risk={deletionCase.case.risk_level}
+                  </p>
+                  <p className="mt-1 font-mono" style={{ color: "#7C2D12" }}>
+                    {deletionCase.case.confirmation_phrase}
+                  </p>
+                  {deletionCase.items && deletionCase.items.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {deletionCase.items.map((item) => (
+                        <li key={`${item.reference_key}-${item.action}`}>
+                          <span className="font-semibold">{item.label}</span> · {item.record_count} record(s) · {item.action} · {item.status}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    onClick={runDeletionCase}
+                    disabled={deletionCaseLoading || deletionCase.case.status === "completed"}
+                    className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold"
+                    style={{ background: "#047857", color: "#FFFFFF", opacity: deletionCaseLoading || deletionCase.case.status === "completed" ? 0.65 : 1 }}
+                  >
+                    {deletionCaseLoading ? "Đang chạy cleanup..." : "Chạy cleanup an toàn"}
+                  </button>
+                  {deletionCase.result && (
+                    <p className="mt-2" style={{ color: "#047857" }}>
+                      completed={deletionCase.result.completed_items} · skipped={deletionCase.result.skipped_items} · blocked={deletionCase.result.blocked_items} · failed={deletionCase.result.failed_items ?? 0}
+                    </p>
+                  )}
+                  {deletionCaseMessage && <p className="mt-2 font-semibold" style={{ color: "#047857" }}>{deletionCaseMessage}</p>}
+                </div>
+              )}
             </div>
           )}
         </div>
