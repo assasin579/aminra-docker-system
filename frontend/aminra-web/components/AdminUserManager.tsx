@@ -577,14 +577,33 @@ export default function AdminUserManager({ token }: { token: string }) {
                     className="mt-3 rounded-lg px-3 py-1.5 text-xs font-semibold"
                     style={{ background: "#047857", color: "#FFFFFF", opacity: deletionCaseLoading || deletionCase.case.status === "completed" ? 0.65 : 1 }}
                   >
-                    {deletionCaseLoading ? "Đang chạy cleanup..." : "Chạy cleanup an toàn"}
+                    {deletionCaseLoading
+                      ? "Đang chạy cleanup..."
+                      : deletionCase.case.status === "completed"
+                        ? "Cleanup đã chạy"
+                        : "Chạy cleanup an toàn"}
                   </button>
-                  {deletionCase.result && (
-                    <p className="mt-2" style={{ color: "#047857" }}>
-                      completed={deletionCase.result.completed_items} · skipped={deletionCase.result.skipped_items} · blocked={deletionCase.result.blocked_items} · failed={deletionCase.result.failed_items ?? 0}
-                    </p>
+                  {(deletionCase.result || deletionCaseMessage) && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      data-testid="deletion-case-run-result"
+                      className="mt-3 rounded-lg px-3 py-2 text-xs"
+                      style={{ background: "rgba(16,185,129,0.12)", color: "#065F46", border: "1px solid rgba(16,185,129,0.28)" }}
+                    >
+                      <p className="font-semibold">
+                        {deletionCaseMessage || `Cleanup an toàn đã chạy: status=${deletionCase.result?.case_status ?? deletionCase.case.status}`}
+                      </p>
+                      {deletionCase.result && (
+                        <p className="mt-1">
+                          completed={deletionCase.result.completed_items} · skipped={deletionCase.result.skipped_items} · blocked={deletionCase.result.blocked_items} · failed={deletionCase.result.failed_items ?? 0}
+                        </p>
+                      )}
+                      <p className="mt-1">
+                        users_projection_deleted=false · documents_db_rows_deleted=false
+                      </p>
+                    </div>
                   )}
-                  {deletionCaseMessage && <p className="mt-2 font-semibold" style={{ color: "#047857" }}>{deletionCaseMessage}</p>}
                 </div>
               )}
             </div>

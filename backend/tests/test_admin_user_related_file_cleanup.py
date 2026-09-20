@@ -188,3 +188,6 @@ def test_account_deletion_case_routes_and_migration_contract_exist():
     assert "account_cleanup_status" in migration_src
     assert "status = $2::varchar" in app_src
     assert "CASE WHEN $2::varchar IN" in app_src
+    run_route = app_src[app_src.index('async def admin_run_account_deletion_case') : app_src.index('@app.get("/admin/account-deletion-cases/{case_id}")')]
+    assert '"items": updated_items' in run_route
+    assert "account_deletion_case_items" in run_route

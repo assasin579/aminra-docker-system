@@ -275,8 +275,17 @@ describe("AdminUserManager delete-impact preflight UX", () => {
       }
       if (url === "/api/admin/account-deletion-cases/case-123/run" && init?.method === "POST") {
         return Response.json({
-          case: { id: "case-123", status: "completed", risk_level: "high" },
-          result: { case_status: "completed", completed_items: 1, skipped_items: 1, blocked_items: 0 },
+          case: {
+            id: "case-123",
+            status: "completed",
+            risk_level: "high",
+            confirmation_phrase: "CONFIRM CLEANUP qa-admin-preflight@example.com",
+          },
+          items: [
+            { reference_key: "audit_logs", label: "Audit logs", action: "retain_append_only_audit", record_count: 1, status: "skipped" },
+            { reference_key: "documents_approved", label: "Tài liệu user đã approve", action: "detach_user_reference", record_count: 1, status: "completed" },
+          ],
+          result: { case_status: "completed", completed_items: 1, skipped_items: 1, blocked_items: 0, failed_items: 0 },
         });
       }
       return Response.json({ detail: "unexpected request" }, { status: 500 });
@@ -293,7 +302,11 @@ describe("AdminUserManager delete-impact preflight UX", () => {
     expect(screen.getByText(/CONFIRM CLEANUP qa-admin-preflight@example.com/)).toBeInTheDocument();
 
     await userEvent.click(await screen.findByRole("button", { name: "Chạy cleanup an toàn" }));
-    expect(await screen.findByText(/Case completed/)).toBeInTheDocument();
+    expect(await screen.findByTestId("deletion-case-run-result")).toHaveTextContent(
+      "Cleanup an toàn đã chạy: status=completed; completed=1; skipped=1; blocked=0; failed=0",
+    );
+    expect(screen.getByTestId("deletion-case-run-result")).toHaveTextContent("users_projection_deleted=false");
+    expect(screen.getByRole("button", { name: "Cleanup đã chạy" })).toBeDisabled();
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
