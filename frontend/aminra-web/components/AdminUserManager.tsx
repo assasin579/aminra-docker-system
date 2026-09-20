@@ -265,8 +265,18 @@ export default function AdminUserManager({ token }: { token: string }) {
         return;
       }
       const payload = await res.json();
-      setDeletionCase(payload);
-      setDeletionCaseMessage(`Case ${payload?.result?.case_status ?? payload?.case?.status ?? "updated"}`);
+      setDeletionCase((current) => ({
+        ...payload,
+        items: payload?.items ?? current?.items ?? [],
+        result: payload?.result,
+      }));
+      const result = payload?.result;
+      setDeletionCaseMessage(
+        result
+          ? `Cleanup an toàn đã chạy: status=${result.case_status}; completed=${result.completed_items}; skipped=${result.skipped_items}; blocked=${result.blocked_items}; failed=${result.failed_items ?? 0}`
+          : `Cleanup an toàn đã chạy: status=${payload?.case?.status ?? "updated"}`,
+      );
+      await fetchUsers();
     } catch (error) {
       setFetchError(
         `Không chạy được hồ sơ cleanup an toàn: ${error instanceof Error ? error.message : "lỗi mạng không xác định"}`,
@@ -274,7 +284,7 @@ export default function AdminUserManager({ token }: { token: string }) {
     } finally {
       setDeletionCaseLoading(false);
     }
-  }, [deletionCase, token]);
+  }, [deletionCase, fetchUsers, token]);
 
   const toggleSelectedReference = useCallback((key: string) => {
     setSelectedReferences((current) =>

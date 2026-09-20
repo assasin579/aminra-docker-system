@@ -1898,7 +1898,16 @@ async def admin_run_account_deletion_case(
                  FROM account_deletion_cases WHERE id = $1""",
             case_id,
         )
-    return {"case": dict(updated_case), "result": result}
+        updated_items = [dict(row) for row in await conn.fetch(
+            """SELECT id, reference_key, label, table_name, column_name, record_count,
+                      action, risk_level, status, reason, before_snapshot, after_result, error_message,
+                      created_at, updated_at
+                 FROM account_deletion_case_items
+                WHERE case_id = $1
+                ORDER BY created_at, reference_key""",
+            case_id,
+        )]
+    return {"case": dict(updated_case), "items": updated_items, "result": result}
 
 
 @app.get("/admin/account-deletion-cases/{case_id}")
