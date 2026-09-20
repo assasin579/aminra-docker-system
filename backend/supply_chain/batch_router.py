@@ -16,6 +16,7 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user
 from auth.permissions import check_permission_db
 from auth.identity import resolve_canonical_user_id
+from auth.module_guard import require_module
 from .models import BatchCreate, BatchUpdate, BatchStepUpdate, BatchOut
 from .eligibility_service import assert_supplier_eligible
 
@@ -138,7 +139,7 @@ def _checklist_requires_photo(checklist) -> bool:
 # ── CRUD Batches ──────────────────────────────────────────────────────────────
 
 
-@router.get("/batches")
+@router.get("/batches", dependencies=[Depends(require_module("traceability"))])
 async def list_batches(
     status: Optional[str] = Query(None),
     product: Optional[str] = Query(None),
@@ -207,7 +208,7 @@ async def list_batches(
     }
 
 
-@router.post("/batches")
+@router.post("/batches", dependencies=[Depends(require_module("traceability"))])
 async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depends(get_db)):
     tenant_id = _require_business(user)
     await check_permission_db(user, "can_edit")
@@ -313,7 +314,7 @@ async def create_batch(req: BatchCreate, user=Depends(get_current_user), db=Depe
     }
 
 
-@router.get("/batches/stats")
+@router.get("/batches/stats", dependencies=[Depends(require_module("traceability"))])
 async def batch_stats(user=Depends(get_current_user), db=Depends(get_db)):
     tenant_id = _require_business(user)
     total = await db.fetchval("SELECT COUNT(*) FROM production_batches WHERE tenant_id=$1", tenant_id)
@@ -329,7 +330,7 @@ async def batch_stats(user=Depends(get_current_user), db=Depends(get_db)):
     return {"total": total, "completed": completed, "in_progress": in_progress, "draft": draft}
 
 
-@router.get("/batches/members")
+@router.get("/batches/members", dependencies=[Depends(require_module("traceability"))])
 async def list_tenant_members(user=Depends(get_current_user), db=Depends(get_db)):
     """List all members in the same tenant for assignment."""
     tenant_id = _require_business(user)
@@ -479,7 +480,7 @@ async def public_trace(trace_id: str, db=Depends(get_db)):
     )
 
 
-@router.put("/batches/{bid}/assign-member")
+@router.put("/batches/{bid}/assign-member", dependencies=[Depends(require_module("traceability"))])
 async def assign_member_to_batch(bid: str, request: Request, user=Depends(get_current_user), db=Depends(get_db)):
     """Owner assigns a member to approve the batch."""
     _validate_uuid(bid)
@@ -514,7 +515,7 @@ async def assign_member_to_batch(bid: str, request: Request, user=Depends(get_cu
     return {"message": f"Đã ủy quyền cho {member['company_name']}", "assigned_name": member["company_name"]}
 
 
-@router.get("/batches/{bid}")
+@router.get("/batches/{bid}", dependencies=[Depends(require_module("traceability"))])
 async def get_batch(bid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(bid)
     tenant_id = _require_business(user)
@@ -575,7 +576,7 @@ def _validate_batch_transition(from_status: str, to_status: str) -> None:
         )
 
 
-@router.put("/batches/{bid}")
+@router.put("/batches/{bid}", dependencies=[Depends(require_module("traceability"))])
 async def update_batch(bid: str, req: BatchUpdate, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(bid)
     tenant_id = _require_business(user)
@@ -620,7 +621,7 @@ async def update_batch(bid: str, req: BatchUpdate, user=Depends(get_current_user
     return {"message": "Đã cập nhật"}
 
 
-@router.delete("/batches/{bid}")
+@router.delete("/batches/{bid}", dependencies=[Depends(require_module("traceability"))])
 async def delete_batch(bid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(bid)
     tenant_id = _require_business(user)
@@ -635,7 +636,7 @@ async def delete_batch(bid: str, user=Depends(get_current_user), db=Depends(get_
 # ── Step tracking ─────────────────────────────────────────────────────────────
 
 
-@router.put("/batches/{bid}/steps/{step_id}")
+@router.put("/batches/{bid}/steps/{step_id}", dependencies=[Depends(require_module("traceability"))])
 async def update_step(bid: str, step_id: str, req: BatchStepUpdate, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(bid)
     _validate_uuid(step_id)
@@ -680,7 +681,7 @@ async def update_step(bid: str, step_id: str, req: BatchStepUpdate, user=Depends
     return {"message": "Đã cập nhật", "compliance_score": score}
 
 
-@router.post("/batches/{bid}/steps/{step_id}/approve")
+@router.post("/batches/{bid}/steps/{step_id}/approve", dependencies=[Depends(require_module("traceability"))])
 async def approve_step(bid: str, step_id: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Owner or assigned member approves a completed step."""
     _validate_uuid(bid)
@@ -707,7 +708,7 @@ async def approve_step(bid: str, step_id: str, user=Depends(get_current_user), d
     return {"message": "Đã xác nhận bước"}
 
 
-@router.post("/batches/{bid}/approve")
+@router.post("/batches/{bid}/approve", dependencies=[Depends(require_module("traceability"))])
 async def approve_batch(bid: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Owner or assigned member approves batch — seals all data + computes integrity hash."""
     _validate_uuid(bid)
@@ -910,7 +911,7 @@ async def approve_batch(bid: str, user=Depends(get_current_user), db=Depends(get
     }
 
 
-@router.get("/batches/{bid}/verify")
+@router.get("/batches/{bid}/verify", dependencies=[Depends(require_module("traceability"))])
 async def verify_batch_integrity(bid: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Verify batch data hasn't been tampered with after sealing."""
     _validate_uuid(bid)
@@ -939,7 +940,7 @@ async def verify_batch_integrity(bid: str, user=Depends(get_current_user), db=De
     }
 
 
-@router.post("/batches/{bid}/export-pdf")
+@router.post("/batches/{bid}/export-pdf", dependencies=[Depends(require_module("traceability"))])
 async def export_batch_pdf(bid: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Export batch report as PDF with QR code."""
     _validate_uuid(bid)
@@ -1163,7 +1164,7 @@ async def export_batch_pdf(bid: str, user=Depends(get_current_user), db=Depends(
     )
 
 
-@router.post("/batches/{bid}/steps/{step_id}/photo")
+@router.post("/batches/{bid}/steps/{step_id}/photo", dependencies=[Depends(require_module("traceability"))])
 async def upload_step_photo(
     bid: str, step_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
 ):
@@ -1262,7 +1263,7 @@ async def view_step_photo(bid: str, step_id: str, request: Request, token: Optio
 # ── QR Code ───────────────────────────────────────────────────────────────────
 
 
-@router.get("/batches/{bid}/qr")
+@router.get("/batches/{bid}/qr", dependencies=[Depends(require_module("public_trace"))])
 async def generate_qr(bid: str, request: Request, user=Depends(get_current_user), db=Depends(get_db)):
     """Generate QR code PNG for a batch."""
     _validate_uuid(bid)

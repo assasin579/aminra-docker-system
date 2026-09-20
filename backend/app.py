@@ -129,7 +129,7 @@ from auth.gdpr_router import router as gdpr_router
 from auth.feature_flags_router import router as feature_flags_router, admin_router as feature_flags_admin_router
 from auth.industry_schema_router import router as industry_schema_router, admin_router as industry_schema_admin_router
 from auth.standard_type_router import router as standard_type_router, admin_router as standard_type_admin_router
-from auth.module_router import router as module_router
+from auth.module_router import router as module_router, admin_router as module_admin_router
 from auth.dossier_router import router as dossier_router
 from auth.pdf_render_router import router as pdf_render_router
 
@@ -144,6 +144,7 @@ app.include_router(feature_flags_router, prefix="/api/feature-flags", tags=["fea
 app.include_router(industry_schema_router, prefix="/industry-schemas", tags=["industry-schemas"])
 app.include_router(standard_type_router, prefix="/standard-types", tags=["standard-types"])
 app.include_router(module_router, prefix="/api/me", tags=["modules"])
+app.include_router(module_admin_router, prefix="/auth/admin", tags=["admin-modules"])
 app.include_router(standard_type_admin_router, prefix="/auth/admin/standard-types", tags=["admin-standard-types"])
 app.include_router(dossier_router, prefix="/dossiers", tags=["dossiers"])
 app.include_router(pdf_render_router, prefix="/api/templates", tags=["pdf-render"])

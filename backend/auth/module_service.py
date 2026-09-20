@@ -151,3 +151,125 @@ async def get_current_tenant_modules(db: Any, user: dict[str, Any]) -> dict[str,
             for row in rows
         ],
     }
+
+
+_ADMIN_MUTABLE_STATUSES = {"enabled", "trial", "disabled", "locked"}
+_ACTIVE_STATUSES = {"enabled", "trial"}
+
+
+async def set_tenant_module_status(
+    db: Any,
+    tenant_id: Any,
+    module_code: str,
+    status: str,
+    *,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Safely set one tenant module status as an admin override.
+
+    This is the backend management-plane primitive for sandbox module toggles.
+    It enforces required dependency invariants before writing so admin tooling
+    cannot create a graph that the frontend/backend interpret inconsistently.
+    """
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="TENANT_REQUIRED")
+    if status not in _ADMIN_MUTABLE_STATUSES:
+        raise HTTPException(status_code=422, detail="INVALID_MODULE_STATUS")
+
+    module_row = await db.fetchrow(
+        """
+        SELECT m.id AS module_id,
+               m.code,
+               COALESCE(bmm.required, false) AS required
+        FROM tenant_modules tm
+        JOIN modules m ON m.id = tm.module_id
+        LEFT JOIN users u
+          ON u.tenant_id = tm.tenant_id
+         AND u.industry_schema_id IS NOT NULL
+         AND u.is_owner = true
+        LEFT JOIN business_model_modules bmm
+          ON bmm.industry_schema_id = u.industry_schema_id
+         AND bmm.module_id = tm.module_id
+        WHERE tm.tenant_id = $1
+          AND m.code = $2
+          AND m.enabled = true
+        LIMIT 1
+        """,
+        tenant_id,
+        module_code,
+    )
+    if not module_row:
+        raise HTTPException(status_code=404, detail=f"MODULE_NOT_FOUND:{module_code}")
+
+    required = bool(_row_value(module_row, "required"))
+    if required and status not in _ACTIVE_STATUSES:
+        raise HTTPException(status_code=409, detail=f"MODULE_REQUIRED:{module_code}")
+
+    missing_dependencies = await db.fetch(
+        """
+        SELECT dep.code
+        FROM module_dependencies md
+        JOIN modules target ON target.id = md.module_id
+        JOIN modules dep ON dep.id = md.depends_on_module_id
+        LEFT JOIN tenant_modules dep_tm
+          ON dep_tm.tenant_id = $1
+         AND dep_tm.module_id = dep.id
+        WHERE target.code = $2
+          AND md.dependency_type = 'requires'
+          AND COALESCE(dep_tm.status, 'missing') NOT IN ('enabled', 'trial')
+        ORDER BY dep.code
+        """,
+        tenant_id,
+        module_code,
+    )
+    if status in _ACTIVE_STATUSES and missing_dependencies:
+        code = _row_value(missing_dependencies[0], "code")
+        raise HTTPException(status_code=409, detail=f"MODULE_DEPENDENCY_MISSING:{code}")
+
+    enabled_dependents = await db.fetch(
+        """
+        SELECT dependent.code
+        FROM module_dependencies md
+        JOIN modules dep ON dep.id = md.depends_on_module_id
+        JOIN modules dependent ON dependent.id = md.module_id
+        JOIN tenant_modules tm
+          ON tm.tenant_id = $1
+         AND tm.module_id = dependent.id
+        WHERE dep.code = $2
+          AND md.dependency_type = 'requires'
+          AND tm.status IN ('enabled', 'trial')
+        ORDER BY dependent.code
+        """,
+        tenant_id,
+        module_code,
+    )
+    if status not in _ACTIVE_STATUSES and enabled_dependents:
+        code = _row_value(enabled_dependents[0], "code")
+        raise HTTPException(status_code=409, detail=f"MODULE_DEPENDENT_ENABLED:{code}")
+
+    normalized_config = config or {}
+    await db.execute(
+        """
+        UPDATE tenant_modules
+        SET status = $3,
+            source = 'admin_override',
+            config = $4::jsonb,
+            updated_at = NOW()
+        FROM modules m
+        WHERE tenant_modules.module_id = m.id
+          AND tenant_modules.tenant_id = $1
+          AND m.code = $2
+        """,
+        tenant_id,
+        module_code,
+        status,
+        json.dumps(normalized_config),
+    )
+
+    return {
+        "tenant_id": str(tenant_id),
+        "module_code": module_code,
+        "status": status,
+        "source": "admin_override",
+        "config": normalized_config,
+    }

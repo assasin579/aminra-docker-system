@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from auth.module_service import (
     get_current_tenant_modules,
     provision_tenant_modules_for_industry,
+    set_tenant_module_status,
 )
 
 
@@ -146,3 +147,73 @@ async def test_provision_tenant_modules_for_industry_rejects_missing_tenant():
     assert exc.value.status_code == 403
     assert exc.value.detail == "TENANT_REQUIRED"
     db.fetchval.assert_not_called()
+
+
+async def test_set_tenant_module_status_rejects_enabling_when_required_dependency_missing():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(module_id="public-trace-id", code="public_trace", required=False))
+    db.fetch = AsyncMock(return_value=[Row(code="traceability")])
+
+    with pytest.raises(HTTPException) as exc:
+        await set_tenant_module_status(db, tenant_id, "public_trace", "enabled")
+
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "MODULE_DEPENDENCY_MISSING:traceability"
+    db.execute.assert_not_called()
+
+
+async def test_set_tenant_module_status_rejects_disabling_when_required_dependents_enabled():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(module_id="traceability-id", code="traceability", required=False))
+    db.fetch = AsyncMock(side_effect=[[], [Row(code="public_trace")]])
+
+    with pytest.raises(HTTPException) as exc:
+        await set_tenant_module_status(db, tenant_id, "traceability", "disabled")
+
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "MODULE_DEPENDENT_ENABLED:public_trace"
+    db.execute.assert_not_called()
+
+
+async def test_set_tenant_module_status_blocks_disabling_required_default_module():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(module_id="cert-id", code="certification_dossier", required=True))
+    db.fetch = AsyncMock(return_value=[])
+
+    with pytest.raises(HTTPException) as exc:
+        await set_tenant_module_status(db, tenant_id, "certification_dossier", "disabled")
+
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "MODULE_REQUIRED:certification_dossier"
+    db.execute.assert_not_called()
+
+
+async def test_set_tenant_module_status_writes_admin_override_after_dependency_checks():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(module_id="traceability-id", code="traceability", required=False))
+    db.fetch = AsyncMock(side_effect=[[], []])
+    db.execute = AsyncMock(return_value="UPDATE 1")
+
+    payload = await set_tenant_module_status(
+        db,
+        tenant_id,
+        "traceability",
+        "trial",
+        config={"max_batches": 10},
+    )
+
+    assert payload == {
+        "tenant_id": tenant_id,
+        "module_code": "traceability",
+        "status": "trial",
+        "source": "admin_override",
+        "config": {"max_batches": 10},
+    }
+    db.execute.assert_awaited_once()
+    sql = db.execute.call_args.args[0]
+    assert "UPDATE tenant_modules" in sql
+    assert "source = 'admin_override'" in sql

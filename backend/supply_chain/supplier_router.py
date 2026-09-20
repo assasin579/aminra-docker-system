@@ -14,6 +14,7 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user, decode_token
 from auth.permissions import check_permission_db
 from auth.identity import resolve_canonical_tenant_id
+from auth.module_guard import require_module
 from .models import (
     CertificateOut,
     CertificateRiskAlertOut,
@@ -128,7 +129,7 @@ _LIST_SUPPLIERS_ALL = _LIST_SUPPLIERS_BASE + " ORDER BY s.created_at DESC"
 _LIST_SUPPLIERS_BY_STATUS = _LIST_SUPPLIERS_BASE + " AND s.status = $2 ORDER BY s.created_at DESC"
 
 
-@router.get("/suppliers")
+@router.get("/suppliers", dependencies=[Depends(require_module("supplier_management"))])
 async def list_suppliers(
     status: Optional[str] = Query(None),
     user=Depends(get_current_user),
@@ -145,7 +146,7 @@ async def list_suppliers(
     }
 
 
-@router.get("/suppliers/eligible")
+@router.get("/suppliers/eligible", dependencies=[Depends(require_module("supplier_management"))])
 async def list_eligible_suppliers_route(
     material_category: Optional[str] = Query(None),
     user=Depends(get_current_user),
@@ -185,7 +186,7 @@ async def list_eligible_suppliers_route(
     }
 
 
-@router.get("/certificate-risk-alerts")
+@router.get("/certificate-risk-alerts", dependencies=[Depends(require_module("supplier_management"))])
 async def list_certificate_risk_alerts(
     status: Optional[str] = Query(None),
     user=Depends(get_current_user),
@@ -227,7 +228,7 @@ async def list_certificate_risk_alerts(
     }
 
 
-@router.put("/certificate-risk-alerts/{alert_id}")
+@router.put("/certificate-risk-alerts/{alert_id}", dependencies=[Depends(require_module("supplier_management"))])
 async def update_certificate_risk_alert(
     alert_id: str,
     req: CertificateRiskAlertUpdate,
@@ -252,7 +253,7 @@ async def update_certificate_risk_alert(
     return {"id": str(row["id"]), "status": row["status"], "message": "Đã cập nhật cảnh báo"}
 
 
-@router.put("/suppliers/{sid}/cb-certificate")
+@router.put("/suppliers/{sid}/cb-certificate", dependencies=[Depends(require_module("supplier_management"))])
 async def upsert_supplier_eligibility(
     sid: str,
     req: SupplierCertificateEligibilityUpsert,
@@ -334,7 +335,7 @@ async def upsert_supplier_eligibility(
     ).model_dump()
 
 
-@router.post("/suppliers/{sid}/cb-certificate")
+@router.post("/suppliers/{sid}/cb-certificate", dependencies=[Depends(require_module("supplier_management"))])
 async def create_supplier_eligibility(
     sid: str,
     req: SupplierCertificateEligibilityUpsert,
@@ -344,7 +345,7 @@ async def create_supplier_eligibility(
     return await upsert_supplier_eligibility(sid, req, user, db)
 
 
-@router.post("/suppliers")
+@router.post("/suppliers", dependencies=[Depends(require_module("supplier_management"))])
 async def create_supplier(
     req: SupplierCreate,
     user=Depends(get_current_user),
@@ -371,7 +372,7 @@ async def create_supplier(
     return {"id": str(row["id"]), "message": "Đã tạo nhà cung cấp"}
 
 
-@router.get("/suppliers/{sid}")
+@router.get("/suppliers/{sid}", dependencies=[Depends(require_module("supplier_management"))])
 async def get_supplier(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
@@ -407,7 +408,7 @@ _UPDATE_SUPPLIER_QUERY = """
 """
 
 
-@router.put("/suppliers/{sid}")
+@router.put("/suppliers/{sid}", dependencies=[Depends(require_module("supplier_management"))])
 async def update_supplier(sid: str, req: SupplierUpdate, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
@@ -435,7 +436,7 @@ async def update_supplier(sid: str, req: SupplierUpdate, user=Depends(get_curren
     return {"message": "Đã cập nhật"}
 
 
-@router.delete("/suppliers/{sid}")
+@router.delete("/suppliers/{sid}", dependencies=[Depends(require_module("supplier_management"))])
 async def delete_supplier(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
@@ -449,7 +450,7 @@ async def delete_supplier(sid: str, user=Depends(get_current_user), db=Depends(g
 # ── Supplier Certificates ────────────────────────────────────────────────────
 
 
-@router.get("/suppliers/{sid}/certificates")
+@router.get("/suppliers/{sid}/certificates", dependencies=[Depends(require_module("supplier_management"))])
 async def list_certificates(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     tenant_id = _require_business(user)
@@ -476,7 +477,7 @@ async def list_certificates(sid: str, user=Depends(get_current_user), db=Depends
     }
 
 
-@router.post("/suppliers/{sid}/certificates")
+@router.post("/suppliers/{sid}/certificates", dependencies=[Depends(require_module("supplier_management"))])
 async def upload_certificate(
     sid: str,
     file: UploadFile = File(...),
@@ -556,7 +557,7 @@ async def upload_certificate(
     return {"id": str(row["id"]), "filename": file.filename}
 
 
-@router.get("/suppliers/{sid}/certificates/{cid}/view")
+@router.get("/suppliers/{sid}/certificates/{cid}/view", dependencies=[Depends(require_module("supplier_management"))])
 async def view_certificate(
     sid: str,
     cid: str,
@@ -655,7 +656,7 @@ async def view_certificate(
     return FileResponse(path=str(cache_pdf), media_type="application/pdf")
 
 
-@router.delete("/suppliers/{sid}/certificates/{cid}")
+@router.delete("/suppliers/{sid}/certificates/{cid}", dependencies=[Depends(require_module("supplier_management"))])
 async def delete_certificate(sid: str, cid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(sid)
     _validate_uuid(cid)
@@ -679,7 +680,7 @@ async def delete_certificate(sid: str, cid: str, user=Depends(get_current_user),
 # ── Invite & Supplier Portal (public) ─────────────────────────────────────────
 
 
-@router.post("/suppliers/{sid}/invite")
+@router.post("/suppliers/{sid}/invite", dependencies=[Depends(require_module("supplier_management"))])
 async def generate_invite(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Generate invite link for supplier to upload their own certificates."""
     _validate_uuid(sid)
@@ -813,7 +814,7 @@ async def portal_upload(
     return {"message": "Đã gửi hồ sơ thành công", "filename": file.filename}
 
 
-@router.get("/suppliers/{sid}/verification-status")
+@router.get("/suppliers/{sid}/verification-status", dependencies=[Depends(require_module("supplier_management"))])
 async def verification_status(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Check if supplier meets verification requirements."""
     _validate_uuid(sid)
@@ -845,7 +846,7 @@ async def verification_status(sid: str, user=Depends(get_current_user), db=Depen
     }
 
 
-@router.post("/suppliers/{sid}/verify")
+@router.post("/suppliers/{sid}/verify", dependencies=[Depends(require_module("supplier_management"))])
 async def verify_supplier(sid: str, user=Depends(get_current_user), db=Depends(get_db)):
     """Mark supplier as verified (requires Halal cert)."""
     _validate_uuid(sid)

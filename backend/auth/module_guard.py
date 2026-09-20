@@ -10,11 +10,27 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user
 
 MODULE_GUARDS_ENV = "MODULE_GUARDS_ENABLED"
+MODULE_GUARD_ROLLOUT_ENV = "MODULE_GUARD_ROLLOUT"
 _ALLOWED_STATUSES = {"enabled", "trial"}
 
 
 def _guards_enabled() -> bool:
     return os.getenv(MODULE_GUARDS_ENV, "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _module_in_rollout(module_code: str) -> bool:
+    """Return whether this module should enforce guards in the current rollout.
+
+    Empty/unset means all wired guards enforce when MODULE_GUARDS_ENABLED=true,
+    preserving the original global-flag semantics. A CSV allowlist lets sandbox
+    operators enable reviewed module groups incrementally instead of flipping all
+    guards at once. `*`/`all` are explicit all-module aliases for runbooks.
+    """
+    raw = os.getenv(MODULE_GUARD_ROLLOUT_ENV, "").strip()
+    if not raw:
+        return True
+    allowed = {part.strip() for part in raw.split(",") if part.strip()}
+    return "*" in allowed or "all" in allowed or module_code in allowed
 
 
 def _row_get(row: Any, key: str, default: Any = None) -> Any:
@@ -37,7 +53,7 @@ def require_module(module_code: str) -> Callable[..., Any]:
     """
 
     async def dependency(user=Depends(get_current_user), db=Depends(get_db)) -> None:
-        if not _guards_enabled():
+        if not _guards_enabled() or not _module_in_rollout(module_code):
             return None
 
         tenant_id = user.get("tenant_id") if isinstance(user, dict) else None

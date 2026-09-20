@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import HTTPException
 
-from auth.module_guard import MODULE_GUARDS_ENV, require_module
+from auth.module_guard import MODULE_GUARDS_ENV, MODULE_GUARD_ROLLOUT_ENV, require_module
 
 
 class Row(dict):
@@ -20,6 +20,27 @@ async def test_require_module_allows_when_feature_flag_disabled(monkeypatch):
     await require_module("traceability")({"tenant_id": "tenant-1"}, db)
 
     db.fetchrow.assert_not_called()
+
+
+async def test_require_module_fails_open_when_not_in_rollout_allowlist(monkeypatch):
+    monkeypatch.setenv(MODULE_GUARDS_ENV, "true")
+    monkeypatch.setenv(MODULE_GUARD_ROLLOUT_ENV, "supplier_management,process_digitization")
+    db = AsyncMock()
+
+    await require_module("traceability")({"tenant_id": "tenant-1"}, db)
+
+    db.fetchrow.assert_not_called()
+
+
+async def test_require_module_enforces_when_rollout_allowlist_contains_module(monkeypatch):
+    monkeypatch.setenv(MODULE_GUARDS_ENV, "true")
+    monkeypatch.setenv(MODULE_GUARD_ROLLOUT_ENV, "traceability")
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(status="enabled"))
+
+    await require_module("traceability")({"tenant_id": "tenant-1"}, db)
+
+    db.fetchrow.assert_called_once()
 
 
 async def test_require_module_allows_enabled_and_trial_modules(monkeypatch):
