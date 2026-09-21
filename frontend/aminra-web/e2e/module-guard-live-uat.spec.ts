@@ -1,10 +1,54 @@
 import { expect, test } from "@playwright/test";
-import { requireKeycloakUserToken } from "./helpers/auth-token";
+import { keycloakClientId, keycloakTokenUrl, requireKeycloakUserToken } from "./helpers/auth-token";
 
 const EVIDENCE_DIR = process.env.UAT_EVIDENCE_DIR || "../../docs/qa/tmp-module-guard/evidence";
 const BUSINESS_EMAIL = process.env.PW_BIZ_EMAIL || process.env.DEMO_BUSINESS_EMAIL || "biz-demo-1@demo.aminra.vn";
 const BUSINESS_PASSWORD = process.env.PW_BIZ_PASSWORD || process.env.DEMO_PW;
 const TARGET_INDUSTRY_CODE = process.env.UAT_INDUSTRY_CODE || "restaurant_hotel";
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD;
+
+async function requireAdminToken(request: any): Promise<string> {
+  test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "admin credentials not configured (TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD)");
+  const tokenUrl = keycloakTokenUrl();
+  const forwarded = /(^http:\/\/127\.0\.0\.1|^http:\/\/localhost|^http:\/\/keycloak[:/])/.test(tokenUrl)
+    ? {
+        "X-Forwarded-Proto": process.env.KEYCLOAK_PUBLIC_PROTO || "https",
+        "X-Forwarded-Host": process.env.KEYCLOAK_PUBLIC_HOST || "auth.aminra.org",
+        "X-Forwarded-Port": process.env.KEYCLOAK_PUBLIC_PORT || "443",
+      }
+    : undefined;
+  const login = await request.post(tokenUrl, {
+    headers: forwarded,
+    form: {
+      grant_type: "password",
+      client_id: keycloakClientId(),
+      username: ADMIN_EMAIL as string,
+      password: ADMIN_PASSWORD as string,
+    },
+  });
+  expect(login.ok(), `admin token grant failed: ${login.status()}`).toBeTruthy();
+  const body = await login.json();
+  expect(body.access_token).toBeTruthy();
+  return body.access_token;
+}
+
+async function rejectPendingActivationRequests(request: any, adminToken: string, tenantId: string, moduleCode: string) {
+  const response = await request.get(
+    `/api/auth/admin/module-activation-requests?tenant_id=${encodeURIComponent(tenantId)}&status=pending`,
+    { headers: { Authorization: `Bearer ${adminToken}` } },
+  );
+  expect(response.ok(), await response.text()).toBeTruthy();
+  const body = await response.json();
+  for (const item of body.requests || []) {
+    if (item.module_code !== moduleCode) continue;
+    const review = await request.patch(`/api/auth/admin/module-activation-requests/${item.id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: { action: "reject", admin_note: "Browser UAT cleanup before rerun" },
+    });
+    expect(review.ok(), await review.text()).toBeTruthy();
+  }
+}
 
 async function jsonOrText(response: { json: () => Promise<unknown>; text: () => Promise<string> }) {
   try {
@@ -29,6 +73,9 @@ test("business end-user modules page and scoped guards work after enablement", a
   const me = await meResponse.json();
   expect(me.role).toBe("business");
   expect(me.tenant_id).toBeTruthy();
+
+  const adminToken = await requireAdminToken(request);
+  await rejectPendingActivationRequests(request, adminToken, me.tenant_id, "process_digitization");
 
   let modulesResponse = await request.get("/api/api/me/modules", {
     headers: { Authorization: `Bearer ${token}` },
@@ -102,4 +149,34 @@ test("business end-user modules page and scoped guards work after enablement", a
   await activationButton.click();
   await expect(page.getByRole("status")).toContainText("Đã gửi yêu cầu kích hoạt");
   await page.screenshot({ path: `${EVIDENCE_DIR}/02-disabled-process-direct-url-requested.png`, fullPage: true });
+
+  const pendingResponse = await request.get(
+    `/api/auth/admin/module-activation-requests?tenant_id=${encodeURIComponent(me.tenant_id)}&status=pending`,
+    { headers: { Authorization: `Bearer ${adminToken}` } },
+  );
+  expect(pendingResponse.ok(), await pendingResponse.text()).toBeTruthy();
+  const pendingBody = await pendingResponse.json();
+  const requested = (pendingBody.requests || []).find((item: any) => item.module_code === "process_digitization");
+  expect(requested, JSON.stringify(pendingBody)).toBeTruthy();
+  expect(requested.sla_due_at).toBeTruthy();
+  expect(["open", "overdue"]).toContain(requested.sla_state);
+  expect(requested.notification_count).toBeGreaterThan(0);
+
+  await page.addInitScript((tokenValue) => {
+    window.localStorage.setItem("aminra_user_token", tokenValue);
+    document.cookie = "aminra_session=1; path=/; max-age=31536000; SameSite=Lax";
+  }, adminToken);
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Tenant modules" }).click();
+  await expect(page.getByRole("heading", { name: "Tenant module console" })).toBeVisible({ timeout: 15000 });
+  await page.getByLabel("Tenant ID").fill(me.tenant_id);
+  await page.getByRole("button", { name: "Tải yêu cầu kích hoạt" }).click();
+  await expect(page.getByRole("heading", { name: "Yêu cầu kích hoạt đang chờ" })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator("section[data-module-activation-requests='true']")).toContainText("process_digitization");
+  await expect(page.locator("section[data-module-activation-requests='true']")).toContainText("Đã báo operator:");
+  await expect(page.locator("section[data-module-activation-requests='true']")).toContainText(/SLA/);
+  await page.screenshot({ path: `${EVIDENCE_DIR}/03-admin-activation-request-queue.png`, fullPage: true });
+  await page.getByRole("button", { name: "Từ chối process_digitization" }).click();
+  await expect(page.getByRole("status")).toContainText("Đã từ chối yêu cầu process_digitization");
+  await page.screenshot({ path: `${EVIDENCE_DIR}/04-admin-activation-request-rejected.png`, fullPage: true });
 });
