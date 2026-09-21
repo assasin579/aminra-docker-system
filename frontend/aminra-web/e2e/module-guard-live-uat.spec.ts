@@ -97,6 +97,9 @@ test("business end-user modules page and scoped guards work after enablement", a
   await expect(page.getByRole("heading", { name: /Module chưa kích hoạt/i })).toBeVisible({ timeout: 15000 });
   await expect(page.locator("p", { hasText: /^Số hóa quy trình$/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Xem gói module của tôi/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Yêu cầu kích hoạt Số hóa quy trình/i })).toBeDisabled();
-  await page.screenshot({ path: `${EVIDENCE_DIR}/02-disabled-process-direct-url.png`, fullPage: true });
+  const activationButton = page.getByRole("button", { name: /Yêu cầu kích hoạt Số hóa quy trình/i });
+  await expect(activationButton).toBeEnabled();
+  await activationButton.click();
+  await expect(page.getByRole("status")).toContainText("Đã gửi yêu cầu kích hoạt");
+  await page.screenshot({ path: `${EVIDENCE_DIR}/02-disabled-process-direct-url-requested.png`, fullPage: true });
 });

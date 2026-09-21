@@ -1,0 +1,28 @@
+{
+  "created": {
+    "id": "c52d1a6b-1122-4cc5-a1c9-3f67c738c79d",
+    "tenant_id": "bf674cab-82c8-4868-b515-0e345e3291f4",
+    "module_code": "process_digitization",
+    "module_name_vi": "Số hóa quy trình",
+    "status": "pending",
+    "message": "UAT activation request smoke",
+    "route_path": "/supply-chain/process",
+    "requester_email": "biz-demo-1@demo.aminra.vn",
+    "created_at": "2026-09-21 05:56:56.785124+00:00",
+    "updated_at": "2026-09-21 05:56:56.785124+00:00"
+  },
+  "pending_count_before_review": 1,
+  "reviewed": {
+    "id": "c52d1a6b-1122-4cc5-a1c9-3f67c738c79d",
+    "tenant_id": "bf674cab-82c8-4868-b515-0e345e3291f4",
+    "module_code": "process_digitization",
+    "module_name_vi": "Số hóa quy trình",
+    "status": "rejected",
+    "message": "UAT activation request smoke",
+    "route_path": "/supply-chain/process",
+    "requester_email": "biz-demo-1@demo.aminra.vn",
+    "created_at": "2026-09-21 05:56:56.785124+00:00",
+    "updated_at": "2026-09-21 05:56:56.816800+00:00"
+  },
+  "pending_count_after_review": 0
+}

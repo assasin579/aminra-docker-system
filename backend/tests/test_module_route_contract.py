@@ -21,6 +21,8 @@ def test_app_registers_current_user_modules_router():
         child.path == "/modules" and child.methods == {"GET"}
         for child in module_includes[0].original_router.routes
     )
+    child_paths = {(child.path, tuple(sorted(child.methods))) for child in module_includes[0].original_router.routes}
+    assert ("/module-activation-requests", ("POST",)) in child_paths
 
 
 def test_app_registers_admin_tenant_module_management_router():
@@ -38,6 +40,8 @@ def test_app_registers_admin_tenant_module_management_router():
     child_paths = {(child.path, tuple(sorted(child.methods))) for child in admin_module_includes[0].original_router.routes}
     assert ("/tenants/{tenant_id}/modules", ("GET",)) in child_paths
     assert ("/tenants/{tenant_id}/modules/{module_code}", ("PATCH",)) in child_paths
+    assert ("/module-activation-requests", ("GET",)) in child_paths
+    assert ("/module-activation-requests/{request_id}", ("PATCH",)) in child_paths
 
 
 def test_supply_chain_protected_routes_have_module_guard_contracts():

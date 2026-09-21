@@ -7,8 +7,11 @@ import pytest
 from fastapi import HTTPException
 
 from auth.module_service import (
+    create_module_activation_request,
     get_current_tenant_modules,
+    list_module_activation_requests,
     provision_tenant_modules_for_industry,
+    review_module_activation_request,
     set_tenant_module_status,
 )
 
@@ -238,3 +241,182 @@ async def test_set_tenant_module_status_writes_admin_override_after_dependency_c
     sql = db.execute.call_args.args[0]
     assert "UPDATE tenant_modules" in sql
     assert "source = 'admin_override'" in sql
+
+
+async def test_create_module_activation_request_is_idempotent_for_pending_disabled_module():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(
+        side_effect=[
+            Row(module_id="process-id", code="process_digitization", status="disabled", name_vi="Số hóa quy trình"),
+            None,
+            Row(
+                id="request-1",
+                tenant_id=tenant_id,
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="pending",
+                message="Cần bật để demo quy trình",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                created_at=None,
+                updated_at=None,
+            ),
+        ]
+    )
+
+    payload = await create_module_activation_request(
+        db,
+        {"tenant_id": tenant_id, "sub": "kc-sub", "email": "owner@example.com"},
+        "process_digitization",
+        route_path="/supply-chain/process",
+        message="Cần bật để demo quy trình",
+    )
+
+    assert payload["status"] == "pending"
+    assert payload["module_code"] == "process_digitization"
+    assert payload["module_name_vi"] == "Số hóa quy trình"
+    assert payload["requester_email"] == "owner@example.com"
+    assert db.fetchrow.await_count == 3
+    insert_sql = db.fetchrow.call_args_list[2].args[0]
+    assert "INSERT INTO module_activation_requests" in insert_sql
+    assert "requester_subject" in insert_sql
+
+
+async def test_create_module_activation_request_reuses_existing_pending_request_without_duplicate_insert():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(
+        side_effect=[
+            Row(module_id="process-id", code="process_digitization", status="disabled", name_vi="Số hóa quy trình"),
+            Row(
+                id="request-existing",
+                tenant_id=tenant_id,
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="pending",
+                message="old",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                created_at=None,
+                updated_at=None,
+            ),
+        ]
+    )
+
+    payload = await create_module_activation_request(
+        db,
+        {"tenant_id": tenant_id, "sub": "kc-sub", "email": "owner@example.com"},
+        "process_digitization",
+        route_path="/supply-chain/process",
+    )
+
+    assert payload["id"] == "request-existing"
+    assert db.fetchrow.await_count == 2
+
+
+async def test_create_module_activation_request_rejects_already_active_module():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(module_id="supplier-id", code="supplier_management", status="enabled", name_vi="Quản lý NCC"))
+
+    with pytest.raises(HTTPException) as exc:
+        await create_module_activation_request(db, {"tenant_id": tenant_id}, "supplier_management")
+
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "MODULE_ALREADY_ACTIVE:supplier_management"
+
+
+async def test_list_module_activation_requests_returns_admin_review_queue():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetch = AsyncMock(
+        return_value=[
+            Row(
+                id="request-1",
+                tenant_id=tenant_id,
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="pending",
+                message="please enable",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                created_at=None,
+                updated_at=None,
+            )
+        ]
+    )
+
+    payload = await list_module_activation_requests(db, tenant_id=tenant_id)
+
+    assert payload["requests"][0]["module_code"] == "process_digitization"
+    sql = db.fetch.call_args.args[0]
+    assert "FROM module_activation_requests mar" in sql
+    assert "WHERE mar.tenant_id = $1" in sql
+
+
+async def test_review_module_activation_request_approve_sets_trial_and_marks_request_approved():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(
+        side_effect=[
+            Row(id="request-1", tenant_id=tenant_id, module_code="process_digitization", status="pending"),
+            Row(module_id="process-id", code="process_digitization", required=False),
+            Row(
+                id="request-1",
+                tenant_id=tenant_id,
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="approved",
+                message="please enable",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                created_at=None,
+                updated_at=None,
+            ),
+        ]
+    )
+    db.fetch = AsyncMock(side_effect=[[], []])
+    db.execute = AsyncMock(return_value="UPDATE 1")
+
+    payload = await review_module_activation_request(
+        db,
+        "request-1",
+        action="approve",
+        admin={"sub": "admin-sub"},
+        admin_note="trial approved",
+    )
+
+    assert payload["status"] == "approved"
+    assert db.execute.await_count == 2
+    module_update_sql = db.execute.call_args_list[0].args[0]
+    request_update_sql = db.execute.call_args_list[1].args[0]
+    assert "UPDATE tenant_modules" in module_update_sql
+    assert "UPDATE module_activation_requests" in request_update_sql
+
+
+async def test_review_module_activation_request_reject_marks_request_without_module_update():
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(
+        side_effect=[
+            Row(id="request-1", tenant_id="tenant-1", module_code="process_digitization", status="pending"),
+            Row(
+                id="request-1",
+                tenant_id="tenant-1",
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="rejected",
+                message="please enable",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                created_at=None,
+                updated_at=None,
+            ),
+        ]
+    )
+    db.execute = AsyncMock(return_value="UPDATE 1")
+
+    payload = await review_module_activation_request(db, "request-1", action="reject", admin={"sub": "admin-sub"}, admin_note="not in plan")
+
+    assert payload["status"] == "rejected"
+    assert db.execute.await_count == 1

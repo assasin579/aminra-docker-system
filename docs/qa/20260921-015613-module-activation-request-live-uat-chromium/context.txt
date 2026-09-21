@@ -1,0 +1,2 @@
+tenant_id=bf674cab-82c8-4868-b515-0e345e3291f4
+project=desktop-chromium

@@ -51,11 +51,47 @@ function isModuleActive(tenantModule?: TenantModule | null): boolean {
   return tenantModule?.status === "enabled" || tenantModule?.status === "trial" || state === "active" || state === "trial";
 }
 
-function LockedModuleScreen({ tenantModule, moduleCode, routePath }: { tenantModule?: TenantModule | null; moduleCode: string; routePath: string }) {
+function LockedModuleScreen({
+  tenantModule,
+  moduleCode,
+  routePath,
+  token,
+}: {
+  tenantModule?: TenantModule | null;
+  moduleCode: string;
+  routePath: string;
+  token: string;
+}) {
   const label = moduleLabel(tenantModule, moduleCode);
   const reason = tenantModule?.locked_reason || "Module này chưa được kích hoạt trong gói hiện tại.";
   const accessLabel = tenantModule?.access_label_vi || (normalizeAccessState(tenantModule) === "locked" ? "Đang khóa" : "Chưa kích hoạt");
   const cta = tenantModule?.cta_label_vi || "Yêu cầu kích hoạt";
+  const [requesting, setRequesting] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
+
+  async function submitActivationRequest() {
+    setRequesting(true);
+    setRequestStatus(null);
+    setRequestError(null);
+    try {
+      await apiJson("/api/api/me/module-activation-requests", {
+        method: "POST",
+        token,
+        json: {
+          module_code: moduleCode,
+          route_path: routePath,
+          message: "User requested activation from locked direct-route screen.",
+        },
+        fallbackError: "Không gửi được yêu cầu kích hoạt module.",
+      });
+      setRequestStatus("Đã gửi yêu cầu kích hoạt. Admin/operator sẽ xem xét trong Tenant module console.");
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : "Không gửi được yêu cầu kích hoạt module.");
+    } finally {
+      setRequesting(false);
+    }
+  }
 
   return (
     <main
@@ -84,12 +120,29 @@ function LockedModuleScreen({ tenantModule, moduleCode, routePath }: { tenantMod
           Đường dẫn trực tiếp <code>{routePath}</code> đã được chặn ở lớp trải nghiệm người dùng. API backend vẫn fail-closed cho module chưa được cấp quyền.
         </div>
 
+        {requestStatus && (
+          <div role="status" className="rounded-xl p-3 text-sm" style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0" }}>
+            {requestStatus}
+          </div>
+        )}
+        {requestError && (
+          <div role="alert" className="rounded-xl p-3 text-sm" style={{ background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA" }}>
+            {requestError}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-3">
           <Link href="/modules" className="inline-flex px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "#0F766E", color: "white" }}>
             Xem gói module của tôi
           </Link>
-          <button type="button" disabled className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-70" style={{ background: "#E2E8F0", color: "#475569" }}>
-            {cta} {label}
+          <button
+            type="button"
+            onClick={() => void submitActivationRequest()}
+            disabled={requesting}
+            className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-70"
+            style={{ background: "#0A1F44", color: "white" }}
+          >
+            {requesting ? "Đang gửi..." : `${cta} ${label}`}
           </button>
         </div>
       </section>
@@ -132,7 +185,7 @@ export default function ModuleAccessGate({ moduleCode, routePath, children }: Pr
     };
   }, [isAuthenticated, moduleCode, routePath, token]);
 
-  const tenantModule = useMemo(() => payload?.modules.find((item) => item.code === moduleCode), [moduleCode, payload]);
+  const tenantModule = useMemo(() => payload?.modules?.find((item) => item.code === moduleCode), [moduleCode, payload]);
 
   if (error) {
     return (
@@ -158,7 +211,7 @@ export default function ModuleAccessGate({ moduleCode, routePath, children }: Pr
   }
 
   if (!isModuleActive(tenantModule)) {
-    return <LockedModuleScreen tenantModule={tenantModule} moduleCode={moduleCode} routePath={routePath} />;
+    return <LockedModuleScreen tenantModule={tenantModule} moduleCode={moduleCode} routePath={routePath} token={token || ""} />;
   }
 
   return <>{children}</>;

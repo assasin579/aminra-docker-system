@@ -28,6 +28,21 @@ interface TenantModulesPayload {
   modules: TenantModule[];
 }
 
+interface ActivationRequest {
+  id: string;
+  tenant_id: string;
+  module_code: string;
+  module_name_vi?: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  requester_email?: string | null;
+  route_path?: string | null;
+  message?: string | null;
+}
+
+interface ActivationRequestsPayload {
+  requests: ActivationRequest[];
+}
+
 const STATUSES: ModuleStatus[] = ["enabled", "trial", "disabled", "locked"];
 
 function errorMessage(error: unknown): string {
@@ -47,9 +62,12 @@ function configPreview(config?: Record<string, unknown>): string {
 export default function AdminModuleManager({ token }: { token: string }) {
   const [tenantId, setTenantId] = useState("");
   const [payload, setPayload] = useState<TenantModulesPayload | null>(null);
+  const [activationRequests, setActivationRequests] = useState<ActivationRequest[]>([]);
   const [draftStatuses, setDraftStatuses] = useState<Record<string, ModuleStatus>>({});
   const [loading, setLoading] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState(false);
   const [savingCode, setSavingCode] = useState<string | null>(null);
+  const [reviewingRequestId, setReviewingRequestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -61,6 +79,20 @@ export default function AdminModuleManager({ token }: { token: string }) {
     );
   }, [payload]);
 
+  const refreshModules = useCallback(async () => {
+    const refreshed = await apiJson<TenantModulesPayload>(
+      `/api/auth/admin/tenants/${encodeURIComponent(normalizedTenantId)}/modules`,
+      {
+        token,
+        fallbackError: "Không tải được module của tenant.",
+      },
+    );
+    setPayload(refreshed);
+    setDraftStatuses(
+      Object.fromEntries((refreshed.modules || []).map((item) => [item.code, item.status])),
+    );
+  }, [normalizedTenantId, token]);
+
   const loadModules = useCallback(async () => {
     if (!normalizedTenantId) {
       setError("Nhập tenant ID trước khi tải module.");
@@ -70,23 +102,37 @@ export default function AdminModuleManager({ token }: { token: string }) {
     setError(null);
     setNotice(null);
     try {
-      const data = await apiJson<TenantModulesPayload>(
-        `/api/auth/admin/tenants/${encodeURIComponent(normalizedTenantId)}/modules`,
-        {
-          token,
-          fallbackError: "Không tải được module của tenant.",
-        },
-      );
-      setPayload(data);
-      setDraftStatuses(
-        Object.fromEntries((data.modules || []).map((module) => [module.code, module.status])),
-      );
+      await refreshModules();
     } catch (err) {
       setError(errorMessage(err));
       setPayload(null);
       setDraftStatuses({});
     } finally {
       setLoading(false);
+    }
+  }, [normalizedTenantId, refreshModules]);
+
+  const loadActivationRequests = useCallback(async () => {
+    if (!normalizedTenantId) {
+      setError("Nhập tenant ID trước khi tải yêu cầu kích hoạt.");
+      return;
+    }
+    setLoadingRequests(true);
+    setError(null);
+    try {
+      const data = await apiJson<ActivationRequestsPayload>(
+        `/api/auth/admin/module-activation-requests?tenant_id=${encodeURIComponent(normalizedTenantId)}&status=pending`,
+        {
+          token,
+          fallbackError: "Không tải được yêu cầu kích hoạt.",
+        },
+      );
+      setActivationRequests(data.requests || []);
+    } catch (err) {
+      setError(errorMessage(err));
+      setActivationRequests([]);
+    } finally {
+      setLoadingRequests(false);
     }
   }, [normalizedTenantId, token]);
 
@@ -108,24 +154,41 @@ export default function AdminModuleManager({ token }: { token: string }) {
           fallbackError: `Không cập nhật được module ${module.code}.`,
         });
         setNotice(`Đã cập nhật ${module.code} → ${nextStatus}`);
-        const refreshed = await apiJson<TenantModulesPayload>(
-          `/api/auth/admin/tenants/${encodeURIComponent(normalizedTenantId)}/modules`,
-          {
-            token,
-            fallbackError: "Không tải được module của tenant.",
-          },
-        );
-        setPayload(refreshed);
-        setDraftStatuses(
-          Object.fromEntries((refreshed.modules || []).map((item) => [item.code, item.status])),
-        );
+        await refreshModules();
       } catch (err) {
         setError(errorMessage(err));
       } finally {
         setSavingCode(null);
       }
     },
-    [draftStatuses, normalizedTenantId, token],
+    [draftStatuses, normalizedTenantId, refreshModules, token],
+  );
+
+  const reviewRequest = useCallback(
+    async (request: ActivationRequest, action: "approve" | "reject") => {
+      setReviewingRequestId(request.id);
+      setError(null);
+      setNotice(null);
+      try {
+        await apiJson(`/api/auth/admin/module-activation-requests/${request.id}`, {
+          method: "PATCH",
+          token,
+          json: {
+            action,
+            admin_note: action === "approve" ? "Approved from Tenant module console" : "Rejected from Tenant module console",
+          },
+          fallbackError: "Không xử lý được yêu cầu kích hoạt.",
+        });
+        setNotice(`${action === "approve" ? "Đã duyệt" : "Đã từ chối"} yêu cầu ${request.module_code}`);
+        await loadActivationRequests();
+        if (action === "approve") await refreshModules();
+      } catch (err) {
+        setError(errorMessage(err));
+      } finally {
+        setReviewingRequestId(null);
+      }
+    },
+    [loadActivationRequests, refreshModules, token],
   );
 
   return (
@@ -139,7 +202,7 @@ export default function AdminModuleManager({ token }: { token: string }) {
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[minmax(16rem,1fr)_auto] items-end">
+      <div className="grid gap-3 md:grid-cols-[minmax(16rem,1fr)_auto_auto] items-end">
         <label className="grid gap-1 text-sm font-medium" style={{ color: "#334155" }}>
           Tenant ID
           <input
@@ -159,6 +222,15 @@ export default function AdminModuleManager({ token }: { token: string }) {
         >
           {loading ? "Đang tải..." : "Tải module"}
         </button>
+        <button
+          type="button"
+          onClick={() => void loadActivationRequests()}
+          disabled={loadingRequests}
+          className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+          style={{ background: "#7C3AED", color: "white" }}
+        >
+          {loadingRequests ? "Đang tải..." : "Tải yêu cầu kích hoạt"}
+        </button>
       </div>
 
       {error && (
@@ -170,6 +242,39 @@ export default function AdminModuleManager({ token }: { token: string }) {
         <div role="status" className="rounded-xl p-3 text-sm" style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0" }}>
           {notice}
         </div>
+      )}
+
+      {activationRequests.length > 0 && (
+        <section data-module-activation-requests="true" className="rounded-2xl p-4 space-y-3" style={{ background: "#FAF5FF", border: "1px solid #DDD6FE" }}>
+          <h3 className="font-semibold" style={{ color: "#4C1D95" }}>Yêu cầu kích hoạt đang chờ</h3>
+          {activationRequests.map((request) => (
+            <div key={request.id} className="rounded-xl p-3 grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center" style={{ background: "white", border: "1px solid #E9D5FF" }}>
+              <div className="text-sm" style={{ color: "#334155" }}>
+                <strong>{request.module_name_vi || request.module_code}</strong> <code>{request.module_code}</code>
+                <p>{request.message || "Không có ghi chú"}</p>
+                <p className="text-xs" style={{ color: "#64748B" }}>Requester: {request.requester_email || "unknown"} · Route: {request.route_path || "n/a"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void reviewRequest(request, "approve")}
+                disabled={reviewingRequestId === request.id}
+                className="px-3 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+                style={{ background: "#0F766E", color: "white" }}
+              >
+                Duyệt {request.module_code}
+              </button>
+              <button
+                type="button"
+                onClick={() => void reviewRequest(request, "reject")}
+                disabled={reviewingRequestId === request.id}
+                className="px-3 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+                style={{ background: "#B91C1C", color: "white" }}
+              >
+                Từ chối {request.module_code}
+              </button>
+            </div>
+          ))}
+        </section>
       )}
 
       {payload?.business_model && (

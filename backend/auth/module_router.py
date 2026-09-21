@@ -7,7 +7,13 @@ from pydantic import BaseModel, Field
 
 from auth.db import get_db
 from auth.jwt_utils import get_current_user, require_admin
-from auth.module_service import get_current_tenant_modules, set_tenant_module_status
+from auth.module_service import (
+    create_module_activation_request,
+    get_current_tenant_modules,
+    list_module_activation_requests,
+    review_module_activation_request,
+    set_tenant_module_status,
+)
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -18,9 +24,35 @@ class TenantModuleStatusUpdate(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
+class ModuleActivationRequestCreate(BaseModel):
+    module_code: str = Field(..., min_length=1, max_length=80)
+    route_path: str | None = Field(default=None, max_length=255)
+    message: str | None = Field(default=None, max_length=1000)
+
+
+class ModuleActivationRequestReview(BaseModel):
+    action: str = Field(..., pattern="^(approve|reject)$")
+    admin_note: str | None = Field(default=None, max_length=1000)
+
+
 @router.get("/modules")
 async def get_my_modules(user=Depends(get_current_user), db=Depends(get_db)):
     return await get_current_tenant_modules(db, user)
+
+
+@router.post("/module-activation-requests")
+async def create_my_module_activation_request(
+    payload: ModuleActivationRequestCreate,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    return await create_module_activation_request(
+        db,
+        user,
+        payload.module_code,
+        route_path=payload.route_path,
+        message=payload.message,
+    )
 
 
 @admin_router.get("/tenants/{tenant_id}/modules")
@@ -46,4 +78,30 @@ async def update_tenant_module_for_admin(
         module_code,
         payload.status,
         config=payload.config,
+    )
+
+
+@admin_router.get("/module-activation-requests")
+async def list_activation_requests_for_admin(
+    tenant_id: str | None = None,
+    status: str = "pending",
+    _admin: dict = Depends(require_admin),
+    db=Depends(get_db),
+):
+    return await list_module_activation_requests(db, tenant_id=tenant_id, status=status)
+
+
+@admin_router.patch("/module-activation-requests/{request_id}")
+async def review_activation_request_for_admin(
+    request_id: str,
+    payload: ModuleActivationRequestReview,
+    admin: dict = Depends(require_admin),
+    db=Depends(get_db),
+):
+    return await review_module_activation_request(
+        db,
+        request_id,
+        action=payload.action,
+        admin=admin,
+        admin_note=payload.admin_note,
     )

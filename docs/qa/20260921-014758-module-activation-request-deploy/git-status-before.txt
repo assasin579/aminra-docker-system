@@ -1,0 +1,14 @@
+ M backend/auth/module_router.py
+ M backend/auth/module_service.py
+ M backend/tests/test_module_route_contract.py
+ M backend/tests/test_module_service.py
+ M frontend/aminra-web/__tests__/admin-module-manager-contract.test.tsx
+ M frontend/aminra-web/__tests__/module-access-gate-contract.test.tsx
+ M frontend/aminra-web/components/AdminModuleManager.tsx
+ M frontend/aminra-web/components/ModuleAccessGate.tsx
+?? backend/alembic/versions/044_module_activation_req.py
+?? docs/qa/20260920-223555-module-end-user-guard-verify/
+?? docs/qa/20260920-223703-module-end-user-guard-deploy/
+?? docs/qa/20260920-224958-module-guard-redeploy-after-provision-fix/
+?? docs/qa/20260921-004726-module-locked-direct-route-live-uat/
+?? docs/qa/20260921-014758-module-activation-request-deploy/

@@ -1,0 +1,7 @@
+ backend/auth/module_router.py                      |  60 +++++-
+ backend/auth/module_service.py                     | 232 +++++++++++++++++++++
+ backend/tests/test_module_route_contract.py        |   4 +
+ backend/tests/test_module_service.py               | 182 ++++++++++++++++
+ .../admin-module-manager-contract.test.tsx         |  45 ++++
+ .../aminra-web/components/AdminModuleManager.tsx   | 151 ++++++++++++--
+ 6 files changed, 650 insertions(+), 24 deletions(-)

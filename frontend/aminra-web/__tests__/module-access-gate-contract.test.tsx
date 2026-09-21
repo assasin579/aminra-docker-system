@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ModuleAccessGate from "@/components/ModuleAccessGate";
 import { apiJson } from "@/lib/apiClient";
@@ -83,8 +84,41 @@ describe("ModuleAccessGate direct-route locked UX", () => {
     expect(screen.getByText("Số hóa quy trình")).toBeInTheDocument();
     expect(screen.getByText("Module này chưa nằm trong gói hiện tại.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Xem gói module của tôi/i })).toHaveAttribute("href", "/modules");
-    expect(screen.getByRole("button", { name: /Yêu cầu kích hoạt Số hóa quy trình/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Yêu cầu kích hoạt Số hóa quy trình/i })).toBeEnabled();
     expect(screen.queryByText("Process workspace must stay hidden")).not.toBeInTheDocument();
+  });
+
+  it("submits an activation request from the locked module screen and shows operator-facing status", async () => {
+    mockedApiJson
+      .mockResolvedValueOnce(tenantModulesPayload)
+      .mockResolvedValueOnce({
+        id: "request-1",
+        status: "pending",
+        module_code: "process_digitization",
+      });
+
+    render(
+      <ModuleAccessGate moduleCode="process_digitization" routePath="/supply-chain/process">
+        <div>Process workspace must stay hidden</div>
+      </ModuleAccessGate>,
+    );
+
+    const button = await screen.findByRole("button", { name: /Yêu cầu kích hoạt Số hóa quy trình/i });
+    await userEvent.click(button);
+
+    await waitFor(() => {
+      expect(mockedApiJson).toHaveBeenCalledWith("/api/api/me/module-activation-requests", {
+        method: "POST",
+        token: "business-token",
+        json: {
+          module_code: "process_digitization",
+          route_path: "/supply-chain/process",
+          message: "User requested activation from locked direct-route screen.",
+        },
+        fallbackError: "Không gửi được yêu cầu kích hoạt module.",
+      });
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent("Đã gửi yêu cầu kích hoạt");
   });
 
   it("fails closed when module metadata cannot be loaded", async () => {

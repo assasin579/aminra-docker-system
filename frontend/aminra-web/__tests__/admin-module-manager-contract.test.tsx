@@ -40,6 +40,21 @@ const modulesPayload = {
   ],
 };
 
+const activationRequestsPayload = {
+  requests: [
+    {
+      id: "request-1",
+      tenant_id: "tenant-123",
+      module_code: "process_digitization",
+      module_name_vi: "Số hóa quy trình",
+      status: "pending",
+      requester_email: "owner@example.com",
+      route_path: "/supply-chain/process",
+      message: "Cần bật để demo quy trình",
+    },
+  ],
+};
+
 describe("AdminModuleManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,5 +129,35 @@ describe("AdminModuleManager", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("MODULE_DEPENDENCY_MISSING:supplier_management");
     expect(screen.queryByText(/Đã cập nhật traceability/i)).not.toBeInTheDocument();
+  });
+
+  it("loads pending activation requests and approves one through the admin review API", async () => {
+    vi.mocked(apiJson)
+      .mockResolvedValueOnce(modulesPayload)
+      .mockResolvedValueOnce(activationRequestsPayload)
+      .mockResolvedValueOnce({ ...activationRequestsPayload.requests[0], status: "approved" })
+      .mockResolvedValueOnce({ requests: [] })
+      .mockResolvedValueOnce({ ...modulesPayload, modules: [{ ...modulesPayload.modules[1], status: "trial" }] });
+
+    render(<AdminModuleManager token="admin-token" />);
+
+    await userEvent.type(screen.getByLabelText(/tenant id/i), "tenant-123");
+    await userEvent.click(screen.getByRole("button", { name: /tải module/i }));
+    await screen.findByText("Truy xuất lô hàng");
+
+    await userEvent.click(screen.getByRole("button", { name: /tải yêu cầu kích hoạt/i }));
+    expect(await screen.findByText("Cần bật để demo quy trình")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /duyệt process_digitization/i }));
+
+    await waitFor(() => {
+      expect(apiJson).toHaveBeenCalledWith("/api/auth/admin/module-activation-requests/request-1", {
+        method: "PATCH",
+        token: "admin-token",
+        json: { action: "approve", admin_note: "Approved from Tenant module console" },
+        fallbackError: "Không xử lý được yêu cầu kích hoạt.",
+      });
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent("Đã duyệt yêu cầu process_digitization");
   });
 });

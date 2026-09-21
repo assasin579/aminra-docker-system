@@ -1,0 +1,28 @@
+
+> aminra-web@0.1.0 test
+> vitest run sidebar-module-navigation-contract.test.tsx sidebar-admin-navigation-contract.test.tsx admin-module-manager-contract.test.tsx my-modules-customer-experience.test.tsx
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/my-modules-customer-experience.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1388[2mms[22m[39m
+     [33m[2m✓[22m[39m loads the tenant module package and explains active vs locked modules to a business user [33m 1308[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-admin-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2098[2mms[22m[39m
+     [33m[2m✓[22m[39m renders admin-only navigation on /admin even when /auth/me projects the platform admin as provider [33m 1381[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps provider portal navigation outside /admin, with an explicit Admin Panel escape hatch [33m 373[2mms[22m[39m
+     [33m[2m✓[22m[39m does not show admin navigation on /admin unless Keycloak realm authority is present [33m 314[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-module-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2656[2mms[22m[39m
+     [33m[2m✓[22m[39m hides traceability/process links when those modules are disabled for the tenant [33m 1772[2mms[22m[39m
+     [33m[2m✓[22m[39m shows supply-chain links when their modules are enabled [33m 426[2mms[22m[39m
+     [33m[2m✓[22m[39m fails open to preserve current demo navigation when module API is unavailable [33m 444[2mms[22m[39m
+ [32m✓[39m __tests__/admin-module-manager-contract.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 3264[2mms[22m[39m
+     [33m[2m✓[22m[39m loads tenant modules through the admin backend API and renders dependency-safe controls [33m 1407[2mms[22m[39m
+     [33m[2m✓[22m[39m updates one module with admin_override payload and surfaces success without silent reload assumptions [33m 665[2mms[22m[39m
+     [33m[2m✓[22m[39m renders dependency blocker errors and does not show a false success [33m 627[2mms[22m[39m
+     [33m[2m✓[22m[39m loads pending activation requests and approves one through the admin review API [33m 541[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 01:48:15
+[2m   Duration [22m 7.41s[2m (transform 1.35s, setup 1.83s, import 2.35s, tests 9.41s, environment 10.74s)[22m
+

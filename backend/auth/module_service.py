@@ -337,3 +337,235 @@ async def set_tenant_module_status(
         "source": "admin_override",
         "config": normalized_config,
     }
+
+
+def _activation_request_payload(row: Any) -> dict[str, Any]:
+    return {
+        "id": str(_row_value(row, "id")),
+        "tenant_id": str(_row_value(row, "tenant_id")),
+        "module_code": _row_value(row, "module_code"),
+        "module_name_vi": _row_value(row, "module_name_vi"),
+        "status": _row_value(row, "status"),
+        "message": _row_value(row, "message"),
+        "route_path": _row_value(row, "route_path"),
+        "requester_email": _row_value(row, "requester_email"),
+        "created_at": _row_value(row, "created_at"),
+        "updated_at": _row_value(row, "updated_at"),
+    }
+
+
+async def create_module_activation_request(
+    db: Any,
+    user: dict[str, Any],
+    module_code: str,
+    *,
+    route_path: str | None = None,
+    message: str | None = None,
+) -> dict[str, Any]:
+    tenant_id = user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="TENANT_REQUIRED")
+
+    module_row = await db.fetchrow(
+        """
+        SELECT m.id AS module_id,
+               m.code,
+               tm.status,
+               m.name_vi
+        FROM tenant_modules tm
+        JOIN modules m ON m.id = tm.module_id
+        WHERE tm.tenant_id = $1
+          AND m.code = $2
+          AND m.enabled = true
+        LIMIT 1
+        """,
+        tenant_id,
+        module_code,
+    )
+    if not module_row:
+        raise HTTPException(status_code=404, detail=f"MODULE_NOT_FOUND:{module_code}")
+    if _row_value(module_row, "status") in _ACTIVE_STATUSES:
+        raise HTTPException(status_code=409, detail=f"MODULE_ALREADY_ACTIVE:{module_code}")
+
+    existing = await db.fetchrow(
+        """
+        SELECT mar.id,
+               mar.tenant_id,
+               m.code AS module_code,
+               m.name_vi AS module_name_vi,
+               mar.status,
+               mar.message,
+               mar.route_path,
+               mar.requester_email,
+               mar.created_at,
+               mar.updated_at
+        FROM module_activation_requests mar
+        JOIN modules m ON m.id = mar.module_id
+        WHERE mar.tenant_id = $1
+          AND mar.module_id = $2
+          AND mar.status = 'pending'
+        ORDER BY mar.created_at DESC
+        LIMIT 1
+        """,
+        tenant_id,
+        _row_value(module_row, "module_id"),
+    )
+    if existing:
+        return _activation_request_payload(existing)
+
+    row = await db.fetchrow(
+        """
+        INSERT INTO module_activation_requests (
+            tenant_id,
+            module_id,
+            requester_subject,
+            requester_email,
+            route_path,
+            message
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id,
+                  tenant_id,
+                  (SELECT code FROM modules WHERE id = module_id) AS module_code,
+                  (SELECT name_vi FROM modules WHERE id = module_id) AS module_name_vi,
+                  status,
+                  message,
+                  route_path,
+                  requester_email,
+                  created_at,
+                  updated_at
+        """,
+        tenant_id,
+        _row_value(module_row, "module_id"),
+        user.get("sub") or user.get("id"),
+        user.get("email"),
+        route_path,
+        message,
+    )
+    return _activation_request_payload(row)
+
+
+async def list_module_activation_requests(db: Any, *, tenant_id: Any | None = None, status: str = "pending") -> dict[str, Any]:
+    if status not in {"pending", "approved", "rejected", "cancelled", "all"}:
+        raise HTTPException(status_code=422, detail="INVALID_REQUEST_STATUS")
+
+    if tenant_id:
+        rows = await db.fetch(
+            """
+            SELECT mar.id,
+                   mar.tenant_id,
+                   m.code AS module_code,
+                   m.name_vi AS module_name_vi,
+                   mar.status,
+                   mar.message,
+                   mar.route_path,
+                   mar.requester_email,
+                   mar.created_at,
+                   mar.updated_at
+            FROM module_activation_requests mar
+            JOIN modules m ON m.id = mar.module_id
+            WHERE mar.tenant_id = $1
+              AND ($2 = 'all' OR mar.status = $2)
+            ORDER BY mar.created_at DESC
+            """,
+            tenant_id,
+            status,
+        )
+    else:
+        rows = await db.fetch(
+            """
+            SELECT mar.id,
+                   mar.tenant_id,
+                   m.code AS module_code,
+                   m.name_vi AS module_name_vi,
+                   mar.status,
+                   mar.message,
+                   mar.route_path,
+                   mar.requester_email,
+                   mar.created_at,
+                   mar.updated_at
+            FROM module_activation_requests mar
+            JOIN modules m ON m.id = mar.module_id
+            WHERE ($1 = 'all' OR mar.status = $1)
+            ORDER BY mar.created_at DESC
+            """,
+            status,
+        )
+    return {"requests": [_activation_request_payload(row) for row in rows]}
+
+
+async def review_module_activation_request(
+    db: Any,
+    request_id: Any,
+    *,
+    action: str,
+    admin: dict[str, Any],
+    admin_note: str | None = None,
+) -> dict[str, Any]:
+    if action not in {"approve", "reject"}:
+        raise HTTPException(status_code=422, detail="INVALID_REVIEW_ACTION")
+
+    request_row = await db.fetchrow(
+        """
+        SELECT mar.id,
+               mar.tenant_id,
+               m.code AS module_code,
+               mar.status
+        FROM module_activation_requests mar
+        JOIN modules m ON m.id = mar.module_id
+        WHERE mar.id = $1
+        LIMIT 1
+        """,
+        request_id,
+    )
+    if not request_row:
+        raise HTTPException(status_code=404, detail="MODULE_ACTIVATION_REQUEST_NOT_FOUND")
+    if _row_value(request_row, "status") != "pending":
+        raise HTTPException(status_code=409, detail=f"MODULE_ACTIVATION_REQUEST_NOT_PENDING:{_row_value(request_row, 'status')}")
+
+    next_status = "approved" if action == "approve" else "rejected"
+    if action == "approve":
+        await set_tenant_module_status(
+            db,
+            _row_value(request_row, "tenant_id"),
+            _row_value(request_row, "module_code"),
+            "trial",
+            config={"activation_request_id": str(request_id)},
+        )
+
+    await db.execute(
+        """
+        UPDATE module_activation_requests
+        SET status = $2,
+            admin_note = $3,
+            reviewed_by = $4,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1
+        """,
+        request_id,
+        next_status,
+        admin_note,
+        admin.get("sub") or admin.get("id") or admin.get("email"),
+    )
+
+    row = await db.fetchrow(
+        """
+        SELECT mar.id,
+               mar.tenant_id,
+               m.code AS module_code,
+               m.name_vi AS module_name_vi,
+               mar.status,
+               mar.message,
+               mar.route_path,
+               mar.requester_email,
+               mar.created_at,
+               mar.updated_at
+        FROM module_activation_requests mar
+        JOIN modules m ON m.id = mar.module_id
+        WHERE mar.id = $1
+        LIMIT 1
+        """,
+        request_id,
+    )
+    return _activation_request_payload(row)
