@@ -11,6 +11,7 @@ import {
 import { useAdminAuth } from "@/components/AdminAuthContext";
 import { useUserAuth } from "@/components/UserAuthContext";
 import AdminUserManager from "@/components/AdminUserManager";
+import AdminModuleManager from "@/components/AdminModuleManager";
 import { parseApiError } from "@/lib/apiError";
 import Modal from "@/components/Modal";
 
@@ -2277,7 +2278,7 @@ export default function AdminPageClient() {
   const { isAdmin, token, login: adminLogin } = useAdminAuth();
   const { isAuthenticated: isUserLoggedIn } = useUserAuth();
   const [activeSection, setActiveSection] = useState<
-    "templates" | "users" | "placeholders"
+    "templates" | "users" | "placeholders" | "modules"
   >("templates");
   const [activeGroup, setActiveGroup] = useState(0);
   const [activeType, setActiveType] = useState(DOC_TYPE_GROUPS[0].types[0].id);
@@ -2463,12 +2464,13 @@ export default function AdminPageClient() {
             { key: "templates", label: "Template đánh giá" },
             { key: "placeholders", label: "Placeholders" },
             { key: "users", label: "Quản lý Users" },
+            { key: "modules", label: "Tenant modules" },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() =>
                 setActiveSection(
-                  tab.key as "templates" | "users" | "placeholders",
+                  tab.key as "templates" | "users" | "placeholders" | "modules",
                 )
               }
               className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
@@ -2565,6 +2567,19 @@ export default function AdminPageClient() {
           }}
         >
           <AdminUserManager token={token!} />
+        </div>
+      )}
+
+      {/* ── Tenant modules section ── */}
+      {activeSection === "modules" && (
+        <div
+          className="rounded-2xl p-6"
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid rgba(226,232,240,0.6)",
+          }}
+        >
+          <AdminModuleManager token={token!} />
         </div>
       )}
 
