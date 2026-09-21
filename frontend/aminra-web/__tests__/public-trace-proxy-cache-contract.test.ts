@@ -18,6 +18,11 @@ function adminRequest() {
 
 const traceParams = { params: Promise.resolve({ path: ["api", "supply-chain", "batches", "trace", TRACE_ID] }) };
 const adminParams = { params: Promise.resolve({ path: ["api", "admin", "users"] }) };
+const adminModuleParams = {
+  params: Promise.resolve({
+    path: ["auth", "admin", "tenants", "tenant-123", "modules", "workforce"],
+  }),
+};
 
 describe("public trace Next proxy cache contract", () => {
   beforeEach(() => {
@@ -66,5 +71,28 @@ describe("public trace Next proxy cache contract", () => {
     expect(response.headers.get("cdn-cache-control")).toBeNull();
     expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
     expect(response.headers.get("x-aminra-proxy-cache")).toBeNull();
+  });
+
+  it("exports PATCH so admin module status updates are proxied instead of Next returning 405", async () => {
+    const route = await loadRoute();
+    const request = new NextRequest(
+      "http://localhost:3100/api/auth/admin/tenants/tenant-123/modules/workforce",
+      {
+        method: "PATCH",
+        headers: {
+          authorization: "Bearer test-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ status: "disabled", config: {} }),
+      },
+    );
+
+    const response = await route.PATCH(request, adminModuleParams);
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledWith(
+      "http://backend.test/auth/admin/tenants/tenant-123/modules/workforce",
+      expect.objectContaining({ method: "PATCH" }),
+    );
   });
 });
