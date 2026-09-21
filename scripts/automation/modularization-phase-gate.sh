@@ -87,11 +87,14 @@ BACKEND_FILES=(
 FRONTEND_TESTS=(
   sidebar-module-navigation-contract.test.tsx
   sidebar-admin-navigation-contract.test.tsx
+  admin-module-manager-contract.test.tsx
+  my-modules-customer-experience.test.tsx
 )
 
 STAGE_PATHS=(
   .hermes/plans/2026-09-16_141009-aminra-modular-monolith-transition-plan.md
   docs/architecture/module-map.md
+  docker-compose.yml
   backend/.dockerignore
   backend/Dockerfile
   backend/Dockerfile.base
@@ -109,7 +112,12 @@ STAGE_PATHS=(
   backend/tests/test_module_guard.py
   backend/tests/test_supply_chain_module_guards.py
   frontend/aminra-web/components/Sidebar.tsx
+  frontend/aminra-web/components/AdminModuleManager.tsx
+  frontend/aminra-web/components/MyModulesPanel.tsx
+  frontend/aminra-web/app/modules/page.tsx
   frontend/aminra-web/__tests__/sidebar-module-navigation-contract.test.tsx
+  frontend/aminra-web/__tests__/admin-module-manager-contract.test.tsx
+  frontend/aminra-web/__tests__/my-modules-customer-experience.test.tsx
   scripts/automation/modularization-phase-gate.sh
 )
 

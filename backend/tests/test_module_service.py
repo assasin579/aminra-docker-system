@@ -39,6 +39,8 @@ async def test_get_current_tenant_modules_returns_business_model_and_ordered_mod
                 default_enabled=True,
                 display_order=10,
                 config={},
+                source="business_model_default",
+                updated_at=None,
             ),
             Row(
                 code="daily_operations",
@@ -50,6 +52,8 @@ async def test_get_current_tenant_modules_returns_business_model_and_ordered_mod
                 default_enabled=False,
                 display_order=80,
                 config={"mvp": True},
+                source="business_model_default",
+                updated_at=None,
             ),
         ]
     )
@@ -73,6 +77,12 @@ async def test_get_current_tenant_modules_returns_business_model_and_ordered_mod
                 "default_enabled": True,
                 "display_order": 10,
                 "config": {},
+                "source": "business_model_default",
+                "updated_at": None,
+                "access_state": "active",
+                "access_label_vi": "Đang hoạt động",
+                "cta_label_vi": "Mở module",
+                "route_path": "/dossiers",
             },
             {
                 "code": "daily_operations",
@@ -84,6 +94,12 @@ async def test_get_current_tenant_modules_returns_business_model_and_ordered_mod
                 "default_enabled": False,
                 "display_order": 80,
                 "config": {"mvp": True},
+                "source": "business_model_default",
+                "updated_at": None,
+                "access_state": "disabled",
+                "access_label_vi": "Chưa kích hoạt",
+                "cta_label_vi": "Yêu cầu kích hoạt",
+                "route_path": None,
             },
         ],
     }
@@ -136,6 +152,11 @@ async def test_provision_tenant_modules_for_industry_is_idempotent_and_preserves
     assert "tenant_modules.source = 'admin_override'" in sql
     assert "tenant_modules.status" in sql
     assert "tenant_modules.config" in sql
+    assert "enabled_at" in sql
+    assert "disabled_at" in sql
+    assert "CASE WHEN bmm.default_enabled THEN NOW() ELSE NULL END" in sql
+    assert "WHEN EXCLUDED.status IN ('enabled', 'trial')" in sql
+    assert "WHEN EXCLUDED.status IN ('disabled', 'locked')" in sql
 
 
 async def test_provision_tenant_modules_for_industry_rejects_missing_tenant():

@@ -21,6 +21,8 @@ const modulesPayload = {
       default_enabled: true,
       display_order: 10,
       config: {},
+      source: "business_model_default",
+      access_label_vi: "Đang hoạt động",
     },
     {
       code: "traceability",
@@ -32,6 +34,8 @@ const modulesPayload = {
       default_enabled: true,
       display_order: 20,
       config: { rollout_note: "pilot only" },
+      source: "admin_override",
+      access_label_vi: "Chưa kích hoạt",
     },
   ],
 };
@@ -60,6 +64,8 @@ describe("AdminModuleManager", () => {
     expect(screen.getByText("Quế xuất khẩu")).toBeInTheDocument();
     expect(screen.getByText(/required/i)).toBeInTheDocument();
     expect(screen.getByText(/pilot only/i)).toBeInTheDocument();
+    expect(screen.getByText(/admin_override/i)).toBeInTheDocument();
+    expect(screen.getByText(/Chưa kích hoạt/i)).toBeInTheDocument();
     expect(screen.getByTestId("module-status-traceability")).toHaveValue("disabled");
   });
 

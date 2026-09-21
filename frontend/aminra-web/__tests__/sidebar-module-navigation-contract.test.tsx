@@ -82,6 +82,7 @@ describe("business sidebar module navigation", () => {
     render(<Sidebar />);
 
     await waitFor(() => {
+      expect(screen.getByRole("link", { name: /Gói module/i })).toHaveAttribute("href", "/modules");
       expect(screen.getByRole("link", { name: /Nguyên vật liệu/i })).toHaveAttribute(
         "href",
         "/supply-chain/materials",

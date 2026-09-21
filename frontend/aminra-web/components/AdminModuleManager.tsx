@@ -15,6 +15,8 @@ interface TenantModule {
   default_enabled?: boolean;
   display_order?: number;
   config?: Record<string, unknown>;
+  source?: string | null;
+  access_label_vi?: string | null;
 }
 
 interface TenantModulesPayload {
@@ -192,7 +194,7 @@ export default function AdminModuleManager({ token }: { token: string }) {
                   {module.default_enabled && <span className="text-xs px-2 py-1 rounded-lg" style={{ background: "#E0F2FE", color: "#075985" }}>default</span>}
                 </div>
                 <p className="text-xs mt-2" style={{ color: "#64748B" }}>
-                  Category: {module.category || "uncategorized"} · Config: {configPreview(module.config)}
+                  Category: {module.category || "uncategorized"} · Source: {module.source || "unknown"} · Access: {module.access_label_vi || module.status} · Config: {configPreview(module.config)}
                 </p>
               </div>
 

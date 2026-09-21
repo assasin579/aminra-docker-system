@@ -43,12 +43,22 @@ async def provision_tenant_modules_for_industry(
     count = await db.fetchval(
         """
         WITH provisioned AS (
-            INSERT INTO tenant_modules (tenant_id, module_id, status, source, config)
+            INSERT INTO tenant_modules (
+                tenant_id,
+                module_id,
+                status,
+                source,
+                config,
+                enabled_at,
+                disabled_at
+            )
             SELECT $1,
                    bmm.module_id,
                    CASE WHEN bmm.default_enabled THEN 'enabled' ELSE 'disabled' END,
                    'business_model_default',
-                   COALESCE(bmm.config_schema, '{}'::jsonb)
+                   COALESCE(bmm.config_schema, '{}'::jsonb),
+                   CASE WHEN bmm.default_enabled THEN NOW() ELSE NULL END,
+                   CASE WHEN bmm.default_enabled THEN NULL ELSE NOW() END
             FROM business_model_modules bmm
             JOIN modules m ON m.id = bmm.module_id
             WHERE bmm.industry_schema_id = $2
@@ -65,6 +75,16 @@ async def provision_tenant_modules_for_industry(
                 config = CASE
                     WHEN tenant_modules.source = 'admin_override' THEN tenant_modules.config
                     ELSE EXCLUDED.config
+                END,
+                enabled_at = CASE
+                    WHEN tenant_modules.source = 'admin_override' THEN tenant_modules.enabled_at
+                    WHEN EXCLUDED.status IN ('enabled', 'trial') THEN COALESCE(tenant_modules.enabled_at, NOW())
+                    ELSE NULL
+                END,
+                disabled_at = CASE
+                    WHEN tenant_modules.source = 'admin_override' THEN tenant_modules.disabled_at
+                    WHEN EXCLUDED.status IN ('disabled', 'locked') THEN COALESCE(tenant_modules.disabled_at, NOW())
+                    ELSE NULL
                 END,
                 updated_at = NOW()
             RETURNING module_id
@@ -111,7 +131,9 @@ async def get_current_tenant_modules(db: Any, user: dict[str, Any]) -> dict[str,
                COALESCE(bmm.required, false) AS required,
                COALESCE(bmm.default_enabled, false) AS default_enabled,
                COALESCE(bmm.display_order, m.display_order) AS display_order,
-               tm.config
+               tm.config,
+               tm.source,
+               tm.updated_at
         FROM tenant_modules tm
         JOIN modules m ON m.id = tm.module_id
         LEFT JOIN users u
@@ -147,6 +169,12 @@ async def get_current_tenant_modules(db: Any, user: dict[str, Any]) -> dict[str,
                 "default_enabled": bool(_row_value(row, "default_enabled")),
                 "display_order": int(_row_value(row, "display_order")),
                 "config": _normalize_jsonb(_row_value(row, "config")),
+                "source": _row_value(row, "source"),
+                "updated_at": _row_value(row, "updated_at"),
+                "access_state": _access_state(_row_value(row, "status")),
+                "access_label_vi": _access_label_vi(_row_value(row, "status")),
+                "cta_label_vi": _cta_label_vi(_row_value(row, "status")),
+                "route_path": _MODULE_ROUTE_PATHS.get(_row_value(row, "code")),
             }
             for row in rows
         ],
@@ -155,6 +183,42 @@ async def get_current_tenant_modules(db: Any, user: dict[str, Any]) -> dict[str,
 
 _ADMIN_MUTABLE_STATUSES = {"enabled", "trial", "disabled", "locked"}
 _ACTIVE_STATUSES = {"enabled", "trial"}
+_MODULE_ROUTE_PATHS = {
+    "certification_dossier": "/dossiers",
+    "document_management": "/documents",
+    "supplier_management": "/supply-chain/materials",
+    "traceability": "/supply-chain/batches",
+    "process_digitization": "/supply-chain/process",
+    "workforce": "/members",
+    "daily_operations": None,
+    "audit_compliance": "/audits",
+    "public_trace": "/trace",
+    "notifications": None,
+}
+
+
+def _access_state(status: str) -> str:
+    if status == "enabled":
+        return "active"
+    if status == "trial":
+        return "trial"
+    if status == "locked":
+        return "locked"
+    return "disabled"
+
+
+def _access_label_vi(status: str) -> str:
+    state = _access_state(status)
+    return {
+        "active": "Đang hoạt động",
+        "trial": "Đang dùng thử",
+        "locked": "Đang khóa",
+        "disabled": "Chưa kích hoạt",
+    }[state]
+
+
+def _cta_label_vi(status: str) -> str:
+    return "Mở module" if status in _ACTIVE_STATUSES else "Yêu cầu kích hoạt"
 
 
 async def set_tenant_module_status(

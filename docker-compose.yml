@@ -154,6 +154,8 @@ services:
       - APP_BASE_URL=${APP_BASE_URL:-https://aminra.org}
       - SENTRY_DSN=${SENTRY_DSN:-}
       - ENVIRONMENT=production
+      - MODULE_GUARDS_ENABLED=${MODULE_GUARDS_ENABLED:-false}
+      - MODULE_GUARD_ROLLOUT=${MODULE_GUARD_ROLLOUT:-}
       # Secrets are injected via /vault/secrets/env.sh (see entrypoint.sh)
     networks:
       - app-network
