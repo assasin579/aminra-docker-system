@@ -420,3 +420,89 @@ async def test_review_module_activation_request_reject_marks_request_without_mod
 
     assert payload["status"] == "rejected"
     assert db.execute.await_count == 1
+
+
+async def test_create_module_activation_request_assigns_sla_and_notifies_platform_admins():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(
+        side_effect=[
+            Row(module_id="process-id", code="process_digitization", status="disabled", name_vi="Số hóa quy trình"),
+            None,
+            Row(
+                id="request-1",
+                tenant_id=tenant_id,
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="pending",
+                message="Cần bật để demo quy trình",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                priority="normal",
+                sla_due_at="2026-09-22T00:00:00Z",
+                first_notified_at=None,
+                last_notified_at=None,
+                notification_count=0,
+                sla_state="open",
+                hours_until_due=23.5,
+                created_at=None,
+                updated_at=None,
+            ),
+        ]
+    )
+    db.fetch = AsyncMock(return_value=[Row(id="admin-1"), Row(id="admin-2")])
+    db.execute = AsyncMock(return_value="INSERT 0 1")
+
+    payload = await create_module_activation_request(
+        db,
+        {"tenant_id": tenant_id, "sub": "kc-sub", "email": "owner@example.com"},
+        "process_digitization",
+        route_path="/supply-chain/process",
+        message="Cần bật để demo quy trình",
+    )
+
+    assert payload["sla_state"] == "open"
+    assert payload["sla_due_at"] == "2026-09-22T00:00:00Z"
+    assert payload["first_notified_at"] is not None
+    assert payload["notification_count"] == 2
+    admin_fetch_sql = db.fetch.call_args.args[0]
+    assert "FROM users" in admin_fetch_sql
+    assert "role = 'provider'" in admin_fetch_sql
+    notification_sqls = [call.args[0] for call in db.execute.call_args_list]
+    assert any("INSERT INTO notifications" in sql for sql in notification_sqls)
+    assert any("UPDATE module_activation_requests" in sql for sql in notification_sqls)
+    assert any("module_activation_request" in call.args for call in db.execute.call_args_list)
+
+
+async def test_list_module_activation_requests_marks_overdue_items_for_operator_queue():
+    db = AsyncMock()
+    db.fetch = AsyncMock(
+        return_value=[
+            Row(
+                id="request-overdue",
+                tenant_id="tenant-1",
+                module_code="process_digitization",
+                module_name_vi="Số hóa quy trình",
+                status="pending",
+                message="please enable",
+                route_path="/supply-chain/process",
+                requester_email="owner@example.com",
+                priority="normal",
+                sla_due_at="2026-09-20T00:00:00Z",
+                first_notified_at="2026-09-19T00:00:00Z",
+                last_notified_at="2026-09-19T00:00:00Z",
+                notification_count=1,
+                sla_state="overdue",
+                hours_until_due=-30.0,
+                created_at=None,
+                updated_at=None,
+            )
+        ]
+    )
+
+    payload = await list_module_activation_requests(db, status="pending")
+
+    assert payload["requests"][0]["sla_state"] == "overdue"
+    assert payload["requests"][0]["hours_until_due"] == -30.0
+    sql = db.fetch.call_args.args[0]
+    assert "sla_due_at" in sql

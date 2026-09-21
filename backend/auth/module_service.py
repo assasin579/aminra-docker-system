@@ -12,6 +12,13 @@ def _row_value(row: Any, key: str) -> Any:
     return row[key]
 
 
+def _row_value_optional(row: Any, key: str, default: Any = None) -> Any:
+    try:
+        return _row_value(row, key)
+    except (KeyError, IndexError):
+        return default
+
+
 def _normalize_jsonb(value: Any) -> dict[str, Any]:
     if value is None:
         return {}
@@ -349,9 +356,93 @@ def _activation_request_payload(row: Any) -> dict[str, Any]:
         "message": _row_value(row, "message"),
         "route_path": _row_value(row, "route_path"),
         "requester_email": _row_value(row, "requester_email"),
+        "priority": _row_value_optional(row, "priority", "normal"),
+        "sla_due_at": _row_value_optional(row, "sla_due_at"),
+        "sla_state": _row_value_optional(row, "sla_state", "closed" if _row_value(row, "status") != "pending" else "open"),
+        "hours_until_due": _row_value_optional(row, "hours_until_due"),
+        "first_notified_at": _row_value_optional(row, "first_notified_at"),
+        "last_notified_at": _row_value_optional(row, "last_notified_at"),
+        "notification_count": int(_row_value_optional(row, "notification_count", 0) or 0),
         "created_at": _row_value(row, "created_at"),
         "updated_at": _row_value(row, "updated_at"),
     }
+
+
+def _activation_request_select(prefix: str = "mar") -> str:
+    return f"""
+           {prefix}.id,
+           {prefix}.tenant_id,
+           m.code AS module_code,
+           m.name_vi AS module_name_vi,
+           {prefix}.status,
+           {prefix}.message,
+           {prefix}.route_path,
+           {prefix}.requester_email,
+           COALESCE({prefix}.priority, 'normal') AS priority,
+           {prefix}.sla_due_at,
+           {prefix}.first_notified_at,
+           {prefix}.last_notified_at,
+           COALESCE({prefix}.notification_count, 0) AS notification_count,
+           CASE
+             WHEN {prefix}.status != 'pending' THEN 'closed'
+             WHEN {prefix}.sla_due_at IS NOT NULL AND {prefix}.sla_due_at < NOW() THEN 'overdue'
+             ELSE 'open'
+           END AS sla_state,
+           CASE
+             WHEN {prefix}.sla_due_at IS NULL THEN NULL
+             ELSE ROUND(EXTRACT(EPOCH FROM ({prefix}.sla_due_at - NOW())) / 3600.0, 1)
+           END AS hours_until_due,
+           {prefix}.created_at,
+           {prefix}.updated_at
+    """
+
+
+async def _notify_platform_admins_for_activation_request(db: Any, request_payload: dict[str, Any]) -> int:
+    admin_rows = await db.fetch(
+        """
+        SELECT id
+        FROM users
+        WHERE status = 'active'
+          AND role = 'provider'
+        ORDER BY created_at ASC
+        LIMIT 25
+        """
+    )
+    if not isinstance(admin_rows, (list, tuple)):
+        return 0
+
+    count = 0
+    for admin_row in admin_rows:
+        admin_id = str(_row_value(admin_row, "id"))
+        await db.execute(
+            """
+            INSERT INTO notifications (user_id, type, title, message, link)
+            VALUES ($1, $2, $3, $4, $5)
+            """,
+            admin_id,
+            "module_activation_request",
+            "Yêu cầu kích hoạt module mới",
+            f"{request_payload['requester_email'] or 'Một tenant'} yêu cầu kích hoạt {request_payload['module_name_vi'] or request_payload['module_code']}.",
+            f"/admin?tenant_id={request_payload['tenant_id']}&module_request={request_payload['id']}",
+        )
+        count += 1
+    if count:
+        await db.execute(
+            """
+            UPDATE module_activation_requests
+            SET first_notified_at = COALESCE(first_notified_at, NOW()),
+                last_notified_at = NOW(),
+                notification_count = notification_count + $2,
+                updated_at = NOW()
+            WHERE id = $1
+            """,
+            request_payload["id"],
+            count,
+        )
+        request_payload["first_notified_at"] = request_payload.get("first_notified_at") or "notified"
+        request_payload["last_notified_at"] = "notified"
+        request_payload["notification_count"] = int(request_payload.get("notification_count") or 0) + count
+    return count
 
 
 async def create_module_activation_request(
@@ -388,17 +479,8 @@ async def create_module_activation_request(
         raise HTTPException(status_code=409, detail=f"MODULE_ALREADY_ACTIVE:{module_code}")
 
     existing = await db.fetchrow(
-        """
-        SELECT mar.id,
-               mar.tenant_id,
-               m.code AS module_code,
-               m.name_vi AS module_name_vi,
-               mar.status,
-               mar.message,
-               mar.route_path,
-               mar.requester_email,
-               mar.created_at,
-               mar.updated_at
+        f"""
+        SELECT {_activation_request_select()}
         FROM module_activation_requests mar
         JOIN modules m ON m.id = mar.module_id
         WHERE mar.tenant_id = $1
@@ -414,26 +496,24 @@ async def create_module_activation_request(
         return _activation_request_payload(existing)
 
     row = await db.fetchrow(
-        """
-        INSERT INTO module_activation_requests (
-            tenant_id,
-            module_id,
-            requester_subject,
-            requester_email,
-            route_path,
-            message
+        f"""
+        WITH inserted AS (
+            INSERT INTO module_activation_requests (
+                tenant_id,
+                module_id,
+                requester_subject,
+                requester_email,
+                route_path,
+                message,
+                priority,
+                sla_due_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, 'normal', NOW() + INTERVAL '24 hours')
+            RETURNING *
         )
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id,
-                  tenant_id,
-                  (SELECT code FROM modules WHERE id = module_id) AS module_code,
-                  (SELECT name_vi FROM modules WHERE id = module_id) AS module_name_vi,
-                  status,
-                  message,
-                  route_path,
-                  requester_email,
-                  created_at,
-                  updated_at
+        SELECT {_activation_request_select('inserted')}
+        FROM inserted
+        JOIN modules m ON m.id = inserted.module_id
         """,
         tenant_id,
         _row_value(module_row, "module_id"),
@@ -442,7 +522,9 @@ async def create_module_activation_request(
         route_path,
         message,
     )
-    return _activation_request_payload(row)
+    payload = _activation_request_payload(row)
+    await _notify_platform_admins_for_activation_request(db, payload)
+    return payload
 
 
 async def list_module_activation_requests(db: Any, *, tenant_id: Any | None = None, status: str = "pending") -> dict[str, Any]:
@@ -451,43 +533,39 @@ async def list_module_activation_requests(db: Any, *, tenant_id: Any | None = No
 
     if tenant_id:
         rows = await db.fetch(
-            """
-            SELECT mar.id,
-                   mar.tenant_id,
-                   m.code AS module_code,
-                   m.name_vi AS module_name_vi,
-                   mar.status,
-                   mar.message,
-                   mar.route_path,
-                   mar.requester_email,
-                   mar.created_at,
-                   mar.updated_at
+            f"""
+            SELECT {_activation_request_select()}
             FROM module_activation_requests mar
             JOIN modules m ON m.id = mar.module_id
             WHERE mar.tenant_id = $1
               AND ($2 = 'all' OR mar.status = $2)
-            ORDER BY mar.created_at DESC
+            ORDER BY
+              CASE
+                WHEN mar.status = 'pending' AND mar.sla_due_at IS NOT NULL AND mar.sla_due_at < NOW() THEN 0
+                WHEN mar.status = 'pending' THEN 1
+                ELSE 2
+              END,
+              mar.sla_due_at ASC NULLS LAST,
+              mar.created_at DESC
             """,
             tenant_id,
             status,
         )
     else:
         rows = await db.fetch(
-            """
-            SELECT mar.id,
-                   mar.tenant_id,
-                   m.code AS module_code,
-                   m.name_vi AS module_name_vi,
-                   mar.status,
-                   mar.message,
-                   mar.route_path,
-                   mar.requester_email,
-                   mar.created_at,
-                   mar.updated_at
+            f"""
+            SELECT {_activation_request_select()}
             FROM module_activation_requests mar
             JOIN modules m ON m.id = mar.module_id
             WHERE ($1 = 'all' OR mar.status = $1)
-            ORDER BY mar.created_at DESC
+            ORDER BY
+              CASE
+                WHEN mar.status = 'pending' AND mar.sla_due_at IS NOT NULL AND mar.sla_due_at < NOW() THEN 0
+                WHEN mar.status = 'pending' THEN 1
+                ELSE 2
+              END,
+              mar.sla_due_at ASC NULLS LAST,
+              mar.created_at DESC
             """,
             status,
         )
@@ -550,17 +628,8 @@ async def review_module_activation_request(
     )
 
     row = await db.fetchrow(
-        """
-        SELECT mar.id,
-               mar.tenant_id,
-               m.code AS module_code,
-               m.name_vi AS module_name_vi,
-               mar.status,
-               mar.message,
-               mar.route_path,
-               mar.requester_email,
-               mar.created_at,
-               mar.updated_at
+        f"""
+        SELECT {_activation_request_select()}
         FROM module_activation_requests mar
         JOIN modules m ON m.id = mar.module_id
         WHERE mar.id = $1

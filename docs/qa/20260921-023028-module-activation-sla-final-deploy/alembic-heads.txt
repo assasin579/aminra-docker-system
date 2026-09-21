@@ -1,0 +1,10 @@
+Rev: 045_module_activation_sla (head)
+Parent: 044_module_activation_req
+Path: /app/alembic/versions/045_module_activation_sla.py
+
+    Module activation request SLA and operator notification metadata.
+    
+    Revision ID: 045_module_activation_sla
+    Revises: 044_module_activation_req
+    Create Date: 2026-09-21
+

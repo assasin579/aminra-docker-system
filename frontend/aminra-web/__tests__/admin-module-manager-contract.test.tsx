@@ -51,6 +51,11 @@ const activationRequestsPayload = {
       requester_email: "owner@example.com",
       route_path: "/supply-chain/process",
       message: "Cần bật để demo quy trình",
+      priority: "normal",
+      sla_due_at: "2026-09-20T00:00:00Z",
+      sla_state: "overdue",
+      hours_until_due: -30,
+      notification_count: 1,
     },
   ],
 };
@@ -147,6 +152,8 @@ describe("AdminModuleManager", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /tải yêu cầu kích hoạt/i }));
     expect(await screen.findByText("Cần bật để demo quy trình")).toBeInTheDocument();
+    expect(screen.getByText(/Quá hạn SLA/i)).toBeInTheDocument();
+    expect(screen.getByText(/Đã báo operator: 1 lần/i)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /duyệt process_digitization/i }));
 

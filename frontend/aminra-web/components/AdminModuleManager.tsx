@@ -37,6 +37,11 @@ interface ActivationRequest {
   requester_email?: string | null;
   route_path?: string | null;
   message?: string | null;
+  priority?: "low" | "normal" | "urgent" | string | null;
+  sla_due_at?: string | null;
+  sla_state?: "open" | "overdue" | "closed" | string | null;
+  hours_until_due?: number | null;
+  notification_count?: number | null;
 }
 
 interface ActivationRequestsPayload {
@@ -57,6 +62,17 @@ function moduleLabel(module: TenantModule): string {
 function configPreview(config?: Record<string, unknown>): string {
   if (!config || Object.keys(config).length === 0) return "{}";
   return JSON.stringify(config);
+}
+
+function activationSlaLabel(request: ActivationRequest): string {
+  if (request.sla_state === "overdue") return "Quá hạn SLA";
+  if (typeof request.hours_until_due === "number") return `Còn ${Math.max(0, Math.round(request.hours_until_due))} giờ SLA`;
+  return "Đang trong SLA";
+}
+
+function activationNotificationLabel(request: ActivationRequest): string {
+  const count = request.notification_count || 0;
+  return `Đã báo operator: ${count} lần`;
 }
 
 export default function AdminModuleManager({ token }: { token: string }) {
@@ -251,6 +267,20 @@ export default function AdminModuleManager({ token }: { token: string }) {
             <div key={request.id} className="rounded-xl p-3 grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center" style={{ background: "white", border: "1px solid #E9D5FF" }}>
               <div className="text-sm" style={{ color: "#334155" }}>
                 <strong>{request.module_name_vi || request.module_code}</strong> <code>{request.module_code}</code>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span
+                    className="text-xs px-2 py-1 rounded-lg font-semibold"
+                    style={request.sla_state === "overdue" ? { background: "#FEE2E2", color: "#B91C1C" } : { background: "#DCFCE7", color: "#166534" }}
+                  >
+                    {activationSlaLabel(request)}
+                  </span>
+                  <span className="text-xs px-2 py-1 rounded-lg" style={{ background: "#E0E7FF", color: "#3730A3" }}>
+                    {activationNotificationLabel(request)}
+                  </span>
+                  <span className="text-xs px-2 py-1 rounded-lg" style={{ background: "#F1F5F9", color: "#475569" }}>
+                    Priority: {request.priority || "normal"}
+                  </span>
+                </div>
                 <p>{request.message || "Không có ghi chú"}</p>
                 <p className="text-xs" style={{ color: "#64748B" }}>Requester: {request.requester_email || "unknown"} · Route: {request.route_path || "n/a"}</p>
               </div>

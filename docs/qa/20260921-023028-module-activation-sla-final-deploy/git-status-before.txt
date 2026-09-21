@@ -1,0 +1,14 @@
+MM backend/auth/module_service.py
+MM backend/tests/test_module_service.py
+M  frontend/aminra-web/__tests__/admin-module-manager-contract.test.tsx
+M  frontend/aminra-web/components/AdminModuleManager.tsx
+?? backend/alembic/versions/045_module_activation_sla.py
+?? docs/qa/20260920-223555-module-end-user-guard-verify/
+?? docs/qa/20260920-223703-module-end-user-guard-deploy/
+?? docs/qa/20260920-224958-module-guard-redeploy-after-provision-fix/
+?? docs/qa/20260921-004726-module-locked-direct-route-live-uat/
+?? docs/qa/20260921-022110-module-activation-sla-deploy/
+?? docs/qa/20260921-022958-module-activation-sla-db-uat/
+?? docs/qa/20260921-023008-module-activation-sla-db-uat-pass/
+?? docs/qa/20260921-023018-module-activation-sla-db-uat-pass/
+?? docs/qa/20260921-023028-module-activation-sla-final-deploy/
