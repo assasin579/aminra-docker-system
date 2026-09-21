@@ -9,6 +9,7 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user, require_admin
 from auth.module_service import (
     create_module_activation_request,
+    escalate_overdue_module_activation_requests,
     get_current_tenant_modules,
     list_module_activation_requests,
     review_module_activation_request,
@@ -33,6 +34,11 @@ class ModuleActivationRequestCreate(BaseModel):
 class ModuleActivationRequestReview(BaseModel):
     action: str = Field(..., pattern="^(approve|reject)$")
     admin_note: str | None = Field(default=None, max_length=1000)
+
+
+class ModuleActivationEscalationRequest(BaseModel):
+    tenant_id: str | None = Field(default=None, min_length=1, max_length=80)
+    limit: int = Field(default=25, ge=1, le=100)
 
 
 @router.get("/modules")
@@ -89,6 +95,20 @@ async def list_activation_requests_for_admin(
     db=Depends(get_db),
 ):
     return await list_module_activation_requests(db, tenant_id=tenant_id, status=status)
+
+
+@admin_router.post("/module-activation-requests/escalate-overdue")
+async def escalate_overdue_activation_requests_for_admin(
+    payload: ModuleActivationEscalationRequest,
+    admin: dict = Depends(require_admin),
+    db=Depends(get_db),
+):
+    return await escalate_overdue_module_activation_requests(
+        db,
+        admin=admin,
+        tenant_id=payload.tenant_id,
+        limit=payload.limit,
+    )
 
 
 @admin_router.patch("/module-activation-requests/{request_id}")

@@ -1,0 +1,13 @@
+ M backend/auth/module_service.py
+ M backend/tests/test_module_service.py
+ M docker-compose.yml
+ M frontend/aminra-web/__tests__/admin-module-manager-contract.test.tsx
+ M frontend/aminra-web/__tests__/sidebar-module-navigation-contract.test.tsx
+ M frontend/aminra-web/components/AdminModuleManager.tsx
+ M frontend/aminra-web/components/Sidebar.tsx
+ M scripts/automation/modularization-phase-gate.sh
+?? docs/qa/20260920-222724-module-end-user-experience/
+?? docs/qa/20260920-223555-module-end-user-guard-verify/
+?? frontend/aminra-web/__tests__/my-modules-customer-experience.test.tsx
+?? frontend/aminra-web/app/modules/
+?? frontend/aminra-web/components/MyModulesPanel.tsx

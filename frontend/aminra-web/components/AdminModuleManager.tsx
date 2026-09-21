@@ -42,10 +42,17 @@ interface ActivationRequest {
   sla_state?: "open" | "overdue" | "closed" | string | null;
   hours_until_due?: number | null;
   notification_count?: number | null;
+  escalation_count?: number | null;
+  last_escalated_at?: string | null;
+  assigned_operator_id?: string | null;
 }
 
 interface ActivationRequestsPayload {
   requests: ActivationRequest[];
+}
+
+interface EscalationPayload extends ActivationRequestsPayload {
+  escalated_count: number;
 }
 
 const STATUSES: ModuleStatus[] = ["enabled", "trial", "disabled", "locked"];
@@ -82,6 +89,7 @@ export default function AdminModuleManager({ token }: { token: string }) {
   const [draftStatuses, setDraftStatuses] = useState<Record<string, ModuleStatus>>({});
   const [loading, setLoading] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [escalatingOverdue, setEscalatingOverdue] = useState(false);
   const [savingCode, setSavingCode] = useState<string | null>(null);
   const [reviewingRequestId, setReviewingRequestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -207,6 +215,30 @@ export default function AdminModuleManager({ token }: { token: string }) {
     [loadActivationRequests, refreshModules, token],
   );
 
+  const escalateOverdueRequests = useCallback(async () => {
+    if (!normalizedTenantId) {
+      setError("Nhập tenant ID trước khi escalation yêu cầu quá hạn.");
+      return;
+    }
+    setEscalatingOverdue(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const data = await apiJson<EscalationPayload>("/api/auth/admin/module-activation-requests/escalate-overdue", {
+        method: "POST",
+        token,
+        json: { tenant_id: normalizedTenantId },
+        fallbackError: "Không escalation được yêu cầu quá hạn.",
+      });
+      setActivationRequests(data.requests || []);
+      setNotice(`Đã escalation ${data.escalated_count || 0} yêu cầu quá hạn`);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setEscalatingOverdue(false);
+    }
+  }, [normalizedTenantId, token]);
+
   return (
     <section className="space-y-5" data-admin-module-console="true">
       <div>
@@ -262,7 +294,18 @@ export default function AdminModuleManager({ token }: { token: string }) {
 
       {activationRequests.length > 0 && (
         <section data-module-activation-requests="true" className="rounded-2xl p-4 space-y-3" style={{ background: "#FAF5FF", border: "1px solid #DDD6FE" }}>
-          <h3 className="font-semibold" style={{ color: "#4C1D95" }}>Yêu cầu kích hoạt đang chờ</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-semibold" style={{ color: "#4C1D95" }}>Yêu cầu kích hoạt đang chờ</h3>
+            <button
+              type="button"
+              onClick={() => void escalateOverdueRequests()}
+              disabled={escalatingOverdue}
+              className="px-3 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "#EA580C", color: "white" }}
+            >
+              {escalatingOverdue ? "Escalating..." : "Escalate overdue"}
+            </button>
+          </div>
           {activationRequests.map((request) => (
             <div key={request.id} className="rounded-xl p-3 grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center" style={{ background: "white", border: "1px solid #E9D5FF" }}>
               <div className="text-sm" style={{ color: "#334155" }}>
@@ -280,6 +323,12 @@ export default function AdminModuleManager({ token }: { token: string }) {
                   <span className="text-xs px-2 py-1 rounded-lg" style={{ background: "#F1F5F9", color: "#475569" }}>
                     Priority: {request.priority || "normal"}
                   </span>
+                  {(request.priority === "urgent" || (request.escalation_count || 0) > 0) && (
+                    <span className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: "#FFEDD5", color: "#C2410C" }}>
+                      Urgent escalation · count {request.escalation_count || 0}
+                      {request.assigned_operator_id ? ` · assigned ${request.assigned_operator_id}` : ""}
+                    </span>
+                  )}
                 </div>
                 <p>{request.message || "Không có ghi chú"}</p>
                 <p className="text-xs" style={{ color: "#64748B" }}>Requester: {request.requester_email || "unknown"} · Route: {request.route_path || "n/a"}</p>

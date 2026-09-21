@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from auth.module_service import (
     create_module_activation_request,
+    escalate_overdue_module_activation_requests,
     get_current_tenant_modules,
     list_module_activation_requests,
     provision_tenant_modules_for_industry,
@@ -506,3 +507,70 @@ async def test_list_module_activation_requests_marks_overdue_items_for_operator_
     assert payload["requests"][0]["hours_until_due"] == -30.0
     sql = db.fetch.call_args.args[0]
     assert "sla_due_at" in sql
+
+
+async def test_escalate_overdue_module_activation_requests_notifies_assigns_and_marks_urgent():
+    db = AsyncMock()
+    db.fetch = AsyncMock(
+        side_effect=[
+            [
+                Row(
+                    id="request-overdue",
+                    tenant_id="tenant-1",
+                    module_code="process_digitization",
+                    module_name_vi="Số hóa quy trình",
+                    status="pending",
+                    message="please enable",
+                    route_path="/supply-chain/process",
+                    requester_email="owner@example.com",
+                    priority="normal",
+                    sla_due_at="2026-09-20T00:00:00Z",
+                    first_notified_at="2026-09-19T00:00:00Z",
+                    last_notified_at="2026-09-19T00:00:00Z",
+                    notification_count=1,
+                    escalation_count=0,
+                    last_escalated_at=None,
+                    assigned_operator_id=None,
+                    sla_state="overdue",
+                    hours_until_due=-30.0,
+                    created_at=None,
+                    updated_at=None,
+                )
+            ],
+            [Row(id="operator-1"), Row(id="operator-2")],
+        ]
+    )
+    db.execute = AsyncMock(return_value="UPDATE 1")
+
+    payload = await escalate_overdue_module_activation_requests(
+        db,
+        admin={"sub": "admin-sub"},
+        tenant_id="tenant-1",
+    )
+
+    assert payload["escalated_count"] == 1
+    assert payload["requests"][0]["id"] == "request-overdue"
+    assert payload["requests"][0]["priority"] == "urgent"
+    assert payload["requests"][0]["escalation_count"] == 1
+    assert payload["requests"][0]["assigned_operator_id"] == "operator-1"
+
+    overdue_sql = db.fetch.call_args_list[0].args[0]
+    assert "mar.status = 'pending'" in overdue_sql
+    assert "mar.sla_due_at < NOW()" in overdue_sql
+    assert "WHERE mar.tenant_id = $1" in overdue_sql
+
+    executed_sqls = [call.args[0] for call in db.execute.call_args_list]
+    assert any("UPDATE module_activation_requests" in sql and "priority = 'urgent'" in sql for sql in executed_sqls)
+    assert any("INSERT INTO notifications" in sql for sql in executed_sqls)
+    assert any("module_activation_sla_breach" in call.args for call in db.execute.call_args_list)
+
+
+async def test_escalate_overdue_module_activation_requests_noops_without_overdue_items():
+    db = AsyncMock()
+    db.fetch = AsyncMock(return_value=[])
+    db.execute = AsyncMock()
+
+    payload = await escalate_overdue_module_activation_requests(db, admin={"sub": "admin-sub"})
+
+    assert payload == {"escalated_count": 0, "requests": []}
+    db.execute.assert_not_called()

@@ -1,0 +1,10 @@
+Rev: 043_account_deletion_cases (head)
+Parent: 042_identity_projection_status
+Path: /app/alembic/versions/043_account_deletion_cases.py
+
+    Governed account deletion cleanup cases.
+    
+    Revision ID: 043_account_deletion_cases
+    Revises: 042_identity_projection_status
+    Create Date: 2026-09-19
+

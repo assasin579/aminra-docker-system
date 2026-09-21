@@ -167,4 +167,42 @@ describe("AdminModuleManager", () => {
     });
     expect(await screen.findByRole("status")).toHaveTextContent("Đã duyệt yêu cầu process_digitization");
   });
+
+  it("lets operators trigger SLA breach escalation for overdue activation requests", async () => {
+    vi.mocked(apiJson)
+      .mockResolvedValueOnce(modulesPayload)
+      .mockResolvedValueOnce(activationRequestsPayload)
+      .mockResolvedValueOnce({
+        escalated_count: 1,
+        requests: [
+          {
+            ...activationRequestsPayload.requests[0],
+            priority: "urgent",
+            escalation_count: 1,
+            assigned_operator_id: "operator-1",
+          },
+        ],
+      });
+
+    render(<AdminModuleManager token="admin-token" />);
+
+    await userEvent.type(screen.getByLabelText(/tenant id/i), "tenant-123");
+    await userEvent.click(screen.getByRole("button", { name: /tải module/i }));
+    await screen.findByText("Truy xuất lô hàng");
+    await userEvent.click(screen.getByRole("button", { name: /tải yêu cầu kích hoạt/i }));
+    expect(await screen.findByText(/Quá hạn SLA/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /escalate overdue/i }));
+
+    await waitFor(() => {
+      expect(apiJson).toHaveBeenCalledWith("/api/auth/admin/module-activation-requests/escalate-overdue", {
+        method: "POST",
+        token: "admin-token",
+        json: { tenant_id: "tenant-123" },
+        fallbackError: "Không escalation được yêu cầu quá hạn.",
+      });
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent("Đã escalation 1 yêu cầu quá hạn");
+    expect(screen.getByText(/Urgent escalation/i)).toBeInTheDocument();
+  });
 });

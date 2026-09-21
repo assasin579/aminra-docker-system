@@ -1,0 +1,12 @@
+ backend/auth/module_service.py                     |  46 ++++-
+ backend/tests/test_module_service.py               |  16 ++
+ docker-compose.yml                                 |   2 +
+ .../admin-module-manager-contract.test.tsx         |   6 +
+ .../my-modules-customer-experience.test.tsx        | 112 ++++++++++++
+ .../sidebar-module-navigation-contract.test.tsx    |   1 +
+ frontend/aminra-web/app/modules/page.tsx           |   7 +
+ .../aminra-web/components/AdminModuleManager.tsx   |   4 +-
+ frontend/aminra-web/components/MyModulesPanel.tsx  | 193 +++++++++++++++++++++
+ frontend/aminra-web/components/Sidebar.tsx         |  23 +++
+ scripts/automation/modularization-phase-gate.sh    |   8 +
+ 11 files changed, 416 insertions(+), 2 deletions(-)

@@ -363,6 +363,11 @@ def _activation_request_payload(row: Any) -> dict[str, Any]:
         "first_notified_at": _row_value_optional(row, "first_notified_at"),
         "last_notified_at": _row_value_optional(row, "last_notified_at"),
         "notification_count": int(_row_value_optional(row, "notification_count", 0) or 0),
+        "escalation_count": int(_row_value_optional(row, "escalation_count", 0) or 0),
+        "last_escalated_at": _row_value_optional(row, "last_escalated_at"),
+        "assigned_operator_id": None
+        if _row_value_optional(row, "assigned_operator_id") is None
+        else str(_row_value_optional(row, "assigned_operator_id")),
         "created_at": _row_value(row, "created_at"),
         "updated_at": _row_value(row, "updated_at"),
     }
@@ -383,6 +388,9 @@ def _activation_request_select(prefix: str = "mar") -> str:
            {prefix}.first_notified_at,
            {prefix}.last_notified_at,
            COALESCE({prefix}.notification_count, 0) AS notification_count,
+           COALESCE({prefix}.escalation_count, 0) AS escalation_count,
+           {prefix}.last_escalated_at,
+           {prefix}.assigned_operator_id,
            CASE
              WHEN {prefix}.status != 'pending' THEN 'closed'
              WHEN {prefix}.sla_due_at IS NOT NULL AND {prefix}.sla_due_at < NOW() THEN 'overdue'
@@ -570,6 +578,114 @@ async def list_module_activation_requests(db: Any, *, tenant_id: Any | None = No
             status,
         )
     return {"requests": [_activation_request_payload(row) for row in rows]}
+
+
+async def escalate_overdue_module_activation_requests(
+    db: Any,
+    *,
+    admin: dict[str, Any],
+    tenant_id: Any | None = None,
+    limit: int = 25,
+) -> dict[str, Any]:
+    """Escalate pending activation requests that breached SLA.
+
+    This is intentionally an operator-controlled escalation primitive: it does
+    not approve entitlements and it does not bypass module guards. It marks
+    overdue requests urgent, assigns a first active operator if unassigned, and
+    creates explicit in-app SLA-breach notifications for the operator pool.
+    """
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=422, detail="INVALID_ESCALATION_LIMIT")
+
+    if tenant_id:
+        overdue_rows = await db.fetch(
+            f"""
+            SELECT {_activation_request_select()}
+            FROM module_activation_requests mar
+            JOIN modules m ON m.id = mar.module_id
+            WHERE mar.tenant_id = $1
+              AND mar.status = 'pending'
+              AND mar.sla_due_at IS NOT NULL
+              AND mar.sla_due_at < NOW()
+            ORDER BY mar.sla_due_at ASC, mar.created_at ASC
+            LIMIT $2
+            """,
+            tenant_id,
+            limit,
+        )
+    else:
+        overdue_rows = await db.fetch(
+            f"""
+            SELECT {_activation_request_select()}
+            FROM module_activation_requests mar
+            JOIN modules m ON m.id = mar.module_id
+            WHERE mar.status = 'pending'
+              AND mar.sla_due_at IS NOT NULL
+              AND mar.sla_due_at < NOW()
+            ORDER BY mar.sla_due_at ASC, mar.created_at ASC
+            LIMIT $1
+            """,
+            limit,
+        )
+
+    if not overdue_rows:
+        return {"escalated_count": 0, "requests": []}
+
+    operator_rows = await db.fetch(
+        """
+        SELECT id
+        FROM users
+        WHERE status = 'active'
+          AND role = 'provider'
+        ORDER BY created_at ASC
+        LIMIT 25
+        """
+    )
+    operators = [str(_row_value(row, "id")) for row in operator_rows] if isinstance(operator_rows, (list, tuple)) else []
+    assignee_id = operators[0] if operators else None
+
+    escalated: list[dict[str, Any]] = []
+    for row in overdue_rows:
+        request = _activation_request_payload(row)
+        for operator_id in operators:
+            await db.execute(
+                """
+                INSERT INTO notifications (user_id, type, title, message, link)
+                VALUES ($1, $2, $3, $4, $5)
+                """,
+                operator_id,
+                "module_activation_sla_breach",
+                "SLA breach: yêu cầu kích hoạt module quá hạn",
+                f"{request['requester_email'] or 'Một tenant'} đang chờ kích hoạt {request['module_name_vi'] or request['module_code']} và đã quá hạn SLA.",
+                f"/admin?tenant_id={request['tenant_id']}&module_request={request['id']}&escalated=1",
+            )
+
+        await db.execute(
+            """
+            UPDATE module_activation_requests
+            SET priority = 'urgent',
+                assigned_operator_id = COALESCE(assigned_operator_id, $2),
+                last_escalated_at = NOW(),
+                escalation_count = escalation_count + 1,
+                last_notified_at = NOW(),
+                notification_count = notification_count + $3,
+                reviewed_by = COALESCE(reviewed_by, $4),
+                updated_at = NOW()
+            WHERE id = $1
+            """,
+            request["id"],
+            assignee_id,
+            len(operators),
+            admin.get("sub") or admin.get("id") or admin.get("email"),
+        )
+        request["priority"] = "urgent"
+        request["assigned_operator_id"] = request.get("assigned_operator_id") or assignee_id
+        request["last_escalated_at"] = "escalated"
+        request["escalation_count"] = int(request.get("escalation_count") or 0) + 1
+        request["notification_count"] = int(request.get("notification_count") or 0) + len(operators)
+        escalated.append(request)
+
+    return {"escalated_count": len(escalated), "requests": escalated}
 
 
 async def review_module_activation_request(

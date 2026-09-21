@@ -1,0 +1,10 @@
+Rev: 044_module_activation_req (head)
+Parent: 043_account_deletion_cases
+Path: /app/alembic/versions/044_module_activation_req.py
+
+    Module activation request workflow.
+    
+    Revision ID: 044_module_activation_req
+    Revises: 043_account_deletion_cases
+    Create Date: 2026-09-21
+

@@ -1,0 +1,5 @@
+ backend/auth/module_service.py                     | 201 ++++++++++++++-------
+ backend/tests/test_module_service.py               |  86 +++++++++
+ .../admin-module-manager-contract.test.tsx         |   7 +
+ .../aminra-web/components/AdminModuleManager.tsx   |  30 +++
+ 4 files changed, 258 insertions(+), 66 deletions(-)

@@ -1,0 +1,16 @@
+MM backend/auth/module_service.py
+MM backend/tests/test_module_service.py
+M  docker-compose.yml
+M  frontend/aminra-web/__tests__/admin-module-manager-contract.test.tsx
+A  frontend/aminra-web/__tests__/my-modules-customer-experience.test.tsx
+M  frontend/aminra-web/__tests__/sidebar-module-navigation-contract.test.tsx
+A  frontend/aminra-web/app/modules/page.tsx
+M  frontend/aminra-web/components/AdminModuleManager.tsx
+A  frontend/aminra-web/components/MyModulesPanel.tsx
+M  frontend/aminra-web/components/Sidebar.tsx
+M  scripts/automation/modularization-phase-gate.sh
+?? docs/qa/20260920-222724-module-end-user-experience/
+?? docs/qa/20260920-223555-module-end-user-guard-verify/
+?? docs/qa/20260920-223703-module-end-user-guard-deploy/
+?? docs/qa/20260920-224958-module-guard-redeploy-after-provision-fix/
+?? frontend/aminra-web/e2e/tmp-module-guard-live-uat.spec.ts

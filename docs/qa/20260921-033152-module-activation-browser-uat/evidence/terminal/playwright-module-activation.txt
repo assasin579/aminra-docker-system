@@ -1,0 +1,4 @@
+Error: Project(s) "chromium" not found. Available projects: "desktop-chromium", "desktop-firefox", "desktop-webkit", "mobile-chrome", "mobile-safari", "tablet"
+    at filterProjects (/home/user/Documents/aminra-docker-system/frontend/aminra-web/node_modules/playwright/lib/runner/projectUtils.js:80:11)
+    at runTests (/home/user/Documents/aminra-docker-system/frontend/aminra-web/node_modules/playwright/lib/testActions.js:62:42)
+    at i.<anonymous> (/home/user/Documents/aminra-docker-system/frontend/aminra-web/node_modules/playwright/lib/program.js:56:7)
