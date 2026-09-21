@@ -1,0 +1,49 @@
+aminra-backend-1  | [entrypoint] Loading secrets from Vault Agent...
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [7] [INFO] Starting gunicorn 26.2.0
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [7] [INFO] Listening at: http://0.0.0.0:8000 (7)
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [7] [INFO] Using worker: uvicorn.workers.UvicornWorker
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [8] [INFO] Booting worker with pid: 8
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [9] [INFO] Booting worker with pid: 9
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [10] [INFO] Booting worker with pid: 10
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [11] [INFO] Booting worker with pid: 11
+aminra-backend-1  | [2026-09-21 22:29:42 +0700] [7] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+aminra-frontend-1  | ▲ Next.js 16.2.4
+aminra-frontend-1  | - Local:         http://localhost:3000
+aminra-frontend-1  | - Network:       http://0.0.0.0:3000
+aminra-frontend-1  | ✓ Ready in 0ms
+aminra-backend-1   | 2026-09-21 22:29:43,475 [INFO] LLM Backend: OPENROUTER
+aminra-backend-1   | 2026-09-21 22:29:43,596 [INFO] LLM Backend: OPENROUTER
+aminra-backend-1   | 2026-09-21 22:29:43,774 [INFO] LLM Backend: OPENROUTER
+aminra-backend-1   | 2026-09-21 22:29:43,901 [INFO] LLM Backend: OPENROUTER
+aminra-backend-1   | {"event": "pikepdf C++ to Python logger bridge initialized", "level": "info", "timestamp": "2026-09-21T15:29:45.996559Z"}
+aminra-backend-1   | {"event": "pikepdf C++ to Python logger bridge initialized", "level": "info", "timestamp": "2026-09-21T15:29:45.996995Z"}
+aminra-backend-1   | {"event": "pikepdf C++ to Python logger bridge initialized", "level": "info", "timestamp": "2026-09-21T15:29:46.073473Z"}
+aminra-backend-1   | {"event": "pikepdf C++ to Python logger bridge initialized", "level": "info", "timestamp": "2026-09-21T15:29:46.321734Z"}
+aminra-backend-1   | [2026-09-21 22:29:46 +0700] [9] [INFO] Started server process [9]
+aminra-backend-1   | [2026-09-21 22:29:46 +0700] [9] [INFO] Waiting for application startup.
+aminra-backend-1   | [2026-09-21 22:29:46 +0700] [11] [INFO] Started server process [11]
+aminra-backend-1   | [2026-09-21 22:29:46 +0700] [11] [INFO] Waiting for application startup.
+aminra-backend-1   | [2026-09-21 22:29:46 +0700] [8] [INFO] Started server process [8]
+aminra-backend-1   | [2026-09-21 22:29:46 +0700] [8] [INFO] Waiting for application startup.
+aminra-backend-1   | {"event": "PostgreSQL pool ready: min=2 max=15", "level": "info", "timestamp": "2026-09-21T15:29:47.012237Z"}
+aminra-backend-1   | {"event": "PostgreSQL pool ready: min=2 max=15", "level": "info", "timestamp": "2026-09-21T15:29:47.053019Z"}
+aminra-backend-1   | {"event": "PostgreSQL pool ready: min=2 max=15", "level": "info", "timestamp": "2026-09-21T15:29:47.155800Z"}
+aminra-backend-1   | [2026-09-21 22:29:47 +0700] [10] [INFO] Started server process [10]
+aminra-backend-1   | [2026-09-21 22:29:47 +0700] [10] [INFO] Waiting for application startup.
+aminra-backend-1   | {"event": "PostgreSQL pool ready: min=2 max=15", "level": "info", "timestamp": "2026-09-21T15:29:47.284510Z"}
+aminra-backend-1   | {"event": "[pdf_renderer] browser launched, pool_size=3", "level": "info", "timestamp": "2026-09-21T15:29:49.005310Z"}
+aminra-backend-1   | [2026-09-21 22:29:49 +0700] [8] [INFO] Application startup complete.
+aminra-backend-1   | {"event": "[pdf_renderer] browser launched, pool_size=3", "level": "info", "timestamp": "2026-09-21T15:29:49.043052Z"}
+aminra-backend-1   | [2026-09-21 22:29:49 +0700] [9] [INFO] Application startup complete.
+aminra-backend-1   | {"event": "[pdf_renderer] browser launched, pool_size=3", "level": "info", "timestamp": "2026-09-21T15:29:49.051479Z"}
+aminra-backend-1   | [2026-09-21 22:29:49 +0700] [10] [INFO] Application startup complete.
+aminra-backend-1   | {"event": "[pdf_renderer] browser launched, pool_size=3", "level": "info", "timestamp": "2026-09-21T15:29:49.120751Z"}
+aminra-backend-1   | [2026-09-21 22:29:49 +0700] [11] [INFO] Application startup complete.
+aminra-backend-1   | /app/pipeline/ingest.py:350: UserWarning: Api key is used with an insecure connection.
+aminra-backend-1   |   return QdrantClient(url=QDRANT_URL, api_key=api_key)
+aminra-backend-1   | /usr/local/lib/python3.11/site-packages/qdrant_client/qdrant_remote.py:284: UserWarning: Qdrant client version 1.19.1 is incompatible with server version 1.17.1. Major versions should match and minor version difference must not exceed 1. Set check_compatibility=False to skip version check.
+aminra-backend-1   |   show_warning(
+aminra-backend-1   | /app/pipeline/ingest.py:350: UserWarning: Api key is used with an insecure connection.
+aminra-backend-1   |   return QdrantClient(url=QDRANT_URL, api_key=api_key)
+aminra-backend-1   | /usr/local/lib/python3.11/site-packages/qdrant_client/qdrant_remote.py:284: UserWarning: Qdrant client version 1.19.1 is incompatible with server version 1.17.1. Major versions should match and minor version difference must not exceed 1. Set check_compatibility=False to skip version check.
+aminra-backend-1   |   show_warning(

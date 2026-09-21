@@ -1,0 +1,7 @@
+     column_name      |        data_type         | is_nullable | column_default 
+----------------------+--------------------------+-------------+----------------
+ assigned_operator_id | uuid                     | YES         | 
+ escalation_count     | integer                  | NO          | 0
+ last_escalated_at    | timestamp with time zone | YES         | 
+(3 rows)
+

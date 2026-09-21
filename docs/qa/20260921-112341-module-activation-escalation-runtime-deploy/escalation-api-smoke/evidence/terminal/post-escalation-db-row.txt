@@ -1,0 +1,5 @@
+                  id                  | status  | priority | escalation_count | has_last_escalated_at | has_assignee 
+--------------------------------------+---------+----------+------------------+-----------------------+--------------
+ ba5a8004-5f40-4a71-83ab-02d53b4788a7 | pending | urgent   |                1 | t                     | t
+(1 row)
+

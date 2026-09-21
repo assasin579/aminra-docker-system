@@ -1,0 +1,2 @@
+MODULE_GUARD_ROLLOUT=supplier_management,process_digitization,traceability,public_trace
+MODULE_GUARDS_ENABLED=true

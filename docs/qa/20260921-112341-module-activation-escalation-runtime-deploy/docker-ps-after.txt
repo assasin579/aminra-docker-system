@@ -1,0 +1,3 @@
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED          STATUS                                     PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    46 seconds ago   Up 31 seconds (healthy)                    0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   33 seconds ago   Up Less than a second (health: starting)   0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp

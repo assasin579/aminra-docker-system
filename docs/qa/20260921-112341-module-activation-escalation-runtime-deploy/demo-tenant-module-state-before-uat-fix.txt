@@ -1,0 +1,7 @@
+           email           |              tenant_id               |         code         |  status  |         source         |          enabled_at           |          disabled_at          
+---------------------------+--------------------------------------+----------------------+----------+------------------------+-------------------------------+-------------------------------
+ biz-demo-1@demo.aminra.vn | bf674cab-82c8-4868-b515-0e345e3291f4 | process_digitization | disabled | business_model_default |                               | 2026-09-21 09:55:52.194153+07
+ biz-demo-1@demo.aminra.vn | bf674cab-82c8-4868-b515-0e345e3291f4 | supplier_management  | enabled  | business_model_default | 2026-09-21 09:55:52.194153+07 | 
+ biz-demo-1@demo.aminra.vn | bf674cab-82c8-4868-b515-0e345e3291f4 | traceability         | disabled | business_model_default |                               | 2026-09-21 09:55:52.194153+07
+(3 rows)
+

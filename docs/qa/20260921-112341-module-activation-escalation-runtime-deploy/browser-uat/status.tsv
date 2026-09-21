@@ -1,0 +1,4 @@
+CREDENTIALS	PASS	Loaded gitignored QA credential keys; values REDACTED
+RUNTIME-BACKEND	PASS	Backend health responded
+RUNTIME-FRONTEND	PASS	Frontend health responded
+BROWSER-UAT	FAIL	Playwright failed; see evidence/terminal/playwright-module-activation.txt

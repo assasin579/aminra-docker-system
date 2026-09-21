@@ -1,0 +1,8 @@
+NAME                                     IMAGE                                  COMMAND                  SERVICE           CREATED        STATUS                  PORTS
+aminra-docker-system-aminra-backend-1    aminra-docker-system-aminra-backend    "/app/entrypoint.sh …"   aminra-backend    9 hours ago    Up 9 hours (healthy)    0.0.0.0:8100->8000/tcp, [::]:8100->8000/tcp
+aminra-docker-system-aminra-frontend-1   aminra-docker-system-aminra-frontend   "docker-entrypoint.s…"   aminra-frontend   9 hours ago    Up 9 hours (healthy)    0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+aminra-docker-system-arq-worker-1        aminra-docker-system-arq-worker        "/app/entrypoint.sh …"   arq-worker        4 days ago     Up 4 days               8000/tcp
+aminra-docker-system-keycloak-1          aminra-docker-system-keycloak          "/opt/keycloak/bin/k…"   keycloak          4 days ago     Up 4 days (healthy)     8443/tcp, 0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp, 127.0.0.1:9180->9000/tcp
+aminra-docker-system-postgres-db-1       aminra-docker-system-postgres-db       "docker-entrypoint.s…"   postgres-db       24 hours ago   Up 24 hours (healthy)   5432/tcp
+aminra-docker-system-qdrant-db-1         aminra-docker-system-qdrant-db         "./entrypoint.sh"        qdrant-db         24 hours ago   Up 24 hours (healthy)   6334/tcp, 0.0.0.0:6433->6333/tcp, [::]:6433->6333/tcp
+aminra-docker-system-redis-1             redis:7.4-alpine                       "docker-entrypoint.s…"   redis             2 weeks ago    Up 4 days (healthy)     6379/tcp

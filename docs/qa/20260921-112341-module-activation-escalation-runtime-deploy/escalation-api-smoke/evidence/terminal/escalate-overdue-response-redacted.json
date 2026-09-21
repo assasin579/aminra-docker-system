@@ -1,0 +1,27 @@
+{
+  "escalated_count": 1,
+  "requests": [
+    {
+      "id": "ba5a8004-5f40-4a71-83ab-02d53b4788a7",
+      "tenant_id": "bf674cab-82c8-4868-b515-0e345e3291f4",
+      "module_code": "process_digitization",
+      "module_name_vi": "Số hóa quy trình",
+      "status": "pending",
+      "message": "Escalation API smoke synthetic request",
+      "route_path": "/supply-chain/process",
+      "requester_email": "biz-demo-1@demo.aminra.vn",
+      "priority": "urgent",
+      "sla_due_at": "2026-09-21T13:38:28.168444+00:00",
+      "sla_state": "overdue",
+      "hours_until_due": -2.0,
+      "first_notified_at": "2026-09-21T15:38:27.747890+00:00",
+      "last_notified_at": "2026-09-21T15:38:27.747890+00:00",
+      "notification_count": 8,
+      "escalation_count": 1,
+      "last_escalated_at": "escalated",
+      "assigned_operator_id": "54182089-3a6d-458a-994d-93ac4e0c504f",
+      "created_at": "2026-09-21T15:38:27.715541+00:00",
+      "updated_at": "2026-09-21T15:38:27.747890+00:00"
+    }
+  ]
+}

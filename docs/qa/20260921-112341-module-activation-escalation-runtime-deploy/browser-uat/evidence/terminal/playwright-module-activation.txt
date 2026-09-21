@@ -1,0 +1,35 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/module-guard-live-uat.spec.ts:61:5 › business end-user modules page and scoped guards work after enablement
+[1A[2K  1) [desktop-chromium] › e2e/module-guard-live-uat.spec.ts:61:5 › business end-user modules page and scoped guards work after enablement 
+
+    Error: {"processes":[{"id":"06408bb8-bcfa-40b9-b840-e8b753ddb05b","name":"Demo Halal Bakery Process","description":"Quy trình demo cho lô bánh halal có trace QR","flowchart":{"edges":[{"to":"mix","from":"prep"},{"to":"pack","from":"mix"}],"nodes":[{"id":"prep","label":"Kiểm tra nguyên liệu","order":1,"checklist":["COA hợp lệ","Halal cert còn hạn"]},{"id":"mix","label":"Trộn bột","order":2,"checklist":["Dụng cụ đã vệ sinh","Không nhiễm chéo"]},{"id":"pack","label":"Đóng gói","order":3,"checklist":["Tem lô đúng","Khu đóng gói sạch"]}]},"version":1,"is_active":true,"created_at":"2026-09-17T08:29:16.237262Z","updated_at":"2026-09-17T08:29:16.237262Z"}]}
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m403[39m
+    Received: [31m200[39m
+
+      118 |     headers: { Authorization: `Bearer ${token}` },
+      119 |   });
+    > 120 |   expect(processResponse.status(), await processResponse.text()).toBe(403);
+          |                                                                  ^
+      121 |   expect(await processResponse.text()).toContain("MODULE_DISABLED:process_digitization");
+      122 |
+      123 |   const batchResponse = await request.get("/api/api/supply-chain/batches", {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/module-guard-live-uat.spec.ts:120:66
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/module-guard-live-uat-busi-067d4-uards-work-after-enablement-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/module-guard-live-uat-busi-067d4-uards-work-after-enablement-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/module-guard-live-uat-busi-067d4-uards-work-after-enablement-desktop-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [desktop-chromium] › e2e/module-guard-live-uat.spec.ts:61:5 › business end-user modules page and scoped guards work after enablement 

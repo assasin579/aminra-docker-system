@@ -1,0 +1,7 @@
+TOKEN	PASS	Acquired business/admin tokens from local Keycloak; values REDACTED
+ME	PASS	business tenant_id=bf674cab-82c8-4868-b515-0e345e3291f4
+CREATE_REQUEST	PASS	request_id=ba5a8004-5f40-4a71-83ab-02d53b4788a7
+MARK_OVERDUE	PASS	Synthetic pending request marked overdue in sandbox DB
+ESCALATE	PASS	escalated_count=1; priority=urgent; escalation_count=1
+CLEANUP	PASS	Synthetic request rejected after smoke
+HEALTH	PASS	Backend health OK after escalation smoke
