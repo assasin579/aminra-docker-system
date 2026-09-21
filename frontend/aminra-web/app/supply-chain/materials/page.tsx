@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
 import Modal from "@/components/Modal";
+import ModuleAccessGate from "@/components/ModuleAccessGate";
 import { ApiClientError, apiFetch } from "@/lib/apiClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -93,7 +94,7 @@ const STATUS_COLORS: Record<
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-export default function MaterialsPage() {
+function MaterialsWorkspacePage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading } = useUserAuth();
 
@@ -1613,5 +1614,13 @@ export default function MaterialsPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+export default function MaterialsPage() {
+  return (
+    <ModuleAccessGate moduleCode="supplier_management" routePath="/supply-chain/materials">
+      <MaterialsWorkspacePage />
+    </ModuleAccessGate>
   );
 }

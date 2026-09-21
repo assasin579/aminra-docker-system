@@ -21,6 +21,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Modal from "@/components/Modal";
+import ModuleAccessGate from "@/components/ModuleAccessGate";
 import { ApiClientError, apiFetch, apiJson } from "@/lib/apiClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -211,7 +212,7 @@ function reactToFlow(
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-export default function ProcessPage() {
+function ProcessWorkspacePage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading } = useUserAuth();
   const headers = useMemo(
@@ -857,5 +858,13 @@ export default function ProcessPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+export default function ProcessPage() {
+  return (
+    <ModuleAccessGate moduleCode="process_digitization" routePath="/supply-chain/process">
+      <ProcessWorkspacePage />
+    </ModuleAccessGate>
   );
 }

@@ -40,6 +40,21 @@ function jsonResponse(status: number, body: unknown) {
   );
 }
 
+function activeProcessModuleResponse() {
+  return jsonResponse(200, {
+    business_model: { code: "restaurant_hotel", name_vi: "Nhà hàng / khách sạn" },
+    modules: [
+      {
+        code: "process_digitization",
+        name_vi: "Số hóa quy trình",
+        status: "enabled",
+        access_state: "active",
+        route_path: "/supply-chain/process",
+      },
+    ],
+  });
+}
+
 function findFetchCall(path: string, method: string): [RequestInfo | URL, RequestInit] {
   const calls = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
   const call = calls.find(([url, init]) => String(url) === path && ((init?.method as string | undefined) || "GET") === method);
@@ -52,6 +67,9 @@ describe("Supply-chain process create FE→BE contract", () => {
     vi.clearAllMocks();
     global.fetch = vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const method = init?.method || "GET";
+      if (String(url) === "/api/api/me/modules" && method === "GET") {
+        return activeProcessModuleResponse();
+      }
       if (String(url) === "/api/api/supply-chain/processes" && method === "GET") {
         return jsonResponse(200, { processes: [] });
       }
@@ -63,6 +81,9 @@ describe("Supply-chain process create FE→BE contract", () => {
   it("POSTs the modal name to the backend proxy with bearer auth and JSON content-type", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation((url: RequestInfo | URL, init?: RequestInit) => {
       const method = init?.method || "GET";
+      if (String(url) === "/api/api/me/modules" && method === "GET") {
+        return activeProcessModuleResponse();
+      }
       if (String(url) === "/api/api/supply-chain/processes" && method === "GET") {
         return jsonResponse(200, { processes: [] });
       }
@@ -94,6 +115,9 @@ describe("Supply-chain process create FE→BE contract", () => {
   it("surfaces FastAPI save errors instead of showing a false success", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation((url: RequestInfo | URL, init?: RequestInit) => {
       const method = init?.method || "GET";
+      if (String(url) === "/api/api/me/modules" && method === "GET") {
+        return activeProcessModuleResponse();
+      }
       if (String(url) === "/api/api/supply-chain/processes" && method === "GET") {
         return jsonResponse(200, {
           processes: [
@@ -129,6 +153,9 @@ describe("Supply-chain process create FE→BE contract", () => {
   it("surfaces FastAPI create errors instead of failing silently", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation((url: RequestInfo | URL, init?: RequestInit) => {
       const method = init?.method || "GET";
+      if (String(url) === "/api/api/me/modules" && method === "GET") {
+        return activeProcessModuleResponse();
+      }
       if (String(url) === "/api/api/supply-chain/processes" && method === "GET") {
         return jsonResponse(200, { processes: [] });
       }

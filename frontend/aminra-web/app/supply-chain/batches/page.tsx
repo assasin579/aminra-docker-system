@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
 import Modal from "@/components/Modal";
+import ModuleAccessGate from "@/components/ModuleAccessGate";
 import { ApiClientError, apiFetch } from "@/lib/apiClient";
 
 interface Batch {
@@ -44,7 +45,7 @@ const STATUS = {
   rejected: { label: "Từ chối", bg: "#FEF2F2", color: "#DC2626" },
 };
 
-export default function BatchesPage() {
+function BatchesWorkspacePage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading } = useUserAuth();
   const headers = useMemo(
@@ -1363,5 +1364,13 @@ export default function BatchesPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+export default function BatchesPage() {
+  return (
+    <ModuleAccessGate moduleCode="traceability" routePath="/supply-chain/batches">
+      <BatchesWorkspacePage />
+    </ModuleAccessGate>
   );
 }

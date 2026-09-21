@@ -1,0 +1,24 @@
+
+> aminra-web@0.1.0 test
+> vitest run sidebar-module-navigation-contract.test.tsx sidebar-admin-navigation-contract.test.tsx admin-module-manager-contract.test.tsx my-modules-customer-experience.test.tsx
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/Documents/aminra-docker-system/frontend/aminra-web[39m
+
+ [32m✓[39m __tests__/my-modules-customer-experience.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1701[2mms[22m[39m
+     [33m[2m✓[22m[39m loads the tenant module package and explains active vs locked modules to a business user [33m 1580[2mms[22m[39m
+ [32m✓[39m __tests__/admin-module-manager-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2525[2mms[22m[39m
+     [33m[2m✓[22m[39m loads tenant modules through the admin backend API and renders dependency-safe controls [33m 988[2mms[22m[39m
+     [33m[2m✓[22m[39m updates one module with admin_override payload and surfaces success without silent reload assumptions [33m 925[2mms[22m[39m
+     [33m[2m✓[22m[39m renders dependency blocker errors and does not show a false success [33m 594[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-module-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2072[2mms[22m[39m
+     [33m[2m✓[22m[39m hides traceability/process links when those modules are disabled for the tenant [33m 1523[2mms[22m[39m
+ [32m✓[39m __tests__/sidebar-admin-navigation-contract.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2351[2mms[22m[39m
+     [33m[2m✓[22m[39m renders admin-only navigation on /admin even when /auth/me projects the platform admin as provider [33m 1774[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps provider portal navigation outside /admin, with an explicit Admin Panel escape hatch [33m 327[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 00:41:51
+[2m   Duration [22m 6.87s[2m (transform 1.07s, setup 2.59s, import 1.71s, tests 8.65s, environment 9.35s)[22m
+

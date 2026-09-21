@@ -1,0 +1,15 @@
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, anyio-4.15.1, Faker-40.39.0, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 26 items
+
+tests/test_module_registry_migration.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                            [ 19%][0m
+tests/test_module_service.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                   [ 53%][0m
+tests/test_module_route_contract.py [32m.[0m[32m.[0m[32m.[0m[32m                                  [ 65%][0m
+tests/test_module_guard.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                       [ 92%][0m
+tests/test_supply_chain_module_guards.py [32m.[0m[32m.[0m[32m                              [100%][0m
+
+[32m============================== [32m[1m26 passed[0m[32m in 6.63s[0m[32m ==============================[0m
