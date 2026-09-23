@@ -93,9 +93,13 @@ aminra-docker-system/
 
 ```bash
 # Stack
-docker compose up -d                     # Start full stack
-docker compose ps                         # Verify all healthy
-make help                                 # Makefile targets
+scripts/deploy/auto-deploy.sh --dry-run       # Classify current diff and show the safe deploy lane
+scripts/deploy/auto-deploy.sh                 # Default deploy entrypoint: docs/frontend/backend lanes auto-selected
+scripts/deploy/frontend-only.sh               # FE-only: build + up --no-deps aminra-frontend + smoke
+scripts/deploy/backend-only.sh                # BE-only: build + up --no-deps aminra-backend + smoke
+docker compose up -d                          # Start full stack only; avoid for routine code deploy
+docker compose ps                              # Verify all healthy
+make help                                      # Makefile targets
 
 # Backend test (in-container)
 docker compose exec aminra-backend pytest -x
@@ -135,10 +139,11 @@ Frontend dev URL: `http://localhost:3100`
 
 1. **Đọc brain Section 1** (CURRENT STATUS) + **Section 2** (ACTIVE_TASKS) — đừng đụng task in_progress của người khác
 2. **Verify file/path/flag** trong brain còn tồn tại trước khi recommend
-3. **Cross-tenant test** nếu đụng query layer — `pytest tests/test_cross_tenant_*`
-4. **PDF cert hash invariance** — KHÔNG đổi cert PDF render path
-5. **Secret KHÔNG commit** — `.env.example` template, real value qua Vault
-6. **Brain update cuối session** quan trọng — theo `05-Protocols/session-end.md`
+3. **Deploy lane mặc định:** sau thay đổi runtime, dùng `scripts/deploy/auto-deploy.sh` thay vì `docker compose up -d --build ...`. Script tự chọn docs-only/frontend-only/backend-only; infra/stateful/mixed fail closed để tránh restart DB ngoài ý muốn.
+4. **Cross-tenant test** nếu đụng query layer — `pytest tests/test_cross_tenant_*`
+5. **PDF cert hash invariance** — KHÔNG đổi cert PDF render path
+6. **Secret KHÔNG commit** — `.env.example` template, real value qua Vault
+7. **Brain update cuối session** quan trọng — theo `05-Protocols/session-end.md`
 
 ---
 
