@@ -177,7 +177,7 @@ function SubmissionsContent() {
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/business/login");
     if (!loading && isAuthenticated && !isBusiness && !isProvider)
-      router.replace("/");
+      router.replace("/landing");
   }, [loading, isAuthenticated, user, router, isBusiness, isProvider]);
 
   const [auditors, setAuditors] = useState<

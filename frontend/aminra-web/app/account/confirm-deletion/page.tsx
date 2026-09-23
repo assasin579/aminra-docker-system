@@ -33,7 +33,7 @@ function ConfirmDeletionContent() {
       await purgeAuthSessionState("self_reset");
 
       setDone(true);
-      setTimeout(() => router.push("/"), 5000);
+      setTimeout(() => router.push("/landing"), 5000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lỗi không xác định");
     } finally {
@@ -60,7 +60,7 @@ function ConfirmDeletionContent() {
             5 giây...
           </p>
           <Link
-            href="/"
+            href="/landing"
             className="inline-block mt-4 font-medium"
             style={{ color: "#0A1F44" }}
           >

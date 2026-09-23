@@ -39,7 +39,7 @@ export default function Navbar() {
 
         <nav className="hidden md:flex items-center space-x-8">
           <Link
-            href="/"
+            href="/landing"
             className="font-medium transition-colors"
             style={{ color: "#374151" }}
           >

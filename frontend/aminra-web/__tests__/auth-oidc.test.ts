@@ -85,12 +85,12 @@ describe("signinRedirect", () => {
     vi.unstubAllEnvs();
   });
 
-  it("defaults returnTo to '/' when omitted", async () => {
+  it("defaults returnTo to '/landing' when omitted", async () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED", "true");
     const { signinRedirect } = await import("@/lib/auth-oidc");
     await signinRedirect();
     expect(mockSigninRedirect).toHaveBeenCalledWith({
-      state: "/",
+      state: "/landing",
       extraQueryParams: { prompt: "login" },
     });
     vi.unstubAllEnvs();
@@ -142,7 +142,7 @@ describe("handleSigninCallback", () => {
     vi.unstubAllEnvs();
   });
 
-  it("falls back to '/' when state is not a string", async () => {
+  it("falls back to '/landing' when state is not a string", async () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED", "true");
     mockSigninRedirectCallback.mockResolvedValue({
       access_token: "x",
@@ -150,7 +150,7 @@ describe("handleSigninCallback", () => {
     });
     const { handleSigninCallback } = await import("@/lib/auth-oidc");
     const out = await handleSigninCallback();
-    expect(out.returnTo).toBe("/");
+    expect(out.returnTo).toBe("/landing");
     vi.unstubAllEnvs();
   });
 });

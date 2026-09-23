@@ -44,7 +44,7 @@ function buildSettings(): UserManagerSettings {
     authority: `${authority}/realms/${realm}`,
     client_id: clientId,
     redirect_uri: `${origin}/auth/callback`,
-    post_logout_redirect_uri: `${origin}/`,
+    post_logout_redirect_uri: `${origin}/landing`,
     response_type: "code",
     scope: "openid profile email",
     automaticSilentRenew: true,
@@ -90,7 +90,7 @@ function startLoginTransaction(returnTo: string): void {
 }
 
 export async function signinRedirect(returnTo?: string): Promise<void> {
-  const safeReturnTo = returnTo ?? "/";
+  const safeReturnTo = returnTo ?? "/landing";
   // Start every interactive SSO login from a clean app/OIDC storage state.
   // Without this, a browser that previously used a different AMINRA account
   // can briefly restore stale `aminra_user_profile` / oidc-client state during
@@ -116,9 +116,9 @@ export async function handleSigninCallback(): Promise<{
 }> {
   const mgr = getOidcManager();
   const user = await mgr.signinRedirectCallback();
-  // `state` is whatever signinRedirect set; default to "/"
+  // `state` is whatever signinRedirect set; default to the public landing page.
   const stateValue =
-    typeof user.state === "string" ? user.state : "/";
+    typeof user.state === "string" ? user.state : "/landing";
   return { user, returnTo: stateValue };
 }
 
@@ -147,8 +147,8 @@ function buildEndSessionUrl(idTokenHint?: string | null): string {
     process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? "aminra-frontend";
   const postLogout =
     typeof window !== "undefined"
-      ? `${window.location.origin}/`
-      : process.env.NEXT_PUBLIC_APP_ORIGIN ?? "http://localhost:3100/";
+      ? `${window.location.origin}/landing`
+      : `${process.env.NEXT_PUBLIC_APP_ORIGIN ?? "http://localhost:3100"}/landing`;
   const params = new URLSearchParams({
     post_logout_redirect_uri: postLogout,
     client_id: clientId,

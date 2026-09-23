@@ -15,7 +15,7 @@ export default function TermsPage() {
     >
       <header className="mb-8">
         <Link
-          href="/"
+          href="/landing"
           className="inline-block text-sm py-2 -my-2"
           style={{ color: "#0A1F44" }}
         >
