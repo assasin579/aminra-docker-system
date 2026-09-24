@@ -18,6 +18,7 @@ from auth.notification_router import notify
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from services.audit_log import log_audit
 from services.certificate_pdf import CertificateData, generate_pdf
+from services.certification_decisions import assert_certificate_issue_allowed
 
 log = logging.getLogger("aminra.certificates")
 
@@ -67,7 +68,7 @@ async def issue_certificate_legacy(
     if not sub:
         raise HTTPException(404)
     # Delegate to company-level
-    return await issue_certificate_for_company(str(sub["business_tenant"]), req, user, db)
+    return await issue_certificate_for_company(str(sub["business_tenant"]), req, user, db, required_submission_id=submission_id)
 
 
 @router.post("/issue-certificate/{business_tenant_id}")
@@ -76,6 +77,8 @@ async def issue_certificate_for_company(
     req: IssueCertRequest,
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
+    *,
+    required_submission_id: str | None = None,
 ):
     """Provider owner issues Halal certificate for a company — ALL submissions must be approved."""
     _validate_uuid(business_tenant_id)
@@ -108,7 +111,11 @@ async def issue_certificate_for_company(
             f"Còn {len(not_approved)} hồ sơ chưa được duyệt. Phải duyệt tất cả hồ sơ đang hoạt động trước khi cấp chứng nhận.",
         )
 
-    submission_id = active_subs[0]["id"]
+    if required_submission_id and all(str(s["id"]) != str(required_submission_id) for s in active_subs):
+        raise HTTPException(404, "Submission not found in active approved company dossiers")
+    submission_id = required_submission_id or active_subs[0]["id"]
+    for active_sub in active_subs:
+        await assert_certificate_issue_allowed(db, submission_id=str(active_sub["id"]), provider_id=str(provider_id))
 
     # Check if active cert already exists for this company
     existing = await db.fetchrow(

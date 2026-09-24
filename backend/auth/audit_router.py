@@ -16,6 +16,7 @@ from auth.db import get_db
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
+from services.conflict_interest import assert_no_unresolved_conflict
 
 log = logging.getLogger("aminra.audits")
 router = APIRouter()
@@ -741,6 +742,21 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
     )
     if not auditor:
         raise HTTPException(404, "Auditor không tồn tại")
+
+    visit_scope = await db.fetchrow(
+        "SELECT business_tenant FROM audit_visits WHERE id=$1 AND provider_id=$2",
+        vid,
+        provider,
+    )
+    if not visit_scope:
+        raise HTTPException(404, "Audit visit not found")
+    await assert_no_unresolved_conflict(
+        db,
+        provider_id=str(provider),
+        business_tenant=str(visit_scope["business_tenant"]),
+        person_user_id=str(auditor_id),
+        action="audit.assign",
+    )
 
     await db.execute("UPDATE audit_visits SET auditor_id=$1 WHERE id=$2 AND provider_id=$3", auditor_id, vid, provider)
 

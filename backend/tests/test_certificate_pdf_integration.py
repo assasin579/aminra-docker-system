@@ -51,6 +51,8 @@ class FakeConn:
         self.calls.append(("fetchrow", (sql, args)))
         if "SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1" in sql:
             return FakeRecord(id=args[0]) if args else None
+        if "SELECT id, tenant_id, is_owner FROM users WHERE id = $1" in sql:
+            return FakeRecord(id=args[0], tenant_id=PROVIDER_TENANT_ID, is_owner=True) if args else None
         return self._match(sql, self.fetchrow_responses)
 
     async def fetchval(self, sql: str, *args):
@@ -102,6 +104,8 @@ def happy_path_db() -> FakeConn:
         ]),
     ]
     db.fetchrow_responses = [
+        # Approved independent certification decision gates certificate issuance
+        ("FROM certification_decisions", FakeRecord(status="approved", provider_id=PROVIDER_TENANT_ID)),
         # No existing active cert
         ("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'",
          None),
@@ -209,6 +213,7 @@ class TestIssueCertificateEndpoint:
             ]),
         ]
         db.fetchrow_responses = [
+            ("FROM certification_decisions", FakeRecord(status="approved", provider_id=PROVIDER_TENANT_ID)),
             ("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'",
              FakeRecord(id=uuid4(), cert_number="HALAL-2026-0001")),
         ]

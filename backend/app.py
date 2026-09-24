@@ -132,6 +132,9 @@ from auth.standard_type_router import router as standard_type_router, admin_rout
 from auth.module_router import router as module_router, admin_router as module_admin_router
 from auth.dossier_router import router as dossier_router
 from auth.pdf_render_router import router as pdf_render_router
+from auth.certification_decision_router import router as certification_decision_router
+from auth.conflict_router import router as conflict_router
+from auth.complaints_router import router as complaints_router
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
@@ -151,6 +154,9 @@ app.include_router(pdf_render_router, prefix="/api/templates", tags=["pdf-render
 app.include_router(document_router, prefix="/api", tags=["documents"])
 app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])
 app.include_router(certificate_router, prefix="/api/submissions", tags=["certificates"])
+app.include_router(certification_decision_router, prefix="/api/certification-decisions", tags=["certification-decisions"])
+app.include_router(conflict_router, prefix="/api/conflicts", tags=["conflicts"])
+app.include_router(complaints_router, prefix="/api/complaints", tags=["complaints"])
 app.include_router(notification_router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(audit_router, prefix="/api/audits", tags=["audits"])
 
