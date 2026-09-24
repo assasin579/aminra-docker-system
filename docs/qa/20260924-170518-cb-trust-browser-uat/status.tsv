@@ -1,0 +1,4 @@
+CREDENTIALS	PASS	Loaded gitignored QA credential keys; values REDACTED
+RUNTIME-BACKEND	PASS	Backend health responded
+RUNTIME-FRONTEND	PASS	Frontend health responded
+BROWSER-UAT	PASS	provider conflict declaration/review/override; business complaint create/list and provider transition; certification decision authz; static UI markers
