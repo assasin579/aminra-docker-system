@@ -615,20 +615,31 @@ async def upload_document(
     save_path.write_bytes(content)
 
     mime = file.content_type or "application/octet-stream"
-    row = await db.fetchrow(
-        """INSERT INTO documents
-              (filename, original_filename, file_path, file_size, mime_type,
-               user_id, tenant_id, doc_type)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, uploaded_at""",
-        save_path.name,
-        file.filename,
-        str(save_path),
-        file_size,
-        mime,
-        await resolve_canonical_user_id(user, db),
-        tenant_id,
-        doc_type,
-    )
+    canonical_user_id = await resolve_canonical_user_id(user, db)
+    try:
+        row = await db.fetchrow(
+            """INSERT INTO documents
+                  (filename, original_filename, file_path, file_size, mime_type,
+                   user_id, tenant_id, doc_type)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, uploaded_at""",
+            save_path.name,
+            file.filename,
+            str(save_path),
+            file_size,
+            mime,
+            canonical_user_id,
+            tenant_id,
+            doc_type,
+        )
+    except Exception:
+        try:
+            if save_path.exists() and save_path.resolve().is_relative_to(tenant_dir.resolve()):
+                save_path.unlink()
+        except Exception:
+            log.exception("[documents] Failed to cleanup orphan upload after DB insert failure")
+        log.exception("[documents] Upload DB insert failed for tenant %s", tenant_id)
+        raise HTTPException(500, "Không thể lưu metadata tài liệu")
+
     log.info(f"[documents] Uploaded {file.filename} for tenant {tenant_id} (no eval)")
     return {"id": str(row["id"]), "filename": file.filename, "doc_type": doc_type}
 

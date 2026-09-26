@@ -1,0 +1,3 @@
+CREDENTIALS	PASS	Loaded gitignored QA credential keys; values REDACTED
+RUNTIME-BACKEND	PASS	Backend health responded
+API-UAT	PASS	anonymous blocked; provider upload forbidden; business upload/list/detail/download/delete succeeded
