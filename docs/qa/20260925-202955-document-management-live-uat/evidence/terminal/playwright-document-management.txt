@@ -1,0 +1,5 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/document-management-live-uat.spec.ts:18:7 › document management live API UAT › business can upload/list/detail/download/delete document while forbidden roles stay blocked
+[1A[2K  1 passed (2.4s)

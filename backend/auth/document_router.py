@@ -798,12 +798,27 @@ async def delete_document(
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
-    # Delete physical file if exists
+    # Delete physical file if it is inside the configured upload root only.
+    # A DB row is tenant-scoped, but file_path is still stored metadata; never
+    # let a corrupted/hostile row turn document delete into arbitrary unlink.
     if row["file_path"]:
         from pathlib import Path
 
         p = Path(row["file_path"])
-        p.unlink(missing_ok=True)
+        try:
+            upload_root = UPLOAD_DIR.resolve()
+            resolved_file = p.resolve()
+        except Exception:
+            log.exception("[documents] Refusing to delete document %s with unresolved file path", doc_id)
+            raise HTTPException(500, "Đường dẫn file tài liệu không an toàn")
+        if not resolved_file.is_relative_to(upload_root):
+            log.error(
+                "[documents] Refusing to delete document %s outside upload root: %s",
+                doc_id,
+                resolved_file,
+            )
+            raise HTTPException(500, "Đường dẫn file tài liệu không an toàn")
+        resolved_file.unlink(missing_ok=True)
 
     await db.execute("DELETE FROM documents WHERE id = $1", doc_id)
     log.info(f"[documents] Deleted {doc_id} by {user.get('email')}")

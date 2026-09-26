@@ -1,0 +1,5 @@
+gate	status	detail
+SOURCE-TENANT-MATRIX	PASS	13 passed in tests/test_document_tenant_boundary_matrix.py
+FOCUSED-REGRESSION	PASS	17 passed: tenant boundary + upload hardening + canonical identity contract
+LIVE-API-BASELINE	PASS	docs/qa/20260925-202249-document-management-live-uat/report.md
+RUNTIME-DEPLOY	NOT_RUN	Source/test change verified in backend pytest container; backend service image/process not rebuilt/restarted in this pass
