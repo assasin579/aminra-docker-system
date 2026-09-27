@@ -24,7 +24,6 @@ fi
 echo "📁 Copying source code..."
 cp -r /home/user/Documents/local-rag-system/* backend/
 cp -r /home/user/Documents/aminra-web/* frontend/aminra-web/
-cp -r /home/user/Documents/mukjizat-web/* frontend/mukjizat-web/
 
 # Build and start services
 echo "🔨 Building containers..."
@@ -45,7 +44,6 @@ echo "✅ AMINRA Docker System setup complete!"
 echo ""
 echo "🌐 Access URLs:"
 echo "   - Aminra Frontend: http://localhost:3000"
-echo "   - Mukjizat Frontend: http://localhost:3001"
 echo "   - Backend API: http://localhost:8000"
 echo "   - Qdrant DB: http://localhost:6333"
 echo ""

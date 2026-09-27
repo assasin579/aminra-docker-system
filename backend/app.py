@@ -94,7 +94,7 @@ app = FastAPI(
     docs_url=None if _is_prod else "/docs",
     redoc_url=None if _is_prod else "/redoc",
 )
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://fe.silvergem.org,https://mukjizat.silvergem.org").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://aminra.org,https://dev-web.silvergem.org,https://fe.silvergem.org").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

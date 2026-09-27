@@ -6,7 +6,7 @@ Scope: npm audit evidence for AMINRA frontend/mobile workspaces. Raw JSON/stderr
 
 - `frontend-aminra-web`: total=15, critical=0, high=10, moderate=4, low=1
   - dry-run remediation conflict: npm error code ERESOLVE; npm error ERESOLVE could not resolve; npm error   peer eslint@"^6.0.0 || ^7.0.0 || >=8.0.0" from @eslint-community/eslint-utils@4.9.1; npm error peer eslint@">=9.0.0" from eslint-config-next@16.2.1
-- `frontend-mukjizat-web`: total=8, critical=1, high=5, moderate=2, low=0
+- `frontend-legacy-removed-web`: total=8, critical=1, high=5, moderate=2, low=0
 - `mobile-auditor-app`: total=29, critical=2, high=9, moderate=17, low=1
   - dry-run remediation conflict: npm warn ERESOLVE overriding peer dependency; npm warn ERESOLVE overriding peer dependency; npm warn ERESOLVE overriding peer dependency; npm warn ERESOLVE overriding peer dependency
 
@@ -30,7 +30,7 @@ Scope: npm audit evidence for AMINRA frontend/mobile workspaces. Raw JSON/stderr
 - `vite` severity=high, direct=False, via=1120786:launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows; 1123527:vite: `server.fs.deny` bypass on Windows alternate paths, effects=[]
 - `vitest` severity=moderate, direct=True, via=@vitest/coverage-v8; @vitest/mocker; 1193683:Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock, effects=['@vitest/coverage-v8']
 
-### frontend-mukjizat-web
+### frontend-legacy-removed-web
 
 - `axios` severity=high, direct=True, via=1116673:Axios has a NO_PROXY Hostname Normalization Bypass that Leads to SSRF; 1117574:Axios: Authentication Bypass via Prototype Pollution Gadget in `validateStatus` Merge Strategy; 1117576:Axios: Incomplete Fix for CVE-2025-62718 — NO_PROXY Protection Bypassed via RFC 1122 Loopback Subnet (127.0.0.0/8) in Axios 1.15.0; 1117577:Axios: Invisible JSON Response Tampering via Prototype Pollution Gadget in `parseReviver`, effects=[]
 - `baseline-browser-mapping` severity=moderate, direct=False, via=1193686:baseline-browser-mapping process termination on invalid input causes denial of service, effects=[]
@@ -77,8 +77,8 @@ Scope: npm audit evidence for AMINRA frontend/mobile workspaces. Raw JSON/stderr
 
 P1: direct high/critical findings exist and require a controlled remediation branch before unsupervised pilot if the affected workspace serves public traffic.
 - frontend-aminra-web: axios (high)
-- frontend-mukjizat-web: axios (high)
-- frontend-mukjizat-web: next (critical)
+- frontend-legacy-removed-web: axios (high)
+- frontend-legacy-removed-web: next (critical)
 
 Dry-run remediation is not clean. Do not run forceful audit-fix in this branch; resolve peer graph deliberately.
 

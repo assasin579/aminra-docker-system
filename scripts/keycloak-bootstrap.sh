@@ -290,14 +290,14 @@ cat > "$TMP/aminra-frontend.json" <<'EOF'
     "http://localhost:3000/*",
     "https://dev-web.silvergem.org/*",
     "https://fe.silvergem.org/*",
-    "https://mukjizat.silvergem.org/*"
+    "https://aminra.org/*"
   ],
   "webOrigins": [
     "http://localhost:3100",
     "http://localhost:3000",
     "https://dev-web.silvergem.org",
     "https://fe.silvergem.org",
-    "https://mukjizat.silvergem.org"
+    "https://aminra.org"
   ],
   "attributes": {
     "pkce.code.challenge.method": "S256",
@@ -342,13 +342,34 @@ create_client_if_missing aminra-frontend "$TMP/aminra-frontend.json"
 create_client_if_missing aminra-backend "$TMP/aminra-backend.json"
 create_client_if_missing aminra-admin-cli "$TMP/aminra-admin-cli.json"
 
-# Ensure existing aminra-frontend has the dev-test-friendly settings even
-# on re-runs (create-if-missing doesn't update existing clients).
+# Ensure existing aminra-frontend has the current redirect/origin allowlist and
+# dev-test-friendly settings on re-runs (create-if-missing does not update
+# existing clients). Use the full client representation so stale origins from
+# older bootstrap runs are removed instead of preserved.
 FE_UUID=$(api GET "/$REALM/clients?clientId=aminra-frontend" | jq -r '.[0].id // empty')
 if [[ -n "$FE_UUID" ]]; then
-  log "Patching aminra-frontend: directAccessGrantsEnabled + fullScopeAllowed"
-  api PUT "/$REALM/clients/$FE_UUID" \
-    -d '{"directAccessGrantsEnabled":true,"fullScopeAllowed":true}' >/dev/null
+  log "Patching aminra-frontend: current redirectUris/webOrigins + directAccessGrantsEnabled + fullScopeAllowed"
+  FE_CURRENT=$(api GET "/$REALM/clients/$FE_UUID")
+  FE_PATCHED=$(echo "$FE_CURRENT" | jq '
+    .rootUrl = "https://fe.silvergem.org"
+    | .redirectUris = [
+        "http://localhost:3100/*",
+        "http://localhost:3000/*",
+        "https://dev-web.silvergem.org/*",
+        "https://fe.silvergem.org/*",
+        "https://aminra.org/*"
+      ]
+    | .webOrigins = [
+        "http://localhost:3100",
+        "http://localhost:3000",
+        "https://dev-web.silvergem.org",
+        "https://fe.silvergem.org",
+        "https://aminra.org"
+      ]
+    | .directAccessGrantsEnabled = true
+    | .fullScopeAllowed = true
+  ')
+  api PUT "/$REALM/clients/$FE_UUID" -d "$FE_PATCHED" >/dev/null
 fi
 
 # Phase 4c-2: enforce fullScopeAllowed=true on aminra-admin-cli even when the
