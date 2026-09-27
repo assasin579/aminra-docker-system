@@ -13,7 +13,9 @@ import Modal from "@/components/Modal";
 import type {
   ApprovalBlock as ApprovalData,
   ApprovalStatus,
+  VersionEntry,
 } from "@/lib/documentVersioning";
+import { getVersions } from "@/lib/documentVersioning";
 
 // ── Doc type options (from upload page) ──────────────────────────────────────
 
@@ -63,6 +65,22 @@ interface DocumentItem {
   /** Tier-1 #24: included by backend when document_versioning_v1 flag ON. */
   approval_status?: ApprovalStatus | null;
   version_number?: number | null;
+}
+
+interface OfficialArtifactItem {
+  id: string;
+  source_document_id: string;
+  artifact_kind: string;
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  sha256: string;
+  approved_by_user_id: string | null;
+  approved_at: string;
+  effective_date: string | null;
+  next_review_date: string | null;
+  retention_expires_at: string | null;
+  created_at: string;
 }
 
 interface RevisionItem {
@@ -143,6 +161,15 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("vi-VN");
 }
 
+async function parseDocumentError(res: Response, fallback: string) {
+  const body = await res.json().catch(() => ({}));
+  const detail =
+    body && typeof body === "object" && "detail" in body
+      ? String(body.detail || "")
+      : "";
+  return detail || `${fallback} (HTTP ${res.status})`;
+}
+
 function MiniScore({ score }: { score: number | null }) {
   if (score === null)
     return (
@@ -208,21 +235,31 @@ export default function DocumentsPage() {
   };
 
   const [docs, setDocs] = useState<DocumentItem[]>([]);
+  const [officialArtifacts, setOfficialArtifacts] = useState<OfficialArtifactItem[]>([]);
+  const [activeTab, setActiveTab] = useState<"documents" | "official">("documents");
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [fetching, setFetching] = useState(false);
+  const [listError, setListError] = useState("");
 
   const [filterStatus, setFilterStatus] = useState("");
   const filterType = "";
 
   const [removeId, setRemoveId] = useState<string | null>(null);
   const [evalDetail, setEvalDetail] = useState<any | null>(null);
+  const [detailError, setDetailError] = useState("");
   const [loadingEval, setLoadingEval] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<RevisionListResponse | null>(
     null,
   );
+  const [versionData, setVersionData] = useState<{
+    doc_id: string;
+    versions: VersionEntry[];
+    max_depth: number;
+  } | null>(null);
   const [loadingHistory, setLoadingHistory] = useState<string | null>(null);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   // Upload modal
   const [showUpload, setShowUpload] = useState(false);
@@ -249,7 +286,10 @@ export default function DocumentsPage() {
   const fetchDocs = useCallback(
     async (p = 1, silent = false) => {
       if (!token) return;
-      if (!silent) setFetching(true);
+      if (!silent) {
+        setFetching(true);
+        setListError("");
+      }
       try {
         const params = new URLSearchParams({
           page: String(p),
@@ -260,12 +300,18 @@ export default function DocumentsPage() {
         const res = await fetch(`/api/api/documents?${params}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data = await res.json();
-          setDocs(data.documents);
-          setTotal(data.total);
-          setPage(p);
+        if (!res.ok) {
+          setListError(
+            await parseDocumentError(res, "Không tải được danh sách tài liệu"),
+          );
+          return;
         }
+        const data = await res.json();
+        setDocs(data.documents);
+        setTotal(data.total);
+        setPage(p);
+      } catch {
+        setListError("Không tải được danh sách tài liệu");
       } finally {
         if (!silent) setFetching(false);
       }
@@ -273,30 +319,54 @@ export default function DocumentsPage() {
     [token, filterType, filterStatus],
   );
 
+  const fetchOfficialArtifacts = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/api/official-artifacts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setOfficialArtifacts(data.artifacts || []);
+    } catch {
+      // Read-only official artifacts are additive; keep document list usable if unavailable.
+    }
+  }, [token]);
+
   useEffect(() => {
-    if (isAuthenticated) fetchDocs(1);
-  }, [isAuthenticated, fetchDocs]);
+    if (isAuthenticated) {
+      fetchDocs(1);
+      fetchOfficialArtifacts();
+    }
+  }, [isAuthenticated, fetchDocs, fetchOfficialArtifacts]);
 
   const openEval = async (id: string) => {
     setLoadingEval(id);
+    setDetailError("");
     try {
       const res = await fetch(`/api/api/documents/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (!data.extracted_text && data.evaluation_result?.extracted_text) {
-          data.extracted_text = data.evaluation_result.extracted_text;
-        }
-        // Merge criteria_scores from evaluation_result
-        if (data.evaluation_result?.criteria_scores) {
-          data.criteria_scores = data.evaluation_result.criteria_scores;
-        }
-        if (data.evaluation_result?.signature_detection) {
-          data.signature_detection = data.evaluation_result.signature_detection;
-        }
-        setEvalDetail(data);
+      if (!res.ok) {
+        setDetailError(
+          await parseDocumentError(res, "Không tải được chi tiết tài liệu"),
+        );
+        return;
       }
+      const data = await res.json();
+      if (!data.extracted_text && data.evaluation_result?.extracted_text) {
+        data.extracted_text = data.evaluation_result.extracted_text;
+      }
+      // Merge criteria_scores from evaluation_result
+      if (data.evaluation_result?.criteria_scores) {
+        data.criteria_scores = data.evaluation_result.criteria_scores;
+      }
+      if (data.evaluation_result?.signature_detection) {
+        data.signature_detection = data.evaluation_result.signature_detection;
+      }
+      setEvalDetail(data);
+    } catch {
+      setDetailError("Không tải được chi tiết tài liệu");
     } finally {
       setLoadingEval(null);
     }
@@ -316,6 +386,20 @@ export default function DocumentsPage() {
         },
       );
       if (res.ok) setHistoryData(await res.json());
+    } finally {
+      setLoadingHistory(null);
+    }
+  };
+
+  const openVersionChain = async (docId: string) => {
+    if (!token) return;
+    setLoadingHistory(docId);
+    setDetailError("");
+    try {
+      const data = await getVersions(docId, token);
+      setVersionData(data);
+    } catch (e) {
+      setDetailError(e instanceof Error ? e.message : "Không tải được chuỗi phiên bản");
     } finally {
       setLoadingHistory(null);
     }
@@ -347,12 +431,19 @@ export default function DocumentsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Xác nhận xoá tài liệu này?")) return;
     setRemoveId(id);
+    setDeleteError("");
     try {
-      await fetch(`/api/api/documents/${id}`, {
+      const res = await fetch(`/api/api/documents/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        setDeleteError(await parseDocumentError(res, "Xoá tài liệu thất bại"));
+        return;
+      }
       fetchDocs(page);
+    } catch {
+      setDeleteError("Xoá tài liệu thất bại");
     } finally {
       setRemoveId(null);
     }
@@ -597,6 +688,114 @@ export default function DocumentsPage() {
         </select>
       </div>
 
+      {/* ── Tabs ── */}
+      <div className="mb-5 flex gap-2" role="tablist" aria-label="Tài liệu">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "documents"}
+          onClick={() => setActiveTab("documents")}
+          className="px-4 py-2 rounded-xl text-sm font-semibold"
+          style={{
+            background: activeTab === "documents" ? "#0A1F44" : "#F5F1E8",
+            color: activeTab === "documents" ? "#FFFFFF" : "#374151",
+          }}
+        >
+          Tài liệu DN
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "official"}
+          onClick={() => setActiveTab("official")}
+          className="px-4 py-2 rounded-xl text-sm font-semibold"
+          style={{
+            background: activeTab === "official" ? "#0A1F44" : "#F5F1E8",
+            color: activeTab === "official" ? "#FFFFFF" : "#374151",
+          }}
+        >
+          Bản chính thức
+        </button>
+      </div>
+
+      {(listError || detailError || deleteError) && (
+        <div
+          role="alert"
+          className="mb-5 px-4 py-3 rounded-xl text-sm"
+          style={{
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            color: "#B91C1C",
+          }}
+        >
+          {deleteError || detailError || listError}
+        </div>
+      )}
+
+      {activeTab === "official" ? (
+        <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
+          {/* official-artifacts-read-only-start: read-only official artifacts list; no delete/evaluate/approval controls */}
+          {officialArtifacts.length === 0 ? (
+            <div
+              className="rounded-2xl p-10 text-center"
+              style={{ background: "#F5F1E8", border: "1px solid #E2E8F0" }}
+            >
+              <p className="font-semibold mb-2" style={{ color: "#0A1F44" }}>
+                Chưa có bản chính thức
+              </p>
+              <p className="text-sm" style={{ color: "#6B7280" }}>
+                Tài liệu được phê duyệt sẽ được lưu riêng tại đây, chỉ đọc.
+              </p>
+            </div>
+          ) : (
+            officialArtifacts.map((artifact) => (
+              <div
+                key={artifact.id}
+                className="rounded-2xl p-5"
+                style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+              >
+                <div className="grid items-center gap-4" style={{ gridTemplateColumns: "1fr auto" }}>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                      <span
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                        style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0" }}
+                      >
+                        Bản chính thức
+                      </span>
+                      <span className="text-xs" style={{ color: "#64748B" }}>
+                        read-only · SHA-256 {artifact.sha256.slice(0, 12)}…
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-semibold truncate" style={{ color: "#0A1F44" }} title={artifact.original_filename}>
+                      {artifact.original_filename}
+                    </h3>
+                    <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+                      {formatSize(artifact.file_size)} · Duyệt {timeAgo(artifact.approved_at)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openAuthed(`/api/api/official-artifacts/${artifact.id}/file`, token || "", {
+                        download: true,
+                        filename: artifact.original_filename,
+                      })
+                    }
+                    title="Tải bản chính thức"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold"
+                    style={{ background: "rgba(10,31,68,0.1)", color: "#0A1F44" }}
+                  >
+                    Tải xuống
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+          {/* official-artifacts-read-only-end */}
+        </div>
+      ) : (
+      <div>
       {/* ── Document cards ── */}
       <div className="flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3">
         {fetching ? (
@@ -928,6 +1127,22 @@ export default function DocumentsPage() {
                         />
                       </svg>
                     </button>
+                    {versioningOn && doc.approval_status && (
+                      <button
+                        onClick={() => openVersionChain(doc.id)}
+                        title="Chuỗi phiên bản"
+                        disabled={loadingHistory === doc.id}
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
+                        style={{
+                          background: "#FDF4FF",
+                          border: "1px solid #F0ABFC",
+                        }}
+                      >
+                        <span className="text-xs font-bold" style={{ color: "#A21CAF" }}>
+                          v{doc.version_number ?? 1}
+                        </span>
+                      </button>
+                    )}
                     {doc.doc_type && (doc.revision_count ?? 0) > 1 && (
                       <button
                         onClick={() => openHistory(doc.doc_type!)}
@@ -1095,6 +1310,8 @@ export default function DocumentsPage() {
             Sau →
           </button>
         </div>
+      )}
+      </div>
       )}
 
       {/* ── Evaluation Detail Modal ── */}
@@ -1423,6 +1640,61 @@ export default function DocumentsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Version Chain Modal ── */}
+      {versionData && (
+        <Modal>
+          <div
+            className="w-full max-w-[calc(100vw-2rem)] md:max-w-xl rounded-2xl flex flex-col animate-modal-content"
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E2E8F0",
+              maxHeight: "calc(100vh - 4rem)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.1)",
+            }}
+          >
+            <div className="px-6 py-5 flex-shrink-0" style={{ borderBottom: "1px solid #E2E8F0" }}>
+              <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr auto" }}>
+                <div>
+                  <h2 className="text-base font-bold" style={{ color: "#0A1F44" }}>
+                    Chuỗi phiên bản
+                  </h2>
+                  <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+                    {versionData.versions.length} phiên bản qua /versions
+                  </p>
+                </div>
+                <button
+                  onClick={() => setVersionData(null)}
+                  className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
+                  style={{ background: "rgba(0,0,0,0.05)" }}
+                >
+                  <span style={{ color: "#6B7280" }}>✕</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {versionData.versions.map((version) => (
+                <div key={version.id} className="px-6 py-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
+                  <div className="grid items-center gap-3" style={{ gridTemplateColumns: "auto 1fr auto" }}>
+                    <div className="w-9 h-9 rounded-lg grid place-items-center text-xs font-bold" style={{ background: "rgba(10,31,68,0.1)", color: "#0A1F44" }}>
+                      v{version.version_number ?? "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "#0A1F44" }}>
+                        {version.id}
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                        Hiệu lực: {version.effective_date ? new Date(version.effective_date).toLocaleDateString("vi-VN") : "—"}
+                      </p>
+                    </div>
+                    <ApprovalStatusBadge status={version.approval_status} compact />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </Modal>
@@ -1789,6 +2061,7 @@ export default function DocumentsPage() {
               {/* Upload error */}
               {uploadError && (
                 <div
+                  role="alert"
                   className="px-4 py-3 rounded-xl text-sm"
                   style={{
                     background: "rgba(239,68,68,0.08)",

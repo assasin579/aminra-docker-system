@@ -38,6 +38,7 @@ from services.document_versioning import (
     reject_self_supersede,
     transition_allowed,
 )
+from services.official_artifacts import OFFICIAL_ARTIFACTS_DIR, create_official_artifact_for_document
 
 UPLOAD_DIR = _Path(os.getenv("UPLOAD_DIR", "./docs"))
 
@@ -124,7 +125,28 @@ class DocumentListResponse(BaseModel):
     page_size: int
 
 
+class OfficialArtifactItem(BaseModel):
+    id: str
+    source_document_id: str
+    artifact_kind: str
+    original_filename: str
+    file_size: int
+    mime_type: str
+    sha256: str
+    approved_by_user_id: Optional[str] = None
+    approved_at: datetime
+    effective_date: Optional[date] = None
+    next_review_date: Optional[date] = None
+    retention_expires_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class OfficialArtifactListResponse(BaseModel):
+    artifacts: list[OfficialArtifactItem]
+    total: int
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 
 def _parse_result(raw) -> Optional[dict]:
@@ -169,6 +191,92 @@ class RevisionListResponse(BaseModel):
     doc_type_label: Optional[str]
     revisions: list[RevisionItem]
     total: int
+
+
+# ── Official artifacts (immutable approved artifacts) ──────────────────────────
+
+
+@router.get("/official-artifacts", response_model=OfficialArtifactListResponse)
+async def list_official_artifacts(
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user["role"] != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    if not tenant_id:
+        raise HTTPException(400, "Tenant không xác định")
+
+    rows = await db.fetch(
+        """
+        SELECT id, source_document_id, artifact_kind, original_filename,
+               file_size, mime_type, sha256, approved_by_user_id, approved_at,
+               effective_date, next_review_date, retention_expires_at, created_at
+          FROM official_artifacts
+         WHERE tenant_id = $1
+         ORDER BY approved_at DESC, created_at DESC
+        """,
+        tenant_id,
+    )
+    return OfficialArtifactListResponse(
+        artifacts=[
+            OfficialArtifactItem(
+                id=str(r["id"]),
+                source_document_id=str(r["source_document_id"]),
+                artifact_kind=r["artifact_kind"],
+                original_filename=r["original_filename"],
+                file_size=r["file_size"],
+                mime_type=r["mime_type"],
+                sha256=r["sha256"],
+                approved_by_user_id=str(r["approved_by_user_id"]) if r["approved_by_user_id"] else None,
+                approved_at=r["approved_at"],
+                effective_date=r["effective_date"],
+                next_review_date=r["next_review_date"],
+                retention_expires_at=r["retention_expires_at"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ],
+        total=len(rows),
+    )
+
+
+@router.get("/official-artifacts/{artifact_id}/file")
+async def get_official_artifact_file(
+    artifact_id: str,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    _validate_uuid(artifact_id)
+    if user["role"] != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    row = await db.fetchrow(
+        """
+        SELECT storage_path, original_filename, mime_type
+          FROM official_artifacts
+         WHERE id = $1 AND tenant_id = $2
+        """,
+        artifact_id,
+        tenant_id,
+    )
+    if not row:
+        raise HTTPException(404, "Bản chính thức không tồn tại")
+    artifact_path = _Path(row["storage_path"])
+    try:
+        resolved = artifact_path.resolve()
+        official_root = OFFICIAL_ARTIFACTS_DIR.resolve()
+    except Exception:
+        raise HTTPException(500, "Đường dẫn bản chính thức không an toàn")
+    if not resolved.is_relative_to(official_root):
+        raise HTTPException(500, "Đường dẫn bản chính thức không an toàn")
+    if not resolved.exists():
+        raise HTTPException(404, "File bản chính thức không tồn tại")
+    return _FileResponse(
+        resolved,
+        media_type=row["mime_type"] or "application/octet-stream",
+        filename=row["original_filename"],
+    )
 
 
 @router.get("/documents", response_model=DocumentListResponse)
@@ -798,9 +906,10 @@ async def delete_document(
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
-    # Delete physical file if it is inside the configured upload root only.
-    # A DB row is tenant-scoped, but file_path is still stored metadata; never
-    # let a corrupted/hostile row turn document delete into arbitrary unlink.
+    # Validate physical file path before DB mutation, but unlink only after the
+    # database delete succeeds. Version FK/trigger rejection must never produce
+    # a false file unlink.
+    resolved_file = None
     if row["file_path"]:
         from pathlib import Path
 
@@ -818,9 +927,34 @@ async def delete_document(
                 resolved_file,
             )
             raise HTTPException(500, "Đường dẫn file tài liệu không an toàn")
-        resolved_file.unlink(missing_ok=True)
 
-    await db.execute("DELETE FROM documents WHERE id = $1", doc_id)
+    artifact_ref = await db.fetchrow(
+        "SELECT 1 FROM official_artifacts WHERE source_document_id = $1 LIMIT 1",
+        doc_id,
+    )
+    if artifact_ref:
+        raise HTTPException(409, "Không thể xoá tài liệu đã có bản chính thức")
+
+    child = await db.fetchrow(
+        "SELECT 1 FROM documents WHERE tenant_id = $1 AND version_parent_id = $2 LIMIT 1",
+        tenant_id,
+        doc_id,
+    )
+    if child:
+        raise HTTPException(409, "Không thể xoá tài liệu đang có phiên bản con")
+
+    try:
+        await db.execute("DELETE FROM documents WHERE id = $1", doc_id)
+    except Exception as e:
+        # asyncpg raises IntegrityConstraintViolationError/ForeignKeyViolationError
+        # for version trigger/FK rejections; map to a stable API contract.
+        sqlstate = getattr(e, "sqlstate", "")
+        if sqlstate and sqlstate.startswith("23"):
+            raise HTTPException(409, "Không thể xoá tài liệu đang có liên kết phiên bản")
+        raise
+
+    if resolved_file:
+        resolved_file.unlink(missing_ok=True)
     log.info(f"[documents] Deleted {doc_id} by {user.get('email')}")
     return {"message": "Đã xoá tài liệu"}
 
@@ -1142,6 +1276,8 @@ async def approve_document(
     retention = body.retention_period_days or RETENTION_FLOOR_DAYS
     if retention < RETENTION_FLOOR_DAYS:
         raise HTTPException(422, f"retention_period_days phải >= {RETENTION_FLOOR_DAYS} (5 năm)")
+    if nxt < eff:
+        raise HTTPException(422, "next_review_date phải sau hoặc bằng effective_date")
 
     # Trigger auto-computes retention_expires_at; we just SET the inputs.
     approver_id = await resolve_canonical_user_id(user, db)
@@ -1177,6 +1313,11 @@ async def approve_document(
                 "next_review_date": nxt.isoformat(),
                 "retention_period_days": retention,
             },
+        )
+        await create_official_artifact_for_document(
+            db,
+            document_id=doc_id,
+            approved_by_user_id=str(approver_id),
         )
     log.info(f"[documents] {doc_id} approved by {user.get('email')}")
     return {
@@ -1256,8 +1397,8 @@ async def supersede_document(
     if old_row["approval_status"] != "approved":
         raise HTTPException(409, "Chỉ có thể thay thế tài liệu đã được phê duyệt")
     new_row = await _load_doc_in_tenant(db, body.new_document_id, tenant_id)
-    if new_row["approval_status"] == "obsolete":
-        raise HTTPException(409, "Tài liệu thay thế không được ở trạng thái obsolete")
+    if new_row["approval_status"] != "approved":
+        raise HTTPException(409, "Tài liệu thay thế phải được phê duyệt trước khi thay thế")
 
     async with db.transaction():
         # Set superseded_by — trigger auto-flips approval_status to 'obsolete'

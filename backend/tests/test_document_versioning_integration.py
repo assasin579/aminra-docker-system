@@ -448,6 +448,54 @@ class TestErrorStates:
         finally:
             _delete_doc(doc_id)
 
+    def test_approve_next_review_before_effective_date_422(self, client, biz, auth_headers):
+        """Regression: approval dates must be chronological."""
+        doc_id = _insert_doc(biz["tenant_id"], biz["user_id"])
+        _set_approval_status(doc_id, "pending_approval")
+        try:
+            r = client.post(
+                f"/api/documents/{doc_id}/approve",
+                headers=auth_headers,
+                json={"effective_date": "2026-09-26", "next_review_date": "2026-09-25"},
+            )
+            assert r.status_code == 422
+        finally:
+            _delete_doc(doc_id)
+
+    def test_supersede_requires_new_document_already_approved(self, client, biz, auth_headers):
+        """Regression: replacing an approved doc with an unapproved draft is blocked."""
+        old_id = _insert_doc(biz["tenant_id"], biz["user_id"])
+        _set_approval_status(old_id, "approved")
+        new_id = _insert_doc(biz["tenant_id"], biz["user_id"])
+        try:
+            r = client.post(
+                f"/api/documents/{old_id}/supersede",
+                headers=auth_headers,
+                json={"new_document_id": new_id},
+            )
+            assert r.status_code == 409
+        finally:
+            _delete_doc(new_id)
+            _delete_doc(old_id)
+
+    def test_delete_document_with_child_returns_409_without_unlinking_file(self, client, biz, auth_headers, tmp_path, monkeypatch):
+        """Regression: parent-version delete must not unlink file before DB rejects child link."""
+        tenant_dir = tmp_path / str(biz["tenant_id"])
+        tenant_dir.mkdir(parents=True)
+        parent_file = tenant_dir / "parent.pdf"
+        parent_file.write_bytes(b"parent")
+        monkeypatch.setattr("auth.document_router.UPLOAD_DIR", tmp_path)
+
+        old_id = _insert_doc(biz["tenant_id"], biz["user_id"], file_path=str(parent_file))
+        child_id = _insert_doc(biz["tenant_id"], biz["user_id"], version_parent_id=old_id)
+        try:
+            r = client.delete(f"/api/documents/{old_id}", headers=auth_headers)
+            assert r.status_code == 409
+            assert parent_file.exists(), "file must remain because DB delete was rejected"
+        finally:
+            _delete_doc(child_id)
+            _delete_doc(old_id)
+
     # INT-20
     def test_supersede_obsolete_doc_409(self, client, biz, auth_headers):
         old_id = _insert_doc(biz["tenant_id"], biz["user_id"])

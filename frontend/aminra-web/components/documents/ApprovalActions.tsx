@@ -7,6 +7,7 @@ import {
   approveDocument,
   rejectDocument,
   submitForApproval,
+  supersedeDocument,
 } from "@/lib/documentVersioning";
 
 interface UserPerms {
@@ -46,6 +47,7 @@ export default function ApprovalActions({
   const [error, setError] = useState<string | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showSupersedeModal, setShowSupersedeModal] = useState(false);
 
   const handleSubmit = async () => {
     setError(null);
@@ -109,8 +111,27 @@ export default function ApprovalActions({
     );
   }
 
-  // (Supersede flow is more complex — needs new doc id from upload; deferred
-  // to parent page since it touches existing upload UI.)
+  if (
+    approval.approval_status === "approved" &&
+    (perms.isOwner || perms.isIhcMember || perms.canApproveDocuments)
+  ) {
+    buttons.push(
+      <button
+        key="supersede"
+        type="button"
+        onClick={() => setShowSupersedeModal(true)}
+        disabled={pending}
+        className="btn-lift px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+        style={{
+          background: "rgba(245,158,11,0.1)",
+          color: "#B45309",
+          border: "1px solid rgba(245,158,11,0.3)",
+        }}
+      >
+        Thay thế
+      </button>,
+    );
+  }
 
   if (buttons.length === 0 && !error) return null;
 
@@ -151,6 +172,18 @@ export default function ApprovalActions({
           onClose={() => setShowRejectModal(false)}
           onSuccess={() => {
             setShowRejectModal(false);
+            onChanged();
+          }}
+        />
+      )}
+
+      {showSupersedeModal && (
+        <SupersedeModal
+          docId={docId}
+          token={token}
+          onClose={() => setShowSupersedeModal(false)}
+          onSuccess={() => {
+            setShowSupersedeModal(false);
             onChanged();
           }}
         />
@@ -355,6 +388,87 @@ function ApproveModal({ docId, token, onClose, onSuccess }: ModalCommon) {
 }
 
 // ── Reject modal ──────────────────────────────────────────────────────────
+
+function SupersedeModal({ docId, token, onClose, onSuccess }: ModalCommon) {
+  const [newDocumentId, setNewDocumentId] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newDocumentId.trim();
+    if (!trimmed) {
+      setError("Vui lòng nhập ID tài liệu thay thế đã được phê duyệt");
+      return;
+    }
+    setError(null);
+    setPending(true);
+    try {
+      await supersedeDocument(docId, trimmed, token);
+      onSuccess();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Thay thế phiên bản thất bại");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <Modal>
+      <form
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
+        style={{
+          background: "#FFFFFF",
+          border: "1px solid #E2E8F0",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.15)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold" style={{ color: "#0A1F44" }}>
+            Thay thế phiên bản
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg grid place-items-center"
+            style={{ background: "rgba(0,0,0,0.05)" }}
+          >
+            <span>✕</span>
+          </button>
+        </div>
+        <label className="block text-xs font-medium mb-1.5" style={{ color: "#6B7280" }}>
+          ID tài liệu thay thế đã phê duyệt
+        </label>
+        <input
+          required
+          value={newDocumentId}
+          onChange={(e) => setNewDocumentId(e.target.value)}
+          placeholder="UUID tài liệu mới"
+          className="w-full px-3 py-2 rounded-lg text-sm"
+          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#0A1F44" }}
+        />
+        <p className="text-xs mt-2" style={{ color: "#94A3B8" }}>
+          Backend chỉ chấp nhận tài liệu thay thế đang ở trạng thái đã phê duyệt.
+        </p>
+        {error && (
+          <p className="text-xs mt-3 px-3 py-2 rounded-lg" style={{ background: "rgba(220,38,38,0.1)", color: "#DC2626", border: "1px solid rgba(220,38,38,0.2)" }}>
+            {error}
+          </p>
+        )}
+        <div className="flex items-center justify-end gap-2 mt-6">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ background: "rgba(0,0,0,0.05)", color: "#6B7280" }}>
+            Huỷ
+          </button>
+          <button type="submit" disabled={pending} className="btn-lift px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50" style={{ background: "rgba(245,158,11,0.1)", color: "#B45309", border: "1px solid rgba(245,158,11,0.3)" }}>
+            {pending ? "Đang thay thế..." : "Xác nhận thay thế"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 function RejectModal({ docId, token, onClose, onSuccess }: ModalCommon) {
   const [reason, setReason] = useState("");

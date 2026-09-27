@@ -1,0 +1,369 @@
+ Image aminra-docker-system-aminra-frontend Building
+ Image aminra-docker-system-postgres-db Building
+ Image aminra-docker-system-aminra-backend Building
+ Image aminra-docker-system-qdrant-db Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.41kB done
+#1 DONE 0.0s
+
+#2 [aminra-backend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.15kB done
+#2 DONE 0.1s
+
+#3 [aminra-backend internal] load metadata for docker.io/library/aminra-backend-base:local
+#3 DONE 0.1s
+
+#4 [aminra-frontend internal] load build definition from Dockerfile
+#4 transferring dockerfile: 2.69kB done
+#4 DONE 0.1s
+
+#5 [aminra-backend internal] load .dockerignore
+#5 transferring context: 602B done
+#5 DONE 0.0s
+
+#6 [aminra-frontend internal] load metadata for docker.io/library/node:20-alpine
+#6 ...
+
+#7 [aminra-backend  1/19] FROM docker.io/library/aminra-backend-base:local@sha256:92f1aafd18bb7fcf386a6c04a8143a0c7cbaf608a0174e563484d377b5120793
+#7 resolve docker.io/library/aminra-backend-base:local@sha256:92f1aafd18bb7fcf386a6c04a8143a0c7cbaf608a0174e563484d377b5120793 0.1s done
+#7 DONE 0.1s
+
+#8 [aminra-backend internal] load build context
+#8 transferring context: 229.55kB 0.1s done
+#8 DONE 0.1s
+
+#9 [aminra-backend  2/19] WORKDIR /app
+#9 CACHED
+
+#10 [aminra-backend  3/19] COPY pipeline/ ./pipeline/
+#10 CACHED
+
+#11 [aminra-backend  4/19] COPY auth/ ./auth/
+#11 DONE 0.1s
+
+#6 [aminra-frontend internal] load metadata for docker.io/library/node:20-alpine
+#6 ...
+
+#12 [aminra-backend  5/19] COPY services/ ./services/
+#12 DONE 0.1s
+
+#13 [aminra-backend  6/19] COPY contracts/ ./contracts/
+#13 DONE 0.1s
+
+#6 [aminra-frontend internal] load metadata for docker.io/library/node:20-alpine
+#6 ...
+
+#14 [aminra-backend  7/19] COPY templates/ ./templates/
+#14 DONE 0.1s
+
+#15 [aminra-backend  8/19] COPY templates_docx/ ./templates_docx/
+#15 DONE 0.2s
+
+#6 [aminra-frontend internal] load metadata for docker.io/library/node:20-alpine
+#6 ...
+
+#16 [aminra-backend  9/19] COPY templates_html/ ./templates_html/
+#16 DONE 0.3s
+
+#17 [aminra-backend 10/19] COPY supply_chain/ ./supply_chain/
+#17 DONE 0.1s
+
+#6 [aminra-frontend internal] load metadata for docker.io/library/node:20-alpine
+#6 DONE 1.6s
+
+#18 [aminra-backend 11/19] COPY scripts/ ./scripts/
+#18 DONE 0.1s
+
+#19 [aminra-frontend internal] load .dockerignore
+#19 transferring context: 145B done
+#19 DONE 0.1s
+
+#20 [aminra-backend 12/19] COPY alembic.ini .
+#20 DONE 0.2s
+
+#21 [aminra-frontend internal] load build context
+#21 DONE 0.0s
+
+#22 [aminra-frontend base 1/1] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#22 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#22 DONE 0.1s
+
+#23 [aminra-backend 13/19] COPY alembic/ ./alembic/
+#23 DONE 0.3s
+
+#22 [aminra-frontend base 1/1] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#22 DONE 0.4s
+
+#21 [aminra-frontend internal] load build context
+#21 transferring context: 5.06MB 0.2s done
+#21 DONE 0.3s
+
+#24 [aminra-backend 14/19] COPY app.py .
+#24 ...
+
+#25 [aminra-frontend builder 1/4] WORKDIR /app
+#25 DONE 0.3s
+
+#24 [aminra-backend 14/19] COPY app.py .
+#24 DONE 0.4s
+
+#26 [aminra-backend 15/19] COPY pytest.ini .
+#26 DONE 0.2s
+
+#27 [aminra-frontend runner  1/10] RUN apk add --no-cache tzdata
+#27 ...
+
+#28 [aminra-backend 16/19] COPY tests/ ./tests/
+#28 DONE 0.3s
+
+#29 [aminra-backend 17/19] COPY entrypoint.sh .
+#29 DONE 0.2s
+
+#30 [aminra-frontend deps 1/4] RUN apk add --no-cache libc6-compat
+#30 ...
+
+#31 [aminra-backend 18/19] RUN chmod +x entrypoint.sh
+#31 DONE 0.6s
+
+#32 [aminra-backend 19/19] RUN mkdir -p /app/docs /app/data /app/doc_text_cache
+#32 DONE 0.7s
+
+#30 [aminra-frontend deps 1/4] RUN apk add --no-cache libc6-compat
+#30 2.479 (1/3) Installing musl-obstack (1.2.3-r2)
+#30 2.555 (2/3) Installing libucontext (1.3.3-r0)
+#30 2.622 (3/3) Installing gcompat (1.1.0-r4)
+#30 2.707 OK: 11.0 MiB in 21 packages
+#30 DONE 3.2s
+
+#27 [aminra-frontend runner  1/10] RUN apk add --no-cache tzdata
+#27 2.529 (1/1) Installing tzdata (2026d-r0)
+#27 2.741 OK: 11.3 MiB in 19 packages
+#27 DONE 3.2s
+
+#33 [aminra-frontend runner  2/10] WORKDIR /app
+#33 ...
+
+#34 [aminra-frontend deps 2/4] WORKDIR /app
+#34 DONE 1.4s
+
+#33 [aminra-frontend runner  2/10] WORKDIR /app
+#33 DONE 1.4s
+
+#35 [aminra-frontend runner  3/10] RUN addgroup --system --gid 1001 nodejs
+#35 ...
+
+#36 [aminra-frontend deps 3/4] COPY package.json package-lock.json* ./
+#36 DONE 0.5s
+
+#37 [aminra-frontend deps 4/4] RUN --mount=type=cache,target=/root/.npm     npm ci --prefer-offline --legacy-peer-deps
+#37 ...
+
+#35 [aminra-frontend runner  3/10] RUN addgroup --system --gid 1001 nodejs
+#35 DONE 0.8s
+
+#38 [aminra-frontend runner  4/10] RUN adduser --system --uid 1001 nextjs
+#38 DONE 0.7s
+
+#39 [aminra-backend] exporting to image
+#39 exporting layers 2.5s done
+#39 exporting manifest sha256:bda116a8155293c839d21da3c7ad0598122a447b5d84616c6cb4dcd71bd54c69 0.1s done
+#39 exporting config sha256:1b6d1bf936c758c585fe62fabd2d9931b1f32cd77e12ff9f657ba8b428103ef1 0.0s done
+#39 exporting attestation manifest sha256:247f2c32e267cbeb0f207a899e638c5743459d3c73aa543f7103b616742cba9d 0.1s done
+#39 exporting manifest list sha256:dddd383ad9aab02e62db7defb4ccc1fdbcc08f25e449dcc8cefc18e34c74ec40 0.1s done
+#39 naming to docker.io/library/aminra-docker-system-aminra-backend:latest 0.0s done
+#39 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest
+#39 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest 1.5s done
+#39 DONE 4.6s
+
+#37 [aminra-frontend deps 4/4] RUN --mount=type=cache,target=/root/.npm     npm ci --prefer-offline --legacy-peer-deps
+#37 ...
+
+#40 [aminra-backend] resolving provenance for metadata file
+#40 DONE 0.0s
+
+#37 [aminra-frontend deps 4/4] RUN --mount=type=cache,target=/root/.npm     npm ci --prefer-offline --legacy-peer-deps
+#37 9.029 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#37 11.70 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#37 11.96 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#37 18.00 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#37 18.20 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#37 28.24 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#37 55.77
+#37 55.77 added 643 packages, and audited 644 packages in 55s
+#37 55.77
+#37 55.77 176 packages are looking for funding
+#37 55.77   run `npm fund` for details
+#37 56.42
+#37 56.42 22 vulnerabilities (1 low, 9 moderate, 11 high, 1 critical)
+#37 56.42
+#37 56.42 To address all issues, run:
+#37 56.42   npm audit fix
+#37 56.42
+#37 56.42 Run `npm audit` for details.
+#37 56.43 npm notice
+#37 56.43 npm notice New major version of npm available! 10.8.2 -> 12.1.0
+#37 56.43 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+#37 56.43 npm notice To update run: npm install -g npm@12.1.0
+#37 56.43 npm notice
+#37 DONE 60.4s
+
+#41 [aminra-frontend builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+#41 DONE 26.9s
+
+#42 [aminra-frontend builder 3/4] COPY . .
+#42 DONE 0.6s
+
+#43 [aminra-frontend builder 4/4] RUN npm run build -- --webpack
+#43 1.738
+#43 1.738 > aminra-web@0.1.0 build
+#43 1.738 > next build --webpack
+#43 1.738
+#43 3.555 [@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead.
+#43 3.648 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#43 3.648 This information is used to shape Next.js' roadmap and prioritize features.
+#43 3.648 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#43 3.648 https://nextjs.org/telemetry
+#43 3.648
+#43 3.693 ▲ Next.js 16.2.4 (webpack)
+#43 3.693 - Experiments (use with caution):
+#43 3.693   · clientTraceMetadata
+#43 3.693   ✓ webpackBuildWorker
+#43 3.694
+#43 3.928   Creating an optimized production build ...
+#43 5.816 [@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead.
+#43 6.645 [@sentry/nextjs] It appears you've configured a `sentry.server.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.server.config.ts` file afterward.
+#43 6.645 [@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+#43 6.645 [@sentry/nextjs] It seems like you don't have a global error handler set up. It is recommended that you add a 'global-error.js' file with Sentry instrumentation so that React rendering errors are reported to Sentry. Read more: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#react-render-errors-in-app-router (you can suppress this warning by setting SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING=1 as environment variable)
+#43 6.869 [@sentry/nextjs] It appears you've configured a `sentry.edge.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.edge.config.ts` file afterward.
+#43 6.978 [@sentry/nextjs] DEPRECATION WARNING: It is recommended renaming your `sentry.client.config.ts` file, or moving its content to `instrumentation-client.ts`. When using Turbopack `sentry.client.config.ts` will no longer work. Read more about the `instrumentation-client.ts` file: https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+#43 46.49 [@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead.
+#43 47.41 [@sentry/nextjs] It appears you've configured a `sentry.server.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.server.config.ts` file afterward.
+#43 47.41 [@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+#43 47.41 [@sentry/nextjs] It seems like you don't have a global error handler set up. It is recommended that you add a 'global-error.js' file with Sentry instrumentation so that React rendering errors are reported to Sentry. Read more: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#react-render-errors-in-app-router (you can suppress this warning by setting SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING=1 as environment variable)
+#43 47.65 [@sentry/nextjs] It appears you've configured a `sentry.edge.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.edge.config.ts` file afterward.
+#43 47.77 [@sentry/nextjs] DEPRECATION WARNING: It is recommended renaming your `sentry.client.config.ts` file, or moving its content to `instrumentation-client.ts`. When using Turbopack `sentry.client.config.ts` will no longer work. Read more about the `instrumentation-client.ts` file: https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+#43 50.28 [@sentry/nextjs] DEPRECATION WARNING: disableLogger is deprecated and will be removed in a future version. Use webpack.treeshake.removeDebugLogging instead.
+#43 51.11 [@sentry/nextjs] It appears you've configured a `sentry.server.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.server.config.ts` file afterward.
+#43 51.11 [@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+#43 51.12 [@sentry/nextjs] It seems like you don't have a global error handler set up. It is recommended that you add a 'global-error.js' file with Sentry instrumentation so that React rendering errors are reported to Sentry. Read more: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#react-render-errors-in-app-router (you can suppress this warning by setting SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING=1 as environment variable)
+#43 51.34 [@sentry/nextjs] It appears you've configured a `sentry.edge.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.edge.config.ts` file afterward.
+#43 51.45 [@sentry/nextjs] DEPRECATION WARNING: It is recommended renaming your `sentry.client.config.ts` file, or moving its content to `instrumentation-client.ts`. When using Turbopack `sentry.client.config.ts` will no longer work. Read more about the `instrumentation-client.ts` file: https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+#43 72.22 ✓ Compiled successfully in 58s
+#43 72.23   Running TypeScript ...
+#43 112.5   Finished TypeScript in 40s ...
+#43 112.5   Collecting page data using 4 workers ...
+#43 123.1   Generating static pages using 4 workers (0/49) ...
+#43 124.6   Generating static pages using 4 workers (12/49)
+#43 125.1   Generating static pages using 4 workers (24/49)
+#43 125.7   Generating static pages using 4 workers (36/49)
+#43 125.7 ✓ Generating static pages using 4 workers (49/49) in 2.7s
+#43 128.3   Finalizing page optimization ...
+#43 128.3   Collecting build traces ...
+#43 163.3
+#43 163.3 Route (app)
+#43 163.3 ┌ ○ /
+#43 163.3 ├ ○ /_not-found
+#43 163.3 ├ ○ /account/confirm-deletion
+#43 163.3 ├ ƒ /admin
+#43 163.3 ├ ○ /admin/analytics
+#43 163.3 ├ ○ /admin/audit-logs
+#43 163.3 ├ ○ /admin/industries
+#43 163.3 ├ ○ /admin/overdue-submissions
+#43 163.3 ├ ○ /admin/standards
+#43 163.3 ├ ƒ /api/[...path]
+#43 163.3 ├ ƒ /api/auth/login
+#43 163.3 ├ ƒ /api/auth/refresh
+#43 163.3 ├ ƒ /api/chat
+#43 163.3 ├ ƒ /api/upload
+#43 163.3 ├ ○ /auditors
+#43 163.3 ├ ○ /audits
+#43 163.3 ├ ƒ /audits/[id]
+#43 163.3 ├ ○ /audits/templates
+#43 163.3 ├ ○ /auth/callback
+#43 163.3 ├ ○ /business/login
+#43 163.3 ├ ○ /business/onboarding/industry-select
+#43 163.3 ├ ○ /business/register
+#43 163.3 ├ ƒ /businesses/[id]
+#43 163.3 ├ ○ /certificates
+#43 163.3 ├ ○ /chat
+#43 163.3 ├ ○ /complaints
+#43 163.3 ├ ○ /conflicts
+#43 163.3 ├ ○ /create-document
+#43 163.3 ├ ○ /dashboard/business
+#43 163.3 ├ ○ /dashboard/provider
+#43 163.3 ├ ○ /dashboard/provider/overdue
+#43 163.3 ├ ○ /documents
+#43 163.3 ├ ○ /dossiers
+#43 163.3 ├ ƒ /dossiers/[id]
+#43 163.3 ├ ○ /dossiers/new
+#43 163.3 ├ ○ /forgot-password
+#43 163.3 ├ ƒ /health
+#43 163.3 ├ ƒ /invite/[token]
+#43 163.3 ├ ○ /landing
+#43 163.3 ├ ○ /members
+#43 163.3 ├ ○ /modules
+#43 163.3 ├ ○ /portfolio
+#43 163.3 ├ ○ /privacy
+#43 163.3 ├ ○ /provider/login
+#43 163.3 ├ ○ /provider/register
+#43 163.3 ├ ○ /reset-password
+#43 163.3 ├ ○ /settings
+#43 163.3 ├ ○ /settings/company
+#43 163.3 ├ ○ /settings/data-export
+#43 163.3 ├ ○ /submissions
+#43 163.3 ├ ƒ /supplier-portal/[token]
+#43 163.3 ├ ○ /supply-chain/batches
+#43 163.3 ├ ○ /supply-chain/materials
+#43 163.3 ├ ○ /supply-chain/process
+#43 163.3 ├ ○ /terms
+#43 163.3 ├ ƒ /trace/[code]
+#43 163.3 ├ ○ /upload
+#43 163.3 └ ƒ /verify/[cert_number]
+#43 163.3
+#43 163.3
+#43 163.3 ○  (Static)   prerendered as static content
+#43 163.3 ƒ  (Dynamic)  server-rendered on demand
+#43 163.3
+#43 163.5 npm notice
+#43 163.5 npm notice New major version of npm available! 10.8.2 -> 12.1.0
+#43 163.5 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+#43 163.5 npm notice To update run: npm install -g npm@12.1.0
+#43 163.5 npm notice
+#43 DONE 163.8s
+
+#44 [aminra-frontend runner  5/10] COPY --from=builder /app/public ./public
+#44 DONE 0.2s
+
+#45 [aminra-frontend runner  6/10] RUN mkdir .next
+#45 DONE 0.5s
+
+#46 [aminra-frontend runner  7/10] RUN chown nextjs:nodejs .next
+#46 DONE 0.5s
+
+#47 [aminra-frontend runner  8/10] COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+#47 DONE 1.1s
+
+#48 [aminra-frontend runner  9/10] COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+#48 DONE 0.3s
+
+#49 [aminra-frontend runner 10/10] COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@swc/helpers ./node_modules/@swc/helpers
+#49 DONE 0.6s
+
+#50 [aminra-frontend] exporting to image
+#50 exporting layers
+#50 exporting layers 6.5s done
+#50 exporting manifest sha256:9470442d3a3ff97c2241ec829073decb64621c91b46ce9fb01391bfa025d1ca1 0.0s done
+#50 exporting config sha256:793dcf37c1fc8175b535f6e7580e9cded6d3da2b1717c9752ab4869a588ebac2 0.1s done
+#50 exporting attestation manifest sha256:ecc7f0ec786c9208e190da2f5b1decd5fab7bfbb1371aa0b8291ce243f8b45bf
+#50 exporting attestation manifest sha256:ecc7f0ec786c9208e190da2f5b1decd5fab7bfbb1371aa0b8291ce243f8b45bf 0.1s done
+#50 exporting manifest list sha256:c258c518c7bcd41e7da6b9b1b91414e23f5f49be73473c082dbae0827888f011 0.0s done
+#50 naming to docker.io/library/aminra-docker-system-aminra-frontend:latest
+#50 naming to docker.io/library/aminra-docker-system-aminra-frontend:latest done
+#50 unpacking to docker.io/library/aminra-docker-system-aminra-frontend:latest
+#50 unpacking to docker.io/library/aminra-docker-system-aminra-frontend:latest 2.3s done
+#50 DONE 9.1s
+
+#51 [aminra-frontend] resolving provenance for metadata file
+#51 DONE 0.0s
+ Image aminra-docker-system-aminra-backend Built
+ Image aminra-docker-system-aminra-frontend Built

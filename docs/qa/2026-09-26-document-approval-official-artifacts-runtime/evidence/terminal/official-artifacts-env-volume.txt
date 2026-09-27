@@ -1,0 +1,2 @@
+OFFICIAL_ARTIFACTS_DIR=/app/official_artifacts
+official_dir_present

@@ -1,0 +1,39 @@
+
+Running 6 tests using 1 worker
+
+[1A[2K[1/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:105:7 › document management browser UI error evidence › shows visible list error when document list API fails
+[1A[2K[2/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:111:7 › document management browser UI error evidence › shows visible detail error when document detail API fails
+[1A[2K  1) [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:111:7 › document management browser UI error evidence › shows visible detail error when document detail API fails
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Kết quả đánh giá' })[22m
+
+
+      111 |   test("shows visible detail error when document detail API fails", async ({ page }) => {
+      112 |     await bootDocumentsPage(page, { detailStatus: 502 });
+    > 113 |     await page.getByRole("button", { name: "Kết quả đánh giá" }).click();
+          |                                                                  ^
+      114 |     await expect(alertWithText(page, "Không tải được chi tiết tài liệu")).toBeVisible();
+      115 |     await page.screenshot({ path: path.join(EVIDENCE_DIR, "detail-error.png"), fullPage: true });
+      116 |   });
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/document-management-ui-error-evidence.spec.ts:113:66
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/document-management-ui-err-6f43b-n-document-detail-API-fails-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/document-management-ui-err-6f43b-n-document-detail-API-fails-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/document-management-ui-err-6f43b-n-document-detail-API-fails-desktop-chromium/error-context.md
+
+
+[1A[2K[3/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:118:7 › document management browser UI error evidence › shows delete error and keeps document visible when delete API fails
+[1A[2K[4/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:127:7 › document management browser UI error evidence › shows upload API error inside upload modal
+[1A[2K[5/6] [desktop-chromium] › e2e/document-version-workflow-ui.spec.ts:100:7 › document version workflow UI › shows /versions chain and submits supersede action
+[1A[2K[6/6] [desktop-chromium] › e2e/official-artifact-separation-ui.spec.ts:73:7 › official artifact separation UI › renders official artifacts as read-only separate tab
+[1A[2K  1 failed
+    [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:111:7 › document management browser UI error evidence › shows visible detail error when document detail API fails
+  5 passed (31.2s)

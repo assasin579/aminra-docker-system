@@ -1,0 +1,10 @@
+
+Running 6 tests using 1 worker
+
+[1A[2K[1/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:105:7 › document management browser UI error evidence › shows visible list error when document list API fails
+[1A[2K[2/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:111:7 › document management browser UI error evidence › shows visible detail error when document detail API fails
+[1A[2K[3/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:118:7 › document management browser UI error evidence › shows delete error and keeps document visible when delete API fails
+[1A[2K[4/6] [desktop-chromium] › e2e/document-management-ui-error-evidence.spec.ts:127:7 › document management browser UI error evidence › shows upload API error inside upload modal
+[1A[2K[5/6] [desktop-chromium] › e2e/document-version-workflow-ui.spec.ts:100:7 › document version workflow UI › shows /versions chain and submits supersede action
+[1A[2K[6/6] [desktop-chromium] › e2e/official-artifact-separation-ui.spec.ts:78:7 › official artifact separation UI › renders official artifacts as read-only separate tab
+[1A[2K  6 passed (19.7s)

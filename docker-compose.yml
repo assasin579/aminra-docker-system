@@ -156,6 +156,7 @@ services:
       - ENVIRONMENT=production
       - MODULE_GUARDS_ENABLED=${MODULE_GUARDS_ENABLED:-false}
       - MODULE_GUARD_ROLLOUT=${MODULE_GUARD_ROLLOUT:-}
+      - OFFICIAL_ARTIFACTS_DIR=/app/official_artifacts
       # Secrets are injected via /vault/secrets/env.sh (see entrypoint.sh)
     networks:
       - app-network
@@ -169,6 +170,7 @@ services:
           memory: 512M
     volumes:
       - upload-data:/app/docs
+      - official-artifacts-data:/app/official_artifacts
       - review-data:/app/reviews
       - template-data:/app/admin_templates
       - doc-cache:/app/doc_text_cache
@@ -370,6 +372,7 @@ volumes:
   qdrant-data:
   postgres-data:
   upload-data:
+  official-artifacts-data:
   review-data:
   redis-data:
   template-data:

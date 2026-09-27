@@ -1,0 +1,8 @@
+NAME                                     SERVICE           STATE     STATUS
+aminra-docker-system-aminra-backend-1    aminra-backend    running   Up 11 seconds (health: starting)
+aminra-docker-system-aminra-frontend-1   aminra-frontend   running   Up About a minute (healthy)
+aminra-docker-system-arq-worker-1        arq-worker        running   Up 9 days
+aminra-docker-system-keycloak-1          keycloak          running   Up 9 days (healthy)
+aminra-docker-system-postgres-db-1       postgres-db       running   Up 3 days (healthy)
+aminra-docker-system-qdrant-db-1         qdrant-db         running   Up 3 days (healthy)
+aminra-docker-system-redis-1             redis             running   Up 9 days (healthy)

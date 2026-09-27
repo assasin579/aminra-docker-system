@@ -1,0 +1,2 @@
+backup=backups/aminra-pre-official-artifacts-20260926-124500.dump
+schema=backups/aminra-pre-official-artifacts-20260926-124500-schema.sql

@@ -1,0 +1,101 @@
+ Image aminra-docker-system-qdrant-db Building
+ Image aminra-docker-system-aminra-backend Building
+ Image aminra-docker-system-postgres-db Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.61kB done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.15kB 0.0s done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/aminra-backend-base:local
+#3 DONE 0.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 602B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 DONE 0.0s
+
+#6 [ 1/19] FROM docker.io/library/aminra-backend-base:local@sha256:92f1aafd18bb7fcf386a6c04a8143a0c7cbaf608a0174e563484d377b5120793
+#6 resolve docker.io/library/aminra-backend-base:local@sha256:92f1aafd18bb7fcf386a6c04a8143a0c7cbaf608a0174e563484d377b5120793 0.1s done
+#6 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 35.33kB 0.1s done
+#5 DONE 0.1s
+
+#7 [10/19] COPY supply_chain/ ./supply_chain/
+#7 CACHED
+
+#8 [12/19] COPY alembic.ini .
+#8 CACHED
+
+#9 [ 2/19] WORKDIR /app
+#9 CACHED
+
+#10 [ 6/19] COPY contracts/ ./contracts/
+#10 CACHED
+
+#11 [ 7/19] COPY templates/ ./templates/
+#11 CACHED
+
+#12 [ 9/19] COPY templates_html/ ./templates_html/
+#12 CACHED
+
+#13 [ 4/19] COPY auth/ ./auth/
+#13 CACHED
+
+#14 [ 5/19] COPY services/ ./services/
+#14 CACHED
+
+#15 [ 8/19] COPY templates_docx/ ./templates_docx/
+#15 CACHED
+
+#16 [13/19] COPY alembic/ ./alembic/
+#16 CACHED
+
+#17 [11/19] COPY scripts/ ./scripts/
+#17 CACHED
+
+#18 [14/19] COPY app.py .
+#18 CACHED
+
+#19 [ 3/19] COPY pipeline/ ./pipeline/
+#19 CACHED
+
+#20 [15/19] COPY pytest.ini .
+#20 CACHED
+
+#21 [16/19] COPY tests/ ./tests/
+#21 DONE 0.8s
+
+#22 [17/19] COPY entrypoint.sh .
+#22 DONE 0.2s
+
+#23 [18/19] RUN chmod +x entrypoint.sh
+#23 DONE 0.6s
+
+#24 [19/19] RUN mkdir -p /app/docs /app/data /app/doc_text_cache
+#24 DONE 0.5s
+
+#25 exporting to image
+#25 exporting layers
+#25 exporting layers 1.4s done
+#25 exporting manifest sha256:13dd792cb61b94de46453f0a19f5879c4dcddb03b4a262b03cc0a082ae6fc110 0.1s done
+#25 exporting config sha256:64f298309a0d66a8d480cd3a7da44854715fe7af5dfd99b83074d2c3b4e612a7 0.0s done
+#25 exporting attestation manifest sha256:d95b0d8d1c5b747bbe54dba993c30501ff193918cb5c51f7e9c1d858f0915734 0.1s done
+#25 exporting manifest list sha256:12cd9bfe5466cdd7b191ec3e8424ee9c8d2cd233904d780cb81b5374c2381137 0.0s done
+#25 naming to docker.io/library/aminra-docker-system-aminra-backend:latest 0.0s done
+#25 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest
+#25 unpacking to docker.io/library/aminra-docker-system-aminra-backend:latest 0.5s done
+#25 DONE 2.4s
+
+#26 resolving provenance for metadata file
+#26 DONE 0.0s
+ Image aminra-docker-system-aminra-backend Built
