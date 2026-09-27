@@ -51,6 +51,35 @@ groups:
           summary: "arq job fail rate > 10% trong 15 phút"
           description: "Job '{{ $labels.job }}' fail liên tục. Check Sentry cho exception. Thường do LLM timeout / R2 unreachable / DB lock."
 
+  - name: aminra_document_integrity
+    interval: 30s
+    rules:
+      - alert: OfficialArtifactCreationFailure
+        expr: |
+          increase(aminra_official_artifact_creation_total{result="failure"}[10m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Official artifact creation failed"
+          description: "At least one approved document failed to create an immutable official artifact in the last 10 minutes. Approval is designed to fail closed; check Sentry/structlog for `official artifact creation failed`, inspect OFFICIAL_ARTIFACTS_DIR permissions/storage, then rerun the document approval flow after mitigation."
+
+      - alert: OfficialArtifactCreationFailureRatio
+        expr: |
+          (
+            sum(increase(aminra_official_artifact_creation_total{result="failure"}[30m]))
+            /
+            clamp_min(sum(increase(aminra_official_artifact_creation_total[30m])), 1)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Official artifact failure ratio > 5%"
+          description: "Official artifact creation failures exceed 5% over 30 minutes. This may indicate degraded storage, path-safety failures, or DB/file-system consistency issues. Verify `/metrics`, official artifact directory mount, and recent approval logs before continuing pilot approvals."
+
   - name: aminra_security
     interval: 30s
     rules:

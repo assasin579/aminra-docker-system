@@ -1,0 +1,27 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/document-official-artifact-live-uat.spec.ts:33:7 › official artifact live API UAT › approval creates immutable official artifact with download and source delete-block evidence
+[1A[2K  1) [desktop-chromium] › e2e/document-official-artifact-live-uat.spec.ts:33:7 › official artifact live API UAT › approval creates immutable official artifact with download and source delete-block evidence
+
+    Error: {"detail":"Not Found"}
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m404[39m
+
+      58 |
+      59 |     const submit = await authPost(request, `/api/documents/${docId}/submit-for-approval`, businessToken);
+    > 60 |     expect(submit.status(), await submit.text()).toBe(200);
+         |                                                  ^
+      61 |     await expect(submit.json()).resolves.toMatchObject({ approval_status: "pending_approval" });
+      62 |
+      63 |     const approve = await authPost(request, `/api/documents/${docId}/approve`, businessToken, {
+        at /home/user/Documents/aminra-docker-system/frontend/aminra-web/e2e/document-official-artifact-live-uat.spec.ts:60:50
+
+    Error Context: test-results/document-official-artifact-46bb4-ource-delete-block-evidence-desktop-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [desktop-chromium] › e2e/document-official-artifact-live-uat.spec.ts:33:7 › official artifact live API UAT › approval creates immutable official artifact with download and source delete-block evidence

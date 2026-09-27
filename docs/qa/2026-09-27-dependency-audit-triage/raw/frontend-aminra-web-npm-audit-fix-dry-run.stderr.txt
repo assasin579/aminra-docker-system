@@ -1,0 +1,36 @@
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: eslint-config-next@16.2.1
+npm error Found: eslint@8.57.1
+npm error node_modules/eslint
+npm error   dev eslint@"^8" from the root project
+npm error   peer eslint@"^6.0.0 || ^7.0.0 || >=8.0.0" from @eslint-community/eslint-utils@4.9.1
+npm error   node_modules/@eslint-community/eslint-utils
+npm error     @eslint-community/eslint-utils@"^4.9.1" from @typescript-eslint/utils@8.58.0
+npm error     node_modules/@typescript-eslint/utils
+npm error       @typescript-eslint/utils@"8.58.0" from @typescript-eslint/eslint-plugin@8.58.0
+npm error       node_modules/@typescript-eslint/eslint-plugin
+npm error         @typescript-eslint/eslint-plugin@"8.58.0" from typescript-eslint@8.58.0
+npm error         node_modules/typescript-eslint
+npm error       2 more (@typescript-eslint/type-utils, typescript-eslint)
+npm error     @eslint-community/eslint-utils@"^4.2.0" from eslint@8.57.1
+npm error   10 more (@typescript-eslint/eslint-plugin, ...)
+npm error
+npm error Could not resolve dependency:
+npm error peer eslint@">=9.0.0" from eslint-config-next@16.2.1
+npm error node_modules/eslint-config-next
+npm error   dev eslint-config-next@"16.2.1" from the root project
+npm error
+npm error Conflicting peer dependency: eslint@10.11.0
+npm error node_modules/eslint
+npm error   peer eslint@">=9.0.0" from eslint-config-next@16.2.1
+npm error   node_modules/eslint-config-next
+npm error     dev eslint-config-next@"16.2.1" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry this command with --force or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/user/.npm/_logs/2026-09-27T04_48_24_139Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/user/.npm/_logs/2026-09-27T04_48_24_139Z-debug-0.log

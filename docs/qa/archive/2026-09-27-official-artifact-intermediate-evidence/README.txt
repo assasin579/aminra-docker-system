@@ -1,0 +1,1 @@
+Archived intermediate official-artifact QA evidence on 2026-09-27. Final committed closeout evidence remains in the main QA report; this folder preserves reruns/build logs without leaving them as root-level untracked noise.
