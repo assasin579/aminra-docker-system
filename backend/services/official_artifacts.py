@@ -9,13 +9,33 @@ upload tree, computes a content hash, and records immutable metadata in
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import shutil
 from pathlib import Path
 from uuid import uuid4
 
+from prometheus_client import Counter, REGISTRY
+
 UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "./docs"))
 OFFICIAL_ARTIFACTS_DIR = Path(os.getenv("OFFICIAL_ARTIFACTS_DIR", "./official_artifacts"))
+log = logging.getLogger("aminra.official_artifacts")
+
+
+def _counter(name: str, description: str, labels: list[str]):
+    try:
+        return Counter(name, description, labels)
+    except ValueError:
+        # Pytest reloads this module with different env roots; reuse the collector
+        # instead of registering a duplicate metric in the default registry.
+        return REGISTRY._names_to_collectors[name]  # noqa: SLF001
+
+
+OFFICIAL_ARTIFACT_CREATION_TOTAL = _counter(
+    "aminra_official_artifact_creation_total",
+    "Official artifact creation outcomes after document approval",
+    ["result", "reason"],
+)
 
 
 def _safe_filename(name: str | None) -> str:
@@ -45,8 +65,23 @@ async def create_official_artifact_for_document(db, *, document_id: str, approve
 
     The source must remain a normal business-uploaded document under UPLOAD_DIR;
     the copied artifact is stored under OFFICIAL_ARTIFACTS_DIR and exposed only
-    through official-artifact APIs.
+    through official-artifact APIs. Failures are deliberately fail-closed: the
+    approval transaction rolls back if an official artifact cannot be created.
     """
+    try:
+        return await _create_official_artifact_for_document(
+            db, document_id=document_id, approved_by_user_id=approved_by_user_id
+        )
+    except Exception as exc:
+        OFFICIAL_ARTIFACT_CREATION_TOTAL.labels(result="failure", reason=type(exc).__name__).inc()
+        log.exception(
+            "official artifact creation failed",
+            extra={"document_id": document_id, "reason": type(exc).__name__},
+        )
+        raise
+
+
+async def _create_official_artifact_for_document(db, *, document_id: str, approved_by_user_id: str | None) -> dict:
     row = await db.fetchrow(
         """
         SELECT id, tenant_id, original_filename, file_path, file_size, mime_type,
@@ -77,6 +112,11 @@ async def create_official_artifact_for_document(db, *, document_id: str, approve
             raise ValueError("existing official artifact path is outside OFFICIAL_ARTIFACTS_DIR")
         if not existing_path.exists() or not existing_path.is_file():
             raise ValueError("existing official artifact file is missing")
+        OFFICIAL_ARTIFACT_CREATION_TOTAL.labels(result="existing", reason="none").inc()
+        log.info(
+            "official artifact already exists",
+            extra={"document_id": document_id, "artifact_id": str(existing["id"])},
+        )
         return dict(existing)
 
     source = Path(row["file_path"]).resolve()
@@ -119,4 +159,14 @@ async def create_official_artifact_for_document(db, *, document_id: str, approve
         row["next_review_date"],
         row["retention_expires_at"],
     )
-    return dict(artifact_row)
+    artifact = dict(artifact_row)
+    OFFICIAL_ARTIFACT_CREATION_TOTAL.labels(result="created", reason="none").inc()
+    log.info(
+        "official artifact created",
+        extra={
+            "document_id": document_id,
+            "artifact_id": str(artifact["id"]),
+            "sha256": artifact["sha256"],
+        },
+    )
+    return artifact

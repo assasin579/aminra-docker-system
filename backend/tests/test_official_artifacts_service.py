@@ -184,3 +184,61 @@ def test_create_official_artifact_returns_existing_without_second_copy(monkeypat
     assert artifact["storage_path"] == str(existing_path)
     assert db.insert_args is None
     assert list((official_root / "tenant-1").iterdir()) == [existing_path]
+
+
+class FakeMetricChild:
+    def __init__(self):
+        self.count = 0
+
+    def inc(self):
+        self.count += 1
+
+
+class FakeMetric:
+    def __init__(self):
+        self.calls = []
+        self.child = FakeMetricChild()
+
+    def labels(self, **labels):
+        self.calls.append(labels)
+        return self.child
+
+
+def test_create_official_artifact_failure_logs_and_counts_metric(monkeypatch, tmp_path, caplog):
+    upload_root = tmp_path / "uploads"
+    official_root = tmp_path / "official-artifacts"
+    upload_root.mkdir(parents=True)
+    missing_source = upload_root / "tenant-1" / "missing.pdf"
+
+    monkeypatch.setenv("UPLOAD_DIR", str(upload_root))
+    monkeypatch.setenv("OFFICIAL_ARTIFACTS_DIR", str(official_root))
+    import services.official_artifacts as official_artifacts
+
+    official_artifacts = importlib.reload(official_artifacts)
+    metric = FakeMetric()
+    monkeypatch.setattr(official_artifacts, "OFFICIAL_ARTIFACT_CREATION_TOTAL", metric)
+    db = FakeDb(
+        {
+            "id": "doc-1",
+            "tenant_id": "tenant-1",
+            "original_filename": "Approved.pdf",
+            "file_path": str(missing_source),
+            "file_size": 123,
+            "mime_type": "application/pdf",
+            "effective_date": None,
+            "next_review_date": None,
+            "retention_expires_at": None,
+        }
+    )
+
+    with caplog.at_level("ERROR", logger="aminra.official_artifacts"):
+        with pytest.raises(ValueError, match="source document file is missing"):
+            asyncio.run(
+                official_artifacts.create_official_artifact_for_document(
+                    db, document_id="doc-1", approved_by_user_id="user-1"
+                )
+            )
+
+    assert metric.calls == [{"result": "failure", "reason": "ValueError"}]
+    assert metric.child.count == 1
+    assert any("official artifact creation failed" in record.message for record in caplog.records)

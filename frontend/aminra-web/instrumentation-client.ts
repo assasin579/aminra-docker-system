@@ -1,5 +1,5 @@
 // Sentry init for browser/client runtime.
-// Auto-loaded by @sentry/nextjs at app boot.
+// Auto-loaded by @sentry/nextjs/Next instrumentation in the browser bundle.
 //
 // Sample rates:
 //   dev   → 100% trace, 0% replay (verbose, no PII storage cost)
@@ -29,3 +29,5 @@ if (DSN) {
     debug: false,
   });
 }
+
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

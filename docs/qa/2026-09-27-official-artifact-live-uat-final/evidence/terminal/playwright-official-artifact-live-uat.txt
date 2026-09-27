@@ -1,0 +1,5 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/document-official-artifact-live-uat.spec.ts:33:7 › official artifact live API UAT › approval creates immutable official artifact with download and source delete-block evidence
+[1A[2K  1 passed (2.2s)

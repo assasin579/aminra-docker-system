@@ -92,7 +92,7 @@ async function bootDocumentsPage(page: import("@playwright/test").Page, options?
   });
 
   await page.addInitScript((profile) => {
-    window.localStorage.setItem("aminra_user_token", "ui-error-token");
+    window.localStorage.setItem("aminra_user_token", "eyJhbGciOiJub25lIn0.eyJzdWIiOiJwbGF5d3JpZ2h0LW1vY2siLCJlbWFpbCI6InB3QGFtaW5yYS50ZXN0In0.c2ln");
     window.localStorage.setItem("aminra_user_profile", JSON.stringify(profile));
     document.cookie = "aminra_session=1; path=/; max-age=31536000; SameSite=Lax";
   }, businessProfile);

@@ -1,0 +1,4 @@
+CREDENTIALS	PASS	Loaded gitignored QA credential keys; values REDACTED
+FEATURE-FLAG	PASS	document_versioning_v1 enabled for QA business tenant only
+RUNTIME-BACKEND	PASS	Backend health responded
+OFFICIAL-ARTIFACT-UAT	PASS	approval created artifact; list/download succeeded; source delete returned 409
