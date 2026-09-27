@@ -242,6 +242,25 @@ async def test_set_tenant_module_status_writes_admin_override_after_dependency_c
     sql = db.execute.call_args.args[0]
     assert "UPDATE tenant_modules" in sql
     assert "source = 'admin_override'" in sql
+    assert "enabled_at = CASE" in sql
+    assert "WHEN $3::varchar IN ('enabled', 'trial') THEN COALESCE(tenant_modules.enabled_at, NOW())" in sql
+    assert "disabled_at = CASE" in sql
+    assert "WHEN $3::varchar IN ('disabled', 'locked') THEN COALESCE(tenant_modules.disabled_at, NOW())" in sql
+
+
+async def test_set_tenant_module_status_maintains_status_timestamp_invariants_for_disable():
+    tenant_id = str(uuid4())
+    db = AsyncMock()
+    db.fetchrow = AsyncMock(return_value=Row(module_id="public-trace-id", code="public_trace", required=False))
+    db.fetch = AsyncMock(side_effect=[[], []])
+    db.execute = AsyncMock(return_value="UPDATE 1")
+
+    await set_tenant_module_status(db, tenant_id, "public_trace", "locked")
+
+    sql = db.execute.call_args.args[0]
+    assert "disabled_at = CASE" in sql
+    assert "WHEN $3::varchar IN ('disabled', 'locked') THEN COALESCE(tenant_modules.disabled_at, NOW())" in sql
+    assert "WHEN $3::varchar IN ('enabled', 'trial') THEN NULL" in sql
 
 
 async def test_create_module_activation_request_is_idempotent_for_pending_disabled_module():

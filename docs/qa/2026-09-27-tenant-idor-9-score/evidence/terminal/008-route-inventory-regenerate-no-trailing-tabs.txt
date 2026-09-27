@@ -1,0 +1,2 @@
+wrote 273 routes to /home/user/Documents/aminra-docker-system/docs/qa/2026-09-13-tenant-idor-confidence-8of10/route-inventory.tsv
+wrote 273 routes to /home/user/Documents/aminra-docker-system/docs/qa/2026-09-27-tenant-idor-9-score/route-inventory.tsv

@@ -161,6 +161,25 @@ async def test_business_cannot_create_or_update_certificate_status(db_tx, biz_a)
     assert exc.value.status_code == 403
 
 
+def test_supplier_eligibility_rejects_inverted_validity_window():
+    from pydantic import ValidationError
+
+    today = date.today()
+    with pytest.raises(ValidationError) as exc:
+        SupplierCertificateEligibilityUpsert(
+            certificate_no="CB-INVERTED-WINDOW",
+            issuer_name="Route CB",
+            status="active",
+            valid_from=today + timedelta(days=1),
+            valid_until=today,
+            scope={"material_categories": ["*"]},
+            source_of_truth="cb",
+            reason="invalid range must fail before DB write",
+        )
+
+    assert "valid_until" in str(exc.value)
+
+
 async def test_revoke_fanout_alerts_only_active_related_buyers(db_tx, biz_a, biz_b, prov_user):
     sid = await _supplier(db_tx, biz_a)
     await _source_cert(db_tx, biz_a["tenant_id"], prov_user)

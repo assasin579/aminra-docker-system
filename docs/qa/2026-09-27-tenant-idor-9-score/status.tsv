@@ -1,0 +1,9 @@
+check	status	notes
+route_inventory_generated	PASS	273 backend routes inventoried in current branch; includes post-2026-09-13 CB trust/module/official-artifact routers.
+route_inventory_p0_p1_mapping	PASS	273/273 covered; 0 deferred rows; 0 P0/P1 unmapped rows in route-inventory.tsv.
+coverage_gate_regression	PASS	Added pytest assertion that no P0/P1 row can remain deferred/lack coverage evidence; focused gate 57 passed.
+anonymous_high_risk_negative_coverage	PASS	Expanded unauth negative probes for /auth/me, /api/feature-flags/me, certification-decisions, complaints, conflicts, modules, official-artifacts; focused gate 57 passed.
+route_family_regression	PASS	Certification decision, complaints/appeals, conflict, official artifact, and feature flag focused suites: 23 passed, 6 skipped (skips are pre-existing env/contract skips, not new failures).
+static_tenant_boundary_scan	PASS	Current static scanner findings: 189 total; 0 HIGH, 181 MEDIUM, 8 INFO.
+git_diff_check	PASS	No whitespace errors after TSV regeneration with LF and n/a placeholders for covered empty owner/reason fields.
+confidence_score	PASS	Tenant/IDOR/security-boundary readiness raised toward 9/10 for source/test/evidence lane; not production GO because dependency/security backlog and broader env gates remain outside this lane.

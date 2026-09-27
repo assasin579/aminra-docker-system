@@ -1,6 +1,6 @@
 """Pydantic models for Supply Chain modules."""
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Any
 from datetime import date, datetime
 import re
@@ -119,6 +119,12 @@ class SupplierCertificateEligibilityUpsert(BaseModel):
         if v != "cb":
             raise ValueError("Chỉ CB/provider được là nguồn xác thực")
         return v
+
+    @model_validator(mode="after")
+    def _valid_date_window(self):
+        if self.valid_until < self.valid_from:
+            raise ValueError("valid_until phải lớn hơn hoặc bằng valid_from")
+        return self
 
 
 class SupplierCertificateEligibilityOut(BaseModel):

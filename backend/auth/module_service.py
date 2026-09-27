@@ -322,9 +322,19 @@ async def set_tenant_module_status(
     await db.execute(
         """
         UPDATE tenant_modules
-        SET status = $3,
+        SET status = $3::varchar,
             source = 'admin_override',
             config = $4::jsonb,
+            enabled_at = CASE
+                WHEN $3::varchar IN ('enabled', 'trial') THEN COALESCE(tenant_modules.enabled_at, NOW())
+                WHEN $3::varchar IN ('disabled', 'locked') THEN NULL
+                ELSE tenant_modules.enabled_at
+            END,
+            disabled_at = CASE
+                WHEN $3::varchar IN ('disabled', 'locked') THEN COALESCE(tenant_modules.disabled_at, NOW())
+                WHEN $3::varchar IN ('enabled', 'trial') THEN NULL
+                ELSE tenant_modules.disabled_at
+            END,
             updated_at = NOW()
         FROM modules m
         WHERE tenant_modules.module_id = m.id

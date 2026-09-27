@@ -1,0 +1,4 @@
+routes 273
+risk {'P0_ADMIN_GLOBAL': 41, 'P2_HEALTH_OR_STATIC': 13, 'P0_RESOURCE_IDOR': 143, 'P0_FILE_OBJECT': 38, 'P1_TENANT_LIST': 35, 'P1_PUBLIC_SEALED': 3}
+coverage {'covered': 273}
+p0_p1_deferred_or_unmapped 0

@@ -1,0 +1,1 @@
+wrote 189 findings to /home/user/Documents/aminra-docker-system/docs/qa/2026-09-27-tenant-idor-9-score/static-scan-findings.json

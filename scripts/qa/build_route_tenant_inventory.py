@@ -26,6 +26,13 @@ RESOURCE_PARAM_RE = re.compile(r"\{[^}]*?(id|uuid|code|filename|trace_id|busines
 # confidence report still distinguishes representative coverage from 1:1 route
 # coverage.
 COVERAGE_RULES = [
+    (re.compile(r"^/auth/me$"), "tests/uat/test_uat_c_tenant_isolation.py::TestSameTenantHappyPath::test_c01_tenant_a_can_read_own_profile; tests/uat/test_uat_c_tenant_isolation.py::TestTenantIsolation::test_c39_user_session_does_not_carry_other_tenant; tests/uat/test_uat_c_tenant_isolation.py::TestSecurityExploits::test_c41_forged_jwt_with_other_tenant_id_rejected; tests/test_unauth_route_boundaries.py::test_high_risk_get_routes_reject_anonymous"),
+    (re.compile(r"^/api/feature-flags/me$"), "tests/test_feature_flags_integration.py::TestMyFeatureFlags; tests/test_feature_flags_integration.py::TestTenantIsolation::test_my_endpoint_does_not_leak_other_tenant_overrides; tests/test_unauth_route_boundaries.py::test_high_risk_get_routes_reject_anonymous"),
+    (re.compile(r"^/api/certification-decisions"), "tests/test_certification_decision_router.py; tests/test_rbac_policy_engine.py; tests/test_unauth_route_boundaries.py"),
+    (re.compile(r"^/api/complaints"), "tests/test_complaints_appeals_router.py; tests/test_complaints_appeals_service.py; tests/test_unauth_route_boundaries.py"),
+    (re.compile(r"^/api/conflicts"), "tests/test_conflict_interest_router.py; tests/test_conflict_interest_service.py; tests/test_unauth_route_boundaries.py"),
+    (re.compile(r"^/api/me/modules|^/api/me/module-activation-requests"), "tests/test_module_route_contract.py; tests/test_module_activation_browser_uat_runner_contract.py; tests/test_unauth_route_boundaries.py"),
+    (re.compile(r"^/api/official-artifacts"), "tests/test_official_artifact_separation_contract.py; tests/test_official_artifacts_service.py; tests/test_unauth_route_boundaries.py"),
     (re.compile(r"/api/supply-chain/(suppliers|supplier-portal|materials|processes|batches|certificate-risk-alerts)"), "tests/test_supply_chain_batches.py; tests/test_supply_chain_supplier_eligibility_routes.py; tests/test_unauth_route_boundaries.py"),
     (re.compile(r"/api/submissions|/dossiers|/api/audits"), "tests/test_unauth_route_boundaries.py; tests/uat/test_uat_c_tenant_isolation.py"),
     (re.compile(r"/api/users/me|/api/users/me/export-data|/api/users/me/request-deletion"), "tests/test_dual_auth_cross_tenant_unit.py; tests/test_unauth_route_boundaries.py"),
@@ -246,6 +253,9 @@ def build(repo: Path) -> list[dict[str, str]]:
         tenant = tenant_class(r, auth)
         risk = risk_class(r, auth, tenant)
         status, tests, owner, reason = coverage(r.path, risk, auth)
+        if status == "covered":
+            owner = owner or "n/a"
+            reason = reason or "n/a"
         rows.append({
             "method": r.method,
             "path": r.path,
@@ -278,7 +288,7 @@ def main() -> int:
         "risk_class", "coverage_test", "coverage_status", "owner", "defer_reason",
     ]
     with out.open("w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=fields, delimiter="\t")
+        w = csv.DictWriter(fh, fieldnames=fields, delimiter="\t", lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     print(f"wrote {len(rows)} routes to {out}")

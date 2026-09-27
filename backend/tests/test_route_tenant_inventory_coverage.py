@@ -12,16 +12,21 @@ from pathlib import Path
 
 
 def _repo_root() -> Path:
-    """Find repo root both on host (`repo/backend/tests`) and in container (`/app/tests`)."""
+    """Find repo root both on host (`repo/backend/tests`) and in containers.
+
+    Prefer the real repository root when backend tests are executed from a full
+    repo mount (`/repo/backend/...`). Fall back to backend-root `/app` only for
+    legacy docker-cp style runs where project docs were copied under `/app/docs`.
+    """
     here = Path(__file__).resolve()
     for parent in [here.parent, *here.parents]:
-        if (parent / "docs").exists() and ((parent / "backend").exists() or (parent / "pytest.ini").exists()):
-            return parent
         if parent.name == "backend" and (parent.parent / "docs").exists():
             return parent.parent
+        if (parent / "docs").exists() and (parent / "backend").exists():
+            return parent
     # Container fallback after `docker cp`: /app is backend root, docs may be copied under /app/docs.
     for parent in [here.parent, *here.parents]:
-        if (parent / "pytest.ini").exists():
+        if (parent / "docs").exists() and (parent / "pytest.ini").exists():
             return parent
     return here.parents[2]
 
@@ -81,6 +86,19 @@ def test_p0_routes_have_explicit_coverage_or_owned_deferral():
                 f"tenant={row['tenant_class']} auth={row['auth_signal']}"
             )
     assert not offenders, "P0 routes lacking coverage/owned deferral:\n" + "\n".join(offenders[:80])
+
+
+def test_no_p0_p1_routes_deferred_without_executable_evidence():
+    offenders = []
+    for row in _rows():
+        if not row["risk_class"].startswith(("P0_", "P1_")):
+            continue
+        if row["coverage_status"] != "covered" or not row["coverage_test"]:
+            offenders.append(
+                f"{row['method']} {row['path']} risk={row['risk_class']} "
+                f"status={row['coverage_status']} owner={row['owner']} reason={row['defer_reason']}"
+            )
+    assert not offenders, "P0/P1 routes deferred or lacking executable evidence:\n" + "\n".join(offenders[:80])
 
 
 def test_no_unknown_auth_or_tenant_class_for_p0_p1_routes():
