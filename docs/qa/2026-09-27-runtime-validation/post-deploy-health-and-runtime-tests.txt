@@ -1,0 +1,27 @@
+backend_healthy_after=15s
+PROTECTED_UNCHANGED postgres-db 2026-09-27T05:07:42.468052116Z
+PROTECTED_UNCHANGED qdrant-db 2026-09-27T05:07:42.44492005Z
+PROTECTED_UNCHANGED redis 2026-09-17T05:36:16.179596393Z
+PROTECTED_UNCHANGED keycloak 2026-09-17T05:28:09.903239713Z
+PROTECTED_UNCHANGED aminra-frontend 2026-09-27T01:25:38.246835458Z
+backend_health=200 time=2.640059
+frontend_health=200 time=0.242680
+frontend_api_health=200 time=0.078767
+public_health=200 time=0.272672
+runtime_pytest_start
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: mock-3.15.1, anyio-4.15.1, Faker-40.39.0, asyncio-1.4.0, hypothesis-6.168.0, respx-0.23.1, locust-2.46.5, bdd-8.1.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 102 items
+
+tests/test_supplier_eligibility_service.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                 [ 12%][0m
+tests/test_supply_chain_supplier_eligibility_routes.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m      [ 24%][0m
+tests/test_module_service.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                        [ 44%][0m
+tests/test_route_tenant_inventory_coverage.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                       [ 48%][0m
+tests/test_unauth_route_boundaries.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 81%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                      [100%][0m
+
+[32m============================= [32m[1m102 passed[0m[32m in 16.76s[0m[32m =============================[0m

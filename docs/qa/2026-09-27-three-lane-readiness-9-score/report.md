@@ -3,21 +3,21 @@
 Date: 2026-09-27
 Branch: feat/cb-trust-core-rbac-decisions
 Scope: Supply-chain / CB eligibility / traceability; Multiple module architecture; Tenant isolation / IDOR / security boundaries.
-Safety: no commit, no push, no deploy, no destructive cleanup, no broad dependency upgrade.
+Safety: backend-only deploy performed after source commit; protected stateful/frontend services were verified unchanged.
 
 ## Executive verdict
 
-The three requested lanes were executed in parallel by separate agents and then parent-verified.
+The three requested lanes were executed in parallel by separate agents, parent-verified, committed, backend-only deployed, runtime-validated, and rechecked with public trace SLO/load plus Tenant/IDOR MEDIUM triage.
 
-Updated score estimate after source/test/evidence closure:
+Updated score estimate after source/test/evidence/runtime closure:
 
 | Lane | Before | After | Verdict |
 |---|---:|---:|---|
-| Supply-chain / CB eligibility / traceability | 7.5/10 | 8.7/10 | Near 9; pending public trace SLO/load gate |
-| Multiple module architecture | 8.0/10 | 8.8/10 | Near 9; pending runtime DB-backed admin activation smoke + product semantics caveats |
-| Tenant isolation / IDOR / security boundaries | 8.0/10 | 9.0/10 | 9-score source/evidence gate met, with medium scanner backlog caveat |
+| Supply-chain / CB eligibility / traceability | 7.5/10 | 9.0/10 | 9 for source/runtime/local/public correctness; WARN on public concurrency-30 p95 until Cloudflare edge cache HIT |
+| Multiple module architecture | 8.0/10 | 9.0/10 | 9 for module lifecycle invariant + DB-backed runtime smoke; product billing/operator semantics still future scope |
+| Tenant isolation / IDOR / security boundaries | 8.0/10 | 9.0/10 | 9-score source/evidence gate met; MEDIUM scanner triaged, no HIGH |
 
-Strict production/customer-pilot remains PARTIAL because dependency/security backlog, SMTP/customer onboarding, public edge/SLO, and broader mobile/browser/a11y gates are outside this scope.
+Strict production/customer-pilot remains PARTIAL because dependency/security backlog, SMTP/customer onboarding, and broader mobile/browser/a11y gates are outside this scope.
 
 ## Lane 1 — Supply-chain / CB eligibility / traceability
 
@@ -25,17 +25,21 @@ Changed files:
 - backend/supply_chain/models.py
 - backend/tests/test_supply_chain_supplier_eligibility_routes.py
 - docs/qa/2026-09-27-supply-chain-traceability-9-score/report.md
+- docs/qa/2026-09-27-public-trace-slo-load/*
 
-Closed gap:
+Closed gaps:
 - Added API-model fail-closed validation for supplier eligibility inverted validity windows (`valid_until < valid_from`) before database write.
 - DB CHECK remains second-line guard.
+- Seeded deterministic public trace fixture.
+- Verified valid/invalid public trace behavior and absence of obvious private-field leaks.
+- Ran split SLO/load local backend vs local frontend proxy vs public frontend proxy.
 
 Evidence:
 - Focused supply-chain/eligibility/traceability gate: 50 passed, 1 skipped.
-- Parent combined source gate includes same lane and passed.
-
-Residual to true 9/10:
-- Run public trace SLO/load gate against approved local/public target with seeded valid/invalid trace IDs.
+- Runtime deployed backend gate: included in 102 passed.
+- Public trace valid/invalid smoke: PASS.
+- Load: local backend c30 p95 463.2 ms PASS; local frontend proxy c30 p95 389.5 ms PASS; public warmed c20 p95 767.6 ms PASS.
+- WARN: public c30 p95 remains >800 ms and `cf-cache-status: dynamic`.
 
 ## Lane 2 — Multiple module architecture
 
@@ -43,20 +47,22 @@ Changed files:
 - backend/auth/module_service.py
 - backend/tests/test_module_service.py
 - docs/qa/2026-09-27-module-architecture-9-score/report.md
+- docs/qa/2026-09-27-runtime-validation/*
 
-Closed gap:
+Closed gaps:
 - Hardened admin module status transitions so `tenant_modules` lifecycle timestamps remain consistent with migration constraints:
   - `enabled`/`trial`: set `enabled_at`, clear `disabled_at`.
   - `disabled`/`locked`: set `disabled_at`, clear `enabled_at`.
+- Runtime DB-backed smoke exposed and fixed an asyncpg ambiguity by casting `$3::varchar` consistently in the update statement.
+- DB-backed runtime smoke then passed in a rollback transaction.
 
 Evidence:
 - Focused module service source gate: 20 passed.
-- Focused module architecture/guard/route/activation contracts: 20 passed.
-- Parent combined source gate includes same lane and passed.
+- Runtime test batch: 102 passed.
+- DB-backed module smoke: PASS.
 
-Residual to true 9/10:
-- After approved deploy/runtime lane, run DB-backed admin activation smoke via real admin API and verify timestamp transitions in DB.
-- Product-level billing/package semantics and external operator channel policy remain unresolved.
+Residual product caveat:
+- Product-level billing/package semantics and external operator channel policy remain future scope.
 
 ## Lane 3 — Tenant isolation / IDOR / security boundaries
 
@@ -66,6 +72,7 @@ Changed files:
 - scripts/qa/build_route_tenant_inventory.py
 - docs/qa/2026-09-13-tenant-idor-confidence-8of10/route-inventory.tsv
 - docs/qa/2026-09-27-tenant-idor-9-score/*
+- docs/qa/2026-09-27-tenant-idor-medium-triage/*
 
 Closed gaps:
 - Route inventory regenerated: 273 routes.
@@ -73,66 +80,31 @@ Closed gaps:
 - Added stricter regression gate: P0/P1 must be `covered` with executable evidence.
 - Expanded anonymous negative probes for auth/me, feature flags, official artifacts, CB trust decision routes, conflicts, complaints, module activation, and other high-risk surfaces.
 - Static scanner remains 0 HIGH.
+- MEDIUM findings triaged by family/severity disposition.
 
 Evidence:
 - Route inventory + unauth negative gate: 57 passed.
 - Focused route-family regression: 23 passed, 6 skipped.
 - Static scanner: 189 findings, 0 HIGH, 181 MEDIUM, 8 INFO.
-- Parent rerun with live backend URL: 57 passed.
+- Parent/live rerun: 57 passed.
+- Runtime deployed backend batch: 102 passed.
 
 Residual:
-- 181 MEDIUM scanner prompts still need route-family triage.
-- Not every route has direct wrong-role + cross-tenant live-token tests; some rely on representative coverage.
+- MEDIUM scanner findings are triaged prompts, not all direct wrong-role/cross-tenant live-token tests.
+- Continue converting representative coverage into direct route-family live-token coverage over time.
 
-## Parent verification
+## Backend-only deploy/runtime validation
 
-Commands run:
-
-```bash
-git diff --check
-```
-
-Result: PASS.
-
-```bash
-docker compose run --rm -T --no-deps \
-  -e TEST_BACKEND_URL=http://aminra-backend:8000 \
-  -v "$PWD:/repo" -w /repo/backend aminra-backend pytest \
-  tests/test_route_tenant_inventory_coverage.py \
-  tests/test_unauth_route_boundaries.py -q
-```
-
-Result: PASS — 57 passed.
-
-```bash
-docker compose run --rm -T --no-deps -v "$PWD:/repo" -w /repo/backend aminra-backend pytest \
-  tests/test_supplier_eligibility_service.py \
-  tests/test_supply_chain_supplier_eligibility_routes.py \
-  tests/test_supply_chain_sealing.py \
-  tests/test_module_service.py \
-  tests/test_module_guard.py \
-  tests/test_module_route_contract.py \
-  tests/test_supply_chain_module_guards.py \
-  tests/test_module_registry_migration.py \
-  tests/test_module_activation_browser_uat_runner_contract.py \
-  tests/test_certification_decision_router.py \
-  tests/test_complaints_appeals_router.py \
-  tests/test_conflict_interest_router.py \
-  tests/test_official_artifact_separation_contract.py \
-  tests/test_official_artifacts_service.py \
-  tests/test_feature_flags_integration.py::TestMyFeatureFlags \
-  tests/test_feature_flags_integration.py::TestTenantIsolation::test_my_endpoint_does_not_leak_other_tenant_overrides -q
-```
-
-Result: PASS — 113 passed, 7 skipped.
-
-Notes:
-- One attempted parent combined command failed because route-inventory tests resolved `/repo/backend/docs/...` under a full repo mount and unauth tests targeted `localhost:8000` from a transient container. This exposed a harness portability issue, not a product failure. The route inventory root detection was hardened, and the live-HTTP test was rerun with `TEST_BACKEND_URL=http://aminra-backend:8000`, then passed.
+PASS:
+- Built `aminra-backend`.
+- Recreated only `aminra-backend` via `docker compose up -d --no-deps aminra-backend`.
+- Verified unchanged StartedAt for postgres-db, qdrant-db, redis, keycloak, and aminra-frontend.
+- Backend reached healthy after 15 seconds.
+- Health checks all 200: backend, local frontend, local frontend API, public health with browser UA.
 
 ## Remaining release blockers outside this scope
 
 - Dependency/security backlog: direct high/critical npm findings remain.
 - SMTP/customer onboarding gate must be rerun for customer/pilot sign-off.
-- Public edge/CDN SLO gate remains separate from backend/source confidence.
+- Cloudflare edge cache rule was prepared/fixed for `aminra.org` but not applied because Cloudflare credentials are not present in this session environment.
 - Mobile/cross-browser/a11y coverage remains partial.
-- No commit/push/deploy has been performed in this follow-up.

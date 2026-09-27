@@ -4,10 +4,11 @@
 set -euo pipefail
 
 : "${CLOUDFLARE_API_TOKEN:?Set CLOUDFLARE_API_TOKEN with Zone Rulesets edit permission}"
-: "${CLOUDFLARE_ZONE_ID:?Set CLOUDFLARE_ZONE_ID for silvergem.org}"
+: "${CLOUDFLARE_ZONE_ID:?Set CLOUDFLARE_ZONE_ID for the AMINRA Cloudflare zone}"
 
+PUBLIC_TRACE_HOST="${PUBLIC_TRACE_HOST:-aminra.org}"
 RULE_DESCRIPTION="AMINRA public sealed trace cache"
-RULE_EXPR='(http.request.method eq "GET" and http.host eq "dev-web.silvergem.org" and starts_with(http.request.uri.path, "/api/api/supply-chain/batches/trace/"))'
+RULE_EXPR="(http.request.method eq \"GET\" and http.host eq \"${PUBLIC_TRACE_HOST}\" and starts_with(http.request.uri.path, \"/api/api/supply-chain/batches/trace/\"))"
 API="https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets"
 
 command -v curl >/dev/null 2>&1 || { echo "ERROR: curl required" >&2; exit 2; }

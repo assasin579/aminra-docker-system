@@ -1,0 +1,6 @@
+local_backend_valid 200 0.053913 http://127.0.0.1:8100/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+local_frontend_proxy_valid 200 0.076878 http://127.0.0.1:3100/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+public_frontend_proxy_valid 200 0.436344 https://aminra.org/api/api/supply-chain/batches/trace/73695b8a-3c10-570b-8bba-92c12da9b56e
+public_invalid_plain 404 0.241310 https://aminra.org/api/api/supply-chain/batches/trace/ABC123
+public_invalid_injectionish 404 0.185894 https://aminra.org/api/api/supply-chain/batches/trace/%27%20OR%201%3D1--
+PUBLIC_TRACE_VALID_INVALID_SMOKE_PASS
