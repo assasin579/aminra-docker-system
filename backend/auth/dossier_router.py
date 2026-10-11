@@ -16,14 +16,15 @@ Endpoints:
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from auth.db import get_db
 from auth.jwt_utils import get_current_user
+from services.dossier_readiness import compute_dossier_readiness
 
 log = logging.getLogger("aminra.dossier")
 
@@ -77,6 +78,47 @@ class DossierUpdate(BaseModel):
         None, pattern=r"^(draft|in_progress|submitted|cert_issued|cancelled)$"
     )
     notes: Optional[str] = None
+
+
+class DossierReadinessItemResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: Optional[str] = None
+    code: Optional[str] = None
+    title: Optional[str] = None
+    label: Optional[str] = None
+    doc_type: Optional[str] = None
+    document_id: Optional[str] = None
+    filename: Optional[str] = None
+    reason: Optional[str] = None
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    status: Optional[str] = None
+    deadline: Optional[str] = None
+
+
+class DossierReadinessResponse(BaseModel):
+    dossier_id: str
+    tenant_id: str
+    status: Optional[str] = None
+    title: Optional[str] = None
+    state: str
+    readiness_percent: int = Field(strict=True, ge=0, le=100)
+    certificate_issue_blocked: bool = Field(strict=True)
+    safe_public_trace_available: bool = Field(strict=True)
+    next_action: Optional[str] = None
+    next_actor_role: Optional[str] = None
+    next_action_owner_role: Optional[str] = None
+    due_date: Optional[str] = None
+    required_documents: list[str | DossierReadinessItemResponse]
+    missing_required_documents: list[str | DossierReadinessItemResponse]
+    unreviewed_documents: list[DossierReadinessItemResponse]
+    rejected_documents: list[DossierReadinessItemResponse]
+    open_ncrs: list[DossierReadinessItemResponse]
+    blocking_ncrs: list[DossierReadinessItemResponse]
+    certification_decision: dict[str, Any] | None
+    certificate: dict[str, Any] | None
+    blocking_reasons: list[str | DossierReadinessItemResponse]
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -216,6 +258,24 @@ async def create_dossier(
         f'{{"title":"{req.title}","standard_code":"{std["code"]}"}}',
     )
     return await _row_to_public(db, row)
+
+
+@router.get("/{dossier_id}/readiness", response_model=DossierReadinessResponse)
+async def get_dossier_readiness(
+    dossier_id: UUID,
+    user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only business users can read dossier readiness")
+    tenant_id = await _resolve_tenant_id(db, user)
+    if not tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant not resolvable")
+    return await compute_dossier_readiness(
+        db,
+        dossier_id=str(dossier_id),
+        tenant_id=str(tenant_id),
+    )
 
 
 @router.get("/{dossier_id}", response_model=DossierPublic)
