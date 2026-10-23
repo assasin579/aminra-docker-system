@@ -912,7 +912,7 @@ export default function LandingPage() {
       {/* ── CTA Section (60% Primary Green) ── */}
       <section
         className="relative py-24 px-6"
-        style={{ zIndex: 2, background: "#FFFFFF" }}
+        style={{ zIndex: 2, background: "#F5F1E8" }}
       >
         <FadeIn>
           <div

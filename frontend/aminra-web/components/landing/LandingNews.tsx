@@ -32,7 +32,7 @@ export default function LandingNews() {
     <section
       data-section="landing-news"
       className="relative px-6 py-20 md:py-24"
-      style={{ zIndex: 2, background: "#F5F1E8" }}
+      style={{ zIndex: 2, background: "#FFFFFF" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
