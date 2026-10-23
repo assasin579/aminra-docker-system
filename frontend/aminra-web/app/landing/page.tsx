@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import LandingNews from "@/components/landing/LandingNews";
 
 // ── Floating particles ──────────────────────────────────────────────────────
 
@@ -994,6 +995,9 @@ export default function LandingPage() {
           })()}
         </div>
       </section>
+
+      {/* ── Landing news ── */}
+      <LandingNews />
 
       {/* ── CTA Section (60% Primary Green) ── */}
       <section
