@@ -3,12 +3,53 @@
 import type { ReactNode } from "react";
 
 type ChartPoint = { label: string; value: number; color?: string };
-const palette = ["#174A7E", "#1D8A7A", "#E2A33A", "#D66A55", "#6E7FBD", "#4D9270"];
+const palette = ["#22C77A", "#E2AD32", "#CF5260", "#3974B8", "#7F8B99", "#8A6BB8"];
 
 export function DashboardCard({ title, description, children, className = "" }: { title: string; description?: string; children: ReactNode; className?: string }) {
-  return <section className={`min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,35,60,0.04)] ${className}`}>
-    <div className="mb-4"><h2 className="text-base font-semibold tracking-tight text-slate-900">{title}</h2>{description && <p className="mt-1 text-sm text-slate-500">{description}</p>}</div>{children}
+  return <section data-dashboard-card="true" className={`min-w-0 rounded-xl border border-[#e7e5de] bg-white p-5 shadow-[0_5px_18px_rgba(10,31,68,0.06)] ${className}`}>
+    <div className="mb-4 border-b border-slate-100 pb-3"><h2 className="text-sm font-semibold tracking-[0.01em] text-[#0A1F44]">{title}</h2>{description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}</div>{children}
   </section>;
+}
+
+/** Screenshot-inspired status ring with visible legend and a screen-reader table alternative. */
+export function DonutChart({ title, data, centerLabel = "Tổng" }: { title: string; data: ChartPoint[]; centerLabel?: string }) {
+  const safe = data.map((point) => ({ ...point, value: Number.isFinite(point.value) ? Math.max(0, point.value) : 0 }));
+  const total = safe.reduce((sum, point) => sum + point.value, 0);
+  const format = new Intl.NumberFormat("vi-VN");
+  const size = 188, center = size / 2, radius = 65, stroke = 24;
+  const circumference = 2 * Math.PI * radius;
+  const drawable = safe.map((point, index) => {
+    const length = total > 0 ? (point.value / total) * circumference : 0;
+    const dash = Math.max(0, length - (point.value > 0 ? 2 : 0));
+    const item = { ...point, color: point.color || palette[index % palette.length], dash, offset: 0 };
+    return item;
+  });
+  let offset = 0;
+  for (const segment of drawable) {
+    segment.offset = offset;
+    offset += total > 0 ? (segment.value / total) * circumference : 0;
+  }
+  const hasData = total > 0;
+  const accessibleSummary = safe.filter((point) => point.value > 0).map((point) => `${point.label}: ${format.format(point.value)}`).join(", ");
+
+  return <div className="grid min-h-[196px] grid-cols-1 items-center gap-4 sm:grid-cols-[168px_minmax(0,1fr)] sm:gap-5" data-dashboard-chart="donut">
+    <div className="relative mx-auto aspect-square w-40 sm:w-[168px]">
+      <svg role="img" aria-label={`${title}: ${format.format(total)} total${accessibleSummary ? ` — ${accessibleSummary}` : ""}`} viewBox={`0 0 ${size} ${size}`} className="h-full w-full" focusable="false">
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="#edf1f4" strokeWidth={stroke} />
+        {hasData && <g transform={`rotate(-90 ${center} ${center})`}>{drawable.map((segment, index) => segment.dash > 0 && <circle key={`${segment.label}-${index}`} cx={center} cy={center} r={radius} fill="none" stroke={segment.color} strokeWidth={stroke} strokeDasharray={`${segment.dash} ${circumference - segment.dash}`} strokeDashoffset={-segment.offset} />)}</g>}
+      </svg>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span data-testid="donut-total" className="text-2xl font-bold tabular-nums tracking-tight text-[#0A1F44]">{format.format(total)}</span>
+        <span className="mt-0.5 text-[11px] font-medium text-slate-500">{centerLabel}</span>
+      </div>
+    </div>
+    <div className="min-w-0">
+      {hasData ? <ul className="grid gap-2" aria-label={`${title} legend`} data-dashboard-legend="donut">{drawable.map((segment, index) => <li key={`${segment.label}-${index}`} className="flex min-w-0 items-center justify-between gap-3 text-xs">
+        <span className="flex min-w-0 items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: segment.color }} /><span className="truncate text-slate-600">{segment.label}</span></span><span className="shrink-0 font-semibold tabular-nums text-slate-800">{format.format(segment.value)}</span>
+      </li>)}</ul> : <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">Chưa có dữ liệu để phân bố.</p>}
+      <table className="sr-only" aria-label={`${title} — data table`}><thead><tr><th>Nhóm</th><th>Số lượng</th></tr></thead><tbody>{safe.map((point, index) => <tr key={`${point.label}-${index}`}><th>{point.label}</th><td>{format.format(point.value)}</td></tr>)}</tbody><tfoot><tr><th>Tổng</th><td>{format.format(total)}</td></tr></tfoot></table>
+    </div>
+  </div>;
 }
 
 /** Responsive SVG bars, with a semantic table alternative for assistive technology and small screens. */

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import AdminAnalyticsPage from "@/app/admin/analytics/page";
 
 beforeEach(() => {
@@ -62,9 +62,9 @@ describe("AdminAnalyticsPage", () => {
 
     render(<AdminAnalyticsPage />);
 
-    expect(await screen.findByText(/Sức khỏe chứng chỉ/i)).toBeInTheDocument();
-    expect(screen.getByText("Phân bố trạng thái hồ sơ")).toBeInTheDocument();
-    expect(screen.getByText(/Hoạt động nổi bật/)).toBeInTheDocument();
+    expect(await screen.findByText(/Tình trạng chứng chỉ/i)).toBeInTheDocument();
+    expect(screen.getByText("Hồ sơ theo trạng thái")).toBeInTheDocument();
+    expect(screen.getByText(/Hành động phổ biến/)).toBeInTheDocument();
     expect(screen.getByText(/Chứng chỉ được cấp theo tháng/)).toBeInTheDocument();
     expect(screen.getByText(/Nhịp hoạt động hệ thống/)).toBeInTheDocument();
   });
@@ -77,12 +77,13 @@ describe("AdminAnalyticsPage", () => {
 
     render(<AdminAnalyticsPage />);
 
-    await screen.findByText(/Sức khỏe chứng chỉ/i);
+    await screen.findByText(/Tình trạng chứng chỉ/i);
     expect(screen.getByText("Chứng chỉ được cấp theo tháng")).toBeInTheDocument();
-    expect(screen.getByText("Phân bố trạng thái hồ sơ")).toBeInTheDocument();
-    expect(screen.getByText("Khỏe mạnh · ≥90 ngày")).toBeInTheDocument();
-    expect(screen.getByText("Đã hết hạn")).toBeInTheDocument();
-    expect(screen.getByText("Còn 0–30 ngày")).toBeInTheDocument();
+    expect(screen.getByText("Hồ sơ theo trạng thái")).toBeInTheDocument();
+    const certificateLegend = screen.getByRole("list", { name: "Tình trạng chứng chỉ legend" });
+    expect(within(certificateLegend).getByText("Khỏe mạnh · ≥90 ngày")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Đã hết hạn")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Còn 0–30 ngày")).toBeInTheDocument();
   });
 
   test("top actions section lists action codes + counts", async () => {
@@ -92,9 +93,10 @@ describe("AdminAnalyticsPage", () => {
     );
 
     render(<AdminAnalyticsPage />);
-    expect(await screen.findByText("Đăng nhập thành công")).toBeInTheDocument();
-    expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText("Gửi hồ sơ")).toBeInTheDocument();
+    const actionLegend = await screen.findByRole("list", { name: "Hành động phổ biến trong 7 ngày legend" });
+    expect(within(actionLegend).getByText("Đăng nhập thành công")).toBeInTheDocument();
+    expect(within(actionLegend).getByText("42")).toBeInTheDocument();
+    expect(within(actionLegend).getByText("Gửi hồ sơ")).toBeInTheDocument();
   });
 
   test("shows backend error", async () => {

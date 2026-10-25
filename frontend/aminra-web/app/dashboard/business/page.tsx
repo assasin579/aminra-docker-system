@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
-import { AccessibleBarChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
+import { DonutChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
 
 interface DocTypeProgress {
   doc_type: string;
@@ -152,6 +152,25 @@ export default function BusinessDashboard() {
     counts[status] = (counts[status] || 0) + 1;
     return counts;
   }, {}) ?? {};
+  const documentStatusChartData = Object.entries(documentStatusData).map(([label, value]) => ({
+    label,
+    value,
+    color: ({ "Đạt": "#22C77A", "Duyệt bởi CB": "#3974B8", "Cần sửa": "#E2AD32", "Chưa đạt": "#CF5260", "Chưa tải lên": "#7F8B99", "Chưa được chấm": "#8A6BB8", "Đang xử lý": "#3974B8" } as Record<string, string>)[label],
+  }));
+  const scoreCounts = s?.doc_type_progress.reduce<Record<string, number>>((counts, document) => {
+    const band = document.score === null
+      ? (document.filename ? "Đã tải · chờ chấm" : "Chưa tải lên")
+      : document.score >= 75 ? "75–100" : document.score >= 50 ? "50–74" : "0–49";
+    counts[band] = (counts[band] || 0) + 1;
+    return counts;
+  }, { "75–100": 0, "50–74": 0, "0–49": 0, "Đã tải · chờ chấm": 0, "Chưa tải lên": 0 }) ?? {};
+  const scoreBandData = [
+    { label: "75–100", value: scoreCounts["75–100"], color: "#22C77A" },
+    { label: "50–74", value: scoreCounts["50–74"], color: "#E2AD32" },
+    { label: "0–49", value: scoreCounts["0–49"], color: "#CF5260" },
+    { label: "Đã tải · chờ chấm", value: scoreCounts["Đã tải · chờ chấm"], color: "#3974B8" },
+    { label: "Chưa tải lên", value: scoreCounts["Chưa tải lên"], color: "#9AA4B2" },
+  ];
 
   return (
     <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
@@ -323,12 +342,13 @@ export default function BusinessDashboard() {
         ))}
       </div>
 
-      {s && <div className="mb-6 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+      {s && <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <DashboardCard title="Trạng thái tài liệu" description="Số loại tài liệu theo trạng thái hiện tại — không phải xu hướng theo thời gian.">
-          <AccessibleBarChart title="Trạng thái tài liệu doanh nghiệp" data={Object.entries(documentStatusData).map(([label, value]) => ({ label, value }))} />
+          <DonutChart title="Trạng thái tài liệu doanh nghiệp" data={documentStatusChartData} centerLabel="Loại tài liệu" />
         </DashboardCard>
-        <DashboardCard title="Điểm tuân thủ" description="Điểm trung bình trên tài liệu đã chấm; dấu gạch ngang nghĩa là chưa có điểm.">
-          <div className="flex min-h-36 flex-col justify-center"><p className="text-4xl font-bold tabular-nums text-slate-900">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</p><p className="mt-2 text-sm text-slate-600">{s.avg_score == null ? "Chưa có tài liệu được chấm điểm." : "Giá trị theo API đánh giá tài liệu."}</p></div>
+        <DashboardCard title="Phân bố điểm tài liệu" description="Điểm trung bình trên tài liệu đã chấm; donut phân bố các mức điểm và giữ riêng trạng thái chưa tải/chưa chấm.">
+          <div className="mb-3 flex items-baseline gap-2"><span className="text-xl font-bold tabular-nums text-[#0A1F44]">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</span><span className="text-xs text-slate-500">điểm trung bình từ API</span></div>
+          <DonutChart title="Phân bố điểm theo loại tài liệu" data={scoreBandData} centerLabel="Loại tài liệu" />
         </DashboardCard>
       </div>}
 

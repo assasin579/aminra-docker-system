@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import BusinessDashboard from "@/app/dashboard/business/page";
 import ProviderDashboard from "@/app/dashboard/provider/page";
 import AdminAnalyticsPage from "@/app/admin/analytics/page";
-import { AccessibleBarChart, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
+import { AccessibleBarChart, DonutChart, DashboardCard, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 vi.mock("next/link", () => ({ default: ({ href, children, ...props }: React.PropsWithChildren<{ href: string }>) => <a href={href} {...props}>{children}</a> }));
+const providerAuthState = vi.hoisted(() => ({ isOwner: true }));
 vi.mock("@/components/UserAuthContext", () => ({
-  useUserAuth: () => ({ user: { role: "provider", is_owner: true, status: "active", company_name: "Certifier", email: "qa@example.invalid", member_count: 1 }, token: "test-token", isAuthenticated: true, loading: false, logout: vi.fn() }),
+  useUserAuth: () => ({ user: { role: "provider", is_owner: providerAuthState.isOwner, status: "active", company_name: "Certifier", email: "qa@example.invalid", member_count: 1 }, token: "test-token", isAuthenticated: true, loading: false, logout: vi.fn() }),
 }));
 vi.mock("@/lib/adminAuth", () => ({ readAdminToken: () => "admin-test-token" }));
 vi.mock("@/components/CountUp", () => ({ default: ({ value, suffix = "" }: { value: number; suffix?: string }) => <>{value}{suffix}</> }));
@@ -29,6 +30,40 @@ describe("dashboard data visual contracts", () => {
     expect(screen.getByRole("table")).toHaveTextContent("3");
   });
 
+  it("renders a visual donut card with an accessible total, legend, and table alternative", () => {
+    const { container } = render(
+      <DashboardCard title="Certificate status" description="Current distribution from API data.">
+        <DonutChart title="Certificate status" data={[
+          { label: "Valid", value: 5, color: "#1FA971" },
+          { label: "Expiring", value: 3, color: "#E1AD32" },
+          { label: "Expired", value: 2, color: "#CF5260" },
+        ]} />
+      </DashboardCard>,
+    );
+
+    expect(container.querySelector('[data-dashboard-card="true"]')).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Certificate status.*10/ })).toBeInTheDocument();
+    expect(screen.getByTestId("donut-total")).toHaveTextContent("10");
+    const legend = screen.getByRole("list", { name: "Certificate status legend" });
+    expect(within(legend).getByText("Valid")).toBeInTheDocument();
+    expect(within(legend).getByText("Expiring")).toBeInTheDocument();
+    expect(within(legend).getByText("Expired")).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: /Certificate status.*table/i })).toHaveTextContent("10");
+  });
+
+  it("keeps empty and invalid donut values finite and explicit", () => {
+    const { container } = render(
+      <DonutChart title="Empty distribution" data={[
+        { label: "Negative", value: -4 },
+        { label: "Invalid", value: Number.NaN },
+      ]} />,
+    );
+
+    expect(screen.getByTestId("donut-total")).toHaveTextContent("0");
+    expect(screen.getByText("Chưa có dữ liệu để phân bố.")).toBeInTheDocument();
+    expect(container.querySelector('[stroke-dasharray*="NaN"]')).not.toBeInTheDocument();
+  });
+
   it("completes sparse monthly observations with explicit zero-valued months", () => {
     const result = completeMonthlySeries(analyticsFixture.monthly_trend, new Date("2026-06-15T12:00:00Z"), 4);
     expect(result).toEqual([
@@ -40,12 +75,13 @@ describe("dashboard data visual contracts", () => {
   it("renders admin status distribution as status, not a conversion funnel", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(analyticsFixture), { status: 200 })));
     render(<AdminAnalyticsPage />);
-    expect(await screen.findByText("Phân bố trạng thái hồ sơ")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /Phân bố trạng thái hồ sơ/ })).toBeInTheDocument();
+    expect(await screen.findByText("Hồ sơ theo trạng thái")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Hồ sơ theo trạng thái/ })).toBeInTheDocument();
     expect(screen.queryByText("Funnel hồ sơ")).not.toBeInTheDocument();
-    expect(screen.getByText("Còn 30–60 ngày")).toBeInTheDocument();
-    expect(screen.getByText("Còn 0–30 ngày")).toBeInTheDocument();
-    expect(screen.getByText("Còn 60–90 ngày")).toBeInTheDocument();
+    const certificateLegend = screen.getByRole("list", { name: "Tình trạng chứng chỉ legend" });
+    expect(within(certificateLegend).getByText("Còn 30–60 ngày")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Còn 0–30 ngày")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Còn 60–90 ngày")).toBeInTheDocument();
     expect(screen.getByRole("table", { name: /12 tháng gần nhất/i })).toHaveTextContent("2026-04");
   });
 
@@ -58,10 +94,32 @@ describe("dashboard data visual contracts", () => {
     vi.stubGlobal("fetch", response);
     render(<BusinessDashboard />);
     expect(await screen.findByText("Trạng thái tài liệu")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Trạng thái tài liệu doanh nghiệp/ })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Phân bố điểm theo loại tài liệu/ })).toBeInTheDocument();
     expect(screen.getByText(/Điểm trung bình trên tài liệu đã chấm/)).toBeInTheDocument();
     render(<ProviderDashboard />);
     expect(await screen.findByText("Tải công việc Auditor")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Tải công việc auditor/i })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Chứng chỉ theo trạng thái/ })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Tiến độ kiểm định/ })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Hồ sơ Certification Body theo trạng thái/ })).toBeInTheDocument();
+  });
+
+  it("shows the auditor queue as a visual donut and preserves unclassified counts", async () => {
+    providerAuthState.isOwner = false;
+    try {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+        pending: 2, reviewing: 1, approved: 3, returned: 1, total: 9,
+        overdue: 1, avg_response_hours: 4.5, recent: [],
+      }), { status: 200 })));
+      render(<ProviderDashboard />);
+      expect(await screen.findByRole("img", { name: /Hồ sơ auditor theo trạng thái.*9/ })).toBeInTheDocument();
+      expect(screen.getByTestId("donut-total")).toHaveTextContent("9");
+      expect(screen.getByRole("table", { name: /Hồ sơ auditor theo trạng thái.*table/i })).toHaveTextContent("Trạng thái khác");
+      expect(screen.getByRole("table", { name: /Hồ sơ auditor theo trạng thái.*table/i })).toHaveTextContent("2");
+    } finally {
+      providerAuthState.isOwner = true;
+    }
   });
 
   it("shows and retries API failure states instead of presenting silent empty dashboards", async () => {

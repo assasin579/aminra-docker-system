@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { readAdminToken } from "@/lib/adminAuth";
-import { AccessibleBarChart, DashboardCard, MonthlyBarChart, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
+import { DashboardCard, DonutChart, MonthlyBarChart, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
 
 type Analytics = {
   cert_buckets: { healthy: number; expiring_90d: number; expiring_60d: number; expiring_30d: number; expired: number; suspended: number; revoked: number; total: number };
@@ -38,16 +38,25 @@ export default function AdminAnalyticsPage() {
   useEffect(() => { void load(); }, [load]);
 
   const buckets = data?.cert_buckets;
-  const bucketCards = buckets ? [
-    { label: "Khỏe mạnh · ≥90 ngày", value: buckets.healthy, tone: "text-emerald-700", surface: "bg-emerald-50" },
-    { label: "Còn 60–90 ngày", value: buckets.expiring_90d, tone: "text-sky-700", surface: "bg-sky-50" },
-    { label: "Còn 30–60 ngày", value: buckets.expiring_60d, tone: "text-amber-700", surface: "bg-amber-50" },
-    { label: "Còn 0–30 ngày", value: buckets.expiring_30d, tone: "text-orange-700", surface: "bg-orange-50" },
-    { label: "Đã hết hạn", value: buckets.expired, tone: "text-red-700", surface: "bg-red-50" },
-    { label: "Đình chỉ", value: buckets.suspended, tone: "text-slate-700", surface: "bg-slate-100" },
-    { label: "Thu hồi", value: buckets.revoked, tone: "text-slate-700", surface: "bg-slate-100" },
+  const certificateData = buckets ? [
+    { label: "Khỏe mạnh · ≥90 ngày", value: buckets.healthy, color: "#22C77A" },
+    { label: "Còn 60–90 ngày", value: buckets.expiring_90d, color: "#78C95A" },
+    { label: "Còn 30–60 ngày", value: buckets.expiring_60d, color: "#E2AD32" },
+    { label: "Còn 0–30 ngày", value: buckets.expiring_30d, color: "#ED8A35" },
+    { label: "Đã hết hạn", value: buckets.expired, color: "#CF5260" },
+    { label: "Đình chỉ", value: buckets.suspended, color: "#718096" },
+    { label: "Thu hồi", value: buckets.revoked, color: "#4A5568" },
   ] : [];
-  const statusData = data ? Object.entries(STATUS_LABELS).map(([key, label]) => ({ label, value: Math.max(0, data.funnel[key] ?? 0) })) : [];
+  const statusData = data ? Object.entries(STATUS_LABELS).map(([key, label]) => ({
+    label,
+    value: Math.max(0, data.funnel[key] ?? 0),
+    color: ({ pending: "#E2AD32", assigned: "#3974B8", reviewing: "#1D8A7A", returned: "#ED8A35", approved: "#22C77A", rejected: "#CF5260" } as Record<string, string>)[key],
+  })) : [];
+  const actionData = data ? data.top_actions.slice(0, 5).map((action, index) => ({
+    label: ACTION_LABELS[action.action] || action.action.replace(/[._-]+/g, " "),
+    value: Math.max(0, action.count),
+    color: ["#3974B8", "#22C77A", "#E2AD32", "#8A6BB8", "#CF5260"][index],
+  })) : [];
   const monthData = data ? completeMonthlySeries(data.monthly_trend) : [];
 
   return <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8" data-page data-dashboard="admin-analytics">
@@ -60,10 +69,21 @@ export default function AdminAnalyticsPage() {
     {error && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><button type="button" onClick={() => void load()} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
     {loading && <div role="status" aria-live="polite" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-28 animate-pulse rounded-2xl bg-slate-100" />)}<span className="sr-only">Đang tải dữ liệu phân tích…</span></div>}
     {data && !loading && <div className="space-y-6">
-      <section aria-labelledby="cert-status-title"><div className="mb-3 flex items-end justify-between gap-3"><div><h2 id="cert-status-title" className="text-lg font-bold text-slate-900">Sức khỏe chứng chỉ <span className="font-medium text-slate-500">({buckets?.total ?? 0} tổng)</span></h2><p className="mt-1 text-sm text-slate-500">Các khoảng ngày không chồng lấn, tính từ ngày hiện tại.</p></div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-7">{bucketCards.map((card) => <article key={card.label} className={`rounded-2xl border border-slate-200 p-4 ${card.surface}`}><p className="min-h-10 text-xs font-medium leading-5 text-slate-600">{card.label}</p><p className={`mt-2 text-3xl font-bold tabular-nums ${card.tone}`}>{card.value}</p></article>)}</div></section>
-      <div className="grid gap-6 xl:grid-cols-2"><DashboardCard title="Phân bố trạng thái hồ sơ" description="Số lượng hồ sơ hiện ở mỗi trạng thái; đây không phải funnel chuyển đổi."><AccessibleBarChart title="Phân bố trạng thái hồ sơ" data={statusData} /></DashboardCard><DashboardCard title="Hoạt động nổi bật · 7 ngày" description="Số sự kiện audit theo loại hành động.">{data.top_actions.length ? <ol className="space-y-3">{data.top_actions.map((action) => <li key={action.action} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0"><span className="text-sm font-medium text-slate-700">{ACTION_LABELS[action.action] || action.action.replace(/[._-]+/g, " ")}</span><span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-bold tabular-nums text-slate-900">{action.count}</span></li>)}</ol> : <p className="rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-500">Chưa có hoạt động trong khoảng thời gian này.</p>}</DashboardCard></div>
-      <DashboardCard title="Chứng chỉ được cấp theo tháng" description="12 tháng gần nhất; tháng không có bản ghi được hiển thị là 0."><MonthlyBarChart title="Số chứng chỉ cấp theo tháng trong 12 tháng gần nhất" data={monthData} /></DashboardCard>
-      <DashboardCard title="Nhịp hoạt động hệ thống" description="Sự kiện audit theo ngày trong tuần và giờ ghi nhận."><Heatmap cells={data.heatmap} /></DashboardCard>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <DashboardCard title="Tình trạng chứng chỉ" description="Phân bố theo hạn và trạng thái; các khoảng ngày không chồng lấn.">
+          <DonutChart title="Tình trạng chứng chỉ" data={certificateData} />
+        </DashboardCard>
+        <DashboardCard title="Hồ sơ theo trạng thái" description="Số lượng hồ sơ hiện tại — không phải funnel chuyển đổi.">
+          <DonutChart title="Hồ sơ theo trạng thái" data={statusData} />
+        </DashboardCard>
+        <DashboardCard title="Hành động phổ biến · 7 ngày" description="Tối đa 5 nhóm đứng đầu; tổng chỉ cộng các nhóm đang hiển thị.">
+          <DonutChart title="Hành động phổ biến trong 7 ngày" data={actionData} centerLabel="Sự kiện" />
+        </DashboardCard>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <DashboardCard title="Chứng chỉ được cấp theo tháng" description="12 tháng gần nhất; tháng không có bản ghi được hiển thị là 0."><MonthlyBarChart title="Số chứng chỉ cấp theo tháng trong 12 tháng gần nhất" data={monthData} /></DashboardCard>
+        <DashboardCard title="Nhịp hoạt động hệ thống" description="Sự kiện audit theo ngày trong tuần và giờ ghi nhận."><Heatmap cells={data.heatmap} /></DashboardCard>
+      </div>
     </div>}
   </main>;
 }

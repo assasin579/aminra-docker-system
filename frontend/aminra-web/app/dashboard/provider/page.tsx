@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
-import { AccessibleBarChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
+import { AccessibleBarChart, DashboardCard, DonutChart } from "@/components/dashboard/DashboardCharts";
 
 /* ── Interfaces ─────────────────────────────────────────────── */
 
@@ -302,6 +302,30 @@ export default function ProviderDashboard() {
   const isOwner = user.is_owner;
   const cb = cbStats;
   const au = auditorStats;
+  const cbCertificateData = cb ? [
+    { label: "Hoạt động", value: cb.certs.active, color: "#22C77A" },
+    { label: "Đình chỉ / thu hồi", value: cb.certs.inactive, color: "#CF5260" },
+    { label: "Khác / chưa phân loại", value: Math.max(0, cb.certs.total - cb.certs.active - cb.certs.inactive), color: "#9AA4B2" },
+  ] : [];
+  const cbAuditData = cb ? [
+    { label: "Hoàn thành", value: cb.audits.completed, color: "#22C77A" },
+    { label: "Chưa hoàn tất", value: Math.max(0, cb.audits.total - cb.audits.completed), color: "#E2AD32" },
+  ] : [];
+  const cbListedSubmissions = cb ? cb.submissions.pending + cb.submissions.reviewing + cb.submissions.approved : 0;
+  const cbSubmissionData = cb ? [
+    { label: "Chờ xử lý", value: cb.submissions.pending, color: "#E2AD32" },
+    { label: "Đang đánh giá", value: cb.submissions.reviewing, color: "#3974B8" },
+    { label: "Đã duyệt", value: cb.submissions.approved, color: "#22C77A" },
+    { label: "Trạng thái khác", value: Math.max(0, cb.submissions.total - cbListedSubmissions), color: "#9AA4B2" },
+  ] : [];
+  const auListedSubmissions = au ? au.pending + au.reviewing + au.approved + au.returned : 0;
+  const auditorSubmissionData = au ? [
+    { label: "Chờ duyệt", value: au.pending, color: "#E2AD32" },
+    { label: "Đang xét", value: au.reviewing, color: "#3974B8" },
+    { label: "Đã duyệt", value: au.approved, color: "#22C77A" },
+    { label: "Trả lại", value: au.returned, color: "#ED8A35" },
+    { label: "Trạng thái khác", value: Math.max(0, au.total - auListedSubmissions), color: "#9AA4B2" },
+  ] : [];
 
   /* ══════════════════════════════════════════════════════════════
      OWNER VIEW
@@ -498,9 +522,15 @@ export default function ProviderDashboard() {
           </div>
         )}
 
-        {cb && <div className="mb-6">
-          <DashboardCard title="Hồ sơ theo trạng thái" description="Số lượng hiện tại trong từng nhóm trạng thái.">
-            <AccessibleBarChart title="Hồ sơ Certification Body theo trạng thái" data={[{ label: "Chờ xử lý", value: cb.submissions.pending }, { label: "Đang đánh giá", value: cb.submissions.reviewing }, { label: "Đã duyệt", value: cb.submissions.approved }]} />
+        {cb && <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <DashboardCard title="Chứng chỉ theo trạng thái" description="Phân bố trạng thái trong registry; mục chưa thuộc hai nhóm chính được tách riêng.">
+            <DonutChart title="Chứng chỉ theo trạng thái" data={cbCertificateData} centerLabel="Chứng chỉ" />
+          </DashboardCard>
+          <DashboardCard title="Tiến độ kiểm định" description="Hoàn thành so với tổng audit visits hiện có.">
+            <DonutChart title="Tiến độ kiểm định" data={cbAuditData} centerLabel="Audit visits" />
+          </DashboardCard>
+          <DashboardCard title="Hồ sơ theo trạng thái" description="Các nhóm còn lại được gộp để tổng biểu đồ khớp phạm vi hồ sơ API.">
+            <DonutChart title="Hồ sơ Certification Body theo trạng thái" data={cbSubmissionData} centerLabel="Hồ sơ" />
           </DashboardCard>
         </div>}
 
@@ -824,8 +854,8 @@ export default function ProviderDashboard() {
       )}
 
       {au && <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_20rem]">
-        <DashboardCard title="Hàng đợi được giao" description="Phân bố các hồ sơ bạn phụ trách theo trạng thái hiện tại.">
-          <AccessibleBarChart title="Hồ sơ auditor được giao theo trạng thái" data={[{ label: "Chờ duyệt", value: au.pending }, { label: "Đang đánh giá", value: au.reviewing }, { label: "Đã duyệt", value: au.approved }, { label: "Trả lại", value: au.returned }]} />
+        <DashboardCard title="Hàng đợi được giao" description="Phân bố hồ sơ theo trạng thái; trạng thái ngoài các nhóm chính được gộp.">
+          <DonutChart title="Hồ sơ auditor theo trạng thái" data={auditorSubmissionData} centerLabel="Hồ sơ" />
         </DashboardCard>
         <DashboardCard title="Ưu tiên hôm nay" description="Hồ sơ quá hạn cần xử lý trước.">
           <p className={`text-4xl font-bold tabular-nums ${au.overdue > 0 ? "text-red-700" : "text-emerald-700"}`}>{au.overdue}</p><p className="mt-2 text-sm text-slate-600">{au.overdue > 0 ? "Hồ sơ đã quá deadline" : "Không có hồ sơ quá hạn"}</p>
