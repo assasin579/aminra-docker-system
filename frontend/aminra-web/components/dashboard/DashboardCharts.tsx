@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import motion from "./DashboardMotion.module.css";
 
 type ChartPoint = { label: string; value: number; color?: string };
 export const AMINRA_DASHBOARD_PALETTE = {
@@ -26,7 +27,7 @@ export const AMINRA_DASHBOARD_PALETTE = {
 const palette = [AMINRA_DASHBOARD_PALETTE.navy900, AMINRA_DASHBOARD_PALETTE.navy700, AMINRA_DASHBOARD_PALETTE.navy500, AMINRA_DASHBOARD_PALETTE.gold500, AMINRA_DASHBOARD_PALETTE.gold400, AMINRA_DASHBOARD_PALETTE.ink300];
 
 export function DashboardCard({ title, description, children, className = "" }: { title: string; description?: string; children: ReactNode; className?: string }) {
-  return <section data-dashboard-card="true" className={`min-w-0 overflow-hidden rounded-2xl border border-cream-200 bg-gradient-to-b from-cream-50 via-cream-50 to-cream-100 p-5 shadow-sm transition-shadow duration-300 hover:shadow-md ${className}`}>
+  return <section data-dashboard-card="true" data-dashboard-motion="card" className={`min-w-0 overflow-hidden rounded-2xl border border-cream-200 bg-gradient-to-b from-cream-50 via-cream-50 to-cream-100 p-5 shadow-sm ${motion.dashboardCard} ${className}`}>
     <div className="mb-4 flex items-start gap-3 border-b border-cream-200 pb-3"><span aria-hidden="true" className="mt-0.5 h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-gold-700 via-gold-500 to-gold-400"/><div className="min-w-0"><h2 className="text-sm font-bold tracking-[0.01em] text-navy-900">{title}</h2>{description && <p className="mt-1 text-xs leading-5 text-ink-500">{description}</p>}</div></div>{children}
   </section>;
 }
@@ -52,12 +53,12 @@ export function DonutChart({ title, data, centerLabel = "Tổng" }: { title: str
   const hasData = total > 0;
   const accessibleSummary = safe.filter((point) => point.value > 0).map((point) => `${point.label}: ${format.format(point.value)}`).join(", ");
 
-  return <div className="flex min-h-[278px] flex-col items-center gap-4" data-dashboard-chart="donut">
+  return <div className={`${motion.chart} flex min-h-[278px] flex-col items-center gap-4`} data-dashboard-chart="donut" data-dashboard-motion="donut">
     <div className="relative aspect-square w-48 sm:w-[204px]">
       <div aria-hidden="true" className="absolute inset-[8%] rounded-full bg-gradient-to-br from-gold-100/60 via-cream-50 to-navy-100/70 blur-md" />
       <svg role="img" aria-label={`${title}: ${format.format(total)} total${accessibleSummary ? ` — ${accessibleSummary}` : ""}`} viewBox={`0 ${0} ${size} ${size}`} className="relative h-full w-full drop-shadow-sm" focusable="false">
         <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--cream-200)" strokeWidth={stroke} />
-        {hasData && <g transform={`rotate(-90 ${center} ${center})`}>{drawable.map((segment, index) => segment.dash > 0 && <circle data-dashboard-color-segment="true" key={`${segment.label}-${index}`} cx={center} cy={center} r={radius} fill="none" stroke={segment.color} strokeWidth={stroke} strokeLinecap="butt" strokeDasharray={`${segment.dash} ${circumference - segment.dash}`} strokeDashoffset={-segment.offset} />)}</g>}
+        {hasData && <g transform={`rotate(-90 ${center} ${center})`}>{drawable.map((segment, index) => segment.dash > 0 && <circle data-dashboard-color-segment="true" data-dashboard-motion="donut-segment" key={`${segment.label}-${index}`} cx={center} cy={center} r={radius} fill="none" stroke={segment.color} strokeWidth={stroke} strokeLinecap="butt" className={motion.donutSegment} style={{ "--circumference": `${circumference}px`, "--dash-length": `${segment.dash}px`, "--dash-gap": `${circumference - segment.dash}px`, "--motion-delay": `${Math.min(index, 8) * 55}ms` } as CSSProperties} strokeDashoffset={-segment.offset} />)}</g>}
       </svg>
 
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -66,9 +67,9 @@ export function DonutChart({ title, data, centerLabel = "Tổng" }: { title: str
       </div>
     </div>
     <div className="w-full max-w-sm">
-      {hasData ? <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5" aria-label={`${title} legend`} data-dashboard-legend="donut">{drawable.map((segment, index) => <li key={`${segment.label}-${index}`} className="flex min-w-0 items-start gap-2 rounded-xl bg-cream-50 px-2.5 py-2 ring-1 ring-cream-200">
+      {hasData ? <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5" aria-label={`${title} legend`} data-dashboard-legend="donut">{drawable.map((segment, index) => <li data-dashboard-motion="legend-item" key={`${segment.label}-${index}`} className={`flex min-w-0 items-start gap-2 rounded-xl bg-cream-50 px-2.5 py-2 ring-1 ring-cream-200 ${motion.legendItem}`} style={{ "--motion-delay": `${Math.min(index, 8) * 45}ms` } as CSSProperties}>
         <span aria-hidden="true" className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-cream-50 shadow-sm" style={{ backgroundColor: segment.color }} /><span className="min-w-0 flex-1"><span className="block truncate text-[11px] leading-4 text-ink-700">{segment.label}</span><span className="block text-sm font-bold tabular-nums text-navy-900">{format.format(segment.value)}</span></span>
-      </li>)}</ul> : <p className="rounded-xl bg-cream-100 px-3 py-4 text-center text-xs text-ink-500">Chưa có dữ liệu để phân bố.</p>}
+      </li>)}</ul> : <p data-dashboard-motion="empty" className={`rounded-xl bg-cream-100 px-3 py-4 text-center text-xs text-ink-500 ${motion.emptyState}`}>Chưa có dữ liệu để phân bố.</p>}
       <table className="sr-only" aria-label={`${title} — data table`}><thead><tr><th>Nhóm</th><th>Số lượng</th></tr></thead><tbody>{safe.map((point, index) => <tr key={`${point.label}-${index}`}><th>{point.label}</th><td>{format.format(point.value)}</td></tr>)}</tbody><tfoot><tr><th>Tổng</th><td>{format.format(total)}</td></tr></tfoot></table>
     </div>
   </div>;
@@ -79,12 +80,12 @@ export function AccessibleBarChart({ title, data }: { title: string; data: Chart
   const safe = data.map((point) => ({ ...point, value: Number.isFinite(point.value) ? Math.max(0, point.value) : 0 }));
   const max = Math.max(1, ...safe.map((point) => point.value));
   const width = 640, rowHeight = 42, height = Math.max(rowHeight, safe.length * rowHeight);
-  return <div className="space-y-3" data-dashboard-chart="bar">
+  return <div data-dashboard-chart="bar" data-dashboard-motion="bar-chart" className={`${motion.chart} space-y-3`}>
     {safe.length ? <svg role="img" aria-label={title} viewBox={`0 0 ${width} ${height}`} className="hidden h-auto w-full sm:block" preserveAspectRatio="xMinYMin meet">
       {safe.map((point, index) => { const y = index * rowHeight + 5, color = point.color || palette[index % palette.length]; return <g key={`${point.label}-${index}`}>
-        <text x="0" y={y + 18} fill="var(--ink-700)" fontSize="13">{point.label.length > 22 ? `${point.label.slice(0, 20)}…` : point.label}</text><rect x="190" y={y} width={width - 270} height="22" rx="11" fill="var(--cream-200)"/><rect x="190" y={y} width={(width - 270) * point.value / max} height="22" rx="11" fill={color}/><text x={width - 24} y={y + 16} textAnchor="end" fill="var(--navy-900)" fontSize="12" fontWeight="600">{point.value}</text>
+        <text x="0" y={y + 18} fill="var(--ink-700)" fontSize="13">{point.label.length > 22 ? `${point.label.slice(0, 20)}…` : point.label}</text><rect x="190" y={y} width={width - 270} height="22" rx="11" fill="var(--cream-200)"/><rect data-dashboard-motion="bar-fill" className={motion.barFill} style={{ "--motion-delay": `${Math.min(index, 10) * 50}ms` } as CSSProperties} x="190" y={y} width={(width - 270) * point.value / max} height="22" rx="11" fill={color}/><text x={width - 24} y={y + 16} textAnchor="end" fill="var(--navy-900)" fontSize="12" fontWeight="600">{point.value}</text>
       </g>; })}
-    </svg> : <p className="rounded-xl bg-cream-100 px-4 py-6 text-center text-sm text-ink-500">Chưa có dữ liệu để hiển thị.</p>}
+    </svg> : <p data-dashboard-motion="empty" className={`rounded-xl bg-cream-100 px-4 py-6 text-center text-sm text-ink-500 ${motion.emptyState}`}>Chưa có dữ liệu để hiển thị.</p>}
     <div className="overflow-x-auto sm:sr-only"><table className="w-full text-sm" aria-label={`${title} — bảng số liệu`}><thead><tr className="border-b border-cream-200 text-left text-xs text-ink-500"><th className="py-2 pr-3 font-medium">Nhóm</th><th className="py-2 text-right font-medium">Số lượng</th></tr></thead><tbody>{safe.map((point, index) => <tr key={`${point.label}-${index}`} className="border-b border-cream-200 last:border-0"><th scope="row" className="py-2 pr-3 text-left font-medium text-ink-700">{point.label}</th><td className="py-2 text-right tabular-nums text-ink-900">{point.value}</td></tr>)}</tbody></table></div>
   </div>;
 }
@@ -99,8 +100,8 @@ export function completeMonthlySeries(points: { month: string; issued: number }[
 
 export function MonthlyBarChart({ title, data }: { title: string; data: { month: string; issued: number }[] }) {
   const max = Math.max(1, ...data.map((point) => Math.max(0, point.issued))), width = 720, slot = width / Math.max(1, data.length), height = 190;
-  return <div data-dashboard-chart="monthly" className="space-y-3">
-    {data.length ? <svg role="img" aria-label={title} viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" preserveAspectRatio="none"><line x1="0" x2={width} y1={height - 28} y2={height - 28} stroke="var(--cream-200)"/>{data.map((point, index) => { const barHeight = Math.max(0, point.issued) / max * 125, x = index * slot + slot * 0.2, barWidth = slot * 0.6; return <g key={point.month}>{point.issued > 0 && <text x={x + barWidth / 2} y={height - 36 - barHeight} textAnchor="middle" fill="var(--navy-900)" fontSize="11">{point.issued}</text>}<rect x={x} y={height - 28 - barHeight} width={barWidth} height={barHeight} rx="5" fill={point.issued > 0 ? "var(--navy-700)" : "var(--cream-200)"}/><text x={x + barWidth / 2} y={height - 8} textAnchor="middle" fill="var(--ink-500)" fontSize="10">{point.month.slice(5)}</text></g>; })}</svg> : <p className="rounded-xl bg-cream-100 px-4 py-6 text-center text-sm text-ink-500">Chưa có dữ liệu theo tháng.</p>}
+  return <div data-dashboard-chart="monthly" data-dashboard-motion="monthly-chart" className={`${motion.chart} space-y-3`}>
+    {data.length ? <svg role="img" aria-label={title} viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" preserveAspectRatio="none"><line x1="0" x2={width} y1={height - 28} y2={height - 28} stroke="var(--cream-200)"/>{data.map((point, index) => { const barHeight = Math.max(0, point.issued) / max * 125, x = index * slot + slot * 0.2, barWidth = slot * 0.6; return <g key={point.month}>{point.issued > 0 && <text x={x + barWidth / 2} y={height - 36 - barHeight} textAnchor="middle" fill="var(--navy-900)" fontSize="11">{point.issued}</text>}<rect data-dashboard-motion="monthly-bar" className={motion.monthlyBar} style={{ "--motion-delay": `${Math.min(index, 11) * 45}ms` } as CSSProperties} x={x} y={height - 28 - barHeight} width={barWidth} height={barHeight} rx="5" fill={point.issued > 0 ? "var(--navy-700)" : "var(--cream-200)"}/><text x={x + barWidth / 2} y={height - 8} textAnchor="middle" fill="var(--ink-500)" fontSize="10">{point.month.slice(5)}</text></g>; })}</svg> : <p data-dashboard-motion="empty" className={`rounded-xl bg-cream-100 px-4 py-6 text-center text-sm text-ink-500 ${motion.emptyState}`}>Chưa có dữ liệu theo tháng.</p>}
     <table className="sr-only" aria-label={`${title} — bảng số liệu`}><thead><tr><th>Tháng</th><th>Số chứng chỉ</th></tr></thead><tbody>{data.map((point) => <tr key={point.month}><th>{point.month}</th><td>{point.issued}</td></tr>)}</tbody></table>
   </div>;
 }

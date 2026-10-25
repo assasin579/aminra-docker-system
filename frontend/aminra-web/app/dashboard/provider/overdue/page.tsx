@@ -7,10 +7,11 @@
  * Auditor (non-owner) sees only submissions assigned to them.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
+import motion from "@/components/dashboard/DashboardMotion.module.css";
 
 type OverdueItem = {
   submission_id: string;
@@ -70,7 +71,7 @@ export default function ProviderOverduePage() {
   const scopeLabel = user?.is_owner ? "toàn tổ chức" : "phần được giao của bạn";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className={`max-w-7xl mx-auto px-4 py-8 ${motion.page}`} data-dashboard-motion-root="true">
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link
@@ -96,7 +97,8 @@ export default function ProviderOverduePage() {
       {error && (
         <div
           role="alert"
-          className="bg-gold-100 border border-gold-600 rounded-lg p-4 text-sm mb-4"
+          data-dashboard-motion="alert"
+          className={`bg-gold-100 border border-gold-600 rounded-lg p-4 text-sm mb-4 ${motion.alert}`}
           style={{ color: "var(--gold-700)" }}
         >
           {error}
@@ -105,7 +107,8 @@ export default function ProviderOverduePage() {
 
       {!loading && items.length === 0 && !error && (
         <div
-          className="bg-[var(--navy-100)] border border-[var(--navy-100)] rounded-2xl p-8 text-center"
+          data-dashboard-motion="empty"
+          className={`bg-[var(--navy-100)] border border-[var(--navy-100)] rounded-2xl p-8 text-center ${motion.emptyState}`}
           style={{ color: "var(--navy-900)" }}
         >
           <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-cream-50 grid place-items-center">
@@ -120,7 +123,8 @@ export default function ProviderOverduePage() {
 
       {items.length > 0 && (
         <div
-          className="bg-cream-50 rounded-2xl overflow-x-auto"
+          data-dashboard-motion="card"
+          className={`bg-cream-50 rounded-2xl overflow-x-auto ${motion.dashboardCard}`}
           style={{ border: "1px solid var(--cream-200)" }}
         >
           <table className="w-full text-sm">
@@ -165,11 +169,12 @@ export default function ProviderOverduePage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => (
+              {items.map((it, index) => (
                 <tr
                   key={it.submission_id}
-                  className="border-t"
-                  style={{ borderColor: "var(--cream-200)" }}
+                  className={`border-t ${motion.row}`}
+                  data-dashboard-motion="row"
+                  style={{ borderColor: "var(--cream-200)", "--motion-delay": `${Math.min(index, 12) * 35}ms` } as CSSProperties}
                   data-testid={`overdue-row-${it.submission_id}`}
                 >
                   <td className="px-4 py-3">

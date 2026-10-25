@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import BusinessDashboard from "@/app/dashboard/business/page";
 import ProviderDashboard from "@/app/dashboard/provider/page";
 import AdminAnalyticsPage from "@/app/admin/analytics/page";
-import { AccessibleBarChart, DonutChart, DashboardCard, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
+import { AccessibleBarChart, DonutChart, DashboardCard, MonthlyBarChart, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 vi.mock("next/link", () => ({ default: ({ href, children, ...props }: React.PropsWithChildren<{ href: string }>) => <a href={href} {...props}>{children}</a> }));
@@ -23,6 +25,44 @@ const analyticsFixture = {
 };
 
 describe("dashboard data visual contracts", () => {
+  it("uses motion hooks for every shared dashboard visual primitive", () => {
+    const { container } = render(
+      <main data-dashboard-motion-root="true">
+        <DashboardCard title="Motion inventory">
+          <DonutChart title="Status" data={[{ label: "Open", value: 3 }, { label: "Closed", value: 2 }]} />
+          <AccessibleBarChart title="Workload" data={[{ label: "Auditor A", value: 3 }]} />
+          <MonthlyBarChart title="Monthly trend" data={[{ month: "2026-04", issued: 0 }, { month: "2026-05", issued: 4 }]} />
+        </DashboardCard>
+      </main>,
+    );
+    for (const kind of ["card", "donut", "donut-segment", "legend-item", "bar-chart", "bar-fill", "monthly-chart", "monthly-bar"]) {
+      expect(container.querySelector(`[data-dashboard-motion="${kind}"]`), `missing motion contract: ${kind}`).toBeInTheDocument();
+    }
+  });
+
+  it("defines reduced-motion overrides and motion affordances for dashboard entry, cards, charts, and controls", () => {
+    const motionCss = readFileSync(resolve(process.cwd(), "components/dashboard/DashboardMotion.module.css"), "utf8");
+    expect(motionCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(motionCss).toContain("animation: none !important");
+    expect(motionCss).toContain(":hover");
+    expect(motionCss).toContain(":focus-visible");
+    expect(motionCss).toContain("dashboardCard");
+    expect(motionCss).toContain("donutSegment");
+    expect(motionCss).toContain("monthlyBar");
+    expect(motionCss).toContain("from { stroke-dasharray: 0 var(--circumference);");
+    expect(motionCss).toContain(".row:hover");
+  });
+
+  it("wires the overdue queue to page, empty/error, card, and staggered-row motion", () => {
+    const overdueSource = readFileSync(resolve(process.cwd(), "app/dashboard/provider/overdue/page.tsx"), "utf8");
+    expect(overdueSource).toContain("${motion.page}");
+    expect(overdueSource).toContain('data-dashboard-motion="alert"');
+    expect(overdueSource).toContain('data-dashboard-motion="empty"');
+    expect(overdueSource).toContain('data-dashboard-motion="card"');
+    expect(overdueSource).toContain('data-dashboard-motion="row"');
+    expect(overdueSource).toContain("Math.min(index, 12) * 35");
+  });
+
   it("uses a real accessible graphic and text alternative for bar data", () => {
     render(<AccessibleBarChart title="Workload" data={[{ label: "Auditor A", value: 3 }]} />);
     expect(screen.getByRole("img", { name: "Workload" })).toBeInTheDocument();

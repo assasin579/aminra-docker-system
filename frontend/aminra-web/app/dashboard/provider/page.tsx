@@ -7,6 +7,7 @@ import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
 import { AccessibleBarChart, DashboardCard, DonutChart } from "@/components/dashboard/DashboardCharts";
+import motion from "@/components/dashboard/DashboardMotion.module.css";
 
 /* ── Interfaces ─────────────────────────────────────────────── */
 
@@ -124,11 +125,9 @@ const ICONS = {
 
 function PulseLoader() {
   return (
-    <div className="grid place-items-center min-h-[60vh]">
+    <div className="grid place-items-center min-h-[60vh]" role="status" aria-label="Đang tải dữ liệu">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[var(--navy-900)] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[var(--navy-900)] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[var(--navy-900)] animate-pulse-dot" />
+        {[0, 140, 280].map((delay) => <span key={delay} data-dashboard-motion="loading-dot" aria-hidden="true" className={`w-2 h-2 rounded-full bg-[var(--navy-900)] ${motion.loadingDot}`} style={{ "--motion-delay": `${delay}ms` } as React.CSSProperties} />)}
       </div>
     </div>
   );
@@ -332,7 +331,7 @@ export default function ProviderDashboard() {
      ══════════════════════════════════════════════════════════════ */
   if (isOwner) {
     return (
-      <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
+      <div className={`flex flex-col flex-1 lg:min-h-0 w-full ${motion.page}`} data-page data-dashboard-motion-root="true">
         {/* Header */}
         <div className="mb-6 animate-section">
           <p className="text-sm mb-1" style={{ color: "var(--ink-500)" }}>
@@ -364,7 +363,7 @@ export default function ProviderDashboard() {
           </div>
         </div>
 
-        {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void Promise.all([fetchAuditorStats(), fetchCBStats()]).finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+        {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void Promise.all([fetchAuditorStats(), fetchCBStats()]).finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
         {/* Pending notice */}
         {user.status === "pending" && (
@@ -736,7 +735,7 @@ export default function ProviderDashboard() {
      AUDITOR VIEW (!is_owner)
      ══════════════════════════════════════════════════════════════ */
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
+    <div className={`flex flex-col flex-1 lg:min-h-0 w-full ${motion.page}`} data-page data-dashboard-motion-root="true">
       {/* Header */}
       <div className="mb-6 animate-section">
         <p className="text-sm mb-1" style={{ color: "var(--ink-500)" }}>
@@ -762,7 +761,7 @@ export default function ProviderDashboard() {
         </div>
       </div>
 
-      {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void fetchAuditorStats().finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+      {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void fetchAuditorStats().finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
       {/* Auditor stat cards */}
       {au && (

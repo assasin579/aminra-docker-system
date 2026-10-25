@@ -7,6 +7,7 @@ import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
 import { AMINRA_DASHBOARD_PALETTE, DonutChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
+import motion from "@/components/dashboard/DashboardMotion.module.css";
 
 interface DocTypeProgress {
   doc_type: string;
@@ -182,7 +183,7 @@ export default function BusinessDashboard() {
   ];
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full bg-cream-100 text-navy-900" data-page data-dashboard-experience="business-v2">
+    <div className={`flex flex-col flex-1 lg:min-h-0 w-full bg-cream-100 text-navy-900 ${motion.page}`} data-page data-dashboard-motion-root="true" data-dashboard-experience="business-v2">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3 animate-section">
         <div>
           <div className="mb-1.5 flex items-center gap-2">
@@ -198,12 +199,12 @@ export default function BusinessDashboard() {
         </span>
       </div>
 
-      {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+      {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
       {s && (
         <section
           data-dashboard-section="readiness-hero"
-          className="relative isolate mb-5 overflow-hidden rounded-[26px] border border-cream-100/15 p-5 text-cream-100 shadow-lg sm:p-7"
+          className={`relative isolate mb-5 overflow-hidden rounded-[26px] border border-cream-100/15 p-5 text-cream-100 shadow-lg sm:p-7 ${motion.section}`}
           style={{ background: "linear-gradient(118deg, var(--navy-900) 0%, var(--navy-800) 65%, var(--navy-700) 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-gold-700 via-gold-500 to-transparent" />

@@ -1,0 +1,212 @@
+/* Motion system scoped to dashboard surfaces; meaningful content remains visible when JS/motion is unavailable. */
+.page {
+  animation: pageReveal 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.section {
+  animation: sectionReveal 460ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.dashboardCard {
+  animation: cardReveal 480ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.dashboardCard:nth-child(2) { animation-delay: 55ms; }
+.dashboardCard:nth-child(3) { animation-delay: 110ms; }
+.dashboardCard:nth-child(4) { animation-delay: 165ms; }
+
+.dashboardCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--navy-900) 11%, transparent);
+  border-color: color-mix(in srgb, var(--gold-500) 42%, var(--cream-200));
+}
+
+.dashboardCard:focus-within {
+  border-color: var(--gold-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-500) 18%, transparent);
+}
+
+.chart {
+  animation: chartReveal 520ms cubic-bezier(0.2, 0.75, 0.25, 1) 70ms both;
+}
+
+.donutSegment {
+  stroke-dasharray: var(--dash-length) var(--dash-gap);
+  animation: donutDraw 760ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--motion-delay, 0ms) both;
+}
+
+.legendItem {
+  animation: cardReveal 360ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--motion-delay, 0ms) both;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.legendItem:hover {
+  background-color: var(--cream-100);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--navy-900) 7%, transparent);
+}
+
+.barFill {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(1);
+  animation: barReveal 560ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--motion-delay, 0ms) both;
+}
+
+.monthlyBar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transform: scaleY(1);
+  animation: monthReveal 620ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--motion-delay, 0ms) both;
+  transition: filter 180ms ease;
+}
+
+.monthlyBar:hover {
+  filter: brightness(1.12);
+}
+
+.heatmapCell {
+  transition: transform 160ms ease, filter 160ms ease, outline-color 160ms ease;
+  transform-origin: center;
+}
+
+.heatmapCell:hover {
+  transform: scale(1.14);
+  filter: brightness(1.08);
+  outline: 1px solid var(--gold-500);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.row {
+  animation: cardReveal 360ms cubic-bezier(0.2, 0.75, 0.25, 1) var(--motion-delay, 0ms) both;
+  transition: background-color 180ms ease;
+}
+
+.row:hover {
+  background-color: var(--cream-100);
+}
+
+.alert,
+.emptyState {
+  animation: stateReveal 320ms ease-out both;
+}
+
+.skeleton {
+  background-image: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--cream-50) 75%, transparent) 45%, transparent 70%);
+  background-size: 220% 100%;
+  animation: skeletonShimmer 1.45s ease-in-out infinite;
+}
+
+.loadingDot {
+  animation: loadingPulse 1.05s ease-in-out var(--motion-delay, 0ms) infinite;
+}
+
+.page :global(button:not(:disabled)),
+.page :global([role="button"]),
+.page :global(a[data-dashboard-motion="action"]) {
+  transition: transform 180ms cubic-bezier(0.2, 0.75, 0.25, 1), box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.page :global(button:not(:disabled):hover),
+.page :global([role="button"]:hover),
+.page :global(a[data-dashboard-motion="action"]:hover) {
+  transform: translateY(-1px);
+}
+
+.page :global(button:not(:disabled):active),
+.page :global([role="button"]:active),
+.page :global(a[data-dashboard-motion="action"]:active) {
+  transform: translateY(0) scale(0.985);
+}
+
+.page :global(button:focus-visible),
+.page :global([role="button"]:focus-visible),
+.page :global(a[data-dashboard-motion="action"]:focus-visible) {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 3px;
+}
+
+@keyframes sectionReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; translate: 0 8px; scale: 0.995; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@keyframes chartReveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes donutDraw {
+  from { stroke-dasharray: 0 var(--circumference); opacity: 0.55; }
+  to { stroke-dasharray: var(--dash-length) var(--dash-gap); opacity: 1; }
+}
+
+@keyframes barReveal {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes monthReveal {
+  from { transform: scaleY(0.03); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes stateReveal {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes skeletonShimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+@keyframes loadingPulse {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .section,
+  .dashboardCard,
+  .chart,
+  .donutSegment,
+  .legendItem,
+  .row,
+  .barFill,
+  .monthlyBar,
+  .alert,
+  .emptyState,
+  .skeleton,
+  .loadingDot {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    translate: none !important;
+    scale: none !important;
+    will-change: auto !important;
+  }
+
+  .dashboardCard:hover,
+  .legendItem:hover,
+  .monthlyBar:hover,
+  .heatmapCell:hover,
+  .page :global(button:not(:disabled):hover),
+  .page :global([role="button"]:hover),
+  .page :global(a[data-dashboard-motion="action"]:hover),
+  .page :global(button:not(:disabled):active),
+  .page :global([role="button"]:active),
+  .page :global(a[data-dashboard-motion="action"]:active) {
+    transform: none !important;
+  }
+}
