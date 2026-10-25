@@ -31,7 +31,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const urgencyColor = (days: number) =>
-  days >= 14 ? "#dc2626" : days >= 7 ? "#ea580c" : "#f59e0b";
+  days >= 14 ? "var(--gold-700)" : days >= 7 ? "var(--gold-600)" : "var(--gold-500)";
 
 export default function ProviderOverduePage() {
   const router = useRouter();
@@ -76,14 +76,14 @@ export default function ProviderOverduePage() {
           <Link
             href="/dashboard/provider"
             className="text-xs"
-            style={{ color: "#6B7280" }}
+            style={{ color: "var(--ink-500)" }}
           >
             ← Dashboard
           </Link>
-          <h1 className="text-2xl font-bold mt-2" style={{ color: "#0A1F44" }}>
+          <h1 className="text-2xl font-bold mt-2" style={{ color: "var(--navy-900)" }}>
             Hồ sơ quá hạn
           </h1>
-          <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+          <p className="text-sm mt-1" style={{ color: "var(--ink-500)" }}>
             {loading
               ? "Đang tải..."
               : items.length > 0
@@ -96,8 +96,8 @@ export default function ProviderOverduePage() {
       {error && (
         <div
           role="alert"
-          className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm mb-4"
-          style={{ color: "#991b1b" }}
+          className="bg-gold-100 border border-gold-600 rounded-lg p-4 text-sm mb-4"
+          style={{ color: "var(--gold-700)" }}
         >
           {error}
         </div>
@@ -105,14 +105,14 @@ export default function ProviderOverduePage() {
 
       {!loading && items.length === 0 && !error && (
         <div
-          className="bg-[#DCE3F0] border border-[#DCE3F0] rounded-2xl p-8 text-center"
-          style={{ color: "#0A1F44" }}
+          className="bg-[var(--navy-100)] border border-[var(--navy-100)] rounded-2xl p-8 text-center"
+          style={{ color: "var(--navy-900)" }}
         >
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white grid place-items-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-cream-50 grid place-items-center">
             <span className="text-xl">✓</span>
           </div>
           <p className="font-semibold">Đang đúng SLA</p>
-          <p className="text-xs mt-1" style={{ color: "#102A5C" }}>
+          <p className="text-xs mt-1" style={{ color: "var(--navy-800)" }}>
             Không có hồ sơ {scopeLabel} bị quá deadline.
           </p>
         </div>
@@ -120,45 +120,45 @@ export default function ProviderOverduePage() {
 
       {items.length > 0 && (
         <div
-          className="bg-white rounded-2xl overflow-x-auto"
-          style={{ border: "1px solid #E2E8F0" }}
+          className="bg-cream-50 rounded-2xl overflow-x-auto"
+          style={{ border: "1px solid var(--cream-200)" }}
         >
           <table className="w-full text-sm">
-            <thead style={{ background: "#FFFFFF" }}>
+            <thead style={{ background: "var(--cream-50)" }}>
               <tr>
                 <th
                   className="text-left px-4 py-3 font-medium"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   Doanh nghiệp
                 </th>
                 <th
                   className="text-left px-4 py-3 font-medium"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   Trạng thái
                 </th>
                 <th
                   className="text-left px-4 py-3 font-medium"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   Submitted
                 </th>
                 <th
                   className="text-left px-4 py-3 font-medium"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   Deadline
                 </th>
                 <th
                   className="text-right px-4 py-3 font-medium"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   Quá hạn
                 </th>
                 <th
                   className="text-right px-4 py-3 font-medium"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   Hành động
                 </th>
@@ -169,20 +169,20 @@ export default function ProviderOverduePage() {
                 <tr
                   key={it.submission_id}
                   className="border-t"
-                  style={{ borderColor: "#F1F5F9" }}
+                  style={{ borderColor: "var(--cream-200)" }}
                   data-testid={`overdue-row-${it.submission_id}`}
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium" style={{ color: "#0A1F44" }}>
+                    <div className="font-medium" style={{ color: "var(--navy-900)" }}>
                       {it.company_name || (
-                        <span className="italic" style={{ color: "#94A3B8" }}>
+                        <span className="italic" style={{ color: "var(--ink-300)" }}>
                           Chưa rõ
                         </span>
                       )}
                     </div>
                     <div
                       className="font-mono text-[10px] mt-0.5"
-                      style={{ color: "#94A3B8" }}
+                      style={{ color: "var(--ink-300)" }}
                     >
                       {it.submission_id.slice(0, 8)}…
                     </div>
@@ -191,8 +191,8 @@ export default function ProviderOverduePage() {
                     <span
                       className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                       style={{
-                        background: "rgba(14,165,233,0.12)",
-                        color: "#0EA5E9",
+                        background: "color-mix(in srgb, var(--navy-500) 12%, transparent)",
+                        color: "var(--navy-500)",
                       }}
                     >
                       {STATUS_LABEL[it.status] || it.status}
@@ -200,7 +200,7 @@ export default function ProviderOverduePage() {
                   </td>
                   <td
                     className="px-4 py-3 text-xs"
-                    style={{ color: "#6B7280" }}
+                    style={{ color: "var(--ink-500)" }}
                   >
                     {it.submitted_at
                       ? new Date(it.submitted_at).toLocaleDateString("vi-VN", {
@@ -212,7 +212,7 @@ export default function ProviderOverduePage() {
                   </td>
                   <td
                     className="px-4 py-3 text-xs"
-                    style={{ color: "#6B7280" }}
+                    style={{ color: "var(--ink-500)" }}
                   >
                     {new Date(it.deadline).toLocaleDateString("vi-VN", {
                       day: "2-digit",
@@ -232,7 +232,7 @@ export default function ProviderOverduePage() {
                     <Link
                       href={`/submissions?focus=${it.submission_id}`}
                       className="px-3 py-1.5 rounded-lg text-xs font-medium btn-lift inline-block"
-                      style={{ background: "#F1F5F9", color: "#0A1F44" }}
+                      style={{ background: "var(--cream-200)", color: "var(--navy-900)" }}
                     >
                       Mở hồ sơ
                     </Link>

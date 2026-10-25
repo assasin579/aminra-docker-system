@@ -30,6 +30,17 @@ describe("dashboard data visual contracts", () => {
     expect(screen.getByRole("table")).toHaveTextContent("3");
   });
 
+  it("uses only the canonical AMINRA navy/gold/cream palette for dashboard surfaces and chart segments", () => {
+    const { container } = render(<DashboardCard title="Brand palette"><DonutChart title="Brand mix" data={[{ label: "Primary", value: 6 }, { label: "Accent", value: 4 }]} /></DashboardCard>);
+    const card = container.querySelector('[data-dashboard-card="true"]');
+    expect(card?.className).toContain("from-cream-50");
+    expect(card?.className).toContain("to-cream-100");
+    expect(card?.className).toContain("border-cream-200");
+    const segments = Array.from(container.querySelectorAll('[data-dashboard-color-segment="true"]'));
+    expect(segments.map((segment) => segment.getAttribute("stroke"))).toEqual(["var(--navy-900)", "var(--navy-700)"]);
+    expect(container.querySelector(".bg-gradient-to-b.from-gold-700")).toBeInTheDocument();
+  });
+
   it("renders a visual donut card with an accessible total, legend, and table alternative", () => {
     const { container } = render(
       <DashboardCard title="Certificate status" description="Current distribution from API data.">
@@ -70,6 +81,17 @@ describe("dashboard data visual contracts", () => {
       { month: "2026-03", issued: 3 }, { month: "2026-04", issued: 0 },
       { month: "2026-05", issued: 5 }, { month: "2026-06", issued: 0 },
     ]);
+  });
+
+  it("uses only AMINRA navy/cream for activity heatmap intensity rather than unrelated teal", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ...analyticsFixture,
+      heatmap: [{ dow: 1, hour: 9, count: 4 }],
+    }), { status: 200 })));
+    const { container } = render(<AdminAnalyticsPage />);
+    const activeCell = await screen.findByLabelText("Thứ hai, 9:00 — 4 sự kiện");
+    expect(activeCell).toHaveStyle({ backgroundColor: "color-mix(in srgb, var(--navy-700) 100%, var(--cream-50))" });
+    expect(container.innerHTML).not.toContain("rgba(29,138,122");
   });
 
   it("renders admin status distribution as status, not a conversion funnel", async () => {

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
-import { DonutChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
+import { AMINRA_DASHBOARD_PALETTE, DonutChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
 
 interface DocTypeProgress {
   doc_type: string;
@@ -44,29 +44,17 @@ interface DashboardStats {
 }
 
 const STATUS_STYLE = {
-  cb_approved: {
-    label: "Duyệt bởi CB",
-    bg: "rgba(10,31,68,0.15)",
-    color: "#0A1F44",
-  },
-  compliant: { label: "Đạt", bg: "rgba(10,31,68,0.1)", color: "#0A1F44" },
-  needs_review: {
-    label: "Cần sửa",
-    bg: "rgba(245,158,11,0.15)",
-    color: "#d97706",
-  },
-  non_compliant: {
-    label: "Chưa đạt",
-    bg: "rgba(239,68,68,0.15)",
-    color: "#f87171",
-  },
+  cb_approved: { label: "Duyệt bởi CB", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy800 },
+  compliant: { label: "Đạt", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy900 },
+  needs_review: { label: "Cần sửa", bg: AMINRA_DASHBOARD_PALETTE.gold100, color: AMINRA_DASHBOARD_PALETTE.gold700 },
+  non_compliant: { label: "Chưa đạt", bg: AMINRA_DASHBOARD_PALETTE.gold100, color: AMINRA_DASHBOARD_PALETTE.gold700 },
 };
 
 function scoreColor(s: number | null) {
-  if (s === null) return "#94A3B8";
-  if (s >= 75) return "#16A34A";
-  if (s >= 50) return "#D97706";
-  return "#DC2626";
+  if (s === null) return AMINRA_DASHBOARD_PALETTE.ink300;
+  if (s >= 75) return AMINRA_DASHBOARD_PALETTE.navy900;
+  if (s >= 50) return AMINRA_DASHBOARD_PALETTE.gold600;
+  return AMINRA_DASHBOARD_PALETTE.gold700;
 }
 
 function timeAgo(iso: string | null) {
@@ -143,9 +131,9 @@ export default function BusinessDashboard() {
     return (
       <div className="grid place-items-center min-h-[60vh]">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
-          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
-          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-navy-900 animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-navy-900 animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-navy-900 animate-pulse-dot" />
         </div>
       </div>
     );
@@ -162,7 +150,15 @@ export default function BusinessDashboard() {
   const documentStatusChartData = Object.entries(documentStatusData).map(([label, value]) => ({
     label,
     value,
-    color: ({ "Đạt": "#22C77A", "Duyệt bởi CB": "#3974B8", "Cần sửa": "#E2AD32", "Chưa đạt": "#CF5260", "Chưa tải lên": "#7F8B99", "Chưa được chấm": "#8A6BB8", "Đang xử lý": "#3974B8" } as Record<string, string>)[label],
+    color: ({
+      "Đạt": AMINRA_DASHBOARD_PALETTE.navy900,
+      "Duyệt bởi CB": AMINRA_DASHBOARD_PALETTE.navy700,
+      "Cần sửa": AMINRA_DASHBOARD_PALETTE.gold500,
+      "Chưa đạt": AMINRA_DASHBOARD_PALETTE.gold700,
+      "Chưa tải lên": AMINRA_DASHBOARD_PALETTE.ink300,
+      "Chưa được chấm": AMINRA_DASHBOARD_PALETTE.gold400,
+      "Đang xử lý": AMINRA_DASHBOARD_PALETTE.navy500,
+    } as Record<string, string>)[label],
   }));
   const scoreCounts = s?.doc_type_progress.reduce<Record<string, number>>((counts, document) => {
     const band = document.score === null
@@ -172,73 +168,74 @@ export default function BusinessDashboard() {
     return counts;
   }, { "75–100": 0, "50–74": 0, "0–49": 0, "Đã tải · chờ chấm": 0, "Chưa tải lên": 0 }) ?? {};
   const scoreBandData = [
-    { label: "75–100", value: scoreCounts["75–100"], color: "#22C77A" },
-    { label: "50–74", value: scoreCounts["50–74"], color: "#E2AD32" },
-    { label: "0–49", value: scoreCounts["0–49"], color: "#CF5260" },
-    { label: "Đã tải · chờ chấm", value: scoreCounts["Đã tải · chờ chấm"], color: "#3974B8" },
-    { label: "Chưa tải lên", value: scoreCounts["Chưa tải lên"], color: "#9AA4B2" },
+    { label: "75–100", value: scoreCounts["75–100"], color: AMINRA_DASHBOARD_PALETTE.navy900 },
+    { label: "50–74", value: scoreCounts["50–74"], color: AMINRA_DASHBOARD_PALETTE.gold500 },
+    { label: "0–49", value: scoreCounts["0–49"], color: AMINRA_DASHBOARD_PALETTE.gold700 },
+    { label: "Đã tải · chờ chấm", value: scoreCounts["Đã tải · chờ chấm"], color: AMINRA_DASHBOARD_PALETTE.navy500 },
+    { label: "Chưa tải lên", value: scoreCounts["Chưa tải lên"], color: AMINRA_DASHBOARD_PALETTE.ink300 },
   ];
   const certificateStatusData = [
-    { label: "Còn hiệu lực · >60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining > 60).length, color: "#20C77A" },
-    { label: "Sắp hết hạn · 0–60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining >= 0 && cert.days_remaining <= 60).length, color: "#E6A62E" },
-    { label: "Quá ngày hết hạn", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining < 0).length, color: "#E15868" },
-    { label: "Không hoạt động / khác", value: certs.filter((cert) => cert.status !== "active").length, color: "#78869A" },
+    { label: "Còn hiệu lực · >60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining > 60).length, color: AMINRA_DASHBOARD_PALETTE.navy900 },
+    { label: "Sắp hết hạn · 0–60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining >= 0 && cert.days_remaining <= 60).length, color: AMINRA_DASHBOARD_PALETTE.gold500 },
+    { label: "Quá ngày hết hạn", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining < 0).length, color: AMINRA_DASHBOARD_PALETTE.gold700 },
+    { label: "Không hoạt động / khác", value: certs.filter((cert) => cert.status !== "active").length, color: AMINRA_DASHBOARD_PALETTE.ink500 },
   ];
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page data-dashboard-experience="business-v2">
+    <div className="flex flex-col flex-1 lg:min-h-0 w-full bg-cream-100 text-navy-900" data-page data-dashboard-experience="business-v2">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3 animate-section">
         <div>
           <div className="mb-1.5 flex items-center gap-2">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0F8B70]">{greeting()}</p>
-            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-slate-300" />
-            <span className="text-[11px] font-medium text-slate-500">Tổng quan doanh nghiệp</span>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-700">{greeting()}</p>
+            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-cream-300" />
+            <span className="text-[11px] font-medium text-ink-500">Tổng quan doanh nghiệp</span>
           </div>
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[#0A1F44] sm:text-[30px]">{user.company_name}</h1>
-          <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-navy-900 sm:text-[30px]">{user.company_name}</h1>
+          <p className="mt-1 text-sm text-ink-500">{user.email}</p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
-          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500" /> Hồ sơ doanh nghiệp
+        <span className="inline-flex items-center gap-2 rounded-full border border-gold-500 bg-gold-100 px-3 py-1.5 text-xs font-semibold text-navy-900">
+          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-gold-500" /> Hồ sơ doanh nghiệp
         </span>
       </div>
 
-      {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
+      {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
       {s && (
         <section
           data-dashboard-section="readiness-hero"
-          className="relative isolate mb-5 overflow-hidden rounded-[26px] border border-white/15 p-5 text-white shadow-[0_20px_55px_rgba(7,31,62,0.22)] sm:p-7"
-          style={{ background: "linear-gradient(118deg, #0A1F44 0%, #104B62 54%, #087A68 100%)" }}
+          className="relative isolate mb-5 overflow-hidden rounded-[26px] border border-cream-100/15 p-5 text-cream-100 shadow-lg sm:p-7"
+          style={{ background: "linear-gradient(118deg, var(--navy-900) 0%, var(--navy-800) 65%, var(--navy-700) 100%)" }}
         >
-          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-[#31D89A]/20 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 left-[38%] h-56 w-56 rounded-full bg-[#4BB8E8]/15 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-gold-700 via-gold-500 to-transparent" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-gold-100/20 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 left-[38%] h-56 w-56 rounded-full bg-navy-500/10 blur-3xl" />
           <div className="relative grid items-center gap-6 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-8">
-            <div className="relative mx-auto h-32 w-32 drop-shadow-[0_8px_18px_rgba(0,0,0,0.2)] sm:mx-0">
+            <div className="relative mx-auto h-32 w-32 drop-shadow-sm sm:mx-0">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-                <defs><linearGradient id="readinessRingGradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stopColor="#63F5AE"/><stop offset="100%" stopColor="#B5FF78"/></linearGradient></defs>
-                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="9" />
+                <defs><linearGradient id="readinessRingGradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stopColor="var(--gold-500)"/><stop offset="100%" stopColor="var(--gold-400)"/></linearGradient></defs>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="color-mix(in srgb, var(--cream-100) 18%, transparent)" strokeWidth="9" />
                 <circle cx="50" cy="50" r="42" fill="none" className="animate-score-fill" stroke="url(#readinessRingGradient)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${Math.max(0, Math.min(100, s.readiness)) * 2.64} 264`} />
               </svg>
               <div className="absolute inset-0 grid place-items-center text-center">
-                <span className="text-[28px] font-extrabold tracking-tight text-white">{s.readiness}<span className="text-base">%</span></span>
+                <span className="text-[28px] font-extrabold tracking-tight text-cream-100">{s.readiness}<span className="text-base">%</span></span>
               </div>
             </div>
             <div className="min-w-0">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-emerald-100 backdrop-blur-sm">
-                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#70F2AC] shadow-[0_0_12px_rgba(112,242,172,0.85)]" />
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cream-100/20 bg-cream-100/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-cream-100 backdrop-blur-sm">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-gold-500" />
                 Tổng quan mức sẵn sàng
               </div>
-              <h2 className="text-xl font-bold tracking-tight text-white sm:text-[25px]">Sẵn sàng chứng nhận</h2>
-              <p className="mt-1.5 text-sm text-white/75">
-                <strong className="font-bold text-white">{s.compliant_count}</strong>/{s.total_types} loại tài liệu đạt chuẩn
-                {s.submitted_count > 0 && s.submitted_count < s.total_types && <span className="text-white/75"> · {s.total_types - s.submitted_count} chưa tải lên</span>}
+              <h2 className="text-xl font-bold tracking-tight text-cream-100 sm:text-[25px]">Sẵn sàng chứng nhận</h2>
+              <p className="mt-1.5 text-sm text-cream-100/75">
+                <strong className="font-bold text-cream-100">{s.compliant_count}</strong>/{s.total_types} loại tài liệu đạt chuẩn
+                {s.submitted_count > 0 && s.submitted_count < s.total_types && <span className="text-cream-100/75"> · {s.total_types - s.submitted_count} chưa tải lên</span>}
               </p>
-              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/15 ring-1 ring-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#63F5AE] to-[#B5FF78] shadow-[0_0_16px_rgba(99,245,174,0.42)] transition-[width] duration-700" style={{ width: `${Math.max(0, Math.min(100, s.readiness))}%` }} />
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-cream-100/15 ring-1 ring-cream-100/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400 transition-[width] duration-700" style={{ width: `${Math.max(0, Math.min(100, s.readiness))}%` }} />
               </div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-white/65">Tiến độ dựa trên trạng thái tài liệu do hệ thống trả về.</p>
-                <Link href="/upload" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#0A514C] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                <p className="text-xs text-cream-100/70">Tiến độ dựa trên trạng thái tài liệu do hệ thống trả về.</p>
+                <Link href="/upload" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gold-500 bg-cream-100 px-4 py-2 text-sm font-bold text-navy-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-gold-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500">
                   Thêm tài liệu <span aria-hidden="true">↗</span>
                 </Link>
               </div>
@@ -252,7 +249,7 @@ export default function BusinessDashboard() {
           <DonutChart title="Trạng thái tài liệu doanh nghiệp" data={documentStatusChartData} centerLabel="Loại tài liệu" />
         </DashboardCard>
         <DashboardCard title="Phân bố điểm tài liệu" description="Điểm trung bình trên tài liệu đã chấm; biểu đồ tách riêng trạng thái chưa tải/chờ chấm.">
-          <div className="mb-2 flex items-center gap-2 rounded-xl bg-[#F1F5FA] px-3 py-2"><span className="h-2 w-2 rounded-full bg-[#4F6BED]"/><span className="text-xs text-slate-600">Điểm trung bình</span><strong className="ml-auto text-base font-extrabold tabular-nums text-[#0A1F44]">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</strong></div>
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-cream-100 px-3 py-2"><span className="h-2 w-2 rounded-full bg-gold-500"/><span className="text-xs text-ink-500">Điểm trung bình</span><strong className="ml-auto text-base font-extrabold tabular-nums text-navy-900">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</strong></div>
           <DonutChart title="Phân bố điểm theo loại tài liệu" data={scoreBandData} centerLabel="Loại tài liệu" />
         </DashboardCard>
         <DashboardCard title="Phân bố chứng chỉ" description="Theo trạng thái API và số ngày còn lại đến hạn; khoảng ngày không chồng lấn.">
@@ -264,25 +261,25 @@ export default function BusinessDashboard() {
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" data-dashboard-section="key-metrics">
         {(
           [
-            { label: "Tài liệu", numeric: s?.total_documents, sub: "đã upload", color: "#1385B4", tint: "#EAF8FD", symbol: "▤" },
-            { label: "Điểm TB", numeric: s?.avg_score ?? null, suffix: "%", sub: "trên tài liệu đã chấm", color: scoreColor(s?.avg_score ?? null), tint: "#FFF7E7", symbol: "◉" },
-            { label: "Đạt chuẩn", numeric: s?.compliant_count, suffix: ` / ${s?.total_types ?? 0}`, sub: "loại tài liệu đạt", color: "#087D61", tint: "#EAF9F2", symbol: "✓" },
-            { label: "Thành viên", numeric: user.member_count ?? 0, suffix: "", sub: "đang hoạt động", color: "#6557C8", tint: "#F2F0FF", symbol: "◈" },
+            { label: "Tài liệu", numeric: s?.total_documents, sub: "đã upload", color: "var(--navy-600)", tint: "var(--navy-100)", symbol: "▤" },
+            { label: "Điểm TB", numeric: s?.avg_score ?? null, suffix: "%", sub: "trên tài liệu đã chấm", color: scoreColor(s?.avg_score ?? null), tint: "var(--gold-100)", symbol: "◉" },
+            { label: "Đạt chuẩn", numeric: s?.compliant_count, suffix: ` / ${s?.total_types ?? 0}`, sub: "loại tài liệu đạt", color: "var(--navy-800)", tint: "var(--navy-100)", symbol: "✓" },
+            { label: "Thành viên", numeric: user.member_count ?? 0, suffix: "", sub: "đang hoạt động", color: "var(--navy-700)", tint: "var(--navy-100)", symbol: "◈" },
           ] as const
         ).map((st, i) => (
           <SpotlightCard key={st.label} data-dashboard-kpi={st.label}
-            className={`relative min-h-[124px] overflow-hidden rounded-2xl p-4 shadow-[0_8px_24px_rgba(10,31,68,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(10,31,68,0.12)] sm:p-5 animate-list-item stagger-${i + 1}`}
-            style={{ background: `linear-gradient(145deg, #FFFFFF 15%, ${st.tint} 145%)`, border: `1px solid ${st.color}22` }}>
+            className={`relative min-h-[124px] overflow-hidden rounded-2xl p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md sm:p-5 animate-list-item stagger-${i + 1}`}
+            style={{ background: `linear-gradient(145deg, var(--cream-50) 15%, ${st.tint} 145%)`, border: "1px solid var(--cream-200)" }}>
             <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-8 h-24 w-24 rounded-full opacity-50 blur-xl" style={{ background: st.tint }} />
             <div className="relative flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[27px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[30px]" style={{ color: st.color }}>
                   {st.numeric == null ? "—" : <CountUp value={Number(st.numeric)} suffix={("suffix" in st ? st.suffix : "") as string} />}
                 </div>
-                <div className="mt-3 text-sm font-bold text-[#142746]">{st.label}</div>
-                <div className="mt-0.5 text-xs text-slate-500">{st.sub}</div>
+                <div className="mt-3 text-sm font-bold text-navy-900">{st.label}</div>
+                <div className="mt-0.5 text-xs text-ink-500">{st.sub}</div>
               </div>
-              <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] text-lg font-bold shadow-sm ring-1 ring-white/80" style={{ color: st.color, background: st.tint }}>{st.symbol}</span>
+              <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] text-lg font-bold shadow-sm ring-1 ring-cream-100/80" style={{ color: st.color, background: st.tint }}>{st.symbol}</span>
             </div>
             <div aria-hidden="true" className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full opacity-70" style={{ background: `linear-gradient(90deg, ${st.color}, transparent)` }} />
           </SpotlightCard>
@@ -293,17 +290,17 @@ export default function BusinessDashboard() {
       {certs.length > 0 && (
         <div
           className="rounded-xl mb-6 animate-section"
-          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+          style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
         >
           <div
             className="px-5 py-3"
-            style={{ borderBottom: "1px solid #E2E8F0" }}
+            style={{ borderBottom: "1px solid var(--cream-200)" }}
           >
-            <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+            <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
               Chứng nhận Halal
             </h3>
           </div>
-          <div className="divide-y" style={{ borderColor: "#F0F0F0" }}>
+          <div className="divide-y" style={{ borderColor: "var(--cream-200)" }}>
             {certs.map((cert) => {
               return (
                 <div
@@ -312,7 +309,7 @@ export default function BusinessDashboard() {
                 >
                   <div>
                     <p className="text-sm font-semibold">{cert.cert_number}</p>
-                    <p className="text-xs" style={{ color: "#6B7280" }}>
+                    <p className="text-xs" style={{ color: "var(--ink-500)" }}>
                       {cert.provider_name} · hết hạn{" "}
                       {new Date(cert.expiry_date).toLocaleDateString("vi-VN")}
                     </p>
@@ -323,20 +320,20 @@ export default function BusinessDashboard() {
                       style={{
                         background:
                           cert.status !== "active"
-                            ? "#FEF2F2"
+                            ? "var(--gold-100)"
                             : cert.days_remaining > 90
-                              ? "#DCE3F0"
+                              ? "var(--navy-100)"
                               : cert.days_remaining > 30
-                                ? "#FEF3C7"
-                                : "#FEF2F2",
+                                ? "var(--gold-100)"
+                                : "var(--gold-100)",
                         color:
                           cert.status !== "active"
-                            ? "#DC2626"
+                            ? "var(--gold-700)"
                             : cert.days_remaining > 90
-                              ? "#0A1F44"
+                              ? "var(--navy-900)"
                               : cert.days_remaining > 30
-                                ? "#D97706"
-                                : "#DC2626",
+                                ? "var(--gold-700)"
+                                : "var(--gold-700)",
                       }}
                     >
                       {cert.status !== "active"
@@ -360,20 +357,20 @@ export default function BusinessDashboard() {
             className="grid items-center mb-3"
             style={{ gridTemplateColumns: "1fr auto" }}
           >
-            <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+            <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
               Tiến trình tài liệu
             </h3>
             <Link
               href="/upload"
               className="text-xs font-medium"
-              style={{ color: "#0A1F44" }}
+              style={{ color: "var(--navy-900)" }}
             >
               Upload tài liệu →
             </Link>
           </div>
           <div
             className="rounded-xl overflow-hidden flex-1 lg:min-h-0 lg:overflow-y-auto"
-            style={{ border: "1px solid #E2E8F0" }}
+            style={{ border: "1px solid var(--cream-200)" }}
           >
             {loadingStats ? (
               <div className="p-4 space-y-3">
@@ -401,14 +398,14 @@ export default function BusinessDashboard() {
                         >
                           <span
                             className="text-xs w-36 truncate"
-                            style={{ color: missing ? "#DC2626" : "#6B7280" }}
+                            style={{ color: missing ? "var(--gold-700)" : "var(--ink-500)" }}
                           >
                             {missing ? "\u26A0\uFE0F " : ""}
                             {dt.label}
                           </span>
                           <div
                             className="flex-1 h-2 rounded-full overflow-hidden"
-                            style={{ background: "#E2E8F0" }}
+                            style={{ background: "var(--cream-200)" }}
                           >
                             <div
                               className="h-full rounded-full animate-progress"
@@ -416,12 +413,12 @@ export default function BusinessDashboard() {
                                 width: `${pct}%`,
                                 background:
                                   pct >= 75
-                                    ? "#0A1F44"
+                                    ? "var(--navy-900)"
                                     : pct >= 50
-                                      ? "#D97706"
+                                      ? "var(--gold-700)"
                                       : pct > 0
-                                        ? "#EF4444"
-                                        : "#E2E8F0",
+                                        ? "var(--gold-700)"
+                                        : "var(--cream-200)",
                               }}
                             />
                           </div>
@@ -430,10 +427,10 @@ export default function BusinessDashboard() {
                             style={{
                               color:
                                 pct >= 75
-                                  ? "#0A1F44"
+                                  ? "var(--navy-900)"
                                   : pct >= 50
-                                    ? "#D97706"
-                                    : "#EF4444",
+                                    ? "var(--gold-700)"
+                                    : "var(--gold-700)",
                             }}
                           >
                             {missing ? "\u2014" : `${pct}%`}
@@ -446,7 +443,7 @@ export default function BusinessDashboard() {
                 <table className="w-full text-sm">
                   <thead
                     style={{
-                      background: "#F5F1E8",
+                      background: "var(--cream-100)",
                       position: "sticky",
                       top: 0,
                     }}
@@ -457,7 +454,7 @@ export default function BusinessDashboard() {
                           <th
                             key={h}
                             className="text-left px-4 py-2.5 text-xs font-medium"
-                            style={{ color: "#6B7280" }}
+                            style={{ color: "var(--ink-500)" }}
                           >
                             {h}
                           </th>
@@ -475,15 +472,15 @@ export default function BusinessDashboard() {
                           key={dt.doc_type}
                           className={`animate-row stagger-${Math.min(i + 1, 12)}`}
                           style={{
-                            background: i % 2 === 0 ? "#FFFFFF" : "#FFFFFF",
-                            borderTop: "1px solid #E2E8F0",
+                            background: i % 2 === 0 ? "var(--cream-50)" : "var(--cream-50)",
+                            borderTop: "1px solid var(--cream-200)",
                             opacity: submitted ? 1 : 0.5,
                           }}
                         >
                           <td className="px-4 py-3">
                             <span
                               className="text-xs font-medium"
-                              style={{ color: "#0A1F44" }}
+                              style={{ color: "var(--navy-900)" }}
                             >
                               {dt.label}
                             </span>
@@ -492,7 +489,7 @@ export default function BusinessDashboard() {
                             {dt.filename ? (
                               <span
                                 className="text-xs truncate block max-w-[140px]"
-                                style={{ color: "#6B7280" }}
+                                style={{ color: "var(--ink-500)" }}
                                 title={dt.filename}
                               >
                                 {dt.filename}
@@ -500,7 +497,7 @@ export default function BusinessDashboard() {
                             ) : (
                               <span
                                 className="text-xs"
-                                style={{ color: "#94A3B8" }}
+                                style={{ color: "var(--ink-300)" }}
                               >
                                 —
                               </span>
@@ -525,7 +522,7 @@ export default function BusinessDashboard() {
                             ) : (
                               <span
                                 className="text-xs"
-                                style={{ color: "#94A3B8" }}
+                                style={{ color: "var(--ink-300)" }}
                               >
                                 Chưa upload
                               </span>
@@ -544,23 +541,23 @@ export default function BusinessDashboard() {
         {/* Right: Recent activity + Quick actions */}
         <div className="flex flex-col gap-5">
           {/* Recent activity */}
-          <div className="rounded-xl" style={{ border: "1px solid #E2E8F0" }}>
+          <div className="rounded-xl" style={{ border: "1px solid var(--cream-200)" }}>
             <div
               className="px-4 py-3"
               style={{
-                borderBottom: "1px solid #E2E8F0",
-                background: "#F5F1E8",
+                borderBottom: "1px solid var(--cream-200)",
+                background: "var(--cream-100)",
               }}
             >
-              <h3 className="text-xs font-bold" style={{ color: "#0A1F44" }}>
+              <h3 className="text-xs font-bold" style={{ color: "var(--navy-900)" }}>
                 Hoạt động gần đây
               </h3>
             </div>
-            <div className="divide-y" style={{ borderColor: "#E2E8F0" }}>
+            <div className="divide-y" style={{ borderColor: "var(--cream-200)" }}>
               {(s?.recent_activity ?? []).length === 0 ? (
                 <div
                   className="p-6 text-center text-xs"
-                  style={{ color: "#94A3B8" }}
+                  style={{ color: "var(--ink-300)" }}
                 >
                   Chưa có hoạt động
                 </div>
@@ -569,18 +566,18 @@ export default function BusinessDashboard() {
                   <div
                     key={i}
                     className={`px-4 py-3 animate-list-item stagger-${Math.min(i + 1, 12)}`}
-                    style={{ borderColor: "#E2E8F0" }}
+                    style={{ borderColor: "var(--cream-200)" }}
                   >
                     <p
                       className="text-xs font-medium truncate"
-                      style={{ color: "#0A1F44" }}
+                      style={{ color: "var(--navy-900)" }}
                       title={r.filename}
                     >
                       {r.filename}
                     </p>
                     <div
                       className="grid grid-flow-col items-center gap-2 mt-1 justify-start text-xs"
-                      style={{ color: "#6B7280" }}
+                      style={{ color: "var(--ink-500)" }}
                     >
                       {r.score !== null && (
                         <span
@@ -602,7 +599,7 @@ export default function BusinessDashboard() {
 
           {/* Quick actions */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold px-1" style={{ color: "#0A1F44" }}>
+            <h3 className="text-xs font-bold px-1" style={{ color: "var(--navy-900)" }}>
               Thao tác nhanh
             </h3>
             {[
@@ -610,21 +607,21 @@ export default function BusinessDashboard() {
                 href: "/upload",
                 label: "Đánh giá tài liệu",
                 desc: "Upload & kiểm tra Halal",
-                color: "#0A1F44",
+                color: "var(--navy-900)",
                 icon: "M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12",
               },
               {
                 href: "/",
                 label: "Hỏi đáp AI",
                 desc: "Tư vấn quy trình chứng nhận",
-                color: "#0EA5E9",
+                color: "var(--navy-500)",
                 icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
               },
               {
                 href: "/documents",
                 label: "Tài liệu",
                 desc: "Xem & quản lý tài liệu",
-                color: "#818cf8",
+                color: "var(--navy-600)",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
               },
               ...(user.is_owner
@@ -633,7 +630,7 @@ export default function BusinessDashboard() {
                       href: "/members",
                       label: "Thành viên",
                       desc: `${user.member_count ?? 0}/7 thành viên`,
-                      color: "#c084fc",
+                      color: "var(--navy-700)",
                       icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
                     },
                   ]
@@ -645,8 +642,8 @@ export default function BusinessDashboard() {
                 className={`grid items-center gap-3 px-4 py-3 rounded-xl doc-card-hover animate-list-item stagger-${i + 1}`}
                 style={{
                   gridTemplateColumns: "2rem 1fr",
-                  background: "#F5F1E8",
-                  border: "1px solid #E2E8F0",
+                  background: "var(--cream-100)",
+                  border: "1px solid var(--cream-200)",
                 }}
               >
                 <div
@@ -674,11 +671,11 @@ export default function BusinessDashboard() {
                 <div>
                   <div
                     className="text-xs font-semibold"
-                    style={{ color: "#0A1F44" }}
+                    style={{ color: "var(--navy-900)" }}
                   >
                     {a.label}
                   </div>
-                  <div className="text-xs" style={{ color: "#6B7280" }}>
+                  <div className="text-xs" style={{ color: "var(--ink-500)" }}>
                     {a.desc}
                   </div>
                 </div>

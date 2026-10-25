@@ -39,35 +39,35 @@ export default function AdminAnalyticsPage() {
 
   const buckets = data?.cert_buckets;
   const certificateData = buckets ? [
-    { label: "Khỏe mạnh · ≥90 ngày", value: buckets.healthy, color: "#22C77A" },
-    { label: "Còn 60–90 ngày", value: buckets.expiring_90d, color: "#78C95A" },
-    { label: "Còn 30–60 ngày", value: buckets.expiring_60d, color: "#E2AD32" },
-    { label: "Còn 0–30 ngày", value: buckets.expiring_30d, color: "#ED8A35" },
-    { label: "Đã hết hạn", value: buckets.expired, color: "#CF5260" },
-    { label: "Đình chỉ", value: buckets.suspended, color: "#718096" },
-    { label: "Thu hồi", value: buckets.revoked, color: "#4A5568" },
+    { label: "Khỏe mạnh · ≥90 ngày", value: buckets.healthy, color: "var(--navy-600)" },
+    { label: "Còn 60–90 ngày", value: buckets.expiring_90d, color: "var(--navy-500)" },
+    { label: "Còn 30–60 ngày", value: buckets.expiring_60d, color: "var(--gold-500)" },
+    { label: "Còn 0–30 ngày", value: buckets.expiring_30d, color: "var(--gold-600)" },
+    { label: "Đã hết hạn", value: buckets.expired, color: "var(--gold-700)" },
+    { label: "Đình chỉ", value: buckets.suspended, color: "var(--ink-500)" },
+    { label: "Thu hồi", value: buckets.revoked, color: "var(--ink-700)" },
   ] : [];
   const statusData = data ? Object.entries(STATUS_LABELS).map(([key, label]) => ({
     label,
     value: Math.max(0, data.funnel[key] ?? 0),
-    color: ({ pending: "#E2AD32", assigned: "#3974B8", reviewing: "#1D8A7A", returned: "#ED8A35", approved: "#22C77A", rejected: "#CF5260" } as Record<string, string>)[key],
+    color: ({ pending: "var(--gold-500)", assigned: "var(--navy-500)", reviewing: "var(--navy-700)", returned: "var(--gold-600)", approved: "var(--navy-600)", rejected: "var(--gold-700)" } as Record<string, string>)[key],
   })) : [];
   const actionData = data ? data.top_actions.slice(0, 5).map((action, index) => ({
     label: ACTION_LABELS[action.action] || action.action.replace(/[._-]+/g, " "),
     value: Math.max(0, action.count),
-    color: ["#3974B8", "#22C77A", "#E2AD32", "#8A6BB8", "#CF5260"][index],
+    color: ["var(--navy-500)", "var(--navy-600)", "var(--gold-500)", "var(--navy-700)", "var(--gold-700)"][index],
   })) : [];
   const monthData = data ? completeMonthlySeries(data.monthly_trend) : [];
 
-  return <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8" data-page data-dashboard="admin-analytics">
+  return <main className="mx-auto w-full max-w-[1440px] bg-cream-100 px-4 py-6 sm:px-6 lg:px-8" data-page data-dashboard="admin-analytics">
     <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">AMINRA · OPERATIONS</p><h1 className="text-3xl font-bold tracking-tight text-slate-950">Tổng quan vận hành</h1><p className="mt-2 max-w-2xl text-sm text-slate-600">Tình trạng chứng chỉ, hồ sơ và hoạt động hệ thống — chỉ số được cập nhật từ dữ liệu vận hành.</p>{data && <p className="mt-2 text-xs text-slate-500">Cập nhật: {new Date(data.generated_at).toLocaleString("vi-VN")}</p>}</div>
-      <Link href="/admin" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">← Quay lại Admin</Link>
+      <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gold-700">AMINRA · OPERATIONS</p><h1 className="text-3xl font-bold tracking-tight text-navy-900">Tổng quan vận hành</h1><p className="mt-2 max-w-2xl text-sm text-ink-700">Tình trạng chứng chỉ, hồ sơ và hoạt động hệ thống — chỉ số được cập nhật từ dữ liệu vận hành.</p>{data && <p className="mt-2 text-xs text-ink-500">Cập nhật: {new Date(data.generated_at).toLocaleString("vi-VN")}</p>}</div>
+      <Link href="/admin" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-cream-200 px-4 text-sm font-semibold text-ink-700 hover:bg-cream-100">← Quay lại Admin</Link>
     </header>
 
-    {!token && !loading && <div role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">Cần đăng nhập bằng tài khoản Admin. <Link href="/admin" className="font-semibold underline">Mở cổng đăng nhập Admin</Link></div>}
-    {error && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><button type="button" onClick={() => void load()} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
-    {loading && <div role="status" aria-live="polite" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-28 animate-pulse rounded-2xl bg-slate-100" />)}<span className="sr-only">Đang tải dữ liệu phân tích…</span></div>}
+    {!token && !loading && <div role="alert" className="mb-5 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900">Cần đăng nhập bằng tài khoản Admin. <Link href="/admin" className="font-semibold underline">Mở cổng đăng nhập Admin</Link></div>}
+    {error && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><button type="button" onClick={() => void load()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+    {loading && <div role="status" aria-live="polite" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-28 animate-pulse rounded-2xl bg-cream-200" />)}<span className="sr-only">Đang tải dữ liệu phân tích…</span></div>}
     {data && !loading && <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <DashboardCard title="Tình trạng chứng chỉ" description="Phân bố theo hạn và trạng thái; các khoảng ngày không chồng lấn.">
@@ -92,5 +92,5 @@ const DAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm"
 function Heatmap({ cells }: { cells: Analytics["heatmap"] }) {
   const grid = new Map(cells.map((cell) => [`${cell.dow}-${cell.hour}`, Math.max(0, cell.count)]));
   const max = Math.max(1, ...cells.map((cell) => cell.count));
-  return <div className="overflow-x-auto pb-1"><table className="min-w-[760px] w-full border-separate border-spacing-1 text-xs"><thead><tr><th className="w-24 text-left font-medium text-slate-500">Ngày · giờ</th>{Array.from({ length: 24 }, (_, hour) => <th key={hour} className="font-normal text-slate-500">{hour}</th>)}</tr></thead><tbody>{DAYS.map((day, dow) => <tr key={day}><th scope="row" className="pr-2 text-left font-medium text-slate-600">{day}</th>{Array.from({ length: 24 }, (_, hour) => { const value = grid.get(`${dow}-${hour}`) ?? 0; return <td key={hour} aria-label={`${day}, ${hour}:00 — ${value} sự kiện`} title={`${day}, ${hour}:00 — ${value} sự kiện`} className="h-7 min-w-5 rounded-sm" style={{ backgroundColor: value === 0 ? "#F1F5F9" : `rgba(29,138,122,${0.18 + (value / max) * 0.82})` }} />; })}</tr>)}</tbody></table><p className="mt-3 text-xs text-slate-500">Múi giờ theo thời điểm ghi nhận của hệ thống. Màu đậm hơn = nhiều sự kiện hơn.</p></div>;
+  return <div className="overflow-x-auto pb-1"><table className="min-w-[760px] w-full border-separate border-spacing-1 text-xs"><thead><tr><th className="w-24 text-left font-medium text-ink-500">Ngày · giờ</th>{Array.from({ length: 24 }, (_, hour) => <th key={hour} className="font-normal text-ink-500">{hour}</th>)}</tr></thead><tbody>{DAYS.map((day, dow) => <tr key={day}><th scope="row" className="pr-2 text-left font-medium text-ink-700">{day}</th>{Array.from({ length: 24 }, (_, hour) => { const value = grid.get(`${dow}-${hour}`) ?? 0; return <td key={hour} aria-label={`${day}, ${hour}:00 — ${value} sự kiện`} title={`${day}, ${hour}:00 — ${value} sự kiện`} className="h-7 min-w-5 rounded-sm" style={{ backgroundColor: value === 0 ? "var(--cream-200)" : `color-mix(in srgb, var(--navy-700) ${Math.round((0.18 + (value / max) * 0.82) * 100)}%, var(--cream-50))` }} />; })}</tr>)}</tbody></table><p className="mt-3 text-xs text-ink-500">Múi giờ theo thời điểm ghi nhận của hệ thống. Màu đậm hơn = nhiều sự kiện hơn.</p></div>;
 }
