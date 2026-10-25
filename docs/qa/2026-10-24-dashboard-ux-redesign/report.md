@@ -25,7 +25,7 @@
   - 3 cases in `supply-chain-eligible-suppliers.test.tsx`: test runtime sees the fail-closed `supplier_management` module gate, so the expected eligible-supplier UI is not reached.
   These failures were not changed to avoid broadening scope or weakening module/identity guardrails.
 - After the scoped gates above, the project `frontend-only.sh --skip-tests --base HEAD~1` lane built and recreated only `aminra-frontend`; its protected-service start-time guard passed. Frontend container is healthy; local and public smoke: `/` → `307 /landing`, `/landing` → `200`; local Admin/Business/Provider dashboard routes returned `200`. Running image: `sha256:0b6270b1a0b7742550eb64cabfe0a6ece5779a1c1f81f7092332b226968f59a0`; rollback tag `aminra-frontend:rollback-dashboard-008c9fd` preserves prior image `sha256:818b7e4cddbeadaa6ddafa92a502b311dcd0ba991073be315512bdd5927cd829`.
-- Commits: feature branch `008c9fd` (`feat/dashboard: add role-specific analytics charts`); release worktree `fb3a673` on top of landing release `cbf1d55`. The deployed source tree hashes match. No push performed.
+- Commits: feature branch `008c9fd` (`feat(dashboard): add role-specific analytics charts`); release worktree `fb3a673` on top of landing release `cbf1d55`. The six dashboard paths match between commits; the release tree additionally contains its landing-release changes. No push performed.
 - Browser visual QA: **not run**. No system Chromium/browser executable is available. No browser/dependency was installed and no credentialed role UAT was attempted. No visual screenshot is claimed.
 
 ## Safety / release boundary
