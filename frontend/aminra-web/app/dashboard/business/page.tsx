@@ -24,6 +24,13 @@ interface RecentItem {
   uploaded_by: string | null;
   uploaded_at: string | null;
 }
+interface DashboardCertificate {
+  cert_number: string;
+  provider_name: string | null;
+  status: string;
+  days_remaining: number;
+  expiry_date: string;
+}
 interface DashboardStats {
   readiness: number;
   compliant_count: number;
@@ -82,7 +89,7 @@ export default function BusinessDashboard() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading, logout } = useUserAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [certs, setCerts] = useState<any[]>([]);
+  const [certs, setCerts] = useState<DashboardCertificate[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState("");
 
@@ -171,186 +178,116 @@ export default function BusinessDashboard() {
     { label: "Đã tải · chờ chấm", value: scoreCounts["Đã tải · chờ chấm"], color: "#3974B8" },
     { label: "Chưa tải lên", value: scoreCounts["Chưa tải lên"], color: "#9AA4B2" },
   ];
+  const certificateStatusData = [
+    { label: "Còn hiệu lực · >60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining > 60).length, color: "#20C77A" },
+    { label: "Sắp hết hạn · 0–60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining >= 0 && cert.days_remaining <= 60).length, color: "#E6A62E" },
+    { label: "Quá ngày hết hạn", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining < 0).length, color: "#E15868" },
+    { label: "Không hoạt động / khác", value: certs.filter((cert) => cert.status !== "active").length, color: "#78869A" },
+  ];
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
-      {/* Header */}
-      <div className="mb-6 animate-section">
-        <p className="text-sm mb-1" style={{ color: "#6B7280" }}>
-          {greeting()},
-        </p>
-        <h1 className="text-2xl font-bold" style={{ color: "#0A1F44" }}>
-          {user.company_name}
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
-          {user.email}
-        </p>
+    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page data-dashboard-experience="business-v2">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 animate-section">
+        <div>
+          <div className="mb-1.5 flex items-center gap-2">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0F8B70]">{greeting()}</p>
+            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-slate-300" />
+            <span className="text-[11px] font-medium text-slate-500">Tổng quan doanh nghiệp</span>
+          </div>
+          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[#0A1F44] sm:text-[30px]">{user.company_name}</h1>
+          <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
+          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500" /> Hồ sơ doanh nghiệp
+        </span>
       </div>
 
       {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
 
-      {/* Certification Readiness */}
       {s && (
-        <div
-          className="rounded-2xl p-6 mb-6 animate-section doc-card-hover"
-          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+        <section
+          data-dashboard-section="readiness-hero"
+          className="relative isolate mb-5 overflow-hidden rounded-[26px] border border-white/15 p-5 text-white shadow-[0_20px_55px_rgba(7,31,62,0.22)] sm:p-7"
+          style={{ background: "linear-gradient(118deg, #0A1F44 0%, #104B62 54%, #087A68 100%)" }}
         >
-          <div
-            className="grid items-center gap-6"
-            style={{ gridTemplateColumns: "auto 1fr" }}
-          >
-            {/* Circular progress */}
-            <div className="relative w-24 h-24">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  stroke="#E2E8F0"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  className="animate-score-fill"
-                  stroke={
-                    s.readiness >= 75
-                      ? "#0A1F44"
-                      : s.readiness >= 40
-                        ? "#f59e0b"
-                        : "#ef4444"
-                  }
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${s.readiness * 2.64} 264`}
-                />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-[#31D89A]/20 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 left-[38%] h-56 w-56 rounded-full bg-[#4BB8E8]/15 blur-3xl" />
+          <div className="relative grid items-center gap-6 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-8">
+            <div className="relative mx-auto h-32 w-32 drop-shadow-[0_8px_18px_rgba(0,0,0,0.2)] sm:mx-0">
+              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
+                <defs><linearGradient id="readinessRingGradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stopColor="#63F5AE"/><stop offset="100%" stopColor="#B5FF78"/></linearGradient></defs>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="9" />
+                <circle cx="50" cy="50" r="42" fill="none" className="animate-score-fill" stroke="url(#readinessRingGradient)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${Math.max(0, Math.min(100, s.readiness)) * 2.64} 264`} />
               </svg>
-              <div className="absolute inset-0 grid place-items-center">
-                <div className="text-center">
-                  <span
-                    className="text-2xl font-bold"
-                    style={{ color: "#0A1F44" }}
-                  >
-                    {s.readiness}%
-                  </span>
-                </div>
+              <div className="absolute inset-0 grid place-items-center text-center">
+                <span className="text-[28px] font-extrabold tracking-tight text-white">{s.readiness}<span className="text-base">%</span></span>
               </div>
             </div>
-            <div>
-              <h2
-                className="text-lg font-bold mb-1"
-                style={{ color: "#0A1F44" }}
-              >
-                Sẵn sàng chứng nhận
-              </h2>
-              <p className="text-sm" style={{ color: "#6B7280" }}>
-                <strong style={{ color: "#0A1F44" }}>
-                  {s.compliant_count}
-                </strong>
-                /{s.total_types} loại tài liệu đạt chuẩn
-                {s.submitted_count > 0 && s.submitted_count < s.total_types && (
-                  <span>
-                    {" "}
-                    · {s.total_types - s.submitted_count} chưa upload
-                  </span>
-                )}
+            <div className="min-w-0">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-emerald-100 backdrop-blur-sm">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#70F2AC] shadow-[0_0_12px_rgba(112,242,172,0.85)]" />
+                Tổng quan mức sẵn sàng
+              </div>
+              <h2 className="text-xl font-bold tracking-tight text-white sm:text-[25px]">Sẵn sàng chứng nhận</h2>
+              <p className="mt-1.5 text-sm text-white/75">
+                <strong className="font-bold text-white">{s.compliant_count}</strong>/{s.total_types} loại tài liệu đạt chuẩn
+                {s.submitted_count > 0 && s.submitted_count < s.total_types && <span className="text-white/75"> · {s.total_types - s.submitted_count} chưa tải lên</span>}
               </p>
-              {/* Mini progress bar */}
-              <div
-                className="mt-3 h-2 rounded-full overflow-hidden"
-                style={{ background: "#E2E8F0" }}
-              >
-                <div
-                  className="h-full rounded-full animate-progress"
-                  style={{
-                    width: `${s.readiness}%`,
-                    background:
-                      s.readiness >= 75
-                        ? "#0A1F44"
-                        : s.readiness >= 40
-                          ? "#f59e0b"
-                          : "#ef4444",
-                  }}
-                />
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/15 ring-1 ring-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#63F5AE] to-[#B5FF78] shadow-[0_0_16px_rgba(99,245,174,0.42)] transition-[width] duration-700" style={{ width: `${Math.max(0, Math.min(100, s.readiness))}%` }} />
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-white/65">Tiến độ dựa trên trạng thái tài liệu do hệ thống trả về.</p>
+                <Link href="/upload" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#0A514C] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                  Thêm tài liệu <span aria-hidden="true">↗</span>
+                </Link>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-section">
+      {s && <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-dashboard-section="overview-charts">
+        <DashboardCard title="Trạng thái tài liệu" description="Phân bố hiện tại theo loại tài liệu; không phải xu hướng theo thời gian.">
+          <DonutChart title="Trạng thái tài liệu doanh nghiệp" data={documentStatusChartData} centerLabel="Loại tài liệu" />
+        </DashboardCard>
+        <DashboardCard title="Phân bố điểm tài liệu" description="Điểm trung bình trên tài liệu đã chấm; biểu đồ tách riêng trạng thái chưa tải/chờ chấm.">
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-[#F1F5FA] px-3 py-2"><span className="h-2 w-2 rounded-full bg-[#4F6BED]"/><span className="text-xs text-slate-600">Điểm trung bình</span><strong className="ml-auto text-base font-extrabold tabular-nums text-[#0A1F44]">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</strong></div>
+          <DonutChart title="Phân bố điểm theo loại tài liệu" data={scoreBandData} centerLabel="Loại tài liệu" />
+        </DashboardCard>
+        <DashboardCard title="Phân bố chứng chỉ" description="Theo trạng thái API và số ngày còn lại đến hạn; khoảng ngày không chồng lấn.">
+          <DonutChart title="Tình trạng chứng chỉ" data={certificateStatusData} centerLabel="Chứng chỉ" />
+        </DashboardCard>
+      </div>}
+
+      {/* KPI strip — color-coded, but values remain API-owned */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" data-dashboard-section="key-metrics">
         {(
           [
-            {
-              label: "Tài liệu",
-              numeric: s?.total_documents,
-              sub: "đã upload",
-              color: "#0EA5E9",
-            },
-            {
-              label: "Điểm TB",
-              numeric: s?.avg_score ?? null,
-              suffix: "%",
-              sub: "trên tài liệu đã chấm",
-              color: scoreColor(s?.avg_score ?? null),
-            },
-            {
-              label: "Đạt chuẩn",
-              numeric: s?.compliant_count,
-              suffix: ` / ${s?.total_types ?? 13}`,
-              sub: "loại tài liệu đạt",
-              color: "#0A1F44",
-            },
-            {
-              label: "Thành viên",
-              numeric: user.member_count ?? 0,
-              suffix: "",
-              sub: "đang hoạt động",
-              color: "#818cf8",
-            },
+            { label: "Tài liệu", numeric: s?.total_documents, sub: "đã upload", color: "#1385B4", tint: "#EAF8FD", symbol: "▤" },
+            { label: "Điểm TB", numeric: s?.avg_score ?? null, suffix: "%", sub: "trên tài liệu đã chấm", color: scoreColor(s?.avg_score ?? null), tint: "#FFF7E7", symbol: "◉" },
+            { label: "Đạt chuẩn", numeric: s?.compliant_count, suffix: ` / ${s?.total_types ?? 0}`, sub: "loại tài liệu đạt", color: "#087D61", tint: "#EAF9F2", symbol: "✓" },
+            { label: "Thành viên", numeric: user.member_count ?? 0, suffix: "", sub: "đang hoạt động", color: "#6557C8", tint: "#F2F0FF", symbol: "◈" },
           ] as const
         ).map((st, i) => (
-          <SpotlightCard
-            key={st.label}
-            className={`rounded-xl p-4 animate-list-item stagger-${i + 1}`}
-            style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
-          >
-            <div
-              className="text-xl font-bold mb-0.5"
-              style={{ color: st.color }}
-            >
-              {st.numeric == null ? (
-                "—"
-              ) : (
-                <CountUp
-                  value={Number(st.numeric)}
-                  suffix={("suffix" in st ? st.suffix : "") as string}
-                />
-              )}
+          <SpotlightCard key={st.label} data-dashboard-kpi={st.label}
+            className={`relative min-h-[124px] overflow-hidden rounded-2xl p-4 shadow-[0_8px_24px_rgba(10,31,68,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(10,31,68,0.12)] sm:p-5 animate-list-item stagger-${i + 1}`}
+            style={{ background: `linear-gradient(145deg, #FFFFFF 15%, ${st.tint} 145%)`, border: `1px solid ${st.color}22` }}>
+            <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-8 h-24 w-24 rounded-full opacity-50 blur-xl" style={{ background: st.tint }} />
+            <div className="relative flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[27px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[30px]" style={{ color: st.color }}>
+                  {st.numeric == null ? "—" : <CountUp value={Number(st.numeric)} suffix={("suffix" in st ? st.suffix : "") as string} />}
+                </div>
+                <div className="mt-3 text-sm font-bold text-[#142746]">{st.label}</div>
+                <div className="mt-0.5 text-xs text-slate-500">{st.sub}</div>
+              </div>
+              <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] text-lg font-bold shadow-sm ring-1 ring-white/80" style={{ color: st.color, background: st.tint }}>{st.symbol}</span>
             </div>
-            <div className="text-xs font-medium" style={{ color: "#0A1F44" }}>
-              {st.label}
-            </div>
-            <div className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
-              {st.sub}
-            </div>
+            <div aria-hidden="true" className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full opacity-70" style={{ background: `linear-gradient(90deg, ${st.color}, transparent)` }} />
           </SpotlightCard>
         ))}
       </div>
-
-      {s && <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <DashboardCard title="Trạng thái tài liệu" description="Số loại tài liệu theo trạng thái hiện tại — không phải xu hướng theo thời gian.">
-          <DonutChart title="Trạng thái tài liệu doanh nghiệp" data={documentStatusChartData} centerLabel="Loại tài liệu" />
-        </DashboardCard>
-        <DashboardCard title="Phân bố điểm tài liệu" description="Điểm trung bình trên tài liệu đã chấm; donut phân bố các mức điểm và giữ riêng trạng thái chưa tải/chưa chấm.">
-          <div className="mb-3 flex items-baseline gap-2"><span className="text-xl font-bold tabular-nums text-[#0A1F44]">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</span><span className="text-xs text-slate-500">điểm trung bình từ API</span></div>
-          <DonutChart title="Phân bố điểm theo loại tài liệu" data={scoreBandData} centerLabel="Loại tài liệu" />
-        </DashboardCard>
-      </div>}
 
       {/* Certificate Status */}
       {certs.length > 0 && (

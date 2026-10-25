@@ -122,6 +122,44 @@ describe("dashboard data visual contracts", () => {
     }
   });
 
+  it("presents the business overview as a vibrant chart-first dashboard using real certificate data", async () => {
+    const response = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("dashboard/stats")) return Promise.resolve(new Response(JSON.stringify({
+        readiness: 40, compliant_count: 2, total_types: 5, submitted_count: 3,
+        total_documents: 3, avg_score: 68, member_count: 4,
+        doc_type_progress: [
+          { doc_type: "policy", label: "Policy", score: 80, status: "compliant", filename: "policy.pdf", uploaded_at: null },
+          { doc_type: "training", label: "Training", score: 56, status: "needs_review", filename: "training.pdf", uploaded_at: null },
+          { doc_type: "trace", label: "Traceability", score: null, status: null, filename: "trace.pdf", uploaded_at: null },
+          { doc_type: "supplier", label: "Supplier", score: null, status: null, filename: null, uploaded_at: null },
+          { doc_type: "facility", label: "Facility", score: 68, status: "compliant", filename: "facility.pdf", uploaded_at: null },
+        ], recent_activity: [],
+      }), { status:  200 }));
+      if (url.includes("cert-timeline")) return Promise.resolve(new Response(JSON.stringify({ certificates: [
+        { cert_number: "CERT-001", provider_name: "CB One", status: "active", days_remaining: 120, expiry_date: "2027-01-01" },
+        { cert_number: "CERT-002", provider_name: "CB Two", status: "active", days_remaining: 20, expiry_date: "2026-09-23" },
+        { cert_number: "CERT-003", provider_name: "CB Three", status: "active", days_remaining: -2, expiry_date: "2026-07-02" },
+        { cert_number: "CERT-004", provider_name: "CB Four", status: "suspended", days_remaining: 45, expiry_date: "2026-08-18" },
+      ] }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+    });
+    vi.stubGlobal("fetch", response);
+    const { container } = render(<BusinessDashboard />);
+    expect(await screen.findByText("Phân bố chứng chỉ")).toBeInTheDocument();
+    expect(container.querySelector('[data-dashboard-experience="business-v2"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-dashboard-section="readiness-hero"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-dashboard-section="overview-charts"]')).toBeInTheDocument();
+    const sectionOrder = Array.from(container.querySelectorAll("[data-dashboard-section]"), (section) => section.getAttribute("data-dashboard-section"));
+    expect(sectionOrder.indexOf("overview-charts")).toBeLessThan(sectionOrder.indexOf("key-metrics"));
+    expect(container.querySelectorAll('[data-dashboard-chart="donut"]')).toHaveLength(3);
+    expect(screen.getByRole("img", { name: /Tình trạng chứng chỉ.*4/ })).toBeInTheDocument();
+    const certificateLegend = screen.getByRole("list", { name: "Tình trạng chứng chỉ legend" });
+    expect(within(certificateLegend).getByText("Còn hiệu lực · >60 ngày")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Sắp hết hạn · 0–60 ngày")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Quá ngày hết hạn")).toBeInTheDocument();
+    expect(within(certificateLegend).getByText("Không hoạt động / khác")).toBeInTheDocument();
+  });
+
   it("shows and retries API failure states instead of presenting silent empty dashboards", async () => {
     const failedFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: "Service unavailable" }), { status: 503 }));
     vi.stubGlobal("fetch", failedFetch);

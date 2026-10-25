@@ -6,21 +6,21 @@ type ChartPoint = { label: string; value: number; color?: string };
 const palette = ["#22C77A", "#E2AD32", "#CF5260", "#3974B8", "#7F8B99", "#8A6BB8"];
 
 export function DashboardCard({ title, description, children, className = "" }: { title: string; description?: string; children: ReactNode; className?: string }) {
-  return <section data-dashboard-card="true" className={`min-w-0 rounded-xl border border-[#e7e5de] bg-white p-5 shadow-[0_5px_18px_rgba(10,31,68,0.06)] ${className}`}>
-    <div className="mb-4 border-b border-slate-100 pb-3"><h2 className="text-sm font-semibold tracking-[0.01em] text-[#0A1F44]">{title}</h2>{description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}</div>{children}
+  return <section data-dashboard-card="true" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white via-white to-slate-50/70 p-5 shadow-[0_12px_32px_rgba(10,31,68,0.07)] transition-shadow duration-300 hover:shadow-[0_16px_40px_rgba(10,31,68,0.11)] ${className}`}>
+    <div className="mb-4 flex items-start gap-3 border-b border-slate-100 pb-3"><span aria-hidden="true" className="mt-0.5 h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-[#20C77A] via-[#2B9BC5] to-[#7467E8]"/><div className="min-w-0"><h2 className="text-sm font-bold tracking-[0.01em] text-[#0A1F44]">{title}</h2>{description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}</div></div>{children}
   </section>;
 }
 
-/** Screenshot-inspired status ring with visible legend and a screen-reader table alternative. */
+/** Large, vivid status ring with a centered total, visible legend and table alternative. */
 export function DonutChart({ title, data, centerLabel = "Tổng" }: { title: string; data: ChartPoint[]; centerLabel?: string }) {
   const safe = data.map((point) => ({ ...point, value: Number.isFinite(point.value) ? Math.max(0, point.value) : 0 }));
   const total = safe.reduce((sum, point) => sum + point.value, 0);
   const format = new Intl.NumberFormat("vi-VN");
-  const size = 188, center = size / 2, radius = 65, stroke = 24;
+  const size = 220, center = size / 2, radius = 76, stroke = 28;
   const circumference = 2 * Math.PI * radius;
   const drawable = safe.map((point, index) => {
     const length = total > 0 ? (point.value / total) * circumference : 0;
-    const dash = Math.max(0, length - (point.value > 0 ? 2 : 0));
+    const dash = Math.max(0, length - (point.value > 0 ? 2.5 : 0));
     const item = { ...point, color: point.color || palette[index % palette.length], dash, offset: 0 };
     return item;
   });
@@ -32,21 +32,22 @@ export function DonutChart({ title, data, centerLabel = "Tổng" }: { title: str
   const hasData = total > 0;
   const accessibleSummary = safe.filter((point) => point.value > 0).map((point) => `${point.label}: ${format.format(point.value)}`).join(", ");
 
-  return <div className="grid min-h-[196px] grid-cols-1 items-center gap-4 sm:grid-cols-[168px_minmax(0,1fr)] sm:gap-5" data-dashboard-chart="donut">
-    <div className="relative mx-auto aspect-square w-40 sm:w-[168px]">
-      <svg role="img" aria-label={`${title}: ${format.format(total)} total${accessibleSummary ? ` — ${accessibleSummary}` : ""}`} viewBox={`0 0 ${size} ${size}`} className="h-full w-full" focusable="false">
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="#edf1f4" strokeWidth={stroke} />
-        {hasData && <g transform={`rotate(-90 ${center} ${center})`}>{drawable.map((segment, index) => segment.dash > 0 && <circle key={`${segment.label}-${index}`} cx={center} cy={center} r={radius} fill="none" stroke={segment.color} strokeWidth={stroke} strokeDasharray={`${segment.dash} ${circumference - segment.dash}`} strokeDashoffset={-segment.offset} />)}</g>}
+  return <div className="flex min-h-[278px] flex-col items-center gap-4" data-dashboard-chart="donut">
+    <div className="relative aspect-square w-48 sm:w-[204px]">
+      <div aria-hidden="true" className="absolute inset-[8%] rounded-full bg-gradient-to-br from-emerald-100/70 via-white to-sky-100/70 blur-md" />
+      <svg role="img" aria-label={`${title}: ${format.format(total)} total${accessibleSummary ? ` — ${accessibleSummary}` : ""}`} viewBox={`0 0 ${size} ${size}`} className="relative h-full w-full drop-shadow-[0_8px_12px_rgba(10,31,68,0.08)]" focusable="false">
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="#E8EEF4" strokeWidth={stroke} />
+        {hasData && <g transform={`rotate(-90 ${center} ${center})`}>{drawable.map((segment, index) => segment.dash > 0 && <circle key={`${segment.label}-${index}`} cx={center} cy={center} r={radius} fill="none" stroke={segment.color} strokeWidth={stroke} strokeLinecap="butt" strokeDasharray={`${segment.dash} ${circumference - segment.dash}`} strokeDashoffset={-segment.offset} />)}</g>}
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span data-testid="donut-total" className="text-2xl font-bold tabular-nums tracking-tight text-[#0A1F44]">{format.format(total)}</span>
-        <span className="mt-0.5 text-[11px] font-medium text-slate-500">{centerLabel}</span>
+        <span data-testid="donut-total" className="text-3xl font-extrabold tabular-nums tracking-tight text-[#0A1F44]">{format.format(total)}</span>
+        <span className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{centerLabel}</span>
       </div>
     </div>
-    <div className="min-w-0">
-      {hasData ? <ul className="grid gap-2" aria-label={`${title} legend`} data-dashboard-legend="donut">{drawable.map((segment, index) => <li key={`${segment.label}-${index}`} className="flex min-w-0 items-center justify-between gap-3 text-xs">
-        <span className="flex min-w-0 items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: segment.color }} /><span className="truncate text-slate-600">{segment.label}</span></span><span className="shrink-0 font-semibold tabular-nums text-slate-800">{format.format(segment.value)}</span>
-      </li>)}</ul> : <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">Chưa có dữ liệu để phân bố.</p>}
+    <div className="w-full max-w-sm">
+      {hasData ? <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5" aria-label={`${title} legend`} data-dashboard-legend="donut">{drawable.map((segment, index) => <li key={`${segment.label}-${index}`} className="flex min-w-0 items-start gap-2 rounded-xl bg-white/80 px-2.5 py-2 ring-1 ring-slate-100">
+        <span aria-hidden="true" className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: segment.color }} /><span className="min-w-0 flex-1"><span className="block truncate text-[11px] leading-4 text-slate-600">{segment.label}</span><span className="block text-sm font-bold tabular-nums text-[#0A1F44]">{format.format(segment.value)}</span></span>
+      </li>)}</ul> : <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">Chưa có dữ liệu để phân bố.</p>}
       <table className="sr-only" aria-label={`${title} — data table`}><thead><tr><th>Nhóm</th><th>Số lượng</th></tr></thead><tbody>{safe.map((point, index) => <tr key={`${point.label}-${index}`}><th>{point.label}</th><td>{format.format(point.value)}</td></tr>)}</tbody><tfoot><tr><th>Tổng</th><td>{format.format(total)}</td></tr></tfoot></table>
     </div>
   </div>;
