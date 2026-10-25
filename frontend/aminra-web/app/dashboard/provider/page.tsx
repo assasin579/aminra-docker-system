@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
+import { AccessibleBarChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
 
 /* ── Interfaces ─────────────────────────────────────────────── */
 
@@ -249,6 +250,7 @@ export default function ProviderDashboard() {
   const [cbStats, setCbStats] = useState<CBStats | null>(null);
   const [auditorStats, setAuditorStats] = useState<AuditorStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   /* Auth guard */
   useEffect(() => {
@@ -264,9 +266,10 @@ export default function ProviderDashboard() {
       const res = await fetch("/api/api/submissions/cb-stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setCbStats(await res.json());
-    } catch {
-      /* silent */
+      if (!res.ok) throw new Error(`Không tải được số liệu CB (${res.status}).`);
+      setCbStats(await res.json());
+    } catch (error) {
+      setStatsError(error instanceof Error ? error.message : "Không thể tải số liệu CB.");
     }
   }, [token]);
 
@@ -277,15 +280,17 @@ export default function ProviderDashboard() {
       const res = await fetch("/api/api/submissions/stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setAuditorStats(await res.json());
-    } catch {
-      /* silent */
+      if (!res.ok) throw new Error(`Không tải được hàng đợi hồ sơ (${res.status}).`);
+      setAuditorStats(await res.json());
+    } catch (error) {
+      setStatsError(error instanceof Error ? error.message : "Không thể tải hàng đợi.");
     }
   }, [token]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     setLoadingStats(true);
+    setStatsError("");
     const promises: Promise<void>[] = [fetchAuditorStats()];
     if (user.is_owner) promises.push(fetchCBStats());
     Promise.all(promises).finally(() => setLoadingStats(false));
@@ -334,6 +339,8 @@ export default function ProviderDashboard() {
             </span>
           </div>
         </div>
+
+        {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void Promise.all([fetchAuditorStats(), fetchCBStats()]).finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
 
         {/* Pending notice */}
         {user.status === "pending" && (
@@ -491,6 +498,12 @@ export default function ProviderDashboard() {
           </div>
         )}
 
+        {cb && <div className="mb-6">
+          <DashboardCard title="Hồ sơ theo trạng thái" description="Số lượng hiện tại trong từng nhóm trạng thái.">
+            <AccessibleBarChart title="Hồ sơ Certification Body theo trạng thái" data={[{ label: "Chờ xử lý", value: cb.submissions.pending }, { label: "Đang đánh giá", value: cb.submissions.reviewing }, { label: "Đã duyệt", value: cb.submissions.approved }]} />
+          </DashboardCard>
+        </div>}
+
         {/* Row 3 — Expiring certs + Auditor workload */}
         {cb && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 animate-section">
@@ -591,42 +604,11 @@ export default function ProviderDashboard() {
                   </p>
                 </div>
               ) : (
-                <div className="p-4 space-y-4">
-                  {cb.auditor_workload.map((a, i) => {
-                    const maxVal = Math.max(
-                      ...cb.auditor_workload.map((w) =>
-                        Math.max(w.active_visits, w.active_submissions),
-                      ),
-                      1,
-                    );
-                    return (
-                      <div
-                        key={a.id}
-                        className={`animate-list-item stagger-${Math.min(i + 1, 12)}`}
-                      >
-                        <p
-                          className="text-sm font-medium mb-1.5"
-                          style={{ color: "#0A1F44" }}
-                        >
-                          {a.name}
-                        </p>
-                        <HBar
-                          value={a.active_visits}
-                          max={maxVal}
-                          color="#2563EB"
-                          label="Kiểm định"
-                        />
-                        <div className="mt-1">
-                          <HBar
-                            value={a.active_submissions}
-                            max={maxVal}
-                            color="#7C3AED"
-                            label="Hồ sơ"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="p-4">
+                  <AccessibleBarChart title="Tải công việc Auditor: kiểm định và hồ sơ đang xử lý" data={cb.auditor_workload.flatMap((auditor) => [
+                    { label: `${auditor.name} · Kiểm định`, value: auditor.active_visits, color: "#174A7E" },
+                    { label: `${auditor.name} · Hồ sơ`, value: auditor.active_submissions, color: "#1D8A7A" },
+                  ])} />
                 </div>
               )}
             </div>
@@ -750,6 +732,8 @@ export default function ProviderDashboard() {
         </div>
       </div>
 
+      {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void fetchAuditorStats().finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
+
       {/* Auditor stat cards */}
       {au && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-section">
@@ -838,6 +822,15 @@ export default function ProviderDashboard() {
           </div>
         </Link>
       )}
+
+      {au && <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_20rem]">
+        <DashboardCard title="Hàng đợi được giao" description="Phân bố các hồ sơ bạn phụ trách theo trạng thái hiện tại.">
+          <AccessibleBarChart title="Hồ sơ auditor được giao theo trạng thái" data={[{ label: "Chờ duyệt", value: au.pending }, { label: "Đang đánh giá", value: au.reviewing }, { label: "Đã duyệt", value: au.approved }, { label: "Trả lại", value: au.returned }]} />
+        </DashboardCard>
+        <DashboardCard title="Ưu tiên hôm nay" description="Hồ sơ quá hạn cần xử lý trước.">
+          <p className={`text-4xl font-bold tabular-nums ${au.overdue > 0 ? "text-red-700" : "text-emerald-700"}`}>{au.overdue}</p><p className="mt-2 text-sm text-slate-600">{au.overdue > 0 ? "Hồ sơ đã quá deadline" : "Không có hồ sơ quá hạn"}</p>
+        </DashboardCard>
+      </div>}
 
       {/* Metrics row */}
       {au && (

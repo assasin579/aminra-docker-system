@@ -51,7 +51,7 @@ const mockData = {
 describe("AdminAnalyticsPage", () => {
   test("shows login prompt when no token", async () => {
     render(<AdminAnalyticsPage />);
-    expect(await screen.findByText(/Cần đăng nhập admin/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Cần đăng nhập bằng tài khoản Admin/i)).toBeInTheDocument();
   });
 
   test("renders all sections from API response", async () => {
@@ -62,13 +62,11 @@ describe("AdminAnalyticsPage", () => {
 
     render(<AdminAnalyticsPage />);
 
-    expect(
-      await screen.findByText("Trạng thái chứng chỉ (24)"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Funnel hồ sơ")).toBeInTheDocument();
-    expect(screen.getByText(/Top hoạt động/)).toBeInTheDocument();
-    expect(screen.getByText(/Chứng chỉ cấp theo tháng/)).toBeInTheDocument();
-    expect(screen.getByText(/Heatmap hoạt động/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sức khỏe chứng chỉ/i)).toBeInTheDocument();
+    expect(screen.getByText("Phân bố trạng thái hồ sơ")).toBeInTheDocument();
+    expect(screen.getByText(/Hoạt động nổi bật/)).toBeInTheDocument();
+    expect(screen.getByText(/Chứng chỉ được cấp theo tháng/)).toBeInTheDocument();
+    expect(screen.getByText(/Nhịp hoạt động hệ thống/)).toBeInTheDocument();
   });
 
   test("displays cert bucket labels", async () => {
@@ -79,10 +77,12 @@ describe("AdminAnalyticsPage", () => {
 
     render(<AdminAnalyticsPage />);
 
-    await screen.findByText("Trạng thái chứng chỉ (24)");
-    expect(screen.getByText("Khoẻ mạnh")).toBeInTheDocument();
+    await screen.findByText(/Sức khỏe chứng chỉ/i);
+    expect(screen.getByText("Chứng chỉ được cấp theo tháng")).toBeInTheDocument();
+    expect(screen.getByText("Phân bố trạng thái hồ sơ")).toBeInTheDocument();
+    expect(screen.getByText("Khỏe mạnh · ≥90 ngày")).toBeInTheDocument();
     expect(screen.getByText("Đã hết hạn")).toBeInTheDocument();
-    expect(screen.getByText(/Hết hạn ≤30d/)).toBeInTheDocument();
+    expect(screen.getByText("Còn 0–30 ngày")).toBeInTheDocument();
   });
 
   test("top actions section lists action codes + counts", async () => {
@@ -92,9 +92,9 @@ describe("AdminAnalyticsPage", () => {
     );
 
     render(<AdminAnalyticsPage />);
-    expect(await screen.findByText("login.success")).toBeInTheDocument();
+    expect(await screen.findByText("Đăng nhập thành công")).toBeInTheDocument();
     expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText("submission.submit")).toBeInTheDocument();
+    expect(screen.getByText("Gửi hồ sơ")).toBeInTheDocument();
   });
 
   test("shows backend error", async () => {

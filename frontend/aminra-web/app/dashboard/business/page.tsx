@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
+import { AccessibleBarChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
 
 interface DocTypeProgress {
   doc_type: string;
@@ -83,6 +84,7 @@ export default function BusinessDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [certs, setCerts] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== "business")) {
@@ -104,6 +106,7 @@ export default function BusinessDashboard() {
   const fetchStats = useCallback(async () => {
     if (!token) return;
     setLoadingStats(true);
+    setStatsError("");
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [statsRes, certsRes] = await Promise.all([
@@ -111,10 +114,15 @@ export default function BusinessDashboard() {
         fetch("/api/api/submissions/cert-timeline", { headers }),
       ]);
       if (statsRes.ok) setStats(await statsRes.json());
+      if (!statsRes.ok) throw new Error(`Không tải được số liệu hồ sơ (${statsRes.status}).`);
       if (certsRes.ok) {
         const d = await certsRes.json();
         setCerts(d.certificates || []);
+      } else {
+        throw new Error(`Không tải được dòng thời gian chứng chỉ (${certsRes.status}).`);
       }
+    } catch (error) {
+      setStatsError(error instanceof Error ? error.message : "Không thể tải dashboard.");
     } finally {
       setLoadingStats(false);
     }
@@ -137,6 +145,13 @@ export default function BusinessDashboard() {
   }
 
   const s = stats;
+  const documentStatusData = s?.doc_type_progress.reduce<Record<string, number>>((counts, document) => {
+    const status = document.score === null
+      ? (document.filename ? "Chưa được chấm" : "Chưa tải lên")
+      : STATUS_STYLE[document.status as keyof typeof STATUS_STYLE]?.label || "Đang xử lý";
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {}) ?? {};
 
   return (
     <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
@@ -152,6 +167,8 @@ export default function BusinessDashboard() {
           {user.email}
         </p>
       </div>
+
+      {statsError && <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-red-900 px-4 font-semibold text-white">Thử tải lại</button></div>}
 
       {/* Certification Readiness */}
       {s && (
@@ -259,7 +276,7 @@ export default function BusinessDashboard() {
               label: "Điểm TB",
               numeric: s?.avg_score ?? null,
               suffix: "%",
-              sub: "compliance",
+              sub: "trên tài liệu đã chấm",
               color: scoreColor(s?.avg_score ?? null),
             },
             {
@@ -272,7 +289,7 @@ export default function BusinessDashboard() {
             {
               label: "Thành viên",
               numeric: user.member_count ?? 0,
-              suffix: "/7",
+              suffix: "",
               sub: "đang hoạt động",
               color: "#818cf8",
             },
@@ -305,6 +322,15 @@ export default function BusinessDashboard() {
           </SpotlightCard>
         ))}
       </div>
+
+      {s && <div className="mb-6 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+        <DashboardCard title="Trạng thái tài liệu" description="Số loại tài liệu theo trạng thái hiện tại — không phải xu hướng theo thời gian.">
+          <AccessibleBarChart title="Trạng thái tài liệu doanh nghiệp" data={Object.entries(documentStatusData).map(([label, value]) => ({ label, value }))} />
+        </DashboardCard>
+        <DashboardCard title="Điểm tuân thủ" description="Điểm trung bình trên tài liệu đã chấm; dấu gạch ngang nghĩa là chưa có điểm.">
+          <div className="flex min-h-36 flex-col justify-center"><p className="text-4xl font-bold tabular-nums text-slate-900">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</p><p className="mt-2 text-sm text-slate-600">{s.avg_score == null ? "Chưa có tài liệu được chấm điểm." : "Giá trị theo API đánh giá tài liệu."}</p></div>
+        </DashboardCard>
+      </div>}
 
       {/* Certificate Status */}
       {certs.length > 0 && (
