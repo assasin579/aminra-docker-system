@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
@@ -57,6 +57,20 @@ interface AuditorStats {
     submitted_at: string;
     deadline: string | null;
   }>;
+}
+
+interface CBPerformanceSummary {
+  completed: { current_90d: number; previous_90d: number };
+  cycle_time_hours: { current_median: number | null; current_p90: number | null; previous_median: number | null; previous_p90: number | null };
+  scheduled_to_acceptance_days: { current_median: number | null; current_p90: number | null; previous_median: number | null; previous_p90: number | null };
+}
+
+interface CBPerformance {
+  window_days: number;
+  attribution: "report_accepted_at";
+  total: CBPerformanceSummary;
+  auditors: Array<CBPerformanceSummary & { auditor_id: string; name: string | null }>;
+  limitations: string[];
 }
 
 /* ── Constants ──────────────────────────────────────────────── */
@@ -246,10 +260,32 @@ export default function ProviderDashboard() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading, logout } = useUserAuth();
 
-  const [cbStats, setCbStats] = useState<CBStats | null>(null);
-  const [auditorStats, setAuditorStats] = useState<AuditorStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [statsError, setStatsError] = useState("");
+  const contextKey = JSON.stringify([
+    isAuthenticated,
+    user?.id ?? null,
+    user?.tenant_id ?? null,
+    user?.role ?? null,
+    user?.is_owner ?? null,
+    user?.permissions ?? null,
+    user?.realm_roles ? [...user.realm_roles].sort() : null,
+  ]);
+  const activeContextRef = useRef(contextKey);
+  const requestGenerationRef = useRef(0);
+
+  const [cbStatsState, setCbStats] = useState<{ contextKey: string; value: CBStats } | null>(null);
+  const [cbPerformanceState, setCBPerformance] = useState<{ contextKey: string; value: CBPerformance } | null>(null);
+  const [auditorStatsState, setAuditorStats] = useState<{ contextKey: string; value: AuditorStats } | null>(null);
+  const [loadingStatsState, setLoadingStats] = useState<{ contextKey: string; value: boolean }>({ contextKey, value: true });
+  const [statsErrorState, setStatsError] = useState<{ contextKey: string; value: string }>({ contextKey, value: "" });
+
+  const cbStats = cbStatsState?.contextKey === contextKey ? cbStatsState.value : null;
+  const cbPerformance = cbPerformanceState?.contextKey === contextKey ? cbPerformanceState.value : null;
+  const auditorStats = auditorStatsState?.contextKey === contextKey ? auditorStatsState.value : null;
+  const loadingStats = loadingStatsState.contextKey !== contextKey || loadingStatsState.value;
+  const statsError = statsErrorState.contextKey === contextKey ? statsErrorState.value : "";
+
+  const isCurrentRequest = useCallback((requestContext: string, generation: number) =>
+    activeContextRef.current === requestContext && requestGenerationRef.current === generation, []);
 
   /* Auth guard */
   useEffect(() => {
@@ -258,42 +294,83 @@ export default function ProviderDashboard() {
     }
   }, [loading, isAuthenticated, user, router]);
 
-  /* Fetch CB stats (owner) */
-  const fetchCBStats = useCallback(async () => {
+  /* Fetch CB stats (owner); every result/error is bound to its auth context. */
+  const fetchCBStats = useCallback(async (requestContext: string, generation: number) => {
     if (!token) return;
     try {
       const res = await fetch("/api/api/submissions/cb-stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Không tải được số liệu CB (${res.status}).`);
-      setCbStats(await res.json());
+      const value = await res.json();
+      if (isCurrentRequest(requestContext, generation)) setCbStats({ contextKey: requestContext, value });
     } catch (error) {
-      setStatsError(error instanceof Error ? error.message : "Không thể tải số liệu CB.");
+      if (isCurrentRequest(requestContext, generation)) {
+        setStatsError({ contextKey: requestContext, value: error instanceof Error ? error.message : "Không thể tải số liệu CB." });
+      }
     }
-  }, [token]);
+  }, [token, isCurrentRequest]);
 
-  /* Fetch auditor stats (both roles — backward compat) */
-  const fetchAuditorStats = useCallback(async () => {
+  /* Performance metrics are restricted to the CB owner in both UI and API. */
+  const fetchCBPerformance = useCallback(async (requestContext: string, generation: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/api/submissions/cb-performance", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Không tải được hiệu suất auditor (${res.status}).`);
+      const value = await res.json();
+      if (isCurrentRequest(requestContext, generation)) setCBPerformance({ contextKey: requestContext, value });
+    } catch (error) {
+      if (isCurrentRequest(requestContext, generation)) {
+        setStatsError({ contextKey: requestContext, value: error instanceof Error ? error.message : "Không thể tải hiệu suất auditor." });
+      }
+    }
+  }, [token, isCurrentRequest]);
+
+  /* Fetch auditor stats (both roles — backward compat), context-bound. */
+  const fetchAuditorStats = useCallback(async (requestContext: string, generation: number) => {
     if (!token) return;
     try {
       const res = await fetch("/api/api/submissions/stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Không tải được hàng đợi hồ sơ (${res.status}).`);
-      setAuditorStats(await res.json());
+      const value = await res.json();
+      if (isCurrentRequest(requestContext, generation)) setAuditorStats({ contextKey: requestContext, value });
     } catch (error) {
-      setStatsError(error instanceof Error ? error.message : "Không thể tải hàng đợi.");
+      if (isCurrentRequest(requestContext, generation)) {
+        setStatsError({ contextKey: requestContext, value: error instanceof Error ? error.message : "Không thể tải hàng đợi." });
+      }
     }
-  }, [token]);
+  }, [token, isCurrentRequest]);
+
+  const refreshDashboardStats = useCallback((requestContext: string, generation: number, owner: boolean) => {
+    setLoadingStats({ contextKey: requestContext, value: true });
+    setStatsError({ contextKey: requestContext, value: "" });
+    const promises: Promise<void>[] = [fetchAuditorStats(requestContext, generation)];
+    if (owner) promises.push(fetchCBStats(requestContext, generation), fetchCBPerformance(requestContext, generation));
+    return Promise.all(promises).finally(() => {
+      if (isCurrentRequest(requestContext, generation)) setLoadingStats({ contextKey: requestContext, value: false });
+    });
+  }, [fetchAuditorStats, fetchCBStats, fetchCBPerformance, isCurrentRequest]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    setLoadingStats(true);
-    setStatsError("");
-    const promises: Promise<void>[] = [fetchAuditorStats()];
-    if (user.is_owner) promises.push(fetchCBStats());
-    Promise.all(promises).finally(() => setLoadingStats(false));
-  }, [isAuthenticated, user, fetchCBStats, fetchAuditorStats]);
+    const generation = ++requestGenerationRef.current;
+    activeContextRef.current = contextKey;
+    if (!isAuthenticated || !user || !token) {
+      setLoadingStats({ contextKey, value: false });
+      setStatsError({ contextKey, value: "" });
+      return () => {
+        if (requestGenerationRef.current === generation) requestGenerationRef.current += 1;
+      };
+    }
+
+    void refreshDashboardStats(contextKey, generation, user.is_owner === true);
+    return () => {
+      if (requestGenerationRef.current === generation) requestGenerationRef.current += 1;
+    };
+  }, [contextKey, isAuthenticated, user, token, refreshDashboardStats]);
 
   /* ── Loading state ─────────────────────────────────────────── */
   if (loading || !user) return <PulseLoader />;
@@ -307,8 +384,8 @@ export default function ProviderDashboard() {
     { label: "Khác / chưa phân loại", value: Math.max(0, cb.certs.total - cb.certs.active - cb.certs.inactive), color: "var(--ink-300)" },
   ] : [];
   const cbAuditData = cb ? [
-    { label: "Hoàn thành", value: cb.audits.completed, color: "var(--navy-600)" },
-    { label: "Chưa hoàn tất", value: Math.max(0, cb.audits.total - cb.audits.completed), color: "var(--gold-500)" },
+    { label: "CB đã chấp nhận", value: cb.audits.completed, color: "var(--navy-600)" },
+    { label: "Chưa được CB chấp nhận", value: Math.max(0, cb.audits.total - cb.audits.completed), color: "var(--gold-500)" },
   ] : [];
   const cbListedSubmissions = cb ? cb.submissions.pending + cb.submissions.reviewing + cb.submissions.approved : 0;
   const cbSubmissionData = cb ? [
@@ -363,7 +440,7 @@ export default function ProviderDashboard() {
           </div>
         </div>
 
-        {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void Promise.all([fetchAuditorStats(), fetchCBStats()]).finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+        {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { const generation = ++requestGenerationRef.current; activeContextRef.current = contextKey; void refreshDashboardStats(contextKey, generation, isOwner); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
         {/* Pending notice */}
         {user.status === "pending" && (
@@ -644,6 +721,27 @@ export default function ProviderDashboard() {
           </div>
         )}
 
+        {cb && (
+          <section className="mb-6 rounded-xl p-5 animate-section" aria-labelledby="cb-performance-title" style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}>
+            <div className="mb-4">
+              <h2 id="cb-performance-title" className="text-base font-bold" style={{ color: "var(--navy-900)" }}>Hiệu suất kiểm định viên — 90 ngày</h2>
+              <p className="mt-1 text-xs" style={{ color: "var(--ink-500)" }}>Report chỉ được tính khi CB owner chấp nhận; attribution theo thời điểm chấp nhận. So sánh 90 ngày hiện tại với 90 ngày liền trước.</p>
+            </div>
+            {!cbPerformance || cbPerformance.auditors.length === 0 ? (
+              <p className="py-4 text-sm" style={{ color: "var(--ink-500)" }} role="status">{cbPerformance ? "Chưa có report được CB chấp nhận trong kỳ để phân tích theo auditor." : "Đang tải hoặc chưa có dữ liệu hiệu suất."}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm" aria-label="Hiệu suất kiểm định viên trong 90 ngày">
+                  <thead><tr className="border-b" style={{ color: "var(--ink-500)" }}><th scope="col" className="py-2 pr-4">Auditor</th><th scope="col" className="py-2 pr-4">Report được chấp nhận<br />90 ngày / kỳ trước</th><th scope="col" className="py-2 pr-4">Chu kỳ tạo → chấp nhận<br />median / p90 (giờ), hiện tại / kỳ trước</th><th scope="col" className="py-2">Ngày lịch hẹn → chấp nhận<br />median / p90 (ngày), hiện tại / kỳ trước</th></tr></thead>
+                  <tbody>{cbPerformance.auditors.map((auditor) => <tr key={auditor.auditor_id} className="border-b last:border-0" style={{ borderColor: "var(--cream-200)" }}><th scope="row" className="py-3 pr-4 font-semibold" style={{ color: "var(--navy-900)" }}>{auditor.name || "Auditor (tên không khả dụng)"}</th><td className="py-3 pr-4">{auditor.completed.current_90d} / {auditor.completed.previous_90d}</td><td className="py-3 pr-4">{auditor.cycle_time_hours.current_median ?? "—"} / {auditor.cycle_time_hours.current_p90 ?? "—"} · {auditor.cycle_time_hours.previous_median ?? "—"} / {auditor.cycle_time_hours.previous_p90 ?? "—"}</td><td className="py-3">{auditor.scheduled_to_acceptance_days.current_median ?? "—"} / {auditor.scheduled_to_acceptance_days.current_p90 ?? "—"} · {auditor.scheduled_to_acceptance_days.previous_median ?? "—"} / {auditor.scheduled_to_acceptance_days.previous_p90 ?? "—"}</td></tr>)}</tbody>
+                  <tfoot><tr className="border-t-2 font-bold" style={{ borderColor: "var(--cream-300)", color: "var(--navy-900)" }}><th scope="row" className="py-3 pr-4">Tổng auditor được phân công</th><td className="py-3 pr-4">{cbPerformance.total.completed.current_90d} / {cbPerformance.total.completed.previous_90d}</td><td className="py-3 pr-4">{cbPerformance.total.cycle_time_hours.current_median ?? "—"} / {cbPerformance.total.cycle_time_hours.current_p90 ?? "—"} · {cbPerformance.total.cycle_time_hours.previous_median ?? "—"} / {cbPerformance.total.cycle_time_hours.previous_p90 ?? "—"}</td><td className="py-3">{cbPerformance.total.scheduled_to_acceptance_days.current_median ?? "—"} / {cbPerformance.total.scheduled_to_acceptance_days.current_p90 ?? "—"} · {cbPerformance.total.scheduled_to_acceptance_days.previous_median ?? "—"} / {cbPerformance.total.scheduled_to_acceptance_days.previous_p90 ?? "—"}</td></tr></tfoot>
+                </table>
+              </div>
+            )}
+            {cbPerformance?.limitations.map((limitation) => <p key={limitation} className="mt-2 text-xs" style={{ color: "var(--ink-500)" }}>{limitation}</p>)}
+          </section>
+        )}
+
         {/* Row 4 — Quick actions */}
         <div className="animate-section">
           <h3 className="text-sm font-bold mb-3" style={{ color: "var(--navy-900)" }}>
@@ -761,7 +859,7 @@ export default function ProviderDashboard() {
         </div>
       </div>
 
-      {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { setStatsError(""); setLoadingStats(true); void fetchAuditorStats().finally(() => setLoadingStats(false)); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+      {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { const generation = ++requestGenerationRef.current; activeContextRef.current = contextKey; void refreshDashboardStats(contextKey, generation, false); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
       {/* Auditor stat cards */}
       {au && (

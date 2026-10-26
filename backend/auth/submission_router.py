@@ -109,7 +109,226 @@ def _validate_transition(from_status: str, to_status: str) -> None:
         )
 
 
-# ── CB Dashboard: comprehensive stats ────────────────────────────────────────
+# ── CB Dashboard: canonical owner entitlement ────────────────────────────────
+
+
+async def _resolve_cb_provider_actor(user: dict, db) -> Optional[dict]:
+    """Resolve an active provider principal and scope without identity reconciliation.
+
+    Caller-supplied owner/tenant claims are never the authorization source.
+    ``cb_admin`` is the Keycloak role for a CB owner; ``is_owner`` from the
+    canonical row distinguishes it from provider auditors. A platform admin
+    normalized to the provider app-role is explicitly denied.
+    """
+    if user.get("role") != "provider":
+        return None
+    realm_roles = user.get("realm_roles") or []
+    if not isinstance(realm_roles, (list, tuple, set)):
+        return None
+    roles = {str(role).lower() for role in realm_roles}
+    if roles & {"platform_admin", "business"}:
+        return None
+
+    raw_app_id = user.get("app_user_id")
+    raw_subject = user.get("keycloak_sub") or user.get("sub")
+    try:
+        if raw_app_id:
+            actor_id = _UUID(str(raw_app_id))
+            predicate = "id = $1"
+        elif user.get("_keycloak"):
+            actor_id = _UUID(str(raw_subject))
+            predicate = "keycloak_sub = $1"
+        else:
+            actor_id = _UUID(str(raw_subject))
+            predicate = "id = $1"
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+    row = await db.fetchrow(
+        f"SELECT id, role, status, is_owner, tenant_id FROM users WHERE {predicate}",
+        actor_id,
+    )
+    if not row or row["role"] != "provider" or row["status"] != "active":
+        return None
+    if row["is_owner"] is True:
+        if "auditor" in roles:
+            return None
+        owner = True
+        raw_tenant_id = row["tenant_id"] or row["id"]
+    elif row["is_owner"] is False:
+        owner = False
+        raw_tenant_id = row["tenant_id"]
+    else:
+        return None
+
+    try:
+        canonical_id = _UUID(str(row["id"]))
+        tenant_id = _UUID(str(raw_tenant_id))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return {"actor_id": canonical_id, "tenant_id": tenant_id, "is_owner": owner}
+
+
+async def _resolve_cb_metrics_owner_scope(user: dict, db) -> Optional[_UUID]:
+    """Return a canonical, active CB-owner tenant ID using read-only SQL."""
+    scope = await _resolve_cb_provider_actor(user, db)
+    return scope["tenant_id"] if scope and scope["is_owner"] else None
+
+
+@router.get("/cb-performance")
+async def cb_performance_90d(
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Owner-only auditor performance, attributed to CB report acceptance time."""
+    provider_id = await _resolve_cb_metrics_owner_scope(user, db)
+    if provider_id is None:
+        raise HTTPException(403, "Chỉ chủ CB được xem hiệu suất auditor")
+
+    rows = await db.fetch(
+        """
+        WITH accepted_visits AS (
+            SELECT av.auditor_id,
+                   auditor.company_name AS auditor_name,
+                   av.report_accepted_at,
+                   av.created_at,
+                   av.scheduled_date
+            FROM audit_visits av
+            LEFT JOIN users auditor
+              ON auditor.id = av.auditor_id
+             AND auditor.tenant_id = av.provider_id
+             AND auditor.role = 'provider'
+             AND auditor.is_owner = false
+            WHERE av.provider_id = $1
+              AND av.auditor_id IS NOT NULL
+              AND av.status = 'report_accepted'
+              AND av.report_accepted_at >= NOW() - INTERVAL '180 days'
+              AND av.report_accepted_at <= NOW()
+        )
+        SELECT auditor_id,
+               MAX(auditor_name) AS auditor_name,
+               GROUPING(auditor_id) AS is_total,
+               COUNT(*) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_completed,
+               COUNT(*) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_completed,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_cycle_median_hours,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_cycle_p90_hours,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_cycle_median_hours,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_cycle_p90_hours,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_visit_turnaround_median_days,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_visit_turnaround_p90_days,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_visit_turnaround_median_days,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_visit_turnaround_p90_days
+        FROM accepted_visits
+        GROUP BY GROUPING SETS ((auditor_id), ())
+        ORDER BY GROUPING(auditor_id) DESC, auditor_name NULLS LAST
+        """,
+        provider_id,
+    )
+
+    def _number(row, key, digits=1):
+        value = row[key]
+        return round(float(value), digits) if value is not None else None
+
+    def _summary(row):
+        return {
+            "completed": {
+                "current_90d": int(row["current_completed"] or 0),
+                "previous_90d": int(row["previous_completed"] or 0),
+            },
+            "cycle_time_hours": {
+                "current_median": _number(row, "current_cycle_median_hours"),
+                "current_p90": _number(row, "current_cycle_p90_hours"),
+                "previous_median": _number(row, "previous_cycle_median_hours"),
+                "previous_p90": _number(row, "previous_cycle_p90_hours"),
+            },
+            "scheduled_to_acceptance_days": {
+                "current_median": _number(row, "current_visit_turnaround_median_days"),
+                "current_p90": _number(row, "current_visit_turnaround_p90_days"),
+                "previous_median": _number(row, "previous_visit_turnaround_median_days"),
+                "previous_p90": _number(row, "previous_visit_turnaround_p90_days"),
+            },
+        }
+
+    total_row = next((row for row in rows if row["is_total"]), None)
+    auditor_rows = [row for row in rows if not row["is_total"]]
+    zero_summary = {
+        "completed": {"current_90d": 0, "previous_90d": 0},
+        "cycle_time_hours": {
+            "current_median": None,
+            "current_p90": None,
+            "previous_median": None,
+            "previous_p90": None,
+        },
+        "scheduled_to_acceptance_days": {
+            "current_median": None,
+            "current_p90": None,
+            "previous_median": None,
+            "previous_p90": None,
+        },
+    }
+    return {
+        "window_days": 90,
+        "attribution": "report_accepted_at",
+        "total": _summary(total_row) if total_row else zero_summary,
+        "auditors": [
+            {
+                "auditor_id": str(row["auditor_id"]),
+                "name": row["auditor_name"],
+                **_summary(row),
+            }
+            for row in auditor_rows
+        ],
+        "limitations": [
+            "Cancellation and reschedule attribution is not available: the current audit-visit model does not persist those events.",
+            "Overdue reports, rework, checklist evidence, NCR follow-through, repeat visits, and conflict declarations are not included until authoritative data contracts are verified.",
+        ],
+    }
 
 
 @router.get("/cb-stats")
@@ -117,12 +336,10 @@ async def cb_stats(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    """Comprehensive CB dashboard stats — owner only."""
-    if user["role"] != "provider":
-        raise HTTPException(403)
-    if not user.get("is_owner"):
-        raise HTTPException(403, "Chỉ chủ tổ chức")
-    pid = await resolve_canonical_tenant_id(user, db)
+    """Comprehensive CB dashboard stats — active persisted CB owners only."""
+    pid = await _resolve_cb_metrics_owner_scope(user, db)
+    if pid is None:
+        raise HTTPException(403, "Chỉ chủ CB được xem số liệu tổ chức")
 
     # Portfolio size
     portfolio = await db.fetchval(
@@ -141,8 +358,8 @@ async def cb_stats(
         SELECT
             COUNT(*) AS total,
             COUNT(*) FILTER (WHERE status='active') AS active,
-            COUNT(*) FILTER (WHERE status='active' AND expiry_date < NOW() + INTERVAL '90 days') AS expiring_soon,
-            COUNT(*) FILTER (WHERE status='suspended' OR status='revoked') AS inactive
+            COUNT(*) FILTER (WHERE status='active' AND expiry_date >= CURRENT_DATE AND expiry_date <= CURRENT_DATE + INTERVAL '60 days') AS expiring_soon,
+            COUNT(*) FILTER (WHERE status IN ('suspended','revoked')) AS inactive
         FROM halal_certificates WHERE issued_by=$1
     """,
         pid,
@@ -153,8 +370,8 @@ async def cb_stats(
         """
         SELECT
             COUNT(*) AS total,
-            COUNT(*) FILTER (WHERE status IN ('completed','report_submitted')) AS completed,
-            ROUND(AVG(compliance_score) FILTER (WHERE compliance_score IS NOT NULL)) AS avg_compliance
+            COUNT(*) FILTER (WHERE status='report_accepted') AS completed,
+            ROUND(AVG(compliance_score) FILTER (WHERE status='report_accepted' AND compliance_score IS NOT NULL)) AS avg_compliance
         FROM audit_visits WHERE provider_id=$1
     """,
         pid,
@@ -186,12 +403,14 @@ async def cb_stats(
         pid,
     )
 
-    # Expiring certs (next 90 days)
+    # Certificate summary uses the spec's 60-day expiry window.
     expiring = await db.fetch(
         """
         SELECT cert_number, company_name, expiry_date
         FROM halal_certificates
-        WHERE issued_by=$1 AND status='active' AND expiry_date < NOW() + INTERVAL '90 days'
+        WHERE issued_by=$1 AND status='active'
+          AND expiry_date >= CURRENT_DATE
+          AND expiry_date <= CURRENT_DATE + INTERVAL '60 days'
         ORDER BY expiry_date ASC LIMIT 10
     """,
         pid,
@@ -246,10 +465,13 @@ async def provider_stats(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    if user["role"] != "provider":
-        raise HTTPException(403, "Chỉ dành cho tổ chức")
-
-    where, param = await _provider_filter(user, db)
+    scope = await _resolve_cb_provider_actor(user, db)
+    if scope is None:
+        raise HTTPException(403, "Chỉ thành viên tổ chức đang hoạt động được xem hàng đợi")
+    if scope["is_owner"]:
+        where, param = "s.provider_id = $1", scope["tenant_id"]
+    else:
+        where, param = "s.auditor_id = $1", scope["actor_id"]
 
     # Counts by status
     counts = await db.fetchrow(
