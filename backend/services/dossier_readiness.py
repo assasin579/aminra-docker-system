@@ -164,7 +164,12 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
            AND EXISTS (
                SELECT 1 FROM documents d
                 WHERE d.id = ANY(submissions.document_ids)
-                  AND d.dossier_id = $2 AND d.tenant_id = $1
+                  AND d.tenant_id = $1
+                  AND (d.dossier_id = $2 OR EXISTS (
+                      SELECT 1 FROM dossier_document_attachments a
+                       WHERE a.dossier_id=$2 AND a.document_id=d.id
+                         AND a.requirements_version_id=$3 AND a.doc_type=d.doc_type
+                  ))
            )
          ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC
          LIMIT 1
@@ -175,11 +180,22 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
 
     document_rows = await db.fetch(
         """
-        SELECT id, doc_type, status, approval_status, compliance_score, evaluation_result, version_number
-          FROM documents
-         WHERE dossier_id = $1 AND tenant_id = $2
-           AND id = ANY(COALESCE($3::uuid[], '{}'::uuid[]))
-         ORDER BY uploaded_at DESC, id ASC
+        SELECT d.id, d.doc_type, d.status, d.approval_status, d.compliance_score, d.evaluation_result,
+               COALESCE(a.document_version_number, d.version_number) AS version_number
+          FROM documents d
+          LEFT JOIN dossier_document_attachments a
+            ON a.dossier_id=$1 AND a.document_id=d.id
+           AND a.requirements_version_id=(SELECT requirements_version_id FROM dossiers WHERE id=$1)
+           AND a.doc_type=d.doc_type
+         WHERE d.tenant_id = $2
+           AND d.id = ANY(COALESCE(
+               $3::uuid[],
+               ARRAY(SELECT a.document_id FROM dossier_document_attachments a
+                      WHERE a.dossier_id=$1
+                        AND a.requirements_version_id=(SELECT requirements_version_id FROM dossiers WHERE id=$1))
+           ))
+           AND (d.dossier_id=$1 OR a.document_id IS NOT NULL)
+         ORDER BY d.uploaded_at DESC, d.id ASC
         """,
         str(dossier_id),
         str(tenant_id),

@@ -109,8 +109,8 @@ async def test_readiness_document_query_uses_only_selected_submission_round_evid
 
     assert result["readiness_percent"] == 25
     assert result["missing_required_documents"] == ["has_manual"]
-    document_query = next(call for call in _recorded_sql(db, "FROM documents") if "SELECT id, doc_type" in call[1][0])
-    assert "id = ANY(COALESCE($3::uuid[], '{}'::uuid[]))" in document_query[1][0]
+    document_query = next(call for call in _recorded_sql(db, "FROM documents") if "SELECT d.id, d.doc_type" in call[1][0])
+    assert "d.id = ANY(COALESCE(" in document_query[1][0]
     assert document_query[1][1] == (str(dossier_id), str(tenant_id), [docs[0]["id"]])
 
 

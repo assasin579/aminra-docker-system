@@ -87,7 +87,7 @@ const readinessFixture = {
   due_date: "2026-10-12",
   required_documents: ["company_profile", "halal_policy", "has_manual"],
   missing_required_documents: [
-    { doc_type: "halal_policy", label: "Chính sách Halal" },
+    { id: null, code: null, title: null, label: "Chính sách Halal", doc_type: "halal_policy", filename: null, reason: null, description: null, severity: null, deadline: null },
   ],
   unreviewed_documents: [
     { id: "doc-2", filename: "policy.pdf", doc_type: "halal_policy" },
