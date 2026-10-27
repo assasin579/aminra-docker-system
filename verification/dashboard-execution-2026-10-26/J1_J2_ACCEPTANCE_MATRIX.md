@@ -1,6 +1,6 @@
 # AMINRA J1/J2 acceptance matrix — current evidence
 
-Source workspace: `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`, base HEAD before closeout `28bbaf11cc6c03bc3995a4598f404224cb4c226b`; current-source delta below supersedes historical statuses where evidence changed. Closeout source/docs/evidence have not yet been committed at this point. No push/deploy/original-checkout writes. STOP C and customer-pilot NO-GO remain.
+Source workspace: `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`, closeout commit `147f4a87014cc0341f938e11a76b2b216f9e4269` (parent `28bbaf11cc6c03bc3995a4598f404224cb4c226b`); tests were run against identical source immediately before the scoped commit. Current-source delta below supersedes historical statuses where evidence changed. No push/deploy/original-checkout writes. STOP C and customer-pilot NO-GO remain.
 
 | Requirement | Test/evidence | Source basis | Status | Remaining gap |
 |---|---|---|---|---|

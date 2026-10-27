@@ -1,6 +1,6 @@
 # AMINRA J1/J2 — Canonical Execution Checkpoint
 
-**Updated:** 2026-10-27 final verification attempt. Branch `dashboard/execution-2026-10-26`; HEAD `62b656fdafa531d7b16ceaddde5bd9e8fb68ffea` (checkpoint commit; parent/code commit `188de37df185bf370873a63859f62b8cba6b6abe`, ancestor `c9bf7ad9f9237da569a5a3728666bd9e9f6d858c`). Working tree contains uncommitted J1/A02 source, tests, harness, report edits and synthetic storage; latest verification found current A02 code mounted into the backend container and Next server cwd is this workspace. Final verdict remains PARTIAL; do not hand off as 100% accepted. See `J1_J2_ACCEPTANCE_MATRIX.md` and this delta for current-source evidence and failed verification.
+**Updated:** 2026-10-27 post-acceptance cleanup. Branch `dashboard/execution-2026-10-26`; final local documentation sync commit follows closeout code/evidence commit `147f4a87014cc0341f938e11a76b2b216f9e4269` (see git log); no push. Intended source/evidence is committed locally. Remaining modified/untracked entries are generated `frontend/aminra-web/next-env.d.ts`, exploratory E2E specs, empty harness and superseded corrective patch; preserved and excluded. Runtime cleanup completed for the confirmed current synthetic run. Overall acceptance remains PARTIAL; J1-A01/J1-A03 not verified.
 **Canonical path:** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/J1_J2_CHECKPOINT.md`
 **Index:** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/INDEX.md`
 
