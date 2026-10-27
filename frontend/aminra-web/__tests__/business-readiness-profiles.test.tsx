@@ -38,9 +38,38 @@ describe("BusinessReadinessProfiles", () => {
     expect(screen.getByText("missing_required")).toBeInTheDocument(); expect(screen.getAllByText("pending_review")).toHaveLength(2);
     expect(screen.getByText(/e1/)).toBeInTheDocument(); expect(screen.getByText(/version 3/i)).toBeInTheDocument();
     expect(screen.getByText(/Readiness:.*50/)).toBeInTheDocument(); expect(screen.queryByText(/Readiness:.*99/)).not.toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Legacy dossier" })).getByText(/UNKNOWN \(legacy\/unbound\)/)).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Dossier Two" })).getByRole("link", { name: /open dossier/i })).toHaveAttribute("href", "/dossiers/d2"); expect(within(screen.getByRole("region", { name: "Dossier One" })).getByRole("link", { name: /upload required documents/i })).toHaveAttribute("href", "/dossiers/d1");
     expect(screen.getAllByText(/waiting/i)).toHaveLength(2);
     expect(screen.getByText(/page 1/i)).toBeInTheDocument();
+  });
+  it("shows empty published requirements without a fabricated percentage", async () => {
+    const p = payload();
+    const profiles = p.profiles as Array<{ dossiers: Array<{ readiness: Record<string, unknown> }> }>;
+    profiles[0].dossiers[0].readiness = { state: "requirements_empty", readiness_percent: null, requirements_binding_status: "bound", requirements_version_id: "v1", next_action: "configure_requirement_slots", next_actor_role: "platform_admin", requirement_slots: [] };
+    vi.mocked(fetch).mockResolvedValue(ok(p) as Response);
+    render(<BusinessReadinessProfiles token="t" contextKey="actor-a:org-a:business:active:owner:upload:industry-a" />);
+    const dossier = within(await screen.findByRole("region", { name: "Dossier One" }));
+    expect(dossier.getByText(/published requirements have no slots/i)).toBeInTheDocument();
+    expect(dossier.queryByText(/Readiness:/)).not.toBeInTheDocument();
+    expect(dossier.getByText(/requirements version: v1/i)).toBeInTheDocument();
+  });
+  it("renders server readiness for exact required slots and round-scoped human approval", async () => {
+    const p = payload();
+    const profiles = p.profiles as Array<{ dossiers: Array<{ readiness: Record<string, unknown> }> }>;
+    profiles[0].dossiers[0].readiness = { state: "documents_in_review", readiness_percent: 25, requirements_binding_status: "bound", requirements_version_id: "version-pinned", next_action: "review_uploaded_documents", next_actor_role: "reviewer", requirement_slots: [
+      { doc_type: "policy", required: true, state: "pending_review", evidence_document_id: "doc-ai-only", evidence_version: 3, requirements_version_id: "version-pinned", submission_id: "submission-current", submitted_round: 4 },
+      { doc_type: "manual", required: true, state: "approved", evidence_document_id: "doc-reviewed", evidence_version: 2, requirements_version_id: "version-pinned", submission_id: "submission-current", submitted_round: 4 },
+      { doc_type: "optional", required: false, state: "optional_not_submitted", requirements_version_id: "version-pinned", submission_id: "submission-current", submitted_round: 4 },
+    ] };
+    vi.mocked(fetch).mockResolvedValue(ok(p) as Response);
+    render(<BusinessReadinessProfiles token="t" contextKey="actor-a:org-a:business:active:owner:upload:industry-a" />);
+    const dossier = within(await screen.findByRole("region", { name: "Dossier One" }));
+    expect(dossier.getByText("Readiness: 25%")).toBeInTheDocument();
+    expect(dossier.getByText("pending_review")).toBeInTheDocument();
+    expect(dossier.getByText("approved")).toBeInTheDocument();
+    expect(dossier.getByText(/doc-ai-only, version 3/)).toBeInTheDocument();
+    expect(dossier.getAllByText(/submission-current, round 4/)).toHaveLength(3);
   });
   it("does not treat AI-compliant evidence as approved", async () => {
     const p = payload();

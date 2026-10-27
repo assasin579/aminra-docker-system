@@ -5,7 +5,7 @@
 **Execution result:** `J1_J2_EXECUTION_RESULT.md`
 **Task graph:** `J1_J2_TASKS.md`
 
-**Current continuation (2026-10-27):** closeout commit `147f4a87014cc0341f938e11a76b2b216f9e4269` records the API restart, direct file HTTP+hash check, scoped lifecycle/app-role tests, current G1 browser rerun, and evidence logs. Tests ran on identical source precommit; no push. Current acceptance closes J1-A08, J2-A06, X-A01, X-A02 and X-A04 at synthetic/local boundaries; J1-A01 and J1-A03 remain NOT VERIFIED. Alembic heads 053/055 were read from DB as `a02_app`; CLI `alembic current` lacks psycopg in runtime image. Overall PARTIAL.
+**Current continuation (2026-10-27):** J1-A01 and J1-A03 now PASS at scoped service/query + UI boundaries after 27 focused backend tests and 26 Vitest tests; see canonical checkpoint and matrix for limitations/rerun commands. Overall remains PARTIAL: J1-A02 rendered exact-version Dossier attach remains unproven; X-A02 needs a separate disposable-DB recovery rehearsal. RLS/Forced-RLS not tested; runtime/release/customer-pilot remain unauthorized; STOP C and customer-pilot NO-GO remain.
 
 **Status: J1/J2 PARTIAL, not DONE.** No R1–R12 J1/J2 mapping in the supplied approved source; use as cross-reference only. RLS/Forced-RLS NOT TESTED (0 policies). Runtime/release/customer-pilot remain unauthorized; STOP C and customer-pilot NO-GO remain.
 

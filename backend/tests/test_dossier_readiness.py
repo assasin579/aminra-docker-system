@@ -466,6 +466,63 @@ async def test_published_version_with_optional_slots_keeps_them_visible_without_
     assert not _recorded_sql(db, "FROM documents")
 
 
+async def test_published_version_with_no_slots_is_unknown_percentage_not_ready():
+    from services.dossier_readiness import compute_dossier_readiness
+
+    dossier_id, tenant_id = uuid4(), uuid4()
+    db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=uuid4())
+    db.fetch_responses[0] = ("FROM standard_requirement_version_slots", [])
+
+    result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
+
+    assert result["state"] == "requirements_empty"
+    assert result["readiness_percent"] is None
+    assert result["requirement_slots"] == []
+    assert result["certificate_issue_blocked"] is True
+    assert result["blocking_reasons"] == [{"code": "published_requirements_have_no_slots"}]
+    assert not _recorded_sql(db, "FROM documents")
+
+
+async def test_readiness_counts_pinned_required_slots_not_document_versions_or_ai_compliance():
+    from services.dossier_readiness import compute_dossier_readiness
+
+    dossier_id, tenant_id = uuid4(), uuid4()
+    db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=uuid4())
+    dossier = db.fetchrow_responses[0][1]
+    submission = db.fetchrow_responses[1][1]
+    assert dossier is not None and submission is not None
+    pinned_version = dossier["requirements_version_id"]
+    db.fetch_responses[0] = ("FROM standard_requirement_version_slots", [
+        FakeRecord(doc_type="policy", required=True, display_order=1),
+        FakeRecord(doc_type="manual", required=True, display_order=2),
+        FakeRecord(doc_type="optional", required=False, display_order=3),
+    ])
+    current_policy = FakeRecord(id=uuid4(), doc_type="policy", status="compliant", approval_status="draft", compliance_score=100, evaluation_result={"overall_status": "compliant"}, version_number=3)
+    old_approved_policy = FakeRecord(id=uuid4(), doc_type="policy", status="approved", approval_status="approved", compliance_score=90, evaluation_result={}, version_number=2)
+    previous_round_policy = FakeRecord(id=uuid4(), doc_type="policy", status="approved", approval_status="approved", compliance_score=92, evaluation_result={}, version_number=1)
+    approved_manual = FakeRecord(id=uuid4(), doc_type="manual", status="approved", approval_status="approved", compliance_score=50, evaluation_result={}, version_number=1)
+    submission["requirements_version_id"] = pinned_version
+    submission["revision_round"] = 4
+    submission["document_ids"] = [current_policy["id"], old_approved_policy["id"], approved_manual["id"]]
+    db.fetch_responses[1] = ("FROM documents", [current_policy, old_approved_policy, approved_manual])
+
+    result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
+
+    assert result["required_documents"] == ["policy", "manual"]
+    assert len(result["required_documents"]) == 2
+    assert result["readiness_percent"] == 25
+    assert result["requirement_slots"][0]["state"] == "pending_review"
+    assert result["requirement_slots"][0]["evidence_document_id"] == str(current_policy["id"])
+    assert result["requirement_slots"][0]["evidence_version"] == 3
+    assert result["requirement_slots"][0]["submitted_round"] == 5
+    slot_query = _recorded_sql(db, "FROM standard_requirement_version_slots")
+    assert slot_query[0][1][1] == (pinned_version,)
+    document_query = next(call for call in _recorded_sql(db, "FROM documents") if "SELECT d.id, d.doc_type" in call[1][0])
+    assert document_query[1][1][2] == [current_policy["id"], old_approved_policy["id"], approved_manual["id"]]
+    assert previous_round_policy["id"] not in document_query[1][1][2]
+    assert result["requirement_slots"][0]["evidence_document_id"] != str(old_approved_policy["id"])
+
+
 
 async def test_readiness_includes_state_owner_role_and_earliest_blocking_due_date():
     from services.dossier_readiness import compute_dossier_readiness

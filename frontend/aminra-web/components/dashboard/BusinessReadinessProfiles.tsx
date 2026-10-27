@@ -215,6 +215,7 @@ export default function BusinessReadinessProfiles({ token, contextKey }: { token
                 <h4>{dossier.title}</h4>
                 <p>Status: {bindingLabel(binding)}; requirements version: {versionId ?? "not bound"}</p>
                 {readiness?.state === "requirements_no_required_slots" && <p>Published requirements contain no required slots; percentage is not applicable.</p>}
+                {readiness?.state === "requirements_empty" && <p>Published requirements have no slots; percentage is not applicable.</p>}
                 {known && readiness?.readiness_percent != null && <p>Readiness: {readiness.readiness_percent}%</p>}
                 {slots.length > 0 && (
                   <ul aria-label={`${dossier.title} requirements`}>
