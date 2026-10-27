@@ -1833,23 +1833,14 @@ async def replace_submission_document(
         raise HTTPException(400, "Tài liệu cũ không thuộc hồ sơ này")
     doc_ids[doc_ids.index(old_doc_id)] = new_doc_id
 
-    # W3-M6 fix — replace from `revision_required` must flip back to reviewing
-    # AND resolve any pending revision request, otherwise CB never knows the
-    # ball is back in their court.
-    if sub["status"] == "revision_required":
-        await db.execute(
-            "UPDATE submissions SET document_ids = $1::uuid[], status = 'reviewing', updated_at = NOW() WHERE id = $2",
-            doc_ids,
-            submission_id,
-        )
-        await db.execute(
-            "UPDATE submission_revision_requests SET resolved_at = NOW() WHERE submission_id = $1 AND resolved_at IS NULL",
-            submission_id,
-        )
-    else:
-        await db.execute(
-            "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2", doc_ids, submission_id
-        )
+    # Replacement uploads update only the current document pointer. The
+    # revision request remains open until the Business explicitly resubmits;
+    # that explicit resubmit is the transaction that resolves the request.
+    await db.execute(
+        "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2",
+        doc_ids,
+        submission_id,
+    )
 
     # Notify provider + auditor
     sub_info = await db.fetchrow(

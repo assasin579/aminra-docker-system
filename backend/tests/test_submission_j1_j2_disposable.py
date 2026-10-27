@@ -216,6 +216,73 @@ async def _request_revision(monkeypatch, db, case, feedback: str = "Synthetic ro
 
 
 @pytest.mark.asyncio
+async def test_replacement_preserves_open_revision_until_explicit_resubmit_retry(db, case, monkeypatch):
+    await _request_revision(monkeypatch, db, case, "Replace the policy evidence")
+    old_doc = case["initial_docs"][0]
+    new_doc = case["docs"]["permit-v2"]["id"]
+    business = case["users"]["business_a"]
+    await submission_router.replace_submission_document(
+        submission_id=str(case["ids"]["submission"]),
+        request={"old_doc_id": str(old_doc), "new_doc_id": str(new_doc)},
+        user=business, db=db,
+    )
+
+    after_replace = await db.fetchrow(
+        "SELECT status, revision_round, document_ids FROM submissions WHERE id=$1",
+        case["ids"]["submission"],
+    )
+    request_row = await db.fetchrow(
+        """SELECT resolved_at, submitted_round, submitted_document_ids
+             FROM submission_revision_requests WHERE submission_id=$1 AND round=1""",
+        case["ids"]["submission"],
+    )
+    assert after_replace["status"] == "revision_required"
+    assert after_replace["revision_round"] == 1
+    assert new_doc in after_replace["document_ids"]
+    assert request_row["resolved_at"] is None
+    assert request_row["submitted_round"] == 1
+    assert request_row["submitted_document_ids"] == case["initial_docs"]
+
+    notifications = []
+    audits = []
+    async def capture_notify(*args, **kwargs):
+        notifications.append((args, kwargs))
+    async def capture_audit(*args, **kwargs):
+        audits.append((args, kwargs))
+    monkeypatch.setattr(submission_router, "notify", capture_notify)
+    monkeypatch.setattr(submission_router, "log_audit", capture_audit)
+    retry_request = synthetic_request(headers={"Idempotency-Key": "explicit-resubmit-after-replacement"})
+    payload = submission_router.ResubmitIn(business_notes="Policy evidence replaced")
+    first = await submission_router.business_resubmit(
+        submission_id=str(case["ids"]["submission"]), req=payload,
+        request=retry_request, owner=business, db=db,
+    )
+    second = await submission_router.business_resubmit(
+        submission_id=str(case["ids"]["submission"]), req=payload,
+        request=retry_request, owner=business, db=db,
+    )
+    assert second == first
+    assert len(notifications) == 1
+    assert len(audits) == 1
+
+    final = await db.fetchrow(
+        "SELECT status, revision_round, document_ids FROM submissions WHERE id=$1",
+        case["ids"]["submission"],
+    )
+    resolved = await db.fetchrow(
+        """SELECT resolved_at, submitted_round, submitted_document_ids
+             FROM submission_revision_requests WHERE submission_id=$1 AND round=1""",
+        case["ids"]["submission"],
+    )
+    assert final["status"] == "reviewing"
+    assert final["revision_round"] == 1
+    assert new_doc in final["document_ids"]
+    assert resolved["resolved_at"] is not None
+    assert resolved["submitted_round"] == 1
+    assert resolved["submitted_document_ids"] == case["initial_docs"]
+
+
+@pytest.mark.asyncio
 async def test_revision_history_scope_snapshot_and_uuid_values(db, case, monkeypatch):
     created = await _request_revision(monkeypatch, db, case)
     assert created["round"] == 1

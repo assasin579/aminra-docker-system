@@ -174,7 +174,7 @@ async def resubmit(
     sub = await db.fetchrow(
         """
         SELECT id, status, revision_round, revision_resubmitted_at, updated_at,
-               business_tenant, provider_id, document_ids,
+               business_tenant, provider_id, document_ids, dossier_id,
                requirements_version_id, requirements_binding_status
         FROM submissions WHERE id = $1
         """,
@@ -192,16 +192,13 @@ async def resubmit(
         submission_id,
     )
 
-    # Idempotency for the W3-M6 path: /replace-document already flips
-    # revision_required → reviewing AND resolves the pending request when the
-    # business uploads a fresh doc. A subsequent explicit /resubmit click then
-    # hits status=reviewing with no pending revision — treat as no-op success
-    # so the user does not see a confusing error after a workflow that already
-    # succeeded server-side. Guarded by revision_round > 0 so a fresh
-    # submission that never had a revision cycle still errors out.
+    # Legacy retry path for clients without an Idempotency-Key: after an
+    # explicit resubmit has committed, a repeated request must not create a
+    # second round or repeat notification/audit side effects. Replacement
+    # uploads do not resolve requests or enter this state.
     if sub["status"] == "reviewing" and pending is None and sub["revision_round"] > 0:
         log.info(
-            "[revisions] resubmit no-op submission=%s — already auto-resubmitted via replace-document",
+            "[revisions] resubmit no-op submission=%s — already explicitly resubmitted",
             submission_id,
         )
         return {
@@ -226,15 +223,18 @@ async def resubmit(
     if new_docs_param is not None:
         if not new_docs_param or len(set(new_docs_param)) != len(new_docs_param):
             raise InvalidStateTransition("resubmission evidence must contain unique document versions")
-        current_dossiers = await db.fetch(
-            "SELECT DISTINCT dossier_id FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
-            list(sub.get("document_ids") or []),
-            sub["business_tenant"],
-        )
-        dossier_ids = {row["dossier_id"] for row in current_dossiers if row["dossier_id"] is not None}
-        if len(dossier_ids) != 1 or len(current_dossiers) != 1:
-            raise InvalidStateTransition("cannot establish one canonical dossier for the submitted evidence")
-        dossier_id = next(iter(dossier_ids))
+        if sub.get("dossier_id"):
+            dossier_id = sub["dossier_id"]
+        else:
+            current_dossiers = await db.fetch(
+                "SELECT DISTINCT dossier_id FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
+                list(sub.get("document_ids") or []),
+                sub["business_tenant"],
+            )
+            dossier_ids = {row["dossier_id"] for row in current_dossiers if row["dossier_id"] is not None}
+            if len(dossier_ids) != 1 or len(current_dossiers) != 1:
+                raise InvalidStateTransition("cannot establish one canonical dossier for the submitted evidence")
+            dossier_id = next(iter(dossier_ids))
         dossier = await db.fetchrow(
             "SELECT id, requirements_version_id, requirements_binding_status FROM dossiers WHERE id=$1 AND tenant_id=$2",
             dossier_id,
@@ -246,12 +246,20 @@ async def resubmit(
         if binding_status == "bound":
             if not sub.get("requirements_version_id") or dossier.get("requirements_binding_status") != "bound" or dossier.get("requirements_version_id") != sub.get("requirements_version_id"):
                 raise InvalidStateTransition("submission requirements version does not match its bound dossier")
-        selected_docs = await db.fetch(
-            "SELECT id, dossier_id, tenant_id, doc_type, version_number FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2 AND dossier_id = $3",
-            new_docs_param,
-            sub["business_tenant"],
-            dossier_id,
-        )
+        if sub.get("dossier_id") and (sub.get("requirements_binding_status") or "unknown") == "bound":
+            selected_docs = await db.fetch(
+                """SELECT d.id, a.dossier_id, d.tenant_id, a.doc_type, a.document_version_number AS version_number
+                     FROM dossier_document_attachments a
+                     JOIN documents d ON d.id=a.document_id AND d.tenant_id=$2 AND d.doc_type=a.doc_type
+                    WHERE a.dossier_id=$3 AND a.requirements_version_id=$4
+                      AND a.document_id = ANY($1::uuid[])""",
+                new_docs_param, sub["business_tenant"], dossier_id, sub["requirements_version_id"],
+            )
+        else:
+            selected_docs = await db.fetch(
+                "SELECT id, dossier_id, tenant_id, doc_type, version_number FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2 AND dossier_id = $3",
+                new_docs_param, sub["business_tenant"], dossier_id,
+            )
         if len(selected_docs) != len(new_docs_param):
             raise InvalidStateTransition("each replacement document version must belong to the same business and dossier")
         if binding_status == "bound":

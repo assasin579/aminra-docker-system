@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Severity = "minor" | "major" | "critical";
 
@@ -385,22 +385,27 @@ function ResubmitForm({
   const [businessNotes, setBusinessNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const idempotencyKey = useRef<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
+      const key = idempotencyKey.current ?? crypto.randomUUID();
+      idempotencyKey.current = key;
       const res = await fetch(`/api/api/submissions/${submissionId}/resubmit`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "Idempotency-Key": key,
         },
         body: JSON.stringify({ business_notes: businessNotes.trim() }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
+      idempotencyKey.current = null;
       setBusinessNotes("");
       onResubmitted();
     } catch (err) {
@@ -426,7 +431,10 @@ function ResubmitForm({
       </div>
       <textarea
         value={businessNotes}
-        onChange={(e) => setBusinessNotes(e.target.value)}
+        onChange={(e) => {
+          idempotencyKey.current = null;
+          setBusinessNotes(e.target.value);
+        }}
         rows={3}
         placeholder="Mô tả những gì đã sửa (tùy chọn)…"
         className="w-full px-3 py-2 rounded-lg text-sm outline-none"

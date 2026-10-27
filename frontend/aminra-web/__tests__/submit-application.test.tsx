@@ -20,7 +20,7 @@ import SubmissionsPage from "@/app/submissions/page";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
-  useSearchParams: () => ({ get: () => null }),
+  useSearchParams: () => ({ get: (key: string) => new URLSearchParams(window.location.search).get(key) }),
 }));
 
 // ── Auth context ────────────────────────────────────────────────────────────
@@ -296,6 +296,25 @@ describe("handleSubmit", () => {
         notes: "Hồ sơ lần 1",
       });
     });
+  });
+
+  test("includes dossier_id from the Dossier submission deep link", async () => {
+    mockBizAuth();
+    window.history.replaceState({}, "", "/submissions?dossier_id=dossier-a02");
+    const fetchMock = await openModalWithData();
+    fetchMock
+      .mockResolvedValueOnce(respond(200, { message: "OK" }))
+      .mockResolvedValueOnce(emptySubs());
+    fireEvent.click(screen.getByText("HALCERT Vietnam"));
+    fireEvent.click(screen.getByRole("button", { name: /Gửi 1 tài liệu/i }));
+    await waitFor(() => {
+      const submitCall = fetchMock.mock.calls.find(
+        (c: unknown[]) => typeof c[0] === "string" && c[0].includes("/submissions/submit"),
+      );
+      expect(submitCall).toBeDefined();
+      expect(JSON.parse((submitCall![1] as { body: string }).body).dossier_id).toBe("dossier-a02");
+    });
+    window.history.replaceState({}, "", "/");
   });
 
   test("modal đóng và fetchSubs được gọi sau khi submit thành công", async () => {

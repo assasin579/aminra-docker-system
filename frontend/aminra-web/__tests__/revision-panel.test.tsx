@@ -261,6 +261,37 @@ describe("RevisionPanel — business resubmit", () => {
       );
     });
   });
+
+  test("resubmit retries preserve the same idempotency key after a lost response", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(respond(200, { history: [] }))
+      .mockRejectedValueOnce(new Error("response lost"))
+      .mockResolvedValueOnce(respond(200, { round_resolved: 1, resubmitted_at: "now" }))
+      .mockResolvedValueOnce(respond(200, { history: [] }));
+
+    render(<RevisionPanel {...baseProps} role="business" status="revision_required" />);
+    fireEvent.change(
+      await screen.findByPlaceholderText(/Mô tả những gì đã sửa/i),
+      { target: { value: "Đã upload bản mới có seal" } },
+    );
+    const submit = screen.getByRole("button", { name: /Đã sửa — gửi lại/i });
+    fireEvent.click(submit);
+    expect(await screen.findByText("response lost")).toBeInTheDocument();
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls.filter(
+        ([url]) => typeof url === "string" && url.endsWith("/sub-123/resubmit"),
+      );
+      expect(calls).toHaveLength(2);
+      const firstKey = new Headers(calls[0][1].headers).get("Idempotency-Key");
+      const secondKey = new Headers(calls[1][1].headers).get("Idempotency-Key");
+      expect(firstKey).toBeTruthy();
+      expect(secondKey).toBe(firstKey);
+      expect(calls[0][1].body).toBe(calls[1][1].body);
+    });
+  });
 });
 
 // ── History rendering ──────────────────────────────────────────────────────
