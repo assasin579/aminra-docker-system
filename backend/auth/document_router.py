@@ -549,8 +549,20 @@ async def _load_submission_document_read_access(doc_id: str, user: dict, db):
     actor_id = await resolve_canonical_user_id(user, db)
     if not actor_id:
         return None
+    actor = await db.fetchrow(
+        "SELECT id, role, status, is_owner, tenant_id FROM users WHERE id=$1",
+        actor_id,
+    )
+    if not actor or actor["role"] != "provider" or actor["status"] != "active":
+        return None
+    if actor["is_owner"] is True:
+        access_column = "s.provider_id"
+        access_id = actor["tenant_id"] or actor["id"]
+    else:
+        access_column = "s.auditor_id"
+        access_id = actor["id"]
     return await db.fetchrow(
-        """SELECT d.id, d.file_path, d.original_filename, d.mime_type,
+        f"""SELECT d.id, d.file_path, d.original_filename, d.mime_type,
                   d.version_number, d.dossier_id, s.business_tenant AS tenant_id,
                   s.id AS submission_id,
                   NULLIF(GREATEST(
@@ -561,7 +573,7 @@ async def _load_submission_document_read_access(doc_id: str, user: dict, db):
                          THEN COALESCE(s.revision_round, 0) ELSE 0 END
                   ), 0) AS access_round
              FROM documents d
-             JOIN submissions s ON (s.provider_id=$2 OR s.auditor_id=$2)
+             JOIN submissions s ON {access_column}=$2
             WHERE d.id=$1
               AND ($1=ANY(s.document_ids) OR EXISTS (
                     SELECT 1 FROM submission_revision_requests rr
@@ -570,7 +582,7 @@ async def _load_submission_document_read_access(doc_id: str, user: dict, db):
               ))
             ORDER BY access_round DESC NULLS LAST
             LIMIT 1""",
-        doc_id, actor_id,
+        doc_id, access_id,
     )
 
 

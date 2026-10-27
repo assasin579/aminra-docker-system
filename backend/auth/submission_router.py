@@ -39,6 +39,7 @@ class SubmitRequest(BaseModel):
     provider_id: str
     document_ids: List[str]
     notes: str = ""
+    dossier_id: Optional[str] = None
 
 
 class UpdateStatusRequest(BaseModel):
@@ -594,7 +595,7 @@ async def submit_documents(
         # Validate recipient and exact evidence within the same transaction as
         # submission, audit, and notification writes.
         provider = await db.fetchrow(
-            "SELECT id, company_name FROM users WHERE id = $1 AND role = 'provider' AND status = 'active' AND is_owner = true",
+            "SELECT id, COALESCE(tenant_id, id) AS organization_id, company_name FROM users WHERE id = $1 AND role = 'provider' AND status = 'active' AND is_owner = true",
             req.provider_id,
         )
         if not provider:
@@ -611,13 +612,36 @@ async def submit_documents(
 
         requirements_version_id = None
         requirements_binding_status = "unknown"
-        if doc_uuids:
+        dossier_id = None
+        if req.dossier_id is not None:
+            dossier_id = _validate_uuid(req.dossier_id)
+            dossier = await db.fetchrow(
+                "SELECT id, requirements_version_id, requirements_binding_status FROM dossiers WHERE id=$1 AND tenant_id=$2 AND status <> 'cancelled'",
+                dossier_id, tenant_id,
+            )
+            if not dossier or dossier.get("requirements_binding_status") != "bound" or not dossier.get("requirements_version_id"):
+                raise HTTPException(409, "Dossier requirements binding is unavailable")
+            requirements_version_id = dossier["requirements_version_id"]
+            requirements_binding_status = "bound"
+            if len(set(doc_uuids)) != len(doc_uuids):
+                raise HTTPException(400, "Duplicate document IDs are not allowed in a submission round")
+            attached_count = await db.fetchval(
+                """SELECT COUNT(DISTINCT a.document_id)
+                     FROM dossier_document_attachments a
+                     JOIN documents d ON d.id=a.document_id AND d.tenant_id=$2 AND d.doc_type=a.doc_type
+                    WHERE a.dossier_id=$1 AND a.requirements_version_id=$3
+                      AND a.document_id = ANY($4::uuid[])""",
+                dossier_id, tenant_id, requirements_version_id, doc_uuids,
+            ) if doc_uuids else 0
+            if attached_count != len(doc_uuids):
+                raise HTTPException(400, "Submission contains a document not attached to this pinned Dossier")
+        elif doc_uuids:
             dossier_rows = await db.fetch(
                 "SELECT DISTINCT dossier_id FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
                 doc_uuids, tenant_id,
             )
             if len(dossier_rows) > 1:
-                raise HTTPException(400, "Một submission round chỉ được chứa tài liệu từ cùng một dossier")
+                raise HTTPException(400, "A submission round must contain documents from one Dossier")
             dossier_id = dossier_rows[0]["dossier_id"] if dossier_rows else None
             if dossier_id:
                 dossier = await db.fetchrow(
@@ -634,10 +658,10 @@ async def submit_documents(
         company_name = biz["company_name"] if biz else ""
         row = await db.fetchrow(
             """INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name,
-                                        requirements_version_id, requirements_binding_status)
-               VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7) RETURNING id, submitted_at""",
-            tenant_id, req.provider_id, doc_uuids, req.notes, company_name,
-            requirements_version_id, requirements_binding_status,
+                                        requirements_version_id, requirements_binding_status, dossier_id)
+               VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7, $8) RETURNING id, submitted_at""",
+            tenant_id, provider["organization_id"], doc_uuids, req.notes, company_name,
+            requirements_version_id, requirements_binding_status, dossier_id,
         )
 
         log.info(f"[submission] {company_name} → {provider['company_name']}: {len(doc_uuids)} docs")
@@ -645,7 +669,8 @@ async def submit_documents(
             db, user=owner, action="submission.submit", entity_type="submission",
             entity_id=str(row["id"]),
             metadata={
-                "provider_id": req.provider_id,
+                "provider_id": str(provider["organization_id"]),
+                "provider_actor_id": str(provider["id"]),
                 "provider_name": provider["company_name"],
                 "document_count": len(doc_uuids),
             },
@@ -691,6 +716,7 @@ async def submit_documents(
     request_hash = stable_request_hash(
         payload={
             "provider_id": str(req.provider_id),
+            "dossier_id": str(req.dossier_id) if req.dossier_id else None,
             "document_ids": [str(document_id) for document_id in req.document_ids],
             "notes": req.notes,
         },
@@ -1245,7 +1271,7 @@ async def business_resubmit(
     )
     if sub is None:
         raise HTTPException(404, "Hồ sơ không tồn tại")
-    if str(sub["business_tenant"]) != owner["tenant_id"]:
+    if str(sub["business_tenant"]) != str(owner["tenant_id"]):
         raise HTTPException(403, "Hồ sơ không thuộc doanh nghiệp của bạn")
 
     # If new document_ids provided, verify they belong to the same tenant

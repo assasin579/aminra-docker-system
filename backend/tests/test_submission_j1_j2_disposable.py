@@ -10,7 +10,7 @@ import asyncio
 import hashlib
 import json
 import os
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import asyncpg
 import pytest
@@ -54,7 +54,7 @@ async def db():
 @pytest.fixture
 async def case(db):
     ids = {key: uuid4() for key in (
-        "business_a", "business_b", "cb_p", "cb_q", "assigned", "unassigned",
+        "business_a", "business_b", "cb_p", "cb_p_tenant", "cb_q", "assigned", "unassigned",
         "standard", "requirements", "dossier", "submission",
     )}
 
@@ -75,10 +75,11 @@ async def case(db):
 
     business_a = await add_user("business_a", "business", owner=True)
     business_b = await add_user("business_b", "business", owner=True)
-    cb_p = await add_user("cb_p", "provider", owner=True)
+    cb_p = await add_user("cb_p", "provider", owner=True, tenant="cb_p_tenant")
+    await add_user("cb_p_tenant", "provider", owner=True)
     cb_q = await add_user("cb_q", "provider", owner=True)
-    assigned = await add_user("assigned", "provider", owner=False, tenant="cb_p")
-    unassigned = await add_user("unassigned", "provider", owner=False, tenant="cb_p")
+    assigned = await add_user("assigned", "provider", owner=False, tenant="cb_p_tenant")
+    unassigned = await add_user("unassigned", "provider", owner=False, tenant="cb_p_tenant")
 
     await db.execute(
         "INSERT INTO standard_types (id, code, name_vi) VALUES ($1, $2, $3)",
@@ -147,7 +148,7 @@ async def case(db):
            (id, business_tenant, provider_id, auditor_id, document_ids, status,
             company_name, revision_round, requirements_version_id, requirements_binding_status)
            VALUES ($1, $2, $3, $4, $5::uuid[], 'reviewing', 'Synthetic Business A', 0, $6, 'bound')""",
-        ids["submission"], ids["business_a"], ids["cb_p"], assigned["id"],
+        ids["submission"], ids["business_a"], ids["cb_p_tenant"], assigned["id"],
         initial_docs, ids["requirements"],
     )
 
@@ -164,6 +165,36 @@ async def case(db):
         "round2_docs": [new_permit, new_manual, new_support, new_certificate],
         "wrong_docs": [old_permit, wrong_doc],
     }
+
+
+@pytest.mark.asyncio
+async def test_submit_routes_owner_selected_cb_to_canonical_org_tenant(db, case, monkeypatch):
+    async def no_notify(*_args, **_kwargs):
+        return None
+
+    async def no_audit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(submission_router, "notify", no_notify)
+    monkeypatch.setattr(submission_router, "log_audit", no_audit)
+    business = case["users"]["business_a"]
+    cb_owner = case["users"]["cb_p"]
+    result = await submission_router.submit_documents(
+        req=submission_router.SubmitRequest(
+            provider_id=str(cb_owner["id"]),
+            document_ids=[str(case["initial_docs"][0])],
+            notes="synthetic recipient-routing regression",
+        ),
+        request=synthetic_request(), owner=business, db=db,
+    )
+    row = await db.fetchrow(
+        "SELECT provider_id FROM submissions WHERE id=$1", UUID(result["submission_id"]),
+    )
+    assert str(row["provider_id"]) == str(case["ids"]["cb_p_tenant"])
+    received = await submission_router.received_submissions(user=cb_owner, db=db)
+    assert any(item["id"] == result["submission_id"] for item in received["submissions"])
+    unrelated = await submission_router.received_submissions(user=case["users"]["cb_q"], db=db)
+    assert all(item["id"] != result["submission_id"] for item in unrelated["submissions"])
 
 
 async def _request_revision(monkeypatch, db, case, feedback: str = "Synthetic round feedback"):
