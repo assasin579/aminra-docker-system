@@ -1,6 +1,6 @@
 # AMINRA J1/J2 acceptance matrix — current evidence
 
-Source workspace: `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`, pre-delta HEAD `df78f8b92b39233908530c96401c959f73e9a590`; latest readiness/UI delta is scoped for local commit and no push. Historical commit references below identify earlier evidence only. Current-source delta supersedes historical statuses where evidence changed. No deploy/original-checkout writes. STOP C and customer-pilot NO-GO remain.
+Source workspace: `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`, tested code commit `3f0a28958c4f71e8239514e4dec2c7fc615d802d` (parent `df78f8b92b39233908530c96401c959f73e9a590`); readiness/UI tests and evidence are on that source. Verification docs may receive a separate documentation-only sync. Historical commit references below identify earlier evidence only. Current-source delta supersedes historical statuses where evidence changed. No push/deploy/original-checkout writes. STOP C and customer-pilot NO-GO remain.
 
 | Requirement | Test/evidence | Source basis | Status | Remaining gap |
 |---|---|---|---|---|

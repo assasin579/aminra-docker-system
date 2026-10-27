@@ -2,7 +2,7 @@
 
 **As of:** 2026-10-27 post-restart lifecycle and acceptance rerun.
 **Workspace:** `/home/user/.cache/aminra-dashboard-integrated`
-**Branch/commit:** `dashboard/execution-2026-10-26`, closeout commit `147f4a87014cc0341f938e11a76b2b216f9e4269` (tests ran on identical source immediately before commit; no push).
+**Branch/source commit:** `dashboard/execution-2026-10-26`, tested code commit `3f0a28958c4f71e8239514e4dec2c7fc615d802d` (readiness/UI tests ran on identical source; no push).
 **Scope:** isolated source + task-owned synthetic DB/storage only. No original-checkout writes, push, merge, deploy, shared/runtime DB, or customer-pilot UAT. STOP C and customer-pilot NO-GO remain.
 
 ## Latest result
