@@ -1,6 +1,6 @@
 # AMINRA J1/J2 — Canonical Execution Checkpoint
 
-**Updated:** 2026-10-27 latest J1-A01/J1-A03 acceptance delta. Workspace `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`, latest local commit `3f0a28958c4f71e8239514e4dec2c7fc615d802d` (parent `df78f8b92b39233908530c96401c959f73e9a590`); no push. Existing dirty/untracked WIP (`next-env.d.ts`, exploratory E2E specs, harness, superseded patch) remains excluded and preserved. Current verdict PARTIAL: J1-A01/A03 PASS at stated boundaries; J1-A02 and X-A02 remain PARTIAL.
+**Updated:** 2026-10-27 latest J1-A01/J1-A03 acceptance delta. Workspace `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`; tested code commit `3f0a28958c4f71e8239514e4dec2c7fc615d802d`, latest documentation-only sync `11561fc2c2e6e69575dccc053181cea1d3575f92`; neither pushed. Existing dirty/untracked WIP (`next-env.d.ts`, exploratory E2E specs, harness, superseded patch) remains excluded and preserved. Current verdict PARTIAL: J1-A01/A03 PASS at stated boundaries; J1-A02 and X-A02 remain PARTIAL.
 **Canonical path:** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/J1_J2_CHECKPOINT.md`
 **Index:** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/INDEX.md`
 
