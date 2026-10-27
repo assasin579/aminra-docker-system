@@ -192,6 +192,9 @@ test('J1/J2: one fresh Business–CB pair completes rendered evidence and revisi
   const businessCardHeader = page.getByRole('button').filter({ hasText: marker }).first();
   await expect(businessCardHeader).toBeVisible();
   await businessCardHeader.click();
+  await expect(page.locator('[data-revision-panel]')).toBeVisible();
+  await expect(page.locator('[data-revision-panel]')).toContainText(`${marker}: replace policy evidence`);
+  await expect(page.locator('[data-revision-panel]')).toContainText('Vòng 1');
   const businessCard = businessCardHeader.locator('xpath=..');
   const replacementInput = businessCard.locator('input[type="file"]').first();
   await businessCard.locator('button[title="Upload phiên bản mới"]').click();
@@ -211,7 +214,7 @@ test('J1/J2: one fresh Business–CB pair completes rendered evidence and revisi
   expect(newDocumentId).toBeTruthy();
   const replaceResponse = await replaceWait;
   expect(replaceResponse.status()).toBe(200);
-  await expect(page.getByText(`revised-${run}.pdf`)).toBeVisible();
+  await expect(page.getByText(`revised-${run}.pdf`, { exact: true })).toBeVisible();
 
   const resubmitForm = page.locator('[data-form="resubmit"]');
   await expect(resubmitForm).toBeVisible();
@@ -231,6 +234,8 @@ test('J1/J2: one fresh Business–CB pair completes rendered evidence and revisi
   await expect(refreshedCard).toBeVisible();
   await refreshedCard.click();
   await expect(cbPage.getByText(`revised-${run}.pdf`)).toBeVisible();
+  const roundDiff = cbPage.getByRole('region', { name: /So sánh bằng chứng vòng 1/ });
+  await expect(roundDiff).toContainText(`original-${run}.pdf → revised-${run}.pdf`);
   const currentPreviewWait = cbPage.waitForResponse(response =>
     response.request().method() === 'GET' && new URL(response.url()).pathname.endsWith('/preview'),
   );

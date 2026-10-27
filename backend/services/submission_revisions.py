@@ -351,6 +351,22 @@ async def list_revision_history(
         """,
         submission_id,
     )
+    tenant_id = await db.fetchval(
+        "SELECT business_tenant FROM submissions WHERE id = $1", submission_id
+    )
+    snapshot_ids = list(dict.fromkeys(
+        document_id for row in rows for document_id in (row["submitted_document_ids"] or [])
+    ))
+    snapshot_docs = {}
+    if snapshot_ids and tenant_id is not None:
+        docs = await db.fetch(
+            """SELECT id, original_filename, doc_type
+                 FROM documents
+                WHERE id = ANY($1::uuid[]) AND tenant_id = $2""",
+            snapshot_ids,
+            tenant_id,
+        )
+        snapshot_docs = {str(doc["id"]): doc for doc in docs}
     out = []
     for r in rows:
         df = r["document_feedback"]
@@ -371,6 +387,15 @@ async def list_revision_history(
                 # never from the submission's mutable current document_ids.
                 "requirements_version_id": str(r["requirements_version_id"]) if r["requirements_version_id"] else None,
                 "submitted_document_ids": [str(document_id) for document_id in (r["submitted_document_ids"] or [])],
+                "submitted_documents": [
+                    {
+                        "id": str(document_id),
+                        "filename": snapshot_docs[str(document_id)]["original_filename"],
+                        "doc_type": snapshot_docs[str(document_id)]["doc_type"],
+                    }
+                    for document_id in (r["submitted_document_ids"] or [])
+                    if str(document_id) in snapshot_docs
+                ],
                 "submitted_round": r["submitted_round"],
                 "round_evidence_state": "bound" if r["submitted_round"] is not None and r["requirements_version_id"] else "unknown",
             }

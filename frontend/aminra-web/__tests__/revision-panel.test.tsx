@@ -355,6 +355,36 @@ describe("RevisionPanel — history rendering", () => {
     expect(screen.getByText(/Scan lại/)).toBeInTheDocument();
   });
 
+  test("renders a round diff for retained, replaced, added and removed evidence", async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      respond(200, {
+        history: [{
+          id: "r1", round: 1, requester_id: "cb", requester_name: "Halal CB",
+          feedback: "Replace policy", document_feedback: [],
+          requested_at: "2026-04-24T10:00:00Z", resolved_at: "2026-04-24T15:00:00Z",
+          submitted_document_ids: ["old-policy", "retained", "removed"],
+          submitted_documents: [
+            { id: "old-policy", filename: "policy-v1.pdf", doc_type: "policy" },
+            { id: "retained", filename: "certificate.pdf", doc_type: "certificate" },
+            { id: "removed", filename: "old-supporting.pdf", doc_type: null },
+          ],
+        }],
+      }),
+    );
+    render(<RevisionPanel {...baseProps} role="business" status="reviewing"
+      documents={[
+        { id: "new-policy", filename: "policy-v2.pdf", doc_type: "policy" },
+        { id: "retained", filename: "certificate.pdf", doc_type: "certificate" },
+        { id: "added", filename: "supporting.pdf", doc_type: "supporting" },
+      ]}
+    />);
+    const diff = await screen.findByRole("region", { name: "So sánh bằng chứng vòng 1" });
+    expect(diff).toHaveTextContent("policy-v1.pdf → policy-v2.pdf");
+    expect(diff).toHaveTextContent("Được giữ nguyên: certificate.pdf");
+    expect(diff).toHaveTextContent("Được thêm: supporting.pdf");
+    expect(diff).toHaveTextContent("Đã loại bỏ: old-supporting.pdf");
+  });
+
   test("shows round count badge when history not empty", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       respond(200, {

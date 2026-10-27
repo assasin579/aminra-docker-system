@@ -1539,6 +1539,7 @@ function SubmissionsContent() {
                           documents={subDocs.map((d) => ({
                             id: d.id,
                             filename: d.original_filename,
+                            doc_type: d.doc_type,
                           }))}
                           onChanged={() => fetchSubs()}
                         />

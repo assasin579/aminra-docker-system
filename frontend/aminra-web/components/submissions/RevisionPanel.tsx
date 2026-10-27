@@ -7,7 +7,10 @@ type Severity = "minor" | "major" | "critical";
 interface DocumentInfo {
   id: string;
   filename: string;
+  doc_type?: string | null;
 }
+
+type SnapshotDocument = DocumentInfo;
 
 interface DocumentFeedbackItem {
   document_id: string;
@@ -26,6 +29,8 @@ interface RevisionRound {
   requested_at: string;
   resolved_at: string | null;
   business_response: string | null;
+  submitted_document_ids?: string[];
+  submitted_documents?: SnapshotDocument[];
 }
 
 interface Props {
@@ -489,11 +494,45 @@ function RevisionHistory({
     );
   }
 
+  const latest = history[0];
+  const snapshotIds = latest?.submitted_document_ids ?? [];
+  const snapshotDocs = latest?.submitted_documents ?? [];
+  const hasCompleteSnapshot = snapshotIds.length > 0 && snapshotIds.every((id) => snapshotDocs.some((doc) => doc.id === id));
+  const previous = new Map(snapshotDocs.map((doc) => [doc.id, doc]));
+  const current = new Map(documents.map((doc) => [doc.id, doc]));
+  const retained = [...previous.keys()].filter((id) => current.has(id)).map((id) => previous.get(id)!);
+  const removed = [...previous.keys()].filter((id) => !current.has(id)).map((id) => previous.get(id)!);
+  const added = [...current.keys()].filter((id) => !previous.has(id)).map((id) => current.get(id)!);
+  const replaced: { old: DocumentInfo; next: DocumentInfo }[] = [];
+  for (const type of new Set(removed.map((doc) => doc.doc_type).filter((value): value is string => Boolean(value)))) {
+    const oldOfType = removed.filter((doc) => doc.doc_type === type);
+    const newOfType = added.filter((doc) => doc.doc_type === type);
+    if (oldOfType.length === 1 && newOfType.length === 1) {
+      replaced.push({ old: oldOfType[0], next: newOfType[0] });
+    }
+  }
+  const replacedOld = new Set(replaced.map((item) => item.old.id));
+  const replacedNew = new Set(replaced.map((item) => item.next.id));
+  const remainingRemoved = removed.filter((doc) => !replacedOld.has(doc.id));
+  const remainingAdded = added.filter((doc) => !replacedNew.has(doc.id));
+
   return (
     <div className="space-y-3">
       <h4 className="text-sm font-medium" style={{ color: "#6B7280" }}>
         Lịch sử các vòng sửa
       </h4>
+      {hasCompleteSnapshot && latest && (
+        <section aria-label={`So sánh bằng chứng vòng ${latest.round}`} className="rounded-lg p-3 bg-slate-50">
+          <h5 className="text-sm font-semibold mb-2">Đối chiếu vòng {latest.round} với bộ hồ sơ hiện tại</h5>
+          <p>Được giữ nguyên: {retained.map((doc) => doc.filename).join(", ") || "Không có"}</p>
+          {replaced.map(({ old, next }) => <p key={old.id}>Đã thay thế: {old.filename} → {next.filename}</p>)}
+          <p>Được thêm: {remainingAdded.map((doc) => doc.filename).join(", ") || "Không có"}</p>
+          <p>Đã loại bỏ: {remainingRemoved.map((doc) => doc.filename).join(", ") || "Không có"}</p>
+        </section>
+      )}
+      {!hasCompleteSnapshot && latest && snapshotIds.length > 0 && (
+        <p role="status">Không đủ metadata snapshot để đối chiếu chính xác vòng {latest.round}.</p>
+      )}
       {history.map((r) => (
         <div
           key={r.id}
