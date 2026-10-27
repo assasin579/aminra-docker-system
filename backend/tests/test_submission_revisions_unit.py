@@ -206,40 +206,34 @@ class TestResubmit:
         )
         assert rr["resolved_at"] is not None
 
-    async def test_resubmit_with_new_documents(self, conn, fresh_submission):
-        from services.submission_revisions import request_revision, resubmit
+    async def test_resubmit_rejects_replacement_without_canonical_dossier(self, conn, fresh_submission):
+        from services.submission_revisions import InvalidStateTransition, request_revision, resubmit
 
         sub_id, tenant_id, prov_id = fresh_submission
-
-        # Insert real documents owned by tenant
         new_doc_id = uuid4()
-        # Find or create a user_id for tenant
         user_id = await conn.fetchval(
             "SELECT id FROM users WHERE tenant_id = $1 AND is_owner = true LIMIT 1", tenant_id,
         )
         await conn.execute(
             """
             INSERT INTO documents (id, filename, original_filename, user_id, tenant_id, doc_type, status)
-            VALUES ($1, 'fixed.pdf', 'fixed.pdf', $2, $3, 'application', 'uploaded')
+            VALUES ($1, 'legacy-unbound.pdf', 'legacy-unbound.pdf', $2, $3, 'application', 'uploaded')
             """,
             new_doc_id, user_id, tenant_id,
         )
-
         try:
             await request_revision(
                 conn, submission_id=sub_id, requester_id=prov_id,
-                requester_name="X", feedback="upload fixed version",
+                requester_name="X", feedback="legacy dossier evidence",
             )
-            await resubmit(
-                conn, submission_id=sub_id,
-                new_document_ids=[str(new_doc_id)],
-            )
-
+            with pytest.raises(InvalidStateTransition, match="canonical dossier"):
+                await resubmit(conn, submission_id=sub_id, new_document_ids=[str(new_doc_id)])
             sub = await conn.fetchrow(
-                "SELECT document_ids FROM submissions WHERE id = $1", sub_id,
+                "SELECT status, revision_round, document_ids FROM submissions WHERE id = $1", sub_id,
             )
-            assert len(sub["document_ids"]) == 1
-            assert str(sub["document_ids"][0]) == str(new_doc_id)
+            assert sub["status"] == "revision_required"
+            assert sub["revision_round"] == 1
+            assert list(sub["document_ids"]) == []
         finally:
             await conn.execute("DELETE FROM documents WHERE id = $1", new_doc_id)
 

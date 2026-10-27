@@ -9,9 +9,9 @@ import { AccessibleBarChart, DonutChart, DashboardCard, MonthlyBarChart, complet
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 vi.mock("next/link", () => ({ default: ({ href, children, ...props }: React.PropsWithChildren<{ href: string }>) => <a href={href} {...props}>{children}</a> }));
-const providerAuthState = vi.hoisted(() => ({ isOwner: true }));
+const providerAuthState = vi.hoisted(() => ({ user: { role: "provider", is_owner: true, status: "active", company_name: "Certifier", email: "qa@example.invalid", member_count: 1 } }));
 vi.mock("@/components/UserAuthContext", () => ({
-  useUserAuth: () => ({ user: { role: "provider", is_owner: providerAuthState.isOwner, status: "active", company_name: "Certifier", email: "qa@example.invalid", member_count: 1 }, token: "test-token", isAuthenticated: true, loading: false, logout: vi.fn() }),
+  useUserAuth: () => ({ user: providerAuthState.user, token: "test-token", isAuthenticated: true, loading: false, logout: vi.fn() }),
 }));
 vi.mock("@/lib/adminAuth", () => ({ readAdminToken: () => "admin-test-token" }));
 vi.mock("@/components/CountUp", () => ({ default: ({ value, suffix = "" }: { value: number; suffix?: string }) => <>{value}{suffix}</> }));
@@ -147,28 +147,49 @@ describe("dashboard data visual contracts", () => {
     expect(screen.getByRole("table", { name: /12 tháng gần nhất/i })).toHaveTextContent("2026-04");
   });
 
-  it("exposes business and provider-specific chart panels without pretending missing data is zero", async () => {
-    const response = vi.fn().mockImplementation((url: string) => {
-      if (url.includes("dashboard/stats")) return Promise.resolve(new Response(JSON.stringify({ readiness: 40, compliant_count: 2, total_types: 5, submitted_count: 3, total_documents: 3, avg_score: null, member_count: 1, doc_type_progress: [{ doc_type: "policy", label: "Policy", score: 80, status: "compliant", filename: "policy.pdf", uploaded_at: null }, { doc_type: "training", label: "Training", score: null, status: null, filename: null, uploaded_at: null }], recent_activity: [] }), { status: 200 }));
-      if (url.includes("cb-stats")) return Promise.resolve(new Response(JSON.stringify({ portfolio_size: 2, certs: { total: 2, active: 1, expiring_soon: 1, inactive: 0 }, audits: { total: 1, completed: 1, avg_compliance: 75 }, submissions: { pending: 1, reviewing: 0, approved: 1, total: 2, avg_hours: null }, auditor_workload: [{ id: "a1", name: "Auditor A", active_visits: 2, active_submissions: 1 }], expiring_certs: [] }), { status: 200 }));
-      return Promise.resolve(new Response(JSON.stringify({ pending: 1, reviewing: 0, approved: 1, returned: 0, total: 2, overdue: 0, avg_response_hours: null, recent: [] }), { status: 200 }));
-    });
-    vi.stubGlobal("fetch", response);
-    render(<BusinessDashboard />);
+  it("exposes the business dashboard chart panels without fabricating missing data as zero", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+      if (url.includes("dashboard/stats")) return Promise.resolve(new Response(JSON.stringify({ total_documents: 3, avg_score: null, member_count: 1, doc_type_progress: [{ doc_type: "policy", label: "Policy", score: 80, status: "compliant", filename: "policy.pdf", uploaded_at: null }, { doc_type: "training", label: "Training", score: null, status: null, filename: null, uploaded_at: null }], recent_activity: [] }), { status: 200 }));
+      if (url.includes("cert-timeline")) return Promise.resolve(new Response(JSON.stringify({ certificates: [] }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+    }));
+    const business = render(<BusinessDashboard />);
     expect(await screen.findByText("Trạng thái tài liệu")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Trạng thái tài liệu doanh nghiệp/ })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Phân bố điểm theo loại tài liệu/ })).toBeInTheDocument();
     expect(screen.getByText(/Điểm trung bình trên tài liệu đã chấm/)).toBeInTheDocument();
-    render(<ProviderDashboard />);
+    business.unmount();
+  });
+
+  it("exposes provider-specific chart panels", async () => {
+    providerAuthState.user.is_owner = true;
+    try {
+      vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+        const summary = {
+          completed: { current_90d: 0, previous_90d: 0 },
+          cycle_time_hours: { current_median: null, current_p90: null, previous_median: null, previous_p90: null },
+          scheduled_to_acceptance_days: { current_median: null, current_p90: null, previous_median: null, previous_p90: null },
+        };
+        const data = url.includes("cb-performance")
+          ? { window_days: 90, attribution: "report_accepted_at", total: summary, auditors: [], limitations: [] }
+          : url.includes("cb-stats")
+            ? { portfolio_size: 2, certs: { total: 2, active: 1, expiring_soon: 1, inactive: 0 }, audits: { total: 1, completed: 1, avg_compliance: 75 }, submissions: { pending: 1, reviewing: 0, approved: 1, total: 2, avg_hours: null }, auditor_workload: [{ id: "a1", name: "Auditor A", active_visits: 2, active_submissions: 1 }], expiring_certs: [] }
+            : { pending: 1, reviewing: 0, approved: 1, returned: 0, total: 2, overdue: 0, avg_response_hours: null, recent: [] };
+        return Promise.resolve(new Response(JSON.stringify(data), { status: 200 }));
+      }));
+      render(<ProviderDashboard />);
     expect(await screen.findByText("Tải công việc Auditor")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Tải công việc auditor/i })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Chứng chỉ theo trạng thái/ })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Tiến độ kiểm định/ })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Hồ sơ Certification Body theo trạng thái/ })).toBeInTheDocument();
+    } finally {
+      providerAuthState.user.is_owner = true;
+    }
   });
 
   it("shows the auditor queue as a visual donut and preserves unclassified counts", async () => {
-    providerAuthState.isOwner = false;
+    providerAuthState.user.is_owner = false;
     try {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
         pending: 2, reviewing: 1, approved: 3, returned: 1, total: 9,
@@ -180,7 +201,7 @@ describe("dashboard data visual contracts", () => {
       expect(screen.getByRole("table", { name: /Hồ sơ auditor theo trạng thái.*table/i })).toHaveTextContent("Trạng thái khác");
       expect(screen.getByRole("table", { name: /Hồ sơ auditor theo trạng thái.*table/i })).toHaveTextContent("2");
     } finally {
-      providerAuthState.isOwner = true;
+      providerAuthState.user.is_owner = true;
     }
   });
 
@@ -209,7 +230,8 @@ describe("dashboard data visual contracts", () => {
     const { container } = render(<BusinessDashboard />);
     expect(await screen.findByText("Phân bố chứng chỉ")).toBeInTheDocument();
     expect(container.querySelector('[data-dashboard-experience="business-v2"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-dashboard-section="readiness-hero"]')).toBeInTheDocument();
+    expect(container.querySelector('[aria-label="Profile readiness"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-dashboard-section="readiness-hero"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-dashboard-section="overview-charts"]')).toBeInTheDocument();
     const sectionOrder = Array.from(container.querySelectorAll("[data-dashboard-section]"), (section) => section.getAttribute("data-dashboard-section"));
     expect(sectionOrder.indexOf("overview-charts")).toBeLessThan(sectionOrder.indexOf("key-metrics"));
@@ -226,14 +248,15 @@ describe("dashboard data visual contracts", () => {
     const failedFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: "Service unavailable" }), { status: 503 }));
     vi.stubGlobal("fetch", failedFetch);
     const business = render(<BusinessDashboard />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được số liệu hồ sơ (503)");
+    expect(await screen.findByText("Không tải được số liệu hồ sơ (503).")).toBeInTheDocument();
+    expect(screen.getByText("Could not load Profile readiness. Please try again.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thử tải lại" }));
-    await waitFor(() => expect(failedFetch).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(failedFetch).toHaveBeenCalledTimes(5));
     business.unmount();
 
     failedFetch.mockClear();
     render(<ProviderDashboard />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được số liệu CB (503)");
+    expect(await screen.findByRole("alert")).toHaveTextContent("(503)");
     fireEvent.click(screen.getByRole("button", { name: "Thử tải lại" }));
     await waitFor(() => expect(failedFetch.mock.calls.length).toBeGreaterThanOrEqual(4));
   });
@@ -245,6 +268,7 @@ describe("dashboard data visual contracts", () => {
     });
     vi.stubGlobal("fetch", partialFetch);
     render(<BusinessDashboard />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được dòng thời gian chứng chỉ (503)");
+    expect(await screen.findByText("Không tải được dòng thời gian chứng chỉ (503).")).toBeInTheDocument();
+    expect(screen.getByText("Could not load Profile readiness. Please try again.")).toBeInTheDocument();
   });
 });

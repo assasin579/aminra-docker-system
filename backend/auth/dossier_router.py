@@ -57,6 +57,8 @@ class DossierPublic(BaseModel):
     standard_type_id: Optional[str] = None
     standard_code: Optional[str] = None
     standard_name_vi: Optional[str] = None
+    requirements_version_id: Optional[str] = None
+    requirements_binding_status: str = "unknown"
     title: str
     status: str
     notes: Optional[str] = None
@@ -102,8 +104,10 @@ class DossierReadinessResponse(BaseModel):
     tenant_id: str
     status: Optional[str] = None
     title: Optional[str] = None
+    requirements_version_id: Optional[str] = None
+    requirements_binding_status: str = "unknown"
     state: str
-    readiness_percent: int = Field(strict=True, ge=0, le=100)
+    readiness_percent: Optional[int] = Field(default=None, strict=True, ge=0, le=100)
     certificate_issue_blocked: bool = Field(strict=True)
     safe_public_trace_available: bool = Field(strict=True)
     next_action: Optional[str] = None
@@ -111,12 +115,14 @@ class DossierReadinessResponse(BaseModel):
     next_action_owner_role: Optional[str] = None
     due_date: Optional[str] = None
     required_documents: list[str | DossierReadinessItemResponse]
+    requirement_slots: list[DossierReadinessItemResponse] = Field(default_factory=list)
     missing_required_documents: list[str | DossierReadinessItemResponse]
     unreviewed_documents: list[DossierReadinessItemResponse]
     rejected_documents: list[DossierReadinessItemResponse]
     open_ncrs: list[DossierReadinessItemResponse]
     blocking_ncrs: list[DossierReadinessItemResponse]
     certification_decision: dict[str, Any] | None
+    submission_round: dict[str, Any] | None = None
     certificate: dict[str, Any] | None
     blocking_reasons: list[str | DossierReadinessItemResponse]
 
@@ -139,12 +145,15 @@ async def _row_to_public(db, row, include_documents: bool = False) -> DossierPub
             "SELECT code, name_vi FROM standard_types WHERE id = $1",
             row["standard_type_id"],
         )
-        dt_rows = await db.fetch(
-            "SELECT doc_type, required, display_order FROM standard_doc_types "
-            "WHERE standard_type_id = $1 ORDER BY display_order, doc_type",
-            row["standard_type_id"],
-        )
-        doc_types = [DocTypeRequirement(**dict(r)) for r in dt_rows]
+        binding_status = row.get("requirements_binding_status") or "unknown"
+        version_id = row.get("requirements_version_id")
+        if binding_status == "bound" and version_id:
+            dt_rows = await db.fetch(
+                "SELECT doc_type, required, display_order FROM standard_requirement_version_slots "
+                "WHERE requirements_version_id = $1 ORDER BY display_order, doc_type",
+                version_id,
+            )
+            doc_types = [DocTypeRequirement(**dict(r)) for r in dt_rows]
 
     documents: List[DocumentInDossier] = []
     if include_documents:
@@ -175,6 +184,8 @@ async def _row_to_public(db, row, include_documents: bool = False) -> DossierPub
         standard_type_id=str(row["standard_type_id"]) if row["standard_type_id"] else None,
         standard_code=standard_info["code"] if standard_info else None,
         standard_name_vi=standard_info["name_vi"] if standard_info else None,
+        requirements_version_id=str(row["requirements_version_id"]) if row.get("requirements_version_id") else None,
+        requirements_binding_status=row.get("requirements_binding_status") or "unknown",
         title=row["title"],
         status=row["status"],
         notes=row.get("notes"),
@@ -186,6 +197,24 @@ async def _row_to_public(db, row, include_documents: bool = False) -> DossierPub
 
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
+
+
+@router.get("/dashboard")
+async def get_dossier_dashboard(
+    page: int = 1,
+    page_size: int = 20,
+    user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only business users can read dossier dashboard")
+    if page < 1 or page_size < 1 or page_size > 50:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid pagination")
+    tenant_id = await _resolve_tenant_id(db, user)
+    if not tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant not resolvable")
+    from services.dossier_dashboard import build_dashboard
+    return await build_dashboard(db, str(tenant_id), page, page_size)
 
 
 @router.get("", response_model=List[DossierPublic])
@@ -224,6 +253,13 @@ async def create_dossier(
     if not std:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Standard not found or disabled")
 
+    current_requirements = await db.fetchrow(
+        "SELECT requirements_version_id FROM standard_requirement_current_versions WHERE standard_type_id = $1",
+        req.standard_type_id,
+    )
+    requirements_version_id = current_requirements["requirements_version_id"] if current_requirements else None
+    binding_status = "bound" if requirements_version_id else "unconfigured"
+
     # Optional sanity: warn if standard not in user's industry available list
     db_user = await db.fetchrow(
         "SELECT id, industry_schema_id FROM users WHERE email = $1", user["email"],
@@ -242,11 +278,11 @@ async def create_dossier(
             )
 
     row = await db.fetchrow(
-        """INSERT INTO dossiers (tenant_id, standard_type_id, title, status, notes, created_by)
-           VALUES ($1, $2, $3, 'draft', $4, $5)
-           RETURNING *""",
-        tenant_id, req.standard_type_id, req.title, req.notes,
-        db_user["id"] if db_user else None,
+        """INSERT INTO dossiers (tenant_id, standard_type_id, requirements_version_id,
+                               requirements_binding_status, title, status, notes, created_by)
+           VALUES ($1, $2, $3, $4, $5, 'draft', $6, $7) RETURNING *""",
+        tenant_id, req.standard_type_id, requirements_version_id, binding_status,
+        req.title, req.notes, db_user["id"] if db_user else None,
     )
     log.info("[dossier] tenant %s created '%s' (standard %s)",
              tenant_id, req.title, std["code"])

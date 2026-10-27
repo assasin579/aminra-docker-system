@@ -8,6 +8,7 @@ import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
 import { AMINRA_DASHBOARD_PALETTE, DonutChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
 import motion from "@/components/dashboard/DashboardMotion.module.css";
+import BusinessReadinessProfiles from "@/components/dashboard/BusinessReadinessProfiles";
 
 interface DocTypeProgress {
   doc_type: string;
@@ -33,10 +34,6 @@ interface DashboardCertificate {
   expiry_date: string;
 }
 interface DashboardStats {
-  readiness: number;
-  compliant_count: number;
-  total_types: number;
-  submitted_count: number;
   total_documents: number;
   avg_score: number | null;
   member_count: number;
@@ -201,49 +198,12 @@ export default function BusinessDashboard() {
 
       {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
-      {s && (
-        <section
-          data-dashboard-section="readiness-hero"
-          className={`relative isolate mb-5 overflow-hidden rounded-[26px] border border-cream-100/15 p-5 text-cream-100 shadow-lg sm:p-7 ${motion.section}`}
-          style={{ background: "linear-gradient(118deg, var(--navy-900) 0%, var(--navy-800) 65%, var(--navy-700) 100%)" }}
-        >
-          <div aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-gold-700 via-gold-500 to-transparent" />
-          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-gold-100/20 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 left-[38%] h-56 w-56 rounded-full bg-navy-500/10 blur-3xl" />
-          <div className="relative grid items-center gap-6 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-8">
-            <div className="relative mx-auto h-32 w-32 drop-shadow-sm sm:mx-0">
-              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-                <defs><linearGradient id="readinessRingGradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stopColor="var(--gold-500)"/><stop offset="100%" stopColor="var(--gold-400)"/></linearGradient></defs>
-                <circle cx="50" cy="50" r="42" fill="none" stroke="color-mix(in srgb, var(--cream-100) 18%, transparent)" strokeWidth="9" />
-                <circle cx="50" cy="50" r="42" fill="none" className="animate-score-fill" stroke="url(#readinessRingGradient)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${Math.max(0, Math.min(100, s.readiness)) * 2.64} 264`} />
-              </svg>
-              <div className="absolute inset-0 grid place-items-center text-center">
-                <span className="text-[28px] font-extrabold tracking-tight text-cream-100">{s.readiness}<span className="text-base">%</span></span>
-              </div>
-            </div>
-            <div className="min-w-0">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cream-100/20 bg-cream-100/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-cream-100 backdrop-blur-sm">
-                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-gold-500" />
-                Tổng quan mức sẵn sàng
-              </div>
-              <h2 className="text-xl font-bold tracking-tight text-cream-100 sm:text-[25px]">Sẵn sàng chứng nhận</h2>
-              <p className="mt-1.5 text-sm text-cream-100/75">
-                <strong className="font-bold text-cream-100">{s.compliant_count}</strong>/{s.total_types} loại tài liệu đạt chuẩn
-                {s.submitted_count > 0 && s.submitted_count < s.total_types && <span className="text-cream-100/75"> · {s.total_types - s.submitted_count} chưa tải lên</span>}
-              </p>
-              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-cream-100/15 ring-1 ring-cream-100/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400 transition-[width] duration-700" style={{ width: `${Math.max(0, Math.min(100, s.readiness))}%` }} />
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-cream-100/70">Tiến độ dựa trên trạng thái tài liệu do hệ thống trả về.</p>
-                <Link href="/upload" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gold-500 bg-cream-100 px-4 py-2 text-sm font-bold text-navy-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-gold-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500">
-                  Thêm tài liệu <span aria-hidden="true">↗</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      <BusinessReadinessProfiles
+        token={token}
+        key={JSON.stringify({ actor: user.id, organization: user.tenant_id, role: user.role, status: user.status, owner: user.is_owner, permissions: user.permissions ?? null, entitlement: user.industry_schema_id ?? null })}
+        contextKey={JSON.stringify({ actor: user.id, organization: user.tenant_id, role: user.role, status: user.status, owner: user.is_owner, permissions: user.permissions ?? null, entitlement: user.industry_schema_id ?? null })}
+      />
+
 
       {s && <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-dashboard-section="overview-charts">
         <DashboardCard title="Trạng thái tài liệu" description="Phân bố hiện tại theo loại tài liệu; không phải xu hướng theo thời gian.">
@@ -259,12 +219,11 @@ export default function BusinessDashboard() {
       </div>}
 
       {/* KPI strip — color-coded, but values remain API-owned */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" data-dashboard-section="key-metrics">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3" data-dashboard-section="key-metrics">
         {(
           [
             { label: "Tài liệu", numeric: s?.total_documents, sub: "đã upload", color: "var(--navy-600)", tint: "var(--navy-100)", symbol: "▤" },
             { label: "Điểm TB", numeric: s?.avg_score ?? null, suffix: "%", sub: "trên tài liệu đã chấm", color: scoreColor(s?.avg_score ?? null), tint: "var(--gold-100)", symbol: "◉" },
-            { label: "Đạt chuẩn", numeric: s?.compliant_count, suffix: ` / ${s?.total_types ?? 0}`, sub: "loại tài liệu đạt", color: "var(--navy-800)", tint: "var(--navy-100)", symbol: "✓" },
             { label: "Thành viên", numeric: user.member_count ?? 0, suffix: "", sub: "đang hoạt động", color: "var(--navy-700)", tint: "var(--navy-100)", symbol: "◈" },
           ] as const
         ).map((st, i) => (

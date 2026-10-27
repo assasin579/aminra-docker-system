@@ -11,6 +11,40 @@ _OPEN_NCR_STATUSES = {"open", "in_review"}
 _NON_BLOCKING_NCR_SEVERITIES = {"minor"}
 
 
+def _requirements_blocked_result(
+    dossier: dict[str, Any], *, state: str, action: str, reason: str,
+    requirement_slots: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Return UNKNOWN rather than a fabricated zero when requirements are unresolved."""
+    return {
+        "dossier_id": str(dossier["id"]),
+        "tenant_id": str(dossier["tenant_id"]),
+        "status": _as_str(dossier.get("status")),
+        "title": dossier.get("title"),
+        "requirements_version_id": _as_str(dossier.get("requirements_version_id")),
+        "requirements_binding_status": _as_str(dossier.get("requirements_binding_status")) or "unknown",
+        "state": state,
+        "readiness_percent": None,
+        "certificate_issue_blocked": True,
+        "safe_public_trace_available": False,
+        "next_action": action,
+        "next_actor_role": "platform_admin",
+        "next_action_owner_role": "platform_admin",
+        "due_date": None,
+        "required_documents": [],
+        "requirement_slots": requirement_slots or [],
+        "missing_required_documents": [],
+        "unreviewed_documents": [],
+        "rejected_documents": [],
+        "open_ncrs": [],
+        "blocking_ncrs": [],
+        "certification_decision": {"id": None, "status": None, "reason": None},
+        "submission_round": None,
+        "certificate": {"id": None, "cert_number": None, "status": None},
+        "blocking_reasons": [{"code": reason}],
+    }
+
+
 def _as_str(value: Any) -> str | None:
     if value is None:
         return None
@@ -77,7 +111,8 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
 
     dossier = await db.fetchrow(
         """
-        SELECT id, tenant_id, standard_type_id, status, title
+        SELECT id, tenant_id, standard_type_id, requirements_version_id,
+               requirements_binding_status, status, title
           FROM dossiers
          WHERE id = $1 AND tenant_id = $2 AND status != 'cancelled'
         """,
@@ -87,26 +122,68 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
     if not dossier:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dossier not found")
 
-    required_rows = await db.fetch(
-        """
-        SELECT doc_type, required, display_order
-          FROM standard_doc_types
-         WHERE standard_type_id = $1 AND required = true
-         ORDER BY display_order, doc_type
-        """,
-        dossier["standard_type_id"],
+    binding_status = _as_str(dossier.get("requirements_binding_status")) or "unknown"
+    if binding_status == "unconfigured":
+        return _requirements_blocked_result(
+            _dict(dossier), state="requirements_unconfigured", action="publish_requirements_version",
+            reason="requirements_version_not_published",
+        )
+    if binding_status == "unknown" or not dossier.get("requirements_version_id"):
+        return _requirements_blocked_result(
+            _dict(dossier), state="requirements_unknown", action="resolve_requirements_binding",
+            reason="requirements_version_unknown_no_backfill",
+        )
+
+    slot_rows = await db.fetch(
+        "SELECT doc_type, required, display_order FROM standard_requirement_version_slots "
+        "WHERE requirements_version_id = $1 ORDER BY display_order, doc_type",
+        dossier["requirements_version_id"],
     )
-    required_doc_types = [str(row["doc_type"]) for row in required_rows]
+    requirement_slots = [
+        {"doc_type": str(row["doc_type"]), "required": bool(row["required"]), "display_order": int(row["display_order"])}
+        for row in slot_rows
+    ]
+    required_doc_types = [slot["doc_type"] for slot in requirement_slots if slot["required"]]
+    if not requirement_slots:
+        return _requirements_blocked_result(
+            _dict(dossier), state="requirements_empty", action="configure_requirement_slots",
+            reason="published_requirements_have_no_slots",
+        )
+    if not required_doc_types:
+        return _requirements_blocked_result(
+            _dict(dossier), state="requirements_no_required_slots", action="configure_required_slots",
+            reason="requirements_configured_without_required_slots", requirement_slots=requirement_slots,
+        )
+
+    submission = await db.fetchrow(
+        """
+        SELECT id, status, provider_id, requirements_version_id, document_ids, revision_round
+          FROM submissions
+         WHERE business_tenant = $1
+           AND requirements_version_id = $3
+           AND EXISTS (
+               SELECT 1 FROM documents d
+                WHERE d.id = ANY(submissions.document_ids)
+                  AND d.dossier_id = $2 AND d.tenant_id = $1
+           )
+         ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC
+         LIMIT 1
+        """,
+        str(tenant_id), str(dossier_id), dossier["requirements_version_id"],
+    )
+    submitted_document_ids = list(submission.get("document_ids") or []) if submission else None
 
     document_rows = await db.fetch(
         """
-        SELECT id, doc_type, status, approval_status, compliance_score, evaluation_result
+        SELECT id, doc_type, status, approval_status, compliance_score, evaluation_result, version_number
           FROM documents
          WHERE dossier_id = $1 AND tenant_id = $2
-         ORDER BY uploaded_at DESC
+           AND id = ANY(COALESCE($3::uuid[], '{}'::uuid[]))
+         ORDER BY uploaded_at DESC, id ASC
         """,
         str(dossier_id),
         str(tenant_id),
+        submitted_document_ids,
     )
     documents = [_dict(row) for row in document_rows]
 
@@ -115,6 +192,25 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
         doc_type = row.get("doc_type")
         if doc_type and str(doc_type) not in latest_by_type:
             latest_by_type[str(doc_type)] = row
+
+    active_round = int(submission.get("revision_round") or 0) + 1 if submission else None
+    submission_id = str(submission["id"]) if submission else None
+    bound_version_id = str(dossier["requirements_version_id"])
+    for slot in requirement_slots:
+        slot["requirements_version_id"] = bound_version_id
+        slot["submission_id"] = submission_id
+        slot["submitted_round"] = active_round
+        row = latest_by_type.get(slot["doc_type"])
+        slot["evidence_document_id"] = str(row["id"]) if row else None
+        slot["evidence_version"] = row.get("version_number") if row else None
+        if row is None:
+            slot["state"] = "missing_required" if slot["required"] else "optional_not_submitted"
+        elif _document_is_approved(row):
+            slot["state"] = "approved"
+        elif _document_is_rejected(row):
+            slot["state"] = "revision_required"
+        else:
+            slot["state"] = "pending_review"
 
     missing_required_documents = [doc_type for doc_type in required_doc_types if doc_type not in latest_by_type]
     unreviewed_documents: list[dict[str, Any]] = []
@@ -155,6 +251,8 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
                  JOIN documents d ON d.id = ANY(s.document_ids)
                 WHERE s.business_tenant = v.business_tenant
                   AND s.provider_id = v.provider_id
+                  AND s.requirements_version_id = $3
+                  AND s.id = $4
                   AND d.dossier_id = $2
                   AND d.tenant_id = $1
            )
@@ -162,6 +260,8 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
         """,
         str(tenant_id),
         str(dossier_id),
+        dossier["requirements_version_id"],
+        submission["id"] if submission else None,
     )
     open_ncrs = [_ncr_public(_dict(row)) for row in ncr_rows if _as_str(row.get("status")) in _OPEN_NCR_STATUSES]
     # Per the product plan, critical/major findings block a decision. Minor
@@ -173,24 +273,6 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
     for ncr in blocking_ncrs:
         blocking_reasons.append({"code": "open_ncr", **ncr})
 
-    submission = await db.fetchrow(
-        """
-        SELECT id, status, provider_id
-          FROM submissions
-         WHERE business_tenant = $1
-           AND EXISTS (
-               SELECT 1
-                 FROM documents d
-                WHERE d.id = ANY(submissions.document_ids)
-                  AND d.dossier_id = $2
-                  AND d.tenant_id = $1
-           )
-         ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC
-         LIMIT 1
-        """,
-        str(tenant_id),
-        str(dossier_id),
-    )
     decision = None
     if submission:
         decision = await db.fetchrow(
@@ -200,20 +282,20 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
              WHERE submission_id = $1
                AND business_tenant = $2
                AND provider_id = $3
-             ORDER BY decided_at DESC NULLS LAST, created_at DESC
+               AND submitted_round = $4
+               AND requirements_version_id IS NOT DISTINCT FROM $5
+             ORDER BY decided_at DESC NULLS LAST, created_at DESC, id DESC
              LIMIT 1
             """,
             str(submission["id"]),
             str(tenant_id),
             str(submission["provider_id"]),
+            int(submission.get("revision_round") or 0) + 1,
+            submission.get("requirements_version_id"),
         )
     decision_status = _as_str(decision.get("status")) if decision else None
-    checklist_unconfigured = not required_doc_types
-    if checklist_unconfigured:
-        blocking_reasons.insert(0, {"code": "required_document_checklist_unconfigured"})
     document_or_ncr_blocked = bool(
-        checklist_unconfigured
-        or missing_required_documents
+        missing_required_documents
         or unreviewed_documents
         or rejected_documents
         or blocking_ncrs
@@ -247,11 +329,7 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
     decision_percent = 25 if not document_or_ncr_blocked and decision_status == "approved" and certificate else 0
     readiness_percent = min(100, document_percent + audit_percent + decision_percent)
 
-    if checklist_unconfigured:
-        state = "requirements_unconfigured"
-        next_action = "configure_required_documents"
-        next_actor_role = "admin"
-    elif missing_required_documents:
+    if missing_required_documents:
         state = "requirements_pending"
         next_action = "upload_required_documents"
         next_actor_role = "business"
@@ -298,6 +376,8 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
         "tenant_id": str(dossier["tenant_id"]),
         "status": _as_str(dossier.get("status")),
         "title": dossier.get("title"),
+        "requirements_version_id": str(dossier["requirements_version_id"]),
+        "requirements_binding_status": binding_status,
         "state": state,
         "readiness_percent": readiness_percent,
         "certificate_issue_blocked": certificate_issue_blocked,
@@ -307,6 +387,7 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
         "next_action_owner_role": next_actor_role,
         "due_date": due_date,
         "required_documents": required_doc_types,
+        "requirement_slots": requirement_slots,
         "missing_required_documents": missing_required_documents,
         "unreviewed_documents": unreviewed_documents,
         "rejected_documents": rejected_documents,
@@ -317,6 +398,13 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
             "status": decision_status,
             "reason": decision.get("decision_reason") if decision else None,
         },
+        "submission_round": ({
+            "id": str(submission["id"]),
+            "status": _as_str(submission.get("status")),
+            "requirements_version_id": str(submission["requirements_version_id"]),
+            "submitted_round": int(submission.get("revision_round") or 0) + 1,
+            "document_ids": [str(document_id) for document_id in (submission.get("document_ids") or [])],
+        } if submission else None),
         "certificate": {
             "id": str(certificate["id"]) if certificate else None,
             "cert_number": certificate.get("cert_number") if certificate else None,

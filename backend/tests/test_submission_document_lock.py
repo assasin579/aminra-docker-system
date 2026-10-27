@@ -19,12 +19,20 @@ class ReplaceDocFakeConn:
     def __init__(self, *, status: str, archived_at=None):
         self.status = status
         self.archived_at = archived_at
+        self.user_id = uuid4()
+        self.tenant_id = uuid4()
         self.old_doc_id = uuid4()
         self.new_doc_id = uuid4()
         self.calls: list[tuple[str, tuple]] = []
 
     async def fetchrow(self, sql: str, *args):
         self.calls.append(("fetchrow", (sql, args)))
+        if "SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1" in sql:
+            assert args[0] == self.user_id
+            return FakeRecord(id=self.user_id)
+        if "SELECT id, tenant_id, is_owner FROM users WHERE id = $1" in sql:
+            assert args[0] == self.user_id
+            return FakeRecord(id=self.user_id, tenant_id=self.tenant_id, is_owner=True)
         if "FROM submissions WHERE id=$1 AND business_tenant=$2" in sql:
             return FakeRecord(
                 id=args[0],
@@ -49,7 +57,7 @@ async def _replace(db: ReplaceDocFakeConn):
     return await replace_submission_document(
         submission_id=str(uuid4()),
         request={"old_doc_id": str(db.old_doc_id), "new_doc_id": str(db.new_doc_id)},
-        user={"role": "business", "tenant_id": str(uuid4()), "sub": str(uuid4())},
+        user={"role": "business", "tenant_id": str(db.tenant_id), "sub": str(db.user_id)},
         db=db,
     )
 

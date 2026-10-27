@@ -531,6 +531,49 @@ async def get_document(
     )
 
 
+async def _load_submission_document_read_access(doc_id: str, user: dict, db):
+    """Load a document under the caller's current tenant/submission authority."""
+    if user.get("role") == "business":
+        tenant_id = await resolve_canonical_tenant_id(user, db)
+        if not tenant_id:
+            return None
+        return await db.fetchrow(
+            """SELECT d.id, d.file_path, d.original_filename, d.mime_type,
+                      d.version_number, d.dossier_id, d.tenant_id,
+                      NULL::uuid AS submission_id, NULL::integer AS access_round
+                 FROM documents d WHERE d.id=$1 AND d.tenant_id=$2""",
+            doc_id, tenant_id,
+        )
+    if user.get("role") != "provider":
+        return None
+    actor_id = await resolve_canonical_user_id(user, db)
+    if not actor_id:
+        return None
+    return await db.fetchrow(
+        """SELECT d.id, d.file_path, d.original_filename, d.mime_type,
+                  d.version_number, d.dossier_id, s.business_tenant AS tenant_id,
+                  s.id AS submission_id,
+                  NULLIF(GREATEST(
+                    COALESCE((SELECT MAX(rr.round) FROM submission_revision_requests rr
+                               WHERE rr.submission_id=s.id
+                                 AND $1=ANY(rr.submitted_document_ids)), 0),
+                    CASE WHEN $1=ANY(s.document_ids)
+                         THEN COALESCE(s.revision_round, 0) ELSE 0 END
+                  ), 0) AS access_round
+             FROM documents d
+             JOIN submissions s ON (s.provider_id=$2 OR s.auditor_id=$2)
+            WHERE d.id=$1
+              AND ($1=ANY(s.document_ids) OR EXISTS (
+                    SELECT 1 FROM submission_revision_requests rr
+                     WHERE rr.submission_id=s.id
+                       AND $1=ANY(rr.submitted_document_ids)
+              ))
+            ORDER BY access_round DESC NULLS LAST
+            LIMIT 1""",
+        doc_id, actor_id,
+    )
+
+
 @router.get("/documents/{doc_id}/preview")
 async def preview_document(
     doc_id: str,
@@ -541,28 +584,7 @@ async def preview_document(
     """Convert document to PDF for inline viewing. Caches the result."""
     user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
-    row = None
-    if user["role"] == "business":
-        row = await db.fetchrow(
-            "SELECT file_path, original_filename, mime_type FROM documents WHERE id = $1 AND tenant_id = $2",
-            doc_id,
-            user.get("tenant_id"),
-        )
-    elif user["role"] == "provider":
-        # C6 fix — provider can ONLY view docs explicitly in their submissions.
-        # Old `OR d.tenant_id = s.business_tenant` granted whole-tenant access
-        # which leaked unrelated docs across submissions. Revisions are in the
-        # documents table but only `submission.document_ids` are CB's scope.
-        row = await db.fetchrow(
-            """SELECT d.file_path, d.original_filename, d.mime_type FROM documents d
-               WHERE d.id = $1 AND EXISTS (
-                   SELECT 1 FROM submissions s
-                   WHERE (s.provider_id = $2 OR s.auditor_id = $2)
-                     AND $1 = ANY(s.document_ids)
-               )""",
-            doc_id,
-            await resolve_canonical_user_id(user, db),
-        )
+    row = await _load_submission_document_read_access(doc_id, user, db)
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
@@ -658,25 +680,7 @@ async def get_document_file(
     """Serve the original uploaded file for viewing."""
     user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
-    row = None
-    if user["role"] == "business":
-        row = await db.fetchrow(
-            "SELECT file_path, original_filename, mime_type FROM documents WHERE id = $1 AND tenant_id = $2",
-            doc_id,
-            user.get("tenant_id"),
-        )
-    elif user["role"] == "provider":
-        # C6 fix — same scoping as /preview: only docs explicitly in the submission.
-        row = await db.fetchrow(
-            """SELECT d.file_path, d.original_filename, d.mime_type FROM documents d
-               WHERE d.id = $1 AND EXISTS (
-                   SELECT 1 FROM submissions s
-                   WHERE (s.provider_id = $2 OR s.auditor_id = $2)
-                     AND $1 = ANY(s.document_ids)
-               )""",
-            doc_id,
-            await resolve_canonical_user_id(user, db),
-        )
+    row = await _load_submission_document_read_access(doc_id, user, db)
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
@@ -684,6 +688,23 @@ async def get_document_file(
     if not file_path or not file_path.exists():
         raise HTTPException(404, "File không tồn tại trên hệ thống")
 
+    # This event means current authorization succeeded and the server is about
+    # to construct a response; it deliberately does not claim body completion.
+    audit_user = {**user, "tenant_id": str(row["tenant_id"])}
+    await _audit_strict(
+        db,
+        action="document.download_authorized",
+        user=audit_user,
+        entity_id=doc_id,
+        request=request,
+        metadata={
+            "lifecycle": "authorized_before_response",
+            "submission_id": str(row["submission_id"]) if row["submission_id"] else None,
+            "round": row["access_round"],
+            "document_version_id": str(row["id"]),
+            "version_number": row["version_number"],
+        },
+    )
     return _FileResponse(
         path=str(file_path),
         filename=row["original_filename"],

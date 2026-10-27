@@ -260,6 +260,26 @@ async def test_cb_stats_requires_persisted_active_owner_and_uses_canonical_tenan
 
 
 @pytest.mark.asyncio
+async def test_cb_stats_certificate_expiry_remains_60_days_separate_from_90d_performance():
+    from auth import submission_router
+
+    endpoint = _endpoint(submission_router.router, "/cb-stats")
+    actor_id, tenant_id = uuid4(), uuid4()
+    db = ProviderStatsDB({
+        "id": actor_id, "role": "provider", "status": "active",
+        "is_owner": True, "tenant_id": tenant_id,
+    })
+    await endpoint({"role": "provider", "app_user_id": str(actor_id)}, db)
+    expiry_queries = [
+        sql.lower() for _, sql, _ in db.calls
+        if "halal_certificates" in sql.lower() and "expiry_date" in sql.lower()
+    ]
+    assert len(expiry_queries) >= 2
+    assert all("interval '60 days'" in sql for sql in expiry_queries)
+    assert all("interval '90 days'" not in sql for sql in expiry_queries)
+
+
+@pytest.mark.asyncio
 async def test_cb_stats_denies_business_auditor_and_platform_admin_before_metrics_queries():
     """Owner aggregates fail closed for non-owner capabilities on this endpoint."""
     from auth import submission_router

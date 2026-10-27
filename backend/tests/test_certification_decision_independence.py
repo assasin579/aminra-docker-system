@@ -69,6 +69,7 @@ async def test_create_decision_case_persists_canonical_fields_and_audit(monkeypa
     audit_visit_id = uuid4()
     actor_id = uuid4()
     decision_id = uuid4()
+    requirements_version_id = uuid4()
     audit_calls = []
 
     async def fake_log_audit(*args, **kwargs):
@@ -77,7 +78,7 @@ async def test_create_decision_case_persists_canonical_fields_and_audit(monkeypa
     monkeypatch.setattr(svc, "log_audit", fake_log_audit)
     db = FakeConn()
     db.fetchrow_responses = [
-        ("FROM submissions", FakeRecord(id=submission_id, business_tenant=business_tenant, provider_id=provider_id, auditor_id=uuid4())),
+        ("FROM submissions", FakeRecord(id=submission_id, business_tenant=business_tenant, provider_id=provider_id, auditor_id=uuid4(), requirements_version_id=requirements_version_id, revision_round=1)),
         ("SELECT id\n        FROM certification_decisions", None),
         ("FROM audit_visits", FakeRecord(id=audit_visit_id)),
         ("INSERT INTO certification_decisions", FakeRecord(id=decision_id, status="pending_review")),
@@ -95,6 +96,7 @@ async def test_create_decision_case_persists_canonical_fields_and_audit(monkeypa
     assert result["id"] == decision_id
     insert_call = next(call for call in db.calls if call[0] == "fetchrow" and "INSERT INTO certification_decisions" in call[1][0])
     assert insert_call[1][1][0:5] == (str(submission_id), business_tenant, provider_id, str(audit_visit_id), str(actor_id))
+    assert insert_call[1][1][7:] == (requirements_version_id, 2)
     assert audit_calls and audit_calls[0][1]["action"] == "certification_decision.create"
 
 

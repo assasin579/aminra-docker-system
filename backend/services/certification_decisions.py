@@ -69,7 +69,7 @@ async def create_decision_case(
 
     submission = await db.fetchrow(
         """
-        SELECT id, business_tenant, provider_id, auditor_id
+        SELECT id, business_tenant, provider_id, auditor_id, requirements_version_id, revision_round
         FROM submissions
         WHERE id=$1 AND provider_id=$2
         """,
@@ -122,9 +122,9 @@ async def create_decision_case(
         row = await db.fetchrow(
             """
             INSERT INTO certification_decisions
-                (submission_id, business_tenant, provider_id, audit_visit_id, created_by, reviewer_id, decision_notes, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending_review')
-            RETURNING id, submission_id, business_tenant, provider_id, audit_visit_id, status, reviewer_id, created_by
+                (submission_id, business_tenant, provider_id, audit_visit_id, created_by, reviewer_id, decision_notes, status, requirements_version_id, submitted_round)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending_review', $8, $9)
+            RETURNING id, submission_id, business_tenant, provider_id, audit_visit_id, status, reviewer_id, created_by, requirements_version_id, submitted_round
             """,
             submission_id,
             submission["business_tenant"],
@@ -133,6 +133,8 @@ async def create_decision_case(
             created_by,
             reviewer_id,
             notes,
+            submission.get("requirements_version_id"),
+            int(submission.get("revision_round") or 0) + 1,
         )
     except Exception as exc:
         if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():

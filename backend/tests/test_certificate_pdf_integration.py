@@ -11,6 +11,7 @@ path not stored, etc.
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from datetime import date, timezone
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,18 @@ class FakeConn:
         self.fetch_responses: list[tuple[str, list]] = []
         self.fetchrow_responses: list[tuple[str, FakeRecord | None]] = []
         self.fetchval_responses: list[tuple[str, Any]] = []
+
+    @asynccontextmanager
+    async def transaction(self):
+        """Match asyncpg's async transaction context protocol for route tests."""
+        self.calls.append(("transaction", ("begin", ())))
+        try:
+            yield self
+        except Exception:
+            self.calls.append(("transaction", ("rollback", ())))
+            raise
+        else:
+            self.calls.append(("transaction", ("commit", ())))
 
     def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
         for needle, value in table:

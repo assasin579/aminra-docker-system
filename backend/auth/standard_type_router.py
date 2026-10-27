@@ -32,6 +32,8 @@ from pydantic import BaseModel, Field
 from auth.db import get_db
 from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_admin
+from auth.requirements_authorization import require_platform_admin_capability
+from services.requirements_versions import publish_requirements_version
 
 log = logging.getLogger("aminra.standard_type")
 
@@ -297,6 +299,7 @@ async def admin_replace_doc_types(
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Standard not found")
     async with db.transaction():
+        await db.fetchrow("SELECT id FROM standard_types WHERE id = $1 FOR UPDATE", standard_id)
         await db.execute(
             "DELETE FROM standard_doc_types WHERE standard_type_id = $1", standard_id,
         )
@@ -307,6 +310,21 @@ async def admin_replace_doc_types(
                 standard_id, dt.doc_type, dt.required, dt.display_order,
             )
     return {"ok": True, "count": len(req.doc_types)}
+
+
+# ── Industry ↔ Standard mapping (admin) ─────────────────────────────────────
+
+
+@admin_router.post("/{standard_id}/publish-requirements")
+async def publish_standard_requirements(
+    standard_id: UUID,
+    user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """Publish a versioned immutable snapshot; stricter than ordinary Admin CRUD."""
+    require_platform_admin_capability(user)
+    actor_id = await resolve_canonical_user_id(user, db)
+    return await publish_requirements_version(db, standard_type_id=standard_id, actor=user, actor_id=actor_id)
 
 
 # ── Industry ↔ Standard mapping (admin) ─────────────────────────────────────

@@ -40,6 +40,7 @@ def _approved_docs() -> list[FakeRecord]:
 
 
 def _base_db(*, dossier_id, tenant_id, standard_id, docs=None, ncrs=None, decision=None, cert=None) -> FakeConn:
+    version_id = uuid4()
     db = FakeConn()
     db.fetchrow_responses = [
         (
@@ -48,17 +49,19 @@ def _base_db(*, dossier_id, tenant_id, standard_id, docs=None, ncrs=None, decisi
                 id=dossier_id,
                 tenant_id=tenant_id,
                 standard_type_id=standard_id,
+                requirements_version_id=version_id,
+                requirements_binding_status="bound",
                 status="in_progress",
                 title="Pilot dossier",
             ),
         ),
-        ("FROM submissions", FakeRecord(id=uuid4(), status="approved", provider_id=uuid4())),
+        ("FROM submissions", FakeRecord(id=uuid4(), status="approved", provider_id=uuid4(), requirements_version_id=version_id, document_ids=[])),
         ("FROM certification_decisions", decision),
         ("FROM halal_certificates", cert),
     ]
     db.fetch_responses = [
         (
-            "FROM standard_doc_types",
+            "FROM standard_requirement_version_slots",
             [
                 FakeRecord(doc_type="halal_policy", required=True, display_order=1),
                 FakeRecord(doc_type="has_manual", required=True, display_order=2),
@@ -90,6 +93,60 @@ async def test_readiness_blocks_missing_required_documents_and_names_business_ne
     assert dossier_queries
     assert "tenant_id" in dossier_queries[0][1][0]
     assert dossier_queries[0][1][1] == (str(dossier_id), str(tenant_id))
+
+
+async def test_readiness_document_query_uses_only_selected_submission_round_evidence():
+    from services.dossier_readiness import compute_dossier_readiness
+
+    dossier_id, tenant_id, standard_id = uuid4(), uuid4(), uuid4()
+    docs = _approved_docs()
+    db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=standard_id, docs=docs[:1])
+    submission = db.fetchrow_responses[1][1]
+    assert submission is not None
+    submission["document_ids"] = [docs[0]["id"]]
+
+    result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
+
+    assert result["readiness_percent"] == 25
+    assert result["missing_required_documents"] == ["has_manual"]
+    document_query = next(call for call in _recorded_sql(db, "FROM documents") if "SELECT id, doc_type" in call[1][0])
+    assert "id = ANY(COALESCE($3::uuid[], '{}'::uuid[]))" in document_query[1][0]
+    assert document_query[1][1] == (str(dossier_id), str(tenant_id), [docs[0]["id"]])
+
+
+async def test_readiness_exposes_slot_state_and_exact_evidence_version_for_current_round():
+    from services.dossier_readiness import compute_dossier_readiness
+
+    dossier_id, tenant_id, standard_id = uuid4(), uuid4(), uuid4()
+    ai_only = FakeRecord(
+        id=uuid4(), doc_type="halal_policy", status="compliant", approval_status=None,
+        compliance_score=99, evaluation_result={"overall_status": "compliant"}, version_number=3,
+    )
+    reviewed = FakeRecord(
+        id=uuid4(), doc_type="has_manual", status="approved", approval_status="approved",
+        compliance_score=88, evaluation_result={}, version_number=2,
+    )
+    db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=standard_id, docs=[ai_only, reviewed])
+    submission = db.fetchrow_responses[1][1]
+    dossier = db.fetchrow_responses[0][1]
+    assert submission is not None and dossier is not None
+    submission["document_ids"] = [ai_only["id"], reviewed["id"]]
+    submission["revision_round"] = 2
+    db.fetch_responses[1] = ("FROM documents", [reviewed, ai_only])
+
+    result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
+
+    assert result["requirement_slots"] == [
+        {"doc_type": "halal_policy", "required": True, "display_order": 1,
+         "requirements_version_id": str(dossier["requirements_version_id"]),
+         "state": "pending_review", "evidence_document_id": str(ai_only["id"]), "evidence_version": 3,
+         "submission_id": str(submission["id"]), "submitted_round": 3},
+        {"doc_type": "has_manual", "required": True, "display_order": 2,
+         "requirements_version_id": str(dossier["requirements_version_id"]),
+         "state": "approved", "evidence_document_id": str(reviewed["id"]), "evidence_version": 2,
+         "submission_id": str(submission["id"]), "submitted_round": 3},
+    ]
+    assert result["readiness_percent"] == 25
 
 
 async def test_readiness_blocks_uploaded_but_unapproved_documents_without_treating_ai_score_as_approval():
@@ -221,7 +278,9 @@ async def test_readiness_marks_certificate_ready_only_after_approved_decision_an
     assert "d.id = ANY(submissions.document_ids)" in submission_sql
     assert "d.dossier_id = $2" in submission_sql
     assert "ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC" in submission_sql
-    assert submission_queries[0][1][1] == (str(tenant_id), str(dossier_id))
+    assert submission_queries[0][1][1] == (
+        str(tenant_id), str(dossier_id), approved_db.fetchrow_responses[0][1]["requirements_version_id"]
+    )
     decision_queries = _recorded_sql(approved_db, "FROM certification_decisions")
     assert decision_queries
     decision_sql = decision_queries[0][1][0]
@@ -234,6 +293,8 @@ async def test_readiness_marks_certificate_ready_only_after_approved_decision_an
         str(selected_submission["id"]),
         str(tenant_id),
         str(selected_submission["provider_id"]),
+        1,
+        selected_submission["requirements_version_id"],
     )
     certificate_queries = _recorded_sql(approved_db, "FROM halal_certificates")
     assert certificate_queries
@@ -264,7 +325,10 @@ async def test_readiness_scopes_ncrs_to_the_requested_dossier_submission_documen
     ncr_sql = ncr_queries[0][1][0]
     assert "JOIN documents" in ncr_sql
     assert "d.dossier_id = $2" in ncr_sql
-    assert ncr_queries[0][1][1] == (str(tenant_id), str(dossier_id))
+    assert "s.id = $4" in ncr_sql
+    assert ncr_queries[0][1][1] == (
+        str(tenant_id), str(dossier_id), db.fetchrow_responses[0][1]["requirements_version_id"], db.fetchrow_responses[1][1]["id"]
+    )
 
 
 async def test_readiness_denies_cross_tenant_dossier_access():
@@ -343,22 +407,64 @@ def test_readiness_route_registered_under_api_prefix(monkeypatch):
     body = res.json()
     assert body["dossier_id"] == str(dossier_id)
     assert body["next_action"] == "upload_required_documents"
-
-
-async def test_readiness_fails_closed_when_required_document_checklist_is_unconfigured():
+async def test_readiness_fails_closed_when_dossier_has_no_published_requirements():
     from services.dossier_readiness import compute_dossier_readiness
 
-    dossier_id, tenant_id, standard_id = uuid4(), uuid4(), uuid4()
+    dossier_id = uuid4()
+    tenant_id = uuid4()
+    standard_id = uuid4()
     db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=standard_id)
-    db.fetch_responses[0] = ("FROM standard_doc_types", [])
+    dossier = db.fetchrow_responses[0][1]
+    dossier["requirements_version_id"] = None
+    dossier["requirements_binding_status"] = "unconfigured"
 
     result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
 
     assert result["state"] == "requirements_unconfigured"
-    assert result["readiness_percent"] == 0
-    assert result["certificate_issue_blocked"] is True
-    assert result["next_action"] == "configure_required_documents"
-    assert {reason["code"] for reason in result["blocking_reasons"]} >= {"required_document_checklist_unconfigured"}
+    assert result["readiness_percent"] is None
+    assert result["next_action"] == "publish_requirements_version"
+    assert result["next_actor_role"] == "platform_admin"
+    assert result["blocking_reasons"] == [{"code": "requirements_version_not_published"}]
+    assert not _recorded_sql(db, "FROM documents")
+
+
+async def test_legacy_dossier_without_version_stays_unknown_and_is_not_backfilled():
+    from services.dossier_readiness import compute_dossier_readiness
+
+    dossier_id = uuid4()
+    tenant_id = uuid4()
+    db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=uuid4())
+    dossier = db.fetchrow_responses[0][1]
+    dossier["requirements_version_id"] = None
+    dossier["requirements_binding_status"] = "unknown"
+
+    result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
+
+    assert result["state"] == "requirements_unknown"
+    assert result["readiness_percent"] is None
+    assert result["next_action"] == "resolve_requirements_binding"
+    assert result["blocking_reasons"] == [{"code": "requirements_version_unknown_no_backfill"}]
+    assert not _recorded_sql(db, "FROM standard_requirement_version_slots")
+
+
+async def test_published_version_with_optional_slots_keeps_them_visible_without_blocking():
+    from services.dossier_readiness import compute_dossier_readiness
+
+    dossier_id = uuid4()
+    tenant_id = uuid4()
+    db = _base_db(dossier_id=dossier_id, tenant_id=tenant_id, standard_id=uuid4())
+    db.fetch_responses[0] = ("FROM standard_requirement_version_slots", [FakeRecord(doc_type="optional", required=False, display_order=1)])
+
+    result = await compute_dossier_readiness(db, dossier_id=str(dossier_id), tenant_id=str(tenant_id))
+
+    assert result["state"] == "requirements_no_required_slots"
+    assert result["requirement_slots"] == [{"doc_type": "optional", "required": False, "display_order": 1}]
+    assert result["required_documents"] == []
+    assert result["missing_required_documents"] == []
+    assert result["readiness_percent"] is None
+    assert result["blocking_reasons"] == [{"code": "requirements_configured_without_required_slots"}]
+    assert not _recorded_sql(db, "FROM documents")
+
 
 
 async def test_readiness_includes_state_owner_role_and_earliest_blocking_due_date():

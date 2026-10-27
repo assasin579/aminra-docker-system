@@ -136,6 +136,9 @@ class TestSubmissionSubmitAuditLog:
         db.fetchval_responses = [
             ("SELECT COUNT(*) FROM documents", 1),
         ]
+        db.fetch_responses = [
+            ("SELECT DISTINCT dossier_id FROM documents", [FakeRecord(dossier_id=None)]),
+        ]
 
         await submit_documents(
             req=SubmitRequest(
@@ -156,17 +159,12 @@ class TestSubmissionSubmitAuditLog:
         meta = json.loads(args[8])
         assert meta["provider_name"] == "Halal CB Vietnam"
         assert meta["document_count"] == 1
+        assert ("transaction", ("commit", ())) in db.calls
 
 
 # ── Submission status change (provider) ─────────────────────────────────────
 
 class TestSubmissionStatusChangeAuditLog:
-    @pytest.mark.skip(
-        reason="stale: hardcodes status='approved' but update_submission_status now "
-        "rejects terminal transitions (must use /approve-final). Rewrite to use a "
-        "non-terminal transition like reviewing → revision_required, or test "
-        "/approve-final endpoint directly."
-    )
     async def test_status_change_records_namespaced_action_and_diff(self):
         from auth.submission_router import update_submission_status
         from auth.submission_router import UpdateStatusRequest
@@ -207,7 +205,7 @@ class TestSubmissionStatusChangeAuditLog:
 
         await update_submission_status(
             submission_id=sub_id,
-            req=UpdateStatusRequest(status="approved", auditor_notes="OK"),
+            req=UpdateStatusRequest(status="returned", auditor_notes="Needs additional evidence"),
             request=FakeRequest(),
             user=provider,
             db=db,
@@ -216,9 +214,9 @@ class TestSubmissionStatusChangeAuditLog:
         inserts = _audit_inserts(db)
         assert len(inserts) == 1
         args = inserts[0]
-        assert args[4] == "submission.status_change.approved"
-        assert json.loads(args[7]) == {"status": ["reviewing", "approved"]}
-        assert json.loads(args[8])["auditor_notes"] == "OK"
+        assert args[4] == "submission.status_change.returned"
+        assert json.loads(args[7]) == {"status": ["reviewing", "returned"]}
+        assert json.loads(args[8])["auditor_notes"] == "Needs additional evidence"
 
     async def test_invalid_status_does_not_emit_audit(self):
         from fastapi import HTTPException
