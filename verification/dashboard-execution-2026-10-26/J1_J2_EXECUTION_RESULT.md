@@ -2,7 +2,7 @@
 
 **As of:** 2026-10-27 post-restart lifecycle and acceptance rerun.
 **Workspace:** `/home/user/.cache/aminra-dashboard-integrated`
-**Branch/HEAD before closeout commit:** `dashboard/execution-2026-10-26`, code HEAD `28bbaf11cc6c03bc3995a4598f404224cb4c226b`; current working tree has reviewed pending changes in document download lifecycle, one direct-file HTTP assertion, test fixture exception type, matrix/checkpoint/evidence. Fresh status/diff review still required before commit.
+**Branch/commit:** `dashboard/execution-2026-10-26`, closeout commit `147f4a87014cc0341f938e11a76b2b216f9e4269` (tests ran on identical source immediately before commit; no push).
 **Scope:** isolated source + task-owned synthetic DB/storage only. No original-checkout writes, push, merge, deploy, shared/runtime DB, or customer-pilot UAT. STOP C and customer-pilot NO-GO remain.
 
 ## Latest result
@@ -41,7 +41,7 @@
 
 - Scoped local commit `91fe318aafca38ab31a556f1b457680aeca43d31` is an exact child of baseline `4d1ae677598301e62ff6b06208d5c5832c7290f9`; it includes 46 reviewed files and was not pushed. Existing `J1_J2_CORRECTIVE_FIXES.patch` is unverified and superseded.
 - Remaining untracked entries include the confirmed UI-upload synthetic file (remove during cleanup), `frontend/aminra-web/e2e/cb-dashboard-synthetic.spec.ts`, and the old patch; those were excluded as unreviewed/out-of-scope. Checkout original remains untouched.
-- Task-owned API container, PostgreSQL container/network, Next dev process, env file and synthetic upload file still require cleanup/absence verification. Never print or copy credential values.
+- Task-owned API, proxy, disposable PostgreSQL/network, Next dev server, proxy config and synthetic-only storage were verified by exact mount/path/resource identity, then stopped/removed after all logs were preserved. Older similarly named containers were intentionally left untouched. No credentials copied; no original checkout/shared runtime altered.
 
 ## 2026-10-27 acceptance closeout evidence (supersedes interim statuses above)
 - Final DB command: `docker exec aminra-a02-provider-20261027 sh -lc 'cd /app && J1J2_APP_ROLE=a02_app pytest -vv -s tests/test_submission_j1_j2_disposable.py'` — **26 passed**, PostgreSQL disposable DB, current_user `a02_app` (non-superuser/no BYPASSRLS). Log `evidence/2026-10-27-a02-app-role-final.log`, SHA-256 `a847fd18b99d9fbea4217cc38ff1b96fbf3ab35d9b631bd793980e07b9a8ab95`.
