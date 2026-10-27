@@ -1,0 +1,6 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K[1/2] [desktop-chromium] › e2e/business-readiness-g1-synthetic.spec.ts:22:5 › business G1 dashboard renders integrated version-bound readiness without legacy denominator
+[1A[2K[2/2] [desktop-chromium] › e2e/business-readiness-g1-synthetic.spec.ts:65:5 › synthetic browser covers loading, legacy UNKNOWN, optional-only, scope switch and late response
+[1A[2K  2 passed (5.0s)

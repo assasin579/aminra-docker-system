@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey
+[1A[2K[desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey
+{"run":"31e413a7-f20e-4969-a098-7c6bf994f340","dossierId":"79b6c6d6-ca6a-4670-aaaf-43e62611ab74","submissionId":"bb0715bc-e7ad-4422-87c8-db72e727fc2b","originalDocumentId":"99831f3b-30b7-4cd5-b9f8-edc8787b822f","newDocumentId":"9a83ce2a-106c-42ed-92e8-a513b6eb1c36","submittedRound":1,"revisionRequestRound":1,"originalHash":"76e0177150afa327cf050ef48bc88e9d9c931e8bf7fc4716de060ee17d4a0c6d","revisedHash":"154e237850495d105c31ab9d63d714a051110be6fd714a80700b67e4ce8bb9a7","retainedOldHash":"76e0177150afa327cf050ef48bc88e9d9c931e8bf7fc4716de060ee17d4a0c6d"}
+
+[1A[2K  1 passed (28.2s)

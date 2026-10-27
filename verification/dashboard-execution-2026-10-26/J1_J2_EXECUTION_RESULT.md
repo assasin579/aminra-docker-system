@@ -1,13 +1,13 @@
 # AMINRA J1/J2 execution result
 
-**As of:** 2026-10-26 (latest verification run; exact wall-clock not recorded)
+**As of:** 2026-10-27 post-restart lifecycle and acceptance rerun.
 **Workspace:** `/home/user/.cache/aminra-dashboard-integrated`
-**Branch/base:** `dashboard/execution-2026-10-26` at `4d1ae677598301e62ff6b06208d5c5832c7290f9`
+**Branch/HEAD before closeout commit:** `dashboard/execution-2026-10-26`, code HEAD `28bbaf11cc6c03bc3995a4598f404224cb4c226b`; current working tree has reviewed pending changes in document download lifecycle, one direct-file HTTP assertion, test fixture exception type, matrix/checkpoint/evidence. Fresh status/diff review still required before commit.
 **Scope:** isolated source + task-owned synthetic DB/storage only. No original-checkout writes, push, merge, deploy, shared/runtime DB, or customer-pilot UAT. STOP C and customer-pilot NO-GO remain.
 
-## Overall result
+## Latest result
 
-**J1: PARTIAL. J2: PARTIAL. Integrated implementation is not DONE.** Route/service and DB-backed evidence covers substantial slices, but J1-A02 is not accepted: the real upload UI creates a document but does not associate it with the Dossier or exact requirements version. R12's broader browser journey is integrated but most workflow actions are browser-side API calls, not rendered UI interactions. No RLS, runtime/release, or pilot claim.
+**VERDICT: PARTIAL.** Current evidence closes J1-A08, J2-A06, X-A01, X-A02 and X-A04 at scoped synthetic boundaries. J1-A01 and J1-A03 remain NOT VERIFIED; see exact matrix gaps. The integrated Playwright journey passed 1/1 after API restart and now includes direct `/documents/{id}/file` HTTP 200 + browser-read SHA-256 match; API-mocked G1 Playwright passed 2/2. App-role disposable DB suite passed 26/26, frontend Vitest 24/24, TypeScript, scoped ESLint and diff checks passed. X-A02 uses legacy UNKNOWN/no-backfill, current Alembic heads read from DB, and prior guarded non-destructive downgrade rehearsal; no evidence was deleted and guard was not bypassed. `alembic current` CLI in this runtime image failed because `psycopg` is absent, but direct app-role DB query confirmed heads `053_audit_report_acceptance` and `055_dossier_document_attachments`. Exact rerun commands and logs are documented below and in `J1_J2_CHECKPOINT.md` / `J1_J2_ACCEPTANCE_MATRIX.md`. R1–R12 remains cross-reference-only; no mapping in reviewed approved source. No RLS, OIDC, release or pilot claim.
 
 ## Evidence completed in this continuation
 
@@ -39,7 +39,18 @@
 
 ## Handoff/lifecycle
 
-- No commit or refreshed baseline-applicable patch yet. Existing `J1_J2_CORRECTIVE_FIXES.patch` is not yet proven current/forward-applicable; do not hand it off as verified.
-- Workspace contains unrelated/uncertain dirty entries including `backend/docs/669a5d6a-bb61-4286-bdb0-f2d6c30dac4b/`; do not include or alter it without scope evidence. Checkout original remains untouched.
-- Task-owned API container, PostgreSQL container/network, Next dev process and env file still require ownership-verified cleanup after all checks. Do not print or copy credential values.
-- Canonical resume point: `J1_J2_CHECKPOINT.md`; matrix: `J1_J2_ACCEPTANCE_MATRIX.md`. Continue with scoped diff review, artifact refresh, local commit or forward-verified patch, then cleanup. No deploy/push/pilot.
+- Scoped local commit `91fe318aafca38ab31a556f1b457680aeca43d31` is an exact child of baseline `4d1ae677598301e62ff6b06208d5c5832c7290f9`; it includes 46 reviewed files and was not pushed. Existing `J1_J2_CORRECTIVE_FIXES.patch` is unverified and superseded.
+- Remaining untracked entries include the confirmed UI-upload synthetic file (remove during cleanup), `frontend/aminra-web/e2e/cb-dashboard-synthetic.spec.ts`, and the old patch; those were excluded as unreviewed/out-of-scope. Checkout original remains untouched.
+- Task-owned API container, PostgreSQL container/network, Next dev process, env file and synthetic upload file still require cleanup/absence verification. Never print or copy credential values.
+
+## 2026-10-27 acceptance closeout evidence (supersedes interim statuses above)
+- Final DB command: `docker exec aminra-a02-provider-20261027 sh -lc 'cd /app && J1J2_APP_ROLE=a02_app pytest -vv -s tests/test_submission_j1_j2_disposable.py'` — **26 passed**, PostgreSQL disposable DB, current_user `a02_app` (non-superuser/no BYPASSRLS). Log `evidence/2026-10-27-a02-app-role-final.log`, SHA-256 `a847fd18b99d9fbea4217cc38ff1b96fbf3ab35d9b631bd793980e07b9a8ab95`.
+- API restart: `docker restart aminra-a02-provider-20261027`; then `curl http://127.0.0.1:18100/health` returned status `ok`, database `connected`. Only task-owned synthetic API restarted.
+- Full journey after restart: `PW_BASE_URL=http://127.0.0.1:18201 npx playwright test e2e/a02-full-j1-j2-journey.spec.ts --project=desktop-chromium --reporter=line`; **1 passed**, run `31e413a7-f20e-4969-a098-7c6bf994f340`. Added direct `/api/api/documents/{id}/file` GET: HTTP 200, browser-read bytes SHA-256 equal uploaded fixture; no client-disk/persistence claim. Log `evidence/2026-10-27-j1j2-direct-file-http.log`, SHA-256 `5636bfd3ad334f308e6a85937fada5eb9582f0e67a742dd1e2a48faa6da7e5d4`.
+- Current G1: `PW_BASE_URL=http://127.0.0.1:18201 npx playwright test e2e/business-readiness-g1-synthetic.spec.ts --project=desktop-chromium --reporter=line`; **2 passed**, API-mocked UI only. Log `evidence/2026-10-27-g1-browser-final.log`, SHA-256 `bf1d5242c437db836a4ebc13e5d15343dce93737460b94dbeea3f6b1635c64cf`.
+- Frontend: `npx tsc --noEmit --pretty false`; `npx eslint e2e/a02-full-j1-j2-journey.spec.ts e2e/business-readiness-g1-synthetic.spec.ts --max-warnings=0`; `npx vitest run __tests__/business-readiness-profiles.test.tsx __tests__/service-worker-dashboard-cache.test.ts __tests__/revision-panel.test.tsx --reporter=dot` (**24 passed**); `git diff --check` — all pass.
+- X-A02 exact evidence: legacy fixture stays `requirements_binding_status=unknown`, no version, readiness UNKNOWN/reason `requirements_version_unknown_no_backfill`; current `alembic_version` queried as `a02_app` returned `053_audit_report_acceptance` and `055_dossier_document_attachments`; prior downgrade with durable evidence was safely refused, heads unchanged. `alembic current` CLI failed only because this runtime image lacks `psycopg`; no downgrade bypass or evidence deletion.
+- X-A04 exact test `test_requirements_publication_authority_snapshot_immutability_and_rollback` passed: unauthorized publication 403; authorized versions 2/3; first version/slots immutable; triggers reject mutation; invalid actor FK rolls back version/current pointer/audit. Test exception is `asyncpg.exceptions.RaiseError`.
+- Current source SHA-256: `backend/auth/document_router.py` `d65d6659e89f0b347d189932d90de25fa2238d35b2bdd90b43b38ad7cc7375b3`; `backend/tests/test_submission_j1_j2_disposable.py` `1d78190f0010daba66d4064f404deffd53d760822738cc39bdb431c6e18a3611`; `frontend/aminra-web/e2e/a02-full-j1-j2-journey.spec.ts` `02c668e4816a142902ed96f825c77d0185d7ccca7ab9a3f96d2d06da5fba44de`.
+- Current matrix closes J1-A08/J2-A06/X-A01/X-A02/X-A04 scoped PASS. Overall PARTIAL due J1-A01 and J1-A03 NOT VERIFIED; no inferred R1–R12 gate. Closeout source/docs/evidence remain to be scoped-committed and task-owned resources verified/cleaned.
+- Canonical resume point: `J1_J2_CHECKPOINT.md`; matrix: `J1_J2_ACCEPTANCE_MATRIX.md`. Immediate closeout: cleanup verified task-owned resources, record their absence, and keep J1-A02/J1/J2 PARTIAL until missing acceptance has genuine evidence. No deploy/push/pilot.

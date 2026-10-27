@@ -1,11 +1,12 @@
 # AMINRA J1/J2 execution evidence index
 
-**Canonical checkpoint (resume source):** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/J1_J2_CHECKPOINT.md`
+**Canonical checkpoint:** `J1_J2_CHECKPOINT.md`
+**Current acceptance matrix:** `J1_J2_ACCEPTANCE_MATRIX.md`
+**Execution result:** `J1_J2_EXECUTION_RESULT.md`
+**Task graph:** `J1_J2_TASKS.md`
 
-**Current status refreshed 2026-10-26 19:11 -04:00.** Two J2 defects are repaired and evidenced by disposable app-role RED/GREEN tests: pinned requirements fields in `resubmit()`; historical submitted-document retrieval via immutable round snapshot in the actual `FileResponse` route. Current app-role DB + revision-history test run: **8 passed**. Browser mock: **2 passed**; component race/SW: **9 passed**. TypeScript, targeted ESLint and `git diff --check` PASS.
+**Current continuation (2026-10-27):** after API restart, direct file HTTP route + exact synthetic SHA-256, app-role DB and G1 browser evidence are recorded in the checkpoint/matrix/result. Logs in `evidence/2026-10-27-*.log`. Current acceptance closes J1-A08, J2-A06, X-A01, X-A02 and X-A04 at synthetic/local boundaries; J1-A01 and J1-A03 remain NOT VERIFIED. `alembic_version` read as `a02_app` contains heads 053/055; `alembic current` CLI is unavailable in this image due missing psycopg. Overall remains PARTIAL.
 
-**Acceptance remains PARTIAL/BLOCKED, not DONE:** idempotency/stale/concurrent semantics required by spec have no J1/J2 `Idempotency-Key` implementation and are not tested; local FE→backend→DB/storage browser journey is not run; OIDC/download logging/RLS/runtime/pilot are not evidenced. STOP C and customer-pilot NO-GO remain.
+**Status: J1/J2 PARTIAL, not DONE.** No R1–R12 J1/J2 mapping in the supplied approved source; use as cross-reference only. RLS/Forced-RLS NOT TESTED (0 policies). Runtime/release/customer-pilot remain unauthorized; STOP C and customer-pilot NO-GO remain.
 
-Artifacts: `J1_J2_CHECKPOINT.md` (canonical), `J1_J2_ACCEPTANCE_MATRIX.md`, `J1_J2_EXECUTION_RESULT.md`, `J1_J2_CORRECTIVE_FIXES.patch`. The corrective patch reverse-checks against current source. Workspace contains unrelated dirty/untracked entries; no commit/staging/push/deploy.
-
-DB test run `20261026-848feaea` is cleaned after its final **8 passed** app-role test run. Exact container/network and mode-0600 env files were removed; task-owned Next PIDs stopped and port closure verified. `e04_full`, its unrelated DB container/volume, and any unowned process were untouched.
+**Scoped code commits before this closeout:** A02 upload binding `8e0e718` and revision history/diff `28bbaf1`. Closeout changes are pending review/commit in isolated branch; no push/deploy/original-checkout write. Task-owned API/DB/proxy/Next/storage lifecycle and generated WIP are recorded in checkpoint; cleanup is pending owner verification.

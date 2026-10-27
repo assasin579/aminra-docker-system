@@ -1,0 +1,38 @@
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+[1mcollecting ... [0mcollected 26 items
+
+tests/test_submission_j1_j2_disposable.py::test_submit_routes_owner_selected_cb_to_canonical_org_tenant [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_replacement_preserves_open_revision_until_explicit_resubmit_retry [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_revision_history_scope_snapshot_and_uuid_values [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_rejects_document_type_outside_pinned_requirements [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_j2_round_resubmit_diff_and_old_snapshot_immutability [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_historical_round_document_file_serves_exact_bytes_and_scopes_provider [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_request_revision_retry_same_key_replays_original_request [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_submit_retry_same_key_returns_same_submission_receipt [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_submit_route_concurrent_same_key_commits_one_submission [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_submit_replay_rechecks_current_provider_eligibility [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_submit_failure_rolls_back_receipt_and_submission [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_retry_same_key_returns_same_logical_result [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_same_key_different_payload_conflicts_without_mutation [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_receipt_and_mutation_rollback_together_on_side_effect_failure [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_replay_receipt_serializes_concurrent_same_key [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_request_revision_with_second_key_is_rejected_as_stale_without_receipt [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_with_second_key_stale_state_is_a_noop_without_duplicate_side_effects [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_request_revision_replay_rechecks_current_assignment [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_replay_rechecks_current_business_scope [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_resubmit_route_concurrent_different_keys_has_one_winner [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_request_revision_route_concurrent_different_keys_has_one_winner [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_request_revision_route_serializes_concurrent_same_key [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_request_revision_database_failure_rolls_back_submission [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_g1_dashboard_uses_canonical_tenant_predicate_under_app_role [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_legacy_dossier_remains_unknown_under_current_published_profile [32mPASSED[0m
+tests/test_submission_j1_j2_disposable.py::test_requirements_publication_authority_snapshot_immutability_and_rollback [32mPASSED[0m
+
+[32m============================== [32m[1m26 passed[0m[32m in 3.62s[0m[32m ==============================[0m

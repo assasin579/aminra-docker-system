@@ -175,6 +175,15 @@ test('J1/J2: one fresh Business–CB pair completes rendered evidence and revisi
   }, { documentId: originalDocumentId });
   expect(firstPreviewEvidence.status).toBe(200);
   expect(sha256(Buffer.from(firstPreviewEvidence.bytes))).toBe(originalHash);
+  const directFileEvidence = await cbPage.evaluate(async ({ documentId }) => {
+    const token = localStorage.getItem('aminra_user_token')!;
+    const response = await fetch(`/api/api/documents/${documentId}/file`, {
+      headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+    });
+    return { status: response.status, bytes: Array.from(new Uint8Array(await response.arrayBuffer())) };
+  }, { documentId: originalDocumentId });
+  expect(directFileEvidence.status).toBe(200);
+  expect(sha256(Buffer.from(directFileEvidence.bytes))).toBe(originalHash);
 
   await cbPage.getByRole('button', { name: 'Đang đánh giá', exact: true }).click();
   const requestForm = cbPage.locator('[data-form="request-revision"]');

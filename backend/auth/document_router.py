@@ -703,21 +703,28 @@ async def get_document_file(
     # This event means current authorization succeeded and the server is about
     # to construct a response; it deliberately does not claim body completion.
     audit_user = {**user, "tenant_id": str(row["tenant_id"])}
+    audit_context = {
+        "submission_id": str(row["submission_id"]) if row["submission_id"] else None,
+        "round": row["access_round"],
+        "document_version_id": str(row["id"]),
+        "version_number": row["version_number"],
+        "delivery_mode": "direct_get_no_issued_url",
+        "url_issued": False,
+    }
     await _audit_strict(
         db,
         action="document.download_authorized",
         user=audit_user,
         entity_id=doc_id,
         request=request,
-        metadata={
-            "lifecycle": "authorized_before_response",
-            "submission_id": str(row["submission_id"]) if row["submission_id"] else None,
-            "round": row["access_round"],
-            "document_version_id": str(row["id"]),
-            "version_number": row["version_number"],
-        },
+        metadata={**audit_context, "lifecycle": "authorized_before_response"},
     )
-    return _FileResponse(
+    return _AuditedDownloadResponse(
+        db=db,
+        user=audit_user,
+        request=request,
+        document_id=doc_id,
+        metadata=audit_context,
         path=str(file_path),
         filename=row["original_filename"],
         media_type=row["mime_type"] or "application/octet-stream",
@@ -1235,6 +1242,97 @@ async def _audit_strict(
         entity_id,
         _json.dumps(enriched),
     )
+
+
+async def _audit_download_lifecycle(db, *, action: str, user: dict, entity_id: str, request: Request, metadata: dict) -> None:
+    """Record post-authorization delivery facts without interrupting a file stream."""
+    try:
+        await _audit_strict(
+            db, action=action, user=user, entity_id=entity_id, request=request, metadata=metadata,
+        )
+    except Exception:
+        log.exception("Failed to persist document download lifecycle event", extra={"document_id": entity_id, "action": action})
+
+
+class _AuditedDownloadResponse(_FileResponse):
+    """FileResponse that records what ASGI actually accepted, not just authorization."""
+
+    def __init__(self, *, db, user: dict, request: Request, document_id: str, metadata: dict, **kwargs):
+        super().__init__(**kwargs)
+        self._audit_db = db
+        self._audit_user = user
+        self._audit_request = request
+        self._audit_document_id = document_id
+        self._audit_metadata = metadata
+
+    async def __call__(self, scope, receive, send):
+        response_started = False
+        response_status = None
+        bytes_sent = 0
+        body_complete = False
+        pathsend_delegated = False
+
+        async def tracked_send(message):
+            nonlocal response_started, response_status, bytes_sent, body_complete, pathsend_delegated
+            await send(message)
+            message_type = message.get("type")
+            if message_type == "http.response.start":
+                response_started = True
+                response_status = message.get("status")
+                await _audit_download_lifecycle(
+                    self._audit_db,
+                    action="document.download_response_started",
+                    user=self._audit_user,
+                    entity_id=self._audit_document_id,
+                    request=self._audit_request,
+                    metadata={**self._audit_metadata, "lifecycle": "response_started", "response_status": response_status,
+                              "delivery_mode": "direct_get_no_issued_url"},
+                )
+            elif message_type == "http.response.body":
+                bytes_sent += len(message.get("body", b""))
+                if not message.get("more_body", False):
+                    body_complete = True
+            elif message_type == "http.response.pathsend":
+                pathsend_delegated = True
+
+        try:
+            await super().__call__(scope, receive, tracked_send)
+        except BaseException:
+            if response_started and not body_complete and not pathsend_delegated:
+                await _audit_download_lifecycle(
+                    self._audit_db,
+                    action="document.download_interrupted",
+                    user=self._audit_user,
+                    entity_id=self._audit_document_id,
+                    request=self._audit_request,
+                    metadata={**self._audit_metadata, "lifecycle": "interrupted_before_body_complete",
+                              "response_status": response_status, "bytes_sent": bytes_sent,
+                              "delivery_mode": "asgi_body"},
+                )
+            raise
+
+        if pathsend_delegated:
+            await _audit_download_lifecycle(
+                self._audit_db,
+                action="document.download_transfer_delegated",
+                user=self._audit_user,
+                entity_id=self._audit_document_id,
+                request=self._audit_request,
+                metadata={**self._audit_metadata, "lifecycle": "server_sendfile_delegated",
+                          "response_status": response_status, "bytes_sent": None,
+                          "delivery_mode": "asgi_pathsend"},
+            )
+        elif body_complete:
+            await _audit_download_lifecycle(
+                self._audit_db,
+                action="document.download_bytes_served",
+                user=self._audit_user,
+                entity_id=self._audit_document_id,
+                request=self._audit_request,
+                metadata={**self._audit_metadata, "lifecycle": "body_complete",
+                          "response_status": response_status, "bytes_sent": bytes_sent,
+                          "delivery_mode": "asgi_body"},
+            )
 
 
 # ── 1. POST /documents/{id}/submit-for-approval ─────────────────────────────

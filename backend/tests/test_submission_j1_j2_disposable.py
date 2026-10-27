@@ -522,6 +522,48 @@ async def test_historical_round_document_file_serves_exact_bytes_and_scopes_prov
     assert served == expected_bytes
     expected_hash = hashlib.sha256(expected_bytes).hexdigest()
     assert hashlib.sha256(served).hexdigest() == expected_hash
+
+    # Download lifecycle must distinguish authorization, response start, and
+    # a complete ASGI body; the direct file endpoint issues no signed URL.
+    started_event = await db.fetchrow(
+        "SELECT metadata FROM audit_logs WHERE action='document.download_response_started' AND entity_id=$1",
+        str(prior_document_id),
+    )
+    served_event = await db.fetchrow(
+        "SELECT metadata FROM audit_logs WHERE action='document.download_bytes_served' AND entity_id=$1",
+        str(prior_document_id),
+    )
+    assert started_event is not None and served_event is not None
+    started_meta = started_event["metadata"] if isinstance(started_event["metadata"], dict) else json.loads(started_event["metadata"])
+    served_meta = served_event["metadata"] if isinstance(served_event["metadata"], dict) else json.loads(served_event["metadata"])
+    assert started_meta["lifecycle"] == "response_started"
+    assert served_meta["lifecycle"] == "body_complete"
+    assert served_meta["bytes_sent"] == len(expected_bytes)
+    assert served_meta["delivery_mode"] == "asgi_body"
+    assert served_meta["url_issued"] is False
+    assert await db.fetchval(
+        "SELECT count(*) FROM audit_logs WHERE action='document.download_url_issued' AND entity_id=$1",
+        str(prior_document_id),
+    ) == 0
+
+    # A failed send is logged as interrupted, not as completed bytes served.
+    aborted_response = await document_router.get_document_file(
+        doc_id=str(prior_document_id), request=request, token=None, db=db,
+    )
+    async def fail_after_response_start(message):
+        if message["type"] == "http.response.body":
+            raise OSError("synthetic client disconnect")
+    with pytest.raises(OSError, match="synthetic client disconnect"):
+        await aborted_response(request.scope, receive, fail_after_response_start)
+    aborted_event = await db.fetchrow(
+        "SELECT metadata FROM audit_logs WHERE action='document.download_interrupted' AND entity_id=$1 ORDER BY created_at DESC LIMIT 1",
+        str(prior_document_id),
+    )
+    assert aborted_event is not None
+    aborted_meta = aborted_event["metadata"] if isinstance(aborted_event["metadata"], dict) else json.loads(aborted_event["metadata"])
+    assert aborted_meta["lifecycle"] == "interrupted_before_body_complete"
+    assert aborted_meta["bytes_sent"] == 0
+
     event = await db.fetchrow(
         """SELECT metadata FROM audit_logs
            WHERE action='document.download_authorized' AND entity_id=$1""",
@@ -549,11 +591,61 @@ async def test_historical_round_document_file_serves_exact_bytes_and_scopes_prov
     assert preview_bytes == expected_bytes
     assert hashlib.sha256(preview_bytes).hexdigest() == expected_hash
 
-    # Wrong CB, unassigned provider, and wrong Business do not reach storage.
     selected_actor = actor
     async def selected_identity(_request, _token):
         return selected_actor
     monkeypatch.setattr(document_router, "_get_user_from_header_or_query", selected_identity)
+
+    async def stream_file_as(selected):
+        nonlocal selected_actor
+        selected_actor = selected
+        file_response = await document_router.get_document_file(
+            doc_id=str(prior_document_id), request=request, token=None, db=db,
+        )
+        messages: list[dict] = []
+        async def send_file(message):
+            messages.append(message)
+        await file_response(request.scope, receive, send_file)
+        file_status = next(message["status"] for message in messages if message["type"] == "http.response.start")
+        file_bytes = b"".join(message.get("body", b"") for message in messages if message["type"] == "http.response.body")
+        return file_status, file_bytes
+
+    # Assigned reviewer can read the current packet and exact pinned historical bytes.
+    assigned = case["users"]["assigned"]
+    assigned_packet = await submission_router.submission_documents(
+        submission_id=str(case["ids"]["submission"]), user=assigned, db=db,
+    )
+    current_packet_ids = {str(doc_id) for doc_id in case["round2_docs"]}
+    assert current_packet_ids <= {item["id"] for item in assigned_packet["documents"]}
+    assigned_status, assigned_bytes = await stream_file_as(assigned)
+    assert assigned_status == 200 and assigned_bytes == expected_bytes
+
+    # Reassignment revokes the old reviewer immediately and grants the new reviewer.
+    replacement_reviewer = case["users"]["unassigned"]
+    await db.execute(
+        "UPDATE submissions SET auditor_id=$1 WHERE id=$2",
+        replacement_reviewer["id"], case["ids"]["submission"],
+    )
+    with pytest.raises(HTTPException) as old_packet:
+        await submission_router.submission_documents(
+            submission_id=str(case["ids"]["submission"]), user=assigned, db=db,
+        )
+    assert old_packet.value.status_code == 404
+    with pytest.raises(HTTPException) as old_file:
+        await stream_file_as(assigned)
+    assert old_file.value.status_code == 404
+    new_packet = await submission_router.submission_documents(
+        submission_id=str(case["ids"]["submission"]), user=replacement_reviewer, db=db,
+    )
+    assert current_packet_ids <= {item["id"] for item in new_packet["documents"]}
+    new_status, new_bytes = await stream_file_as(replacement_reviewer)
+    assert new_status == 200 and new_bytes == expected_bytes
+    await db.execute(
+        "UPDATE submissions SET auditor_id=$1 WHERE id=$2",
+        assigned["id"], case["ids"]["submission"],
+    )
+
+    # Wrong CB, unassigned provider, and wrong Business do not reach storage.
     for actor_key in ("cb_q", "unassigned", "business_b"):
         selected_actor = case["users"][actor_key]
         with pytest.raises(HTTPException) as denied:
@@ -564,7 +656,7 @@ async def test_historical_round_document_file_serves_exact_bytes_and_scopes_prov
     assert await db.fetchval(
         "SELECT count(*) FROM audit_logs WHERE action='document.download_authorized' AND entity_id=$1",
         str(prior_document_id),
-    ) == 1
+    ) == 4
 
     # Revocation/reassignment is evaluated on the next historical access.
     await db.execute(
@@ -578,8 +670,17 @@ async def test_historical_round_document_file_serves_exact_bytes_and_scopes_prov
         )
     assert revoked.value.status_code == 404
 
+    # Newly linked CB owner sees the packet and round-pinned historical bytes.
+    current_cb_owner = case["users"]["cb_q"]
+    new_owner_packet = await submission_router.submission_documents(
+        submission_id=str(case["ids"]["submission"]), user=current_cb_owner, db=db,
+    )
+    assert current_packet_ids <= {item["id"] for item in new_owner_packet["documents"]}
+    owner_status, owner_bytes = await stream_file_as(current_cb_owner)
+    assert owner_status == 200 and owner_bytes == expected_bytes
+
     # A document never submitted in this submission's history stays invisible.
-    selected_actor = case["users"]["cb_q"]
+    selected_actor = current_cb_owner
     unrelated_document_id = case["docs"]["wrong-v1"]["id"]
     with pytest.raises(HTTPException) as exc:
         await document_router.get_document_file(
@@ -1305,3 +1406,98 @@ async def test_request_revision_database_failure_rolls_back_submission(db, case)
         "SELECT count(*) FROM submission_revision_requests WHERE submission_id=$1",
         case["ids"]["submission"],
     ) == 0
+
+
+@pytest.mark.asyncio
+async def test_g1_dashboard_uses_canonical_tenant_predicate_under_app_role(db, case):
+    from auth.dossier_router import _resolve_tenant_id
+    from services.dossier_dashboard import build_dashboard
+
+    owner = case["users"]["business_a"]
+    # A forged tenant claim must not redirect the dashboard query to Business B.
+    actor_with_wrong_claim = {**owner, "tenant_id": str(case["ids"]["business_b"])}
+    canonical_tenant = await _resolve_tenant_id(db, actor_with_wrong_claim)
+    assert str(canonical_tenant) == str(case["ids"]["business_a"])
+
+    canonical_tenant_id = str(canonical_tenant)
+    own_page = await build_dashboard(db, canonical_tenant_id, page=1, page_size=50)
+    other_page = await build_dashboard(db, str(case["ids"]["business_b"]), page=1, page_size=50)
+    own_ids = {dossier["id"] for profile in own_page["profiles"] for dossier in profile["dossiers"]}
+    other_ids = {dossier["id"] for profile in other_page["profiles"] for dossier in profile["dossiers"]}
+    assert str(case["ids"]["dossier"]) in own_ids
+    assert str(case["ids"]["dossier"]) not in other_ids
+    assert other_page["total_dossiers"] == 0
+
+
+@pytest.mark.asyncio
+async def test_legacy_dossier_remains_unknown_under_current_published_profile(db, case):
+    from services.dossier_dashboard import build_dashboard
+
+    legacy_id = uuid4()
+    owner = case["users"]["business_a"]
+    # No requirements_version_id/status supplied: migration default is UNKNOWN.
+    await db.execute(
+        """INSERT INTO dossiers (id, tenant_id, standard_type_id, title, status, created_by)
+           VALUES ($1, $2, $3, 'Synthetic legacy dossier', 'draft', $4)""",
+        legacy_id, case["ids"]["business_a"], case["ids"]["standard"], owner["id"],
+    )
+    dashboard = await build_dashboard(db, str(case["ids"]["business_a"]), page=1, page_size=50)
+    dossiers = [d for profile in dashboard["profiles"] for d in profile["dossiers"]]
+    legacy = next(d for d in dossiers if d["id"] == str(legacy_id))
+
+    assert legacy["requirements_binding_status"] == "unknown"
+    assert legacy["requirements_version_id"] is None
+    assert legacy["readiness"]["state"] == "requirements_unknown"
+    assert legacy["readiness"]["readiness_percent"] is None
+    assert legacy["readiness"]["blocking_reasons"][0]["code"] == "requirements_version_unknown_no_backfill"
+
+
+@pytest.mark.asyncio
+async def test_requirements_publication_authority_snapshot_immutability_and_rollback(db, case):
+    from services.requirements_versions import publish_requirements_version
+
+    standard_id = case["ids"]["standard"]
+    admin_id = case["users"]["cb_p"]["id"]
+    for order, (doc_type, required) in enumerate((("policy", True), ("records", False))):
+        await db.execute(
+            "INSERT INTO standard_doc_types (standard_type_id, doc_type, required, display_order) VALUES ($1,$2,$3,$4)",
+            standard_id, doc_type, required, order,
+        )
+
+    non_admin = {"_keycloak": True, "realm_roles": ["provider"], "role": "provider", "sub": "synthetic-provider"}
+    with pytest.raises(HTTPException) as denied:
+        await publish_requirements_version(db, standard_type_id=standard_id, actor=non_admin, actor_id=admin_id)
+    assert denied.value.status_code == 403
+    assert await db.fetchval("SELECT count(*) FROM standard_requirement_versions WHERE standard_type_id=$1", standard_id) == 1
+
+    platform_admin = {"_keycloak": True, "realm_roles": ["platform_admin"], "role": "provider", "sub": str(admin_id), "email": case["users"]["cb_p"]["email"]}
+    with pytest.raises(asyncpg.ForeignKeyViolationError):
+        await publish_requirements_version(db, standard_type_id=standard_id, actor=platform_admin, actor_id=uuid4())
+    assert await db.fetchval("SELECT count(*) FROM standard_requirement_versions WHERE standard_type_id=$1", standard_id) == 1
+    assert await db.fetchval("SELECT count(*) FROM standard_requirement_current_versions WHERE standard_type_id=$1", standard_id) == 0
+
+    first = await publish_requirements_version(db, standard_type_id=standard_id, actor=platform_admin, actor_id=admin_id)
+    assert first["version_number"] == 2
+    first_id = UUID(first["requirements_version_id"])
+    first_slots = await db.fetch(
+        "SELECT doc_type, required, display_order FROM standard_requirement_version_slots WHERE requirements_version_id=$1 ORDER BY display_order",
+        first_id,
+    )
+    await db.execute("UPDATE standard_doc_types SET required=false WHERE standard_type_id=$1 AND doc_type='policy'", standard_id)
+    second = await publish_requirements_version(db, standard_type_id=standard_id, actor=platform_admin, actor_id=admin_id)
+    assert second["version_number"] == 3 and second["requirements_version_id"] != first["requirements_version_id"]
+    assert await db.fetch(
+        "SELECT doc_type, required, display_order FROM standard_requirement_version_slots WHERE requirements_version_id=$1 ORDER BY display_order",
+        first_id,
+    ) == first_slots
+
+    with pytest.raises(asyncpg.exceptions.RaiseError, match="Published requirements version slots are immutable"):
+        await db.execute("UPDATE standard_requirement_version_slots SET required=false WHERE requirements_version_id=$1 AND doc_type='policy'", first_id)
+    with pytest.raises(asyncpg.exceptions.RaiseError, match="Published requirements versions are immutable"):
+        await db.execute("UPDATE standard_requirement_versions SET content_sha256=$2 WHERE id=$1", first_id, "0" * 64)
+    with pytest.raises(asyncpg.exceptions.RaiseError, match="Requirements binding is immutable"):
+        await db.execute(
+            "UPDATE dossiers SET requirements_version_id=$2 WHERE id=$1",
+            case["ids"]["dossier"], UUID(second["requirements_version_id"]),
+        )
+    assert await db.fetchval("SELECT requirements_version_id FROM dossiers WHERE id=$1", case["ids"]["dossier"]) == case["ids"]["requirements"]
