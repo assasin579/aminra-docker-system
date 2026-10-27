@@ -5,7 +5,7 @@
 **Execution result:** `J1_J2_EXECUTION_RESULT.md`
 **Task graph:** `J1_J2_TASKS.md`
 
-**Current continuation (2026-10-27):** local code commit `3f0a28958c4f71e8239514e4dec2c7fc615d802d` closes J1-A01 and J1-A03 at scoped service/query + UI boundaries after 27 focused backend tests and 26 Vitest tests; no push. See canonical checkpoint and matrix for limitations/rerun commands. Overall remains PARTIAL: J1-A02 rendered exact-version Dossier attach remains unproven; X-A02 needs a separate disposable-DB recovery rehearsal. RLS/Forced-RLS not tested; runtime/release/customer-pilot remain unauthorized; STOP C and customer-pilot NO-GO remain.
+**Current continuation (2026-10-27):** J1-A02 rendered exact-version Dossier attachment and app-role reuse/wrong-tenant denial are PASS; X-A02 guarded downgrade refusal + forward recovery are PASS. See canonical checkpoint, acceptance matrix, and raw evidence logs for commands, DB heads/fingerprints, source hashes, and boundary. Overall matrix remains PARTIAL for unrelated gaps. RLS/Forced-RLS not tested; runtime/release/customer-pilot remain unauthorized; STOP C and customer-pilot NO-GO remain.
 
 **Status: J1/J2 PARTIAL, not DONE.** No R1–R12 J1/J2 mapping in the supplied approved source; use as cross-reference only. RLS/Forced-RLS NOT TESTED (0 policies). Runtime/release/customer-pilot remain unauthorized; STOP C and customer-pilot NO-GO remain.
 

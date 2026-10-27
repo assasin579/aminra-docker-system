@@ -1,0 +1,754 @@
+RUN=aminra-j1-a02-x-a02-1793115366-23457
+SOURCE_COMMIT=f54c7e539e75b22ef74b8c4c616cf497475e20a2
+SOURCE_HASHES
+07c5dda867318edccacec3c339dcabd0c9546259ff818a130c567ff90b734d2e  backend/auth/dossier_router.py
+769529146fbe64d9557e0b6ee501d4026dfc81846bfb5d9f91a4aa1fb8685157  backend/services/dossier_attachments.py
+1d78190f0010daba66d4064f404deffd53d760822738cc39bdb431c6e18a3611  backend/tests/test_submission_j1_j2_disposable.py
+6f5c1186fbd4413d9f6c5636d88ecae296b021ec01755c951dad2e773c1e2bc4  frontend/aminra-web/e2e/a02-full-j1-j2-journey.spec.ts
+
+DB app-role integration suite
+COMMAND: docker run --rm --network aminra-j1-a02-x-a02-1793115366-23457-net -v /home/user/.cache/aminra-dashboard-integrated/backend:/app:ro -w /app -e DATABASE_URL=<redacted app-role DSN> -e J1J2_APP_ROLE=aminra_app aminra-a02-verification-api:local pytest -q tests/test_submission_j1_j2_disposable.py
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 26 items
+
+tests/test_submission_j1_j2_disposable.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m     [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+
+[32m============================== [32m[1m26 passed[0m[32m in 3.59s[0m[32m ==============================[0m
+
+J1-A02 app-role DB focused test (including reference reuse and wrong-tenant denial)
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items / 26 deselected / 1 selected
+
+tests/test_submission_j1_j2_disposable.py [31mE[0m[31m                              [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:423: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/lastfailed: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/lastfailed'
+  config.cache.set("cache/lastfailed", self.lastfailed)
+
+
+==================================== ERRORS ====================================
+[31m[1m_ ERROR at setup of test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31m======================= [33m26 deselected[0m, [31m[1m1 error[0m[31m in 1.19s[0m[31m ========================[0m
+
+Retry focused J1-A02 DB app-role test with per-run app credential
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items / 26 deselected / 1 selected
+
+tests/test_submission_j1_j2_disposable.py [31mF[0m[31m                              [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m______ test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant _______[0m
+[1m[31masyncpg/protocol/prepared_stmt.pyx[0m:175: in asyncpg.protocol.protocol.PreparedStatementState._encode_bind_msg
+/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:423: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/lastfailed: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/lastfailed'
+  config.cache.set("cache/lastfailed", self.lastfailed)
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31masyncpg/protocol/codecs/base.pyx[0m:251: in asyncpg.protocol.protocol.Codec.encode
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31masyncpg/protocol/codecs/base.pyx[0m:153: in asyncpg.protocol.protocol.Codec.encode_scalar
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31masyncpg/pgproto/codecs/uuid.pyx[0m:20: in asyncpg.pgproto.pgproto.uuid_encode
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31mE   AttributeError: 'dict' object has no attribute 'bytes'[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:1529: in test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant
+    [0mfirst = [94mawait[39;49;00m attach_document_reference([90m[39;49;00m
+[1m[31mservices/dossier_attachments.py[0m:89: in attach_document_reference
+    [0mdocument = [94mawait[39;49;00m db.fetchrow([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:752: in fetchrow
+    [0mdata = [94mawait[39;49;00m [96mself[39;49;00m._execute([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:1873: in _execute
+    [0mresult, _ = [94mawait[39;49;00m [96mself[39;49;00m.__execute([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:1970: in __execute
+    [0mresult, stmt = [94mawait[39;49;00m [96mself[39;49;00m._do_execute([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2033: in _do_execute
+    [0mresult = [94mawait[39;49;00m executor(stmt, [94mNone[39;49;00m)[90m[39;49;00m
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31masyncpg/protocol/protocol.pyx[0m:184: in bind_execute
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31masyncpg/protocol/prepared_stmt.pyx[0m:204: in asyncpg.protocol.protocol.PreparedStatementState._encode_bind_msg
+    [0m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[04m[91m?[39;49;00m[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.DataError: invalid input for query argument $1: {'id': UUID('0aa30ea3-83ed-4062-a57f-d4f... ('dict' object has no attribute 'bytes')[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_submission_j1_j2_disposable.py::[1mtest_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant[0m - asyncpg.exceptions.DataError: invalid input for query argument $1: {'id': U...
+[31m======================= [31m[1m1 failed[0m, [33m26 deselected[0m[31m in 1.23s[0m[31m =======================[0m
+
+J1-A02 DB app-role rerun after correcting synthetic fixture document reference
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items / 26 deselected / 1 selected
+
+tests/test_submission_j1_j2_disposable.py [31mE[0m[31m                              [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:423: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/lastfailed: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/lastfailed'
+  config.cache.set("cache/lastfailed", self.lastfailed)
+
+==================================== ERRORS ====================================
+[31m[1m_ ERROR at setup of test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31m======================= [33m26 deselected[0m, [31m[1m1 error[0m[31m in 1.24s[0m[31m ========================[0m
+
+J1-A02 DB app-role rerun with generated run-local credential (not logged)
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items / 26 deselected / 1 selected
+
+tests/test_submission_j1_j2_disposable.py [32m.[0m[32m                              [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+
+[32m======================= [32m[1m1 passed[0m, [33m26 deselected[0m[32m in 1.14s[0m[32m =======================[0m
+
+J1-A02 Playwright journey command/output
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey
+[1A[2K  1) [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey 
+
+    Error: page.evaluate: Error: canonical slots 500: {"detail":"Internal server error"}
+        at eval (eval at evaluate (:302:30), <anonymous>:20:34)
+        at async <anonymous>:328:30
+        at eval (eval at evaluate (:302:30), <anonymous>:20:34)
+        at async <anonymous>:328:30
+        at /home/user/.cache/aminra-dashboard-integrated/frontend/aminra-web/e2e/a02-full-j1-j2-journey.spec.ts:69:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey 
+
+J1-A02 rendered journey retry after granting narrow admin-catalog DELETE privilege in isolated app role
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey
+[1A[2K  1) [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('revised-4fa50cd4-798b-4106-bccf-cc9bf59ac7ca.pdf')
+    Expected: visible
+    Error: strict mode violation: getByText('revised-4fa50cd4-798b-4106-bccf-cc9bf59ac7ca.pdf') resolved to 2 elements:
+        1) <p class="text-sm truncate">revised-4fa50cd4-798b-4106-bccf-cc9bf59ac7ca.pdf</p> aka getByText('revised-4fa50cd4-798b-4106-bccf-cc9bf59ac7ca.pdf', { exact: true })
+        2) <p>Đã thay thế: original-4fa50cd4-798b-4106-bccf-cc9…</p> aka getByText('Đã thay thế: original-')
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText('revised-4fa50cd4-798b-4106-bccf-cc9bf59ac7ca.pdf')[22m
+
+
+      261 |   await expect(refreshedCard).toBeVisible();
+      262 |   await refreshedCard.click();
+    > 263 |   await expect(cbPage.getByText(`revised-${run}.pdf`)).toBeVisible();
+          |                                                        ^
+      264 |   const roundDiff = cbPage.getByRole('region', { name: /So sánh bằng chứng vòng 1/ });
+      265 |   await expect(roundDiff).toContainText(`original-${run}.pdf → revised-${run}.pdf`);
+      266 |   const currentPreviewWait = cbPage.waitForResponse(response =>
+        at /home/user/.cache/aminra-dashboard-integrated/frontend/aminra-web/e2e/a02-full-j1-j2-journey.spec.ts:263:56
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/test-failed-4.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/a02-full-j1-j2-journey-J1--c0107-idence-and-revision-journey-desktop-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey 
+
+J1-A02/J1-J2 full rendered journey rerun after exact-name locator fix
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey
+[1A[2K[desktop-chromium] › e2e/a02-full-j1-j2-journey.spec.ts:40:5 › J1/J2: one fresh Business–CB pair completes rendered evidence and revision journey
+{"run":"af6110d0-e8a3-428d-bd82-599103352626","dossierId":"63caaf51-8427-4a15-9fa8-a3288d0c8474","submissionId":"8e955a10-effb-4913-828c-d45d5e2f4eed","originalDocumentId":"220742ec-dbaf-4a9f-88f6-e1b8850a6c29","newDocumentId":"1d73ec55-dd40-41ad-a915-6dc65d0753e6","submittedRound":1,"revisionRequestRound":1,"originalHash":"3b4a61df3e09f4049eb5191359d0f612d15160f6f57d8e9137fe63a63c636059","revisedHash":"ee3a4d3e891869a8f373d0c179ad63f38a79aa4b8d22b3e85bce0ce91e4db6dc","retainedOldHash":"3b4a61df3e09f4049eb5191359d0f612d15160f6f57d8e9137fe63a63c636059"}
+
+[1A[2K  1 passed (22.8s)
+
+J1-A02 DB APP-ROLE REUSE + WRONG-TENANT TEST
+COMMAND: pytest -q tests/test_submission_j1_j2_disposable.py -k j1_a02_reuses_exact_document_version_and_denies_wrong_tenant
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items / 26 deselected / 1 selected
+
+tests/test_submission_j1_j2_disposable.py [32m.[0m[32m                              [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+
+[32m======================= [32m[1m1 passed[0m, [33m26 deselected[0m[32m in 1.18s[0m[32m =======================[0m
+
+J1-A02 exact persisted attachment rows
+ERROR:  column "attachment_state" does not exist
+LINE 1: ...n_id,doc_type,document_id,document_version_number,attachment...
+                                                             ^
+
+Attachment table columns and persisted DB evidence
+ERROR:  column "created_at" does not exist
+LINE 1: ...number FROM dossier_document_attachments ORDER BY created_at...
+                                                             ^
+       column_name       
+-------------------------
+ dossier_id
+ document_id
+ requirements_version_id
+ doc_type
+ document_version_number
+ document_file_path
+ document_file_size
+ attached_by
+ idempotency_key
+ request_sha256
+ attached_at
+(11 rows)
+
+
+Persisted attachment rows (correct schema: attached_at)
+              dossier_id              |       requirements_version_id        | doc_type |             document_id              | document_version_number |                                                              document_file_path                                                              | document_file_size |                          request_sha256                          
+--------------------------------------+--------------------------------------+----------+--------------------------------------+-------------------------+----------------------------------------------------------------------------------------------------------------------------------------------+--------------------+------------------------------------------------------------------
+ a0b678f5-ca02-44d1-a7cb-59cc0e06b78a | 7fe02e1d-9a54-4c8d-9781-8618307b9af0 | policy   | 33242dfb-2ae2-43f5-afdf-f15348db4a2c |                       1 | synthetic://672269ff-9155-4bd6-b71c-029038ff6b7a/policy-v1/v1                                                                                |                110 | c1b7b3318fcdf63ac3423f8f6cc321fa3657bf1c9c15a488ea6a166f333bd715
+ 6f339f17-a9c3-4d35-8215-ea20eb748ab9 | 7fe02e1d-9a54-4c8d-9781-8618307b9af0 | policy   | 33242dfb-2ae2-43f5-afdf-f15348db4a2c |                       1 | synthetic://672269ff-9155-4bd6-b71c-029038ff6b7a/policy-v1/v1                                                                                |                110 | fbd657c25447edecbe9f9ede94ec22bbc8a6820dec14fc2ba0b8ee4fa157beae
+ 63caaf51-8427-4a15-9fa8-a3288d0c8474 | 760fd0e0-526e-457d-8ad1-d0edcf143163 | policy   | 220742ec-dbaf-4a9f-88f6-e1b8850a6c29 |                       1 | /tmp/a02-uploads/a10d44c1-5f97-4e9f-b1d4-0abf90598417/220742ec-dbaf-4a9f-88f6-e1b8850a6c29_original-af6110d0-e8a3-428d-bd82-599103352626.pdf |                109 | f8898d2c9a5833121f4fbdb224dbeea6b52c32dbc9c0fe4394b6b614fe2a2424
+ 77bb9c69-60da-49dc-b841-782eafb1a7c1 | 760fd0e0-526e-457d-8ad1-d0edcf143163 | policy   | 9f3d00d4-b714-43f2-b363-e1fe290daf6d |                       1 | /tmp/a02-uploads/a10d44c1-5f97-4e9f-b1d4-0abf90598417/9f3d00d4-b714-43f2-b363-e1fe290daf6d_original-4fa50cd4-798b-4106-bccf-cc9bf59ac7ca.pdf |                109 | 9d6d433c21163e39f3c25c8970b30313063bfb9eb0e668c9073a3e5a0d7e7192
+(4 rows)
+
+
+SOURCE BASIS
+HEAD=f54c7e539e75b22ef74b8c4c616cf497475e20a2
+942dc7f6cedc632108310ad647707ccf8fb85d04196f70f41a3c935c77a94bd6  frontend/aminra-web/e2e/a02-full-j1-j2-journey.spec.ts
+03821767daadbad049b18980cccac7b65581cc99c278ed924d043b5c91bfc8f3  backend/tests/test_submission_j1_j2_disposable.py
+              dossier_id              | requirements_binding_status |       requirements_version_id        | doc_type |             document_id              | document_version_number |                                                              document_file_path                                                              | document_file_size |                          request_sha256                          
+--------------------------------------+-----------------------------+--------------------------------------+----------+--------------------------------------+-------------------------+----------------------------------------------------------------------------------------------------------------------------------------------+--------------------+------------------------------------------------------------------
+ 63caaf51-8427-4a15-9fa8-a3288d0c8474 | bound                       | 760fd0e0-526e-457d-8ad1-d0edcf143163 | policy   | 220742ec-dbaf-4a9f-88f6-e1b8850a6c29 |                       1 | /tmp/a02-uploads/a10d44c1-5f97-4e9f-b1d4-0abf90598417/220742ec-dbaf-4a9f-88f6-e1b8850a6c29_original-af6110d0-e8a3-428d-bd82-599103352626.pdf |                109 | f8898d2c9a5833121f4fbdb224dbeea6b52c32dbc9c0fe4394b6b614fe2a2424
+(1 row)
+
+HEAD=f54c7e539e75b22ef74b8c4c616cf497475e20a2
+942dc7f6cedc632108310ad647707ccf8fb85d04196f70f41a3c935c77a94bd6  frontend/aminra-web/e2e/a02-full-j1-j2-journey.spec.ts
+03821767daadbad049b18980cccac7b65581cc99c278ed924d043b5c91bfc8f3  backend/tests/test_submission_j1_j2_disposable.py
+
+Retry focused app-role J1-A02 DB test with correct task-run credential
+COMMAND: pytest -q tests/test_submission_j1_j2_disposable.py -k test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items / 26 deselected / 1 selected
+
+tests/test_submission_j1_j2_disposable.py [32m.[0m[32m                              [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+
+[32m======================= [32m[1m1 passed[0m, [33m26 deselected[0m[32m in 1.15s[0m[32m =======================[0m
+
+FINAL FULL APP-ROLE DISPOSABLE SUITE AFTER TEST FIX
+COMMAND: pytest -q tests/test_submission_j1_j2_disposable.py
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.15.1, hypothesis-6.168.3, asyncio-1.4.0, respx-0.23.1, Faker-40.40.0, locust-2.46.6, bdd-8.1.0, mock-3.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items
+
+tests/test_submission_j1_j2_disposable.py [31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31mE[0m[31m    [100%][0m/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/nodeids: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/nodeids'
+  config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+/usr/local/lib/python3.11/site-packages/_pytest/cacheprovider.py:423: PytestCacheWarning: cache could not write path /app/.pytest_cache/v/cache/lastfailed: [Errno 30] Read-only file system: '/app/.pytest_cache/v/cache/lastfailed'
+  config.cache.set("cache/lastfailed", self.lastfailed)
+
+
+==================================== ERRORS ====================================
+[31m[1m_ ERROR at setup of test_submit_routes_owner_selected_cb_to_canonical_org_tenant _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_replacement_preserves_open_revision_until_explicit_resubmit_retry _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m____ ERROR at setup of test_revision_history_scope_snapshot_and_uuid_values ____[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_resubmit_rejects_document_type_outside_pinned_requirements _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_j2_round_resubmit_diff_and_old_snapshot_immutability __[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_historical_round_document_file_serves_exact_bytes_and_scopes_provider _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_request_revision_retry_same_key_replays_original_request _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_submit_retry_same_key_returns_same_submission_receipt _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_submit_route_concurrent_same_key_commits_one_submission _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m__ ERROR at setup of test_submit_replay_rechecks_current_provider_eligibility __[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m___ ERROR at setup of test_submit_failure_rolls_back_receipt_and_submission ____[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m__ ERROR at setup of test_resubmit_retry_same_key_returns_same_logical_result __[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_resubmit_same_key_different_payload_conflicts_without_mutation _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_resubmit_receipt_and_mutation_rollback_together_on_side_effect_failure _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_resubmit_replay_receipt_serializes_concurrent_same_key _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_request_revision_with_second_key_is_rejected_as_stale_without_receipt _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_resubmit_with_second_key_stale_state_is_a_noop_without_duplicate_side_effects _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m__ ERROR at setup of test_request_revision_replay_rechecks_current_assignment __[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m____ ERROR at setup of test_resubmit_replay_rechecks_current_business_scope ____[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_resubmit_route_concurrent_different_keys_has_one_winner _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_request_revision_route_concurrent_different_keys_has_one_winner _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_request_revision_route_serializes_concurrent_same_key _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_request_revision_database_failure_rolls_back_submission _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_g1_dashboard_uses_canonical_tenant_predicate_under_app_role _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_legacy_dossier_remains_unknown_under_current_published_profile _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_requirements_publication_authority_snapshot_immutability_and_rollback _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[31m[1m_ ERROR at setup of test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant _[0m
+[1m[31mtests/test_submission_j1_j2_disposable.py[0m:40: in db
+    [0mconn = [94mawait[39;49;00m asyncpg.connect(url)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connection.py[0m:2443: in connect
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m connect_utils._connect([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1218: in _connect
+    [0mconn = [94mawait[39;49;00m _connect_addr([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1054: in _connect_addr
+    [0m[94mreturn[39;49;00m [94mawait[39;49;00m __connect_addr(params, [94mTrue[39;49;00m, *args)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py[0m:1102: in __connect_addr
+    [0m[94mawait[39;49;00m connected[90m[39;49;00m
+[1m[31mE   asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "aminra_app"[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_submit_routes_owner_selected_cb_to_canonical_org_tenant[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_replacement_preserves_open_revision_until_explicit_resubmit_retry[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_revision_history_scope_snapshot_and_uuid_values[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_rejects_document_type_outside_pinned_requirements[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_j2_round_resubmit_diff_and_old_snapshot_immutability[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_historical_round_document_file_serves_exact_bytes_and_scopes_provider[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_request_revision_retry_same_key_replays_original_request[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_submit_retry_same_key_returns_same_submission_receipt[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_submit_route_concurrent_same_key_commits_one_submission[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_submit_replay_rechecks_current_provider_eligibility[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_submit_failure_rolls_back_receipt_and_submission[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_retry_same_key_returns_same_logical_result[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_same_key_different_payload_conflicts_without_mutation[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_receipt_and_mutation_rollback_together_on_side_effect_failure[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_replay_receipt_serializes_concurrent_same_key[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_request_revision_with_second_key_is_rejected_as_stale_without_receipt[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_with_second_key_stale_state_is_a_noop_without_duplicate_side_effects[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_request_revision_replay_rechecks_current_assignment[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_replay_rechecks_current_business_scope[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_resubmit_route_concurrent_different_keys_has_one_winner[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_request_revision_route_concurrent_different_keys_has_one_winner[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_request_revision_route_serializes_concurrent_same_key[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_request_revision_database_failure_rolls_back_submission[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_g1_dashboard_uses_canonical_tenant_predicate_under_app_role[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_legacy_dossier_remains_unknown_under_current_published_profile[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_requirements_publication_authority_snapshot_immutability_and_rollback[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31mERROR[0m tests/test_submission_j1_j2_disposable.py::[1mtest_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant[0m - asyncpg.exceptions.InvalidPasswordError: password authentication failed for...
+[31m============================== [31m[1m27 errors[0m[31m in 3.61s[0m[31m ==============================[0m

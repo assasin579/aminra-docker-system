@@ -19,6 +19,7 @@ from starlette.requests import Request
 
 from auth import document_router, submission_router
 from services.submission_revisions import request_revision
+from services.dossier_attachments import attach_document_reference, validate_dossier_slot
 
 
 def synthetic_request(*, headers: dict[str, str] | None = None) -> Request:
@@ -92,7 +93,7 @@ async def case(db):
            VALUES ($1, $2, 1, 'draft', $3, $4)""",
         ids["requirements"], ids["standard"], requirements_hash, cb_p["id"],
     )
-    doc_types = ["permit", "manual", "supporting", "legacy-extra", "certificate"]
+    doc_types = ["permit", "manual", "supporting", "legacy-extra", "certificate", "policy"]
     for order, doc_type in enumerate(doc_types):
         await db.execute(
             """INSERT INTO standard_requirement_version_slots
@@ -141,6 +142,7 @@ async def case(db):
     new_certificate = await add_doc("certificate-v1", "certificate")
     new_manual = await add_doc("manual-v2", "manual", 2, "manual-v1")
     wrong_doc = await add_doc("wrong-v1", "wrong-type")
+    policy_doc = await add_doc("policy-v1", "policy")
 
     initial_docs = [old_permit, old_manual, old_support, old_extra]
     await db.execute(
@@ -164,6 +166,7 @@ async def case(db):
         "round1_docs": [new_permit, old_manual, new_support, new_certificate],
         "round2_docs": [new_permit, new_manual, new_support, new_certificate],
         "wrong_docs": [old_permit, wrong_doc],
+        "policy_doc": policy_doc,
     }
 
 
@@ -1501,3 +1504,63 @@ async def test_requirements_publication_authority_snapshot_immutability_and_roll
             case["ids"]["dossier"], UUID(second["requirements_version_id"]),
         )
     assert await db.fetchval("SELECT requirements_version_id FROM dossiers WHERE id=$1", case["ids"]["dossier"]) == case["ids"]["requirements"]
+
+
+@pytest.mark.asyncio
+async def test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant(db, case):
+    dossier_a = case["ids"]["dossier"]
+    dossier_b = uuid4()
+    business_a = case["users"]["business_a"]["id"]
+    business_b = case["users"]["business_b"]["id"]
+    requirements = case["ids"]["requirements"]
+    document = case["docs"]["policy-v1"]["id"]
+    await db.execute(
+        """INSERT INTO dossiers
+           (id, tenant_id, standard_type_id, title, status, created_by,
+            requirements_version_id, requirements_binding_status)
+           VALUES ($1,$2,$3,'Synthetic reuse target','draft',$4,$5,'bound')""",
+        dossier_b, business_a, case["ids"]["standard"], business_a, requirements,
+    )
+
+    async with db.transaction():
+        pinned_a = await validate_dossier_slot(
+            db, dossier_id=dossier_a, tenant_id=business_a, doc_type="policy",
+        )
+        first = await attach_document_reference(
+            db, dossier=pinned_a, document_id=document, doc_type="policy",
+            actor_id=business_a, idempotency_key=uuid4(), request_sha256=hashlib.sha256(b"reuse-a").hexdigest(),
+        )
+        pinned_b = await validate_dossier_slot(
+            db, dossier_id=dossier_b, tenant_id=business_a, doc_type="policy",
+        )
+        second = await attach_document_reference(
+            db, dossier=pinned_b, document_id=document, doc_type="policy",
+            actor_id=business_a, idempotency_key=uuid4(), request_sha256=hashlib.sha256(b"reuse-b").hexdigest(),
+        )
+
+    assert first["created"] is True and second["created"] is True
+    rows = await db.fetch(
+        """SELECT a.dossier_id,a.document_id,a.requirements_version_id,a.doc_type,
+                  d.version_number,d.file_path,d.file_size
+           FROM dossier_document_attachments a JOIN documents d ON d.id=a.document_id
+           WHERE a.document_id=$1 ORDER BY a.dossier_id""",
+        document,
+    )
+    assert len(rows) == 2
+    assert {row["dossier_id"] for row in rows} == {dossier_a, dossier_b}
+    assert all(row["document_id"] == document for row in rows)
+    assert all(row["requirements_version_id"] == requirements for row in rows)
+    assert all(row["doc_type"] == "policy" and row["version_number"] == 1 for row in rows)
+    assert all(row["file_path"] == case["docs"]["policy-v1"]["file_path"] for row in rows)
+    assert all(row["file_size"] == case["docs"]["policy-v1"]["file_size"] for row in rows)
+
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as denied:
+        await validate_dossier_slot(
+            db, dossier_id=dossier_a, tenant_id=business_b, doc_type="policy",
+        )
+    assert denied.value.status_code == 404
+    assert await db.fetchval(
+        "SELECT count(*) FROM dossier_document_attachments WHERE dossier_id=$1 AND document_id=$2",
+        dossier_a, document,
+    ) == 1

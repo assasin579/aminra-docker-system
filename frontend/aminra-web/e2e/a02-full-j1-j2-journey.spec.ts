@@ -120,6 +120,24 @@ test('J1/J2: one fresh Business–CB pair completes rendered evidence and revisi
   const attached = await attachResponse.json();
   const originalDocumentId = attached.document_id as string;
   expect(originalDocumentId).toBeTruthy();
+  expect(attached.doc_type).toBe('policy');
+  expect(attached.attachment_state).toBe('attached');
+  expect(attached.created_attachment).toBe(true);
+
+  // Read back the persisted association through the same rendered journey's API
+  // boundary: exact Dossier, pinned requirements version, slot, and document version.
+  const dossierReadback = await page.evaluate(async ({ dossierId }) => {
+    const token = localStorage.getItem('aminra_user_token')!;
+    const response = await fetch(`/api/dossiers/${dossierId}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+    if (!response.ok) throw new Error(`Dossier attachment readback ${response.status}: ${await response.text()}`);
+    return response.json();
+  }, { dossierId });
+  expect(dossierReadback.id).toBe(dossierId);
+  expect(dossierReadback.requirements_binding_status).toBe('bound');
+  expect(dossierReadback.requirements_version_id).toBe(published.requirements_version_id);
+  expect(dossierReadback.documents).toEqual(expect.arrayContaining([
+    expect.objectContaining({ id: originalDocumentId, doc_type: 'policy', version_number: 1 }),
+  ]));
 
   await page.goto(`/submissions?dossier_id=${dossierId}`);
   await page.getByRole('button', { name: 'Gửi hồ sơ mới' }).click();
@@ -242,7 +260,7 @@ test('J1/J2: one fresh Business–CB pair completes rendered evidence and revisi
   const refreshedCard = cbPage.getByRole('button').filter({ hasText: marker }).first();
   await expect(refreshedCard).toBeVisible();
   await refreshedCard.click();
-  await expect(cbPage.getByText(`revised-${run}.pdf`)).toBeVisible();
+  await expect(cbPage.getByText(`revised-${run}.pdf`, { exact: true })).toBeVisible();
   const roundDiff = cbPage.getByRole('region', { name: /So sánh bằng chứng vòng 1/ });
   await expect(roundDiff).toContainText(`original-${run}.pdf → revised-${run}.pdf`);
   const currentPreviewWait = cbPage.waitForResponse(response =>
