@@ -1,6 +1,7 @@
 # AMINRA J1/J2 execution result
 
 **As of:** 2026-10-29 final matrix reconciliation and focused readiness rerun.
+**Spec traceability:** no source-authenticated original was recovered; per-ID comparison is unresolved. Existing scoped verdicts remain as recorded, not expanded. See `ACCEPTANCE_SPEC_PROVENANCE.md`.
 **Workspace:** `/home/user/.cache/aminra-dashboard-integrated`
 **Branch/source commit:** `dashboard/execution-2026-10-26`, source/test baseline `d4b7601864ff0014ae5cba950c421e43f783b813` (parent `f54c7e539e75b22ef74b8c4c616cf497475e20a2`; local only, not pushed).
 **Scope:** isolated source + task-owned synthetic DB/storage only. No original-checkout writes, push, merge, deploy, shared/runtime DB, or customer-pilot UAT. STOP C and customer-pilot NO-GO remain.

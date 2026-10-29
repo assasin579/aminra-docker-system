@@ -3,6 +3,7 @@
 **Updated:** 2026-10-29 final acceptance reconciliation. Workspace `/home/user/.cache/aminra-dashboard-integrated`, branch `dashboard/execution-2026-10-26`; source/test baseline `d4b7601864ff0014ae5cba950c421e43f783b813` (local only, not pushed). Prior dated status narratives below are historical and superseded by the final acceptance closeout at the end of this file and current matrix. All 18 explicit matrix IDs (J1-A01…A08, J2-A01…A06, X-A01…A04) are PASS at the stated local synthetic/API+DB/browser boundaries; G1 is PASS at API-mocked/component boundaries. J1-A01/A03 focused tests reran on this commit; raw log `evidence/2026-10-29-j1-readiness-rerun.log`. RLS/Forced-RLS, live OIDC, shared runtime/release and customer-pilot are not proven/authorized. STOP C and customer-pilot NO-GO remain.
 **Canonical path:** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/J1_J2_CHECKPOINT.md`
 **Index:** `/home/user/.cache/aminra-dashboard-integrated/verification/dashboard-execution-2026-10-26/INDEX.md`
+**Acceptance-spec traceability:** `ACCEPTANCE_SPEC_PROVENANCE.md`. Original cached source was not recovered; no independent clause-level comparison is possible. Preserve the 18 current matrix verdicts at their stated boundaries; do not treat matrix text as original spec.
 
 ## 2026-10-27 fresh A02 disposable DB continuation
 
