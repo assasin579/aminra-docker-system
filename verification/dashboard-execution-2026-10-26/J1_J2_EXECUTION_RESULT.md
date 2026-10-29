@@ -1,13 +1,13 @@
 # AMINRA J1/J2 execution result
 
-**As of:** 2026-10-27 post-restart lifecycle and acceptance rerun.
+**As of:** 2026-10-29 final matrix reconciliation and focused readiness rerun.
 **Workspace:** `/home/user/.cache/aminra-dashboard-integrated`
-**Branch/source commit:** `dashboard/execution-2026-10-26`, tested code commit `3f0a28958c4f71e8239514e4dec2c7fc615d802d` (readiness/UI tests ran on identical source; no push).
+**Branch/source commit:** `dashboard/execution-2026-10-26`, source/test baseline `d4b7601864ff0014ae5cba950c421e43f783b813` (parent `f54c7e539e75b22ef74b8c4c616cf497475e20a2`; local only, not pushed).
 **Scope:** isolated source + task-owned synthetic DB/storage only. No original-checkout writes, push, merge, deploy, shared/runtime DB, or customer-pilot UAT. STOP C and customer-pilot NO-GO remain.
 
 ## Latest result
 
-**VERDICT: PARTIAL overall.** J1-A02 and X-A02 are now PASS at the exact approved local synthetic/API+DB/recovery boundaries; other matrix lanes remain PARTIAL or out of authority. Latest J1-A02 exact rendered Dossier readback passed 1/1; app-role reuse/wrong-tenant test passed 1/1. Separate X-A02 DB run recorded durable evidence, guarded downgrade refusal with unchanged heads/fingerprints, and successful forward recovery plus app-role checks. Raw evidence logs and current source hashes are in the latest matrix/checkpoint delta. STOP C/customer-pilot NO-GO remain. Other PASS statuses remain boundary-limited in the matrix. The integrated Playwright journey passed 1/1 after API restart and includes direct file HTTP 200 + browser-read SHA-256 match; API-mocked G1 Playwright passed 2/2. App-role disposable DB suite passed 26/26; latest impacted readiness backend tests passed 27/27 and frontend readiness/visual tests 26/26; TypeScript, scoped ESLint and diff checks passed. `alembic current` CLI lacked `psycopg`; direct app-role DB query confirmed heads `053_audit_report_acceptance` and `055_dossier_document_attachments`. Exact latest rerun commands and limitations are in the appended closeout section and canonical checkpoint. R1–R12 remains cross-reference-only; no mapping in reviewed approved source. No RLS, OIDC, release or pilot claim. STOP C and customer-pilot NO-GO remain.
+**VERDICT: J1 DONE, J2 DONE, X-A01…A04 PASS, G1 PASS — scoped to the local synthetic/API+DB/browser criteria in the 18-ID acceptance matrix.** Current matrix supplies the denominator and row-level test/run/artifact/limitations. J1-A01/A03 were freshly rerun on source/test baseline `d4b7601864ff0014ae5cba950c421e43f783b813`: 27 backend tests + 26 frontend tests passed; TypeScript and scoped ESLint passed; raw log `evidence/2026-10-29-j1-readiness-rerun.log`. Existing acceptance evidence: app-role DB, rendered full-stack synthetic journey, historical-file bytes/hash + lifecycle, guarded X-A02 recovery and G1 API-mocked browser are cited per row in the matrix. A prior full app-role suite invocation with stale credentials failed setup; the isolated J1-A02 retry passed with the correct task-run credential, and older unaffected suite outcomes remain scoped to their recorded source/test hashes. This is **not** live OIDC, RLS/Forced-RLS, shared runtime/release, or customer-pilot acceptance. Referenced R1–R12 mapping is absent; no mapping inferred. STOP C/customer-pilot NO-GO remain.
 
 ## Evidence completed in this continuation
 
@@ -20,14 +20,13 @@
 - Synthetic standalone upload browser action: **1 attempted; HTTP 200**, but Dossier association assertion **failed** (`dossier_id=NULL`). Do not count as J1-A02 PASS.
 - `npx tsc --noEmit`: PASS (exit 0). Targeted ESLint with `--max-warnings=0`: PASS (exit 0). `git diff --check`: PASS before latest documentation-only edits; rerun as part of handoff.
 
-## Acceptance status and limits
+## Acceptance status and limits (current)
 
-- Requirements publication/version binding, readiness/history snapshots, and route-level authorization have dedicated source/DB evidence recorded in `J1_J2_ACCEPTANCE_MATRIX.md` and canonical checkpoint.
-- J1-A02 exact-version Dossier attach/reuse and wrong-tenant denial through the actual upload path remains unmet. DB-fixture SQL attachment is not substitute evidence. D-B's reuse-by-reference decision must be preserved; do not bolt on a single-Dossier FK assumption that blocks reuse.
-- J1 submit idempotency/stale/concurrent semantics are not all proven. Request-revision and resubmit idempotency have focused evidence in the checkpoint; do not generalize that to every submit/retry path or the whole J1/J2 acceptance.
-- J2 has request/resubmit/round-diff/history and historical file-byte evidence, but overall journey remains PARTIAL pending full acceptance matrix, full-stack UI interactions, and exact access/logging cases where marked not tested.
-- R12 local integrated browser run used synthetic bearer/token-enrichment stubs. Requirements setup and Dossier creation plus J1/J2 workflow operations were browser-side `fetch` calls; documents were fixture-seeded/DB-attached. Historical file response was HTTP 200 / 91 bytes with SHA-256 matching the fixture. This is not production OIDC, a full UI journey, or customer UAT.
-- Disposable app DB role was non-superuser/no-BYPASSRLS; there were **0 RLS policies**. RLS/Forced-RLS remains NOT TESTED. Runtime/release/pilot remains NOT AUTHORIZED.
+- All 18 explicit J1/J2/X IDs are PASS at the per-row boundaries in `J1_J2_ACCEPTANCE_MATRIX.md`; J1/J2 local synthetic acceptance is DONE. G1 is PASS at the API-mocked/component boundary.
+- The end-user journey has rendered Business/CB actions and persisted Dossier/version/round evidence through the local Next proxy, backend, task-owned PostgreSQL and synthetic storage; evidence and setup/API-only steps are distinguished per matrix rows.
+- Retry/replay/concurrency, historical authorization and download lifecycle are separately supported by app-role DB tests. Synthetic identities/IdP enrichment and disposable storage remain explicitly limited; a same-ID run or nearby PASS does not expand those boundaries.
+- RLS/Forced-RLS remains NOT TESTED (the recorded DB had zero RLS policies); live OIDC, shared runtime/release and customer-pilot remain unproven and unauthorized. STOP C/customer-pilot NO-GO unchanged.
+- The previously referenced cached acceptance-spec file is not present at its cited path in the current environment. This closeout uses the already-approved 18-ID denominator preserved in the canonical matrix/checkpoint; no additional R1–R12 mapping is invented. If a broader denominator was intended, that source file must be restored before claiming that broader scope.
 
 ## Current verification commands/results
 
@@ -71,3 +70,10 @@
 - Evidence source basis at test time: source commit `f54c7e539e75b22ef74b8c4c616cf497475e20a2`; E2E spec SHA-256 `942dc7f6cedc632108310ad647707ccf8fb85d04196f70f41a3c935c77a94bd6`; DB test SHA-256 `03821767daadbad049b18980cccac7b65581cc99c278ed924d043b5c91bfc8f3`. `git diff --check` passed. Task-owned resources were removed and absence verified; unrelated WIP was preserved.
 - **Verdict:** J1-A02 and X-A02 PASS only at stated synthetic/API+DB/recovery boundaries. Overall J1/J2 remains PARTIAL because other acceptance rows remain partial/not tested. No RLS/Forced-RLS, production OIDC, runtime, release, or customer-pilot claim. STOP C and customer-pilot NO-GO remain.
 - Commit the reviewed scoped test/artifact changes locally only; do not push, deploy, or merge.
+
+## Final acceptance reconciliation — 2026-10-29
+- Verdict: **J1 DONE, J2 DONE, X-A01…A04 PASS** for the 18 explicit matrix IDs, bounded to synthetic local API/DB/browser evidence; **G1 PASS** only for the API-mocked/component lane. Detailed per-ID evidence and limits are in `J1_J2_ACCEPTANCE_MATRIX.md`.
+- Source/test baseline is commit `d4b7601864ff0014ae5cba950c421e43f783b813`. Fresh J1-A01/A03 rerun: backend 27/27, frontend 26/26, TypeScript and scoped ESLint exit 0; raw `evidence/2026-10-29-j1-readiness-rerun.log` (SHA-256 `b9277f39c20d2d29156f30e29904ff449a9348fdb499e1e9e7d47d470d58e701`). Initial offline `uv` attempt could not resolve uncached Playwright; the existing project venv ran the tests without network/install.
+- All referenced matrix raw logs exist. A previous full DB suite invocation with stale credentials failed at setup; the focused J1-A02 app-role case subsequently passed with the task credential. Do not combine that failed invocation as green; see raw logs and source hashes in matrix.
+- Referenced cached spec file is missing at its cited current path; the existing 18-ID matrix is the retained acceptance denominator. No R1–R12 mapping inferred. RLS/Forced-RLS, live OIDC, shared runtime/release and customer-pilot are not proven/authorized. STOP C and customer-pilot NO-GO remain.
+- No product code changed in this final continuation. Canonical docs plus the fresh evidence log are the only intended changes for the local documentation/evidence closeout; unrelated dirty/untracked WIP is preserved. No push, merge, deploy, or customer-pilot action.

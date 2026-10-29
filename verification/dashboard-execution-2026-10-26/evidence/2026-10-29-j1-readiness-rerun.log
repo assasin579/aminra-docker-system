@@ -1,0 +1,39 @@
+SOURCE_COMMIT=d4b7601864ff0014ae5cba950c421e43f783b813
+BRANCH=dashboard/execution-2026-10-26
+WORKTREE_STATUS= M frontend/aminra-web/next-env.d.ts; M verification/dashboard-execution-2026-10-26/INDEX.md; M verification/dashboard-execution-2026-10-26/J1_J2_CHECKPOINT.md; M verification/dashboard-execution-2026-10-26/J1_J2_EXECUTION_RESULT.md; M verification/dashboard-execution-2026-10-26/J1_J2_TASKS.md;?? backend/a02_harness.py;?? frontend/aminra-web/e2e/a02-business-resubmit.spec.ts;?? frontend/aminra-web/e2e/a02-provider-synthetic.spec.ts;?? frontend/aminra-web/e2e/a02-rendered-dossier.spec.ts;?? frontend/aminra-web/e2e/cb-dashboard-synthetic.spec.ts;?? verification/dashboard-execution-2026-10-26/J1_J2_CORRECTIVE_FIXES.patch;
+SOURCE_HASHES
+7c5657d180d33aab6839ce2a2841abe5caeef5fe3065fbc071f6e3388ecb01e2  backend/tests/test_dossier_readiness.py
+cca531721ff691fcde7b7d231f56f00bb6b10e535ff5ae0f1004615ab761189f  backend/tests/test_dossier_readiness_auth.py
+8f07277cfc4a6b2f2c1f0ad39374a00b7748fe044285c5a78ebcf6113e3f64b1  frontend/aminra-web/components/dashboard/BusinessReadinessProfiles.tsx
+94ca55ee4fe7d0167499a8ebbad5cc7147c029dd968ae2d83226ed59ed39e859  frontend/aminra-web/__tests__/business-readiness-profiles.test.tsx
+496e66e947d065de626d17d02711dcf4c68eb0217305f9c14a2bf662d5dcaf22  frontend/aminra-web/__tests__/dashboard-visual-contracts.test.tsx
+
+BACKEND COMMAND
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/.cache/aminra-dashboard-integrated/backend
+configfile: pytest.ini
+plugins: anyio-4.15.1, Faker-40.43.0, mock-3.17.0, cov-7.1.0, locust-2.47.0, asyncio-1.4.1, bdd-9.0.0, hypothesis-6.170.11, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items
+
+tests/test_dossier_readiness.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                   [ 81%][0m
+tests/test_dossier_readiness_auth.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                               [100%][0m
+
+[32m============================== [32m[1m27 passed[0m[32m in 6.18s[0m[32m ==============================[0m
+
+FRONTEND VITEST COMMAND
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/user/.cache/aminra-dashboard-integrated/frontend/aminra-web[39m
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m26 passed[39m[22m[90m (26)[39m
+[2m   Start at [22m 02:17:31
+[2m   Duration [22m 10.83s[2m (transform 1.74s, setup 1.25s, import 2.42s, tests 6.36s, environment 6.75s)[22m
+
+
+FRONTEND TYPESCRIPT COMMAND
+
+FRONTEND ESLINT COMMAND
