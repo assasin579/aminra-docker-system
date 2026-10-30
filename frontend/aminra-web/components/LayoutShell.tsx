@@ -108,13 +108,13 @@ export default function LayoutShell({
                     />
                   </svg>
                 </button>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   src="/aminra-mark.png"
                   alt=""
                   className="h-7 w-7 mr-2 object-contain"
                 />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   src="/aminra-wordmark-white.png"
                   alt="AMINRA"

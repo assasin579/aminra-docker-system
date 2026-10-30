@@ -85,7 +85,7 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     if (token) fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [token, page]);
 
   const onApplyFilters = (e: React.FormEvent) => {

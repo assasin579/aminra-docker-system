@@ -583,9 +583,9 @@ export default function LandingPage() {
         >
           {/* Logo mark + brand name */}
           <div className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src="/aminra-mark.png" alt="" className="h-10 w-10 object-contain" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src="/aminra-wordmark-navy.png" alt="AMINRA" className="h-5 object-contain" />
           </div>
           {/* Language switcher — phải của sticky header */}
@@ -644,7 +644,7 @@ export default function LandingPage() {
           {/* Brand lockup */}
           <FadeIn delay={0.1}>
             <div className="inline-flex flex-col items-center gap-4 mb-12">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img
                 src="/aminra-lockup.png"
                 alt="AMINRA"
@@ -1061,7 +1061,7 @@ export default function LandingPage() {
               className="w-10 h-10 rounded-lg grid place-items-center p-1"
               style={{ background: "#FFFFFF" }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img
                 src="/aminra-mark.png"
                 alt=""
@@ -1069,7 +1069,7 @@ export default function LandingPage() {
               />
             </div>
             <div className="flex flex-col leading-tight gap-0.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img
                 src="/aminra-wordmark-white.png"
                 alt="AMINRA"

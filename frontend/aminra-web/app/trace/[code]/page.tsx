@@ -143,7 +143,7 @@ export default function TracePage({
             className="w-16 h-16 mx-auto mb-4 rounded-2xl grid place-items-center"
             style={{ background: "#0A1F44" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src="/aminra-mark.png" alt="AMINRA" className="w-10 h-10" />
           </div>
           <div className="flex items-center justify-center gap-2 mt-4">
@@ -228,7 +228,7 @@ export default function TracePage({
                 backdropFilter: "blur(8px)",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src="/aminra-mark.png" alt="AMINRA" className="w-7 h-7" />
             </div>
             <div>
@@ -780,7 +780,7 @@ export default function TracePage({
               className="w-6 h-6 rounded-lg grid place-items-center"
               style={{ background: "#0A1F44" }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src="/aminra-mark.png" alt="AMINRA" className="w-4 h-4" />
             </div>
             <span className="text-xs font-bold" style={{ color: "#0A1F44" }}>
