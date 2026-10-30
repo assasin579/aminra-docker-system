@@ -372,7 +372,7 @@ export default function GenerateDocTab({
 
         <button
           onClick={handleGenerate}
-          className="grid items-center gap-2 w-full py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+          className="grid items-center gap-2 w-full py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 ease-out hover:scale-[1.01] active:scale-[0.99]"
           style={{
             gridTemplateColumns: "auto 1fr",
             justifyItems: "center",
@@ -497,7 +497,7 @@ export default function GenerateDocTab({
           <button
             onClick={handleExportDocx}
             disabled={!!exporting}
-            className="grid items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+            className="grid items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "rgba(10,31,68,0.08)",
@@ -546,7 +546,7 @@ export default function GenerateDocTab({
           <button
             onClick={handleExportPdf}
             disabled={!!exporting}
-            className="grid items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+            className="grid items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "rgba(239,68,68,0.08)",

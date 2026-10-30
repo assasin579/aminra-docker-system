@@ -1,6 +1,6 @@
 .env
 secrets/
-**/node_modules/
+**/node_modules
 **/__pycache__/
 **/.pytest_cache/
 *.log

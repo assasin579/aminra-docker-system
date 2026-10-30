@@ -15,12 +15,23 @@
  * mis-named files and content-swap accidents on future admin uploads.
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
 const BUSINESS_LOGIN = {
-  email: "biz-demo-1@demo.aminra.vn",
-  password: "DemoP@ss2026",
+  email: process.env.PW_BIZ_EMAIL ?? "biz-demo-1@demo.aminra.vn",
+  password: process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW,
   role: "business",
 };
+
+async function businessToken(request: Parameters<typeof requireKeycloakUserToken>[0]) {
+  if (!BUSINESS_LOGIN.password) {
+    test.skip(true, "business demo password not configured (PW_BIZ_PASSWORD or DEMO_PW)");
+  }
+  return requireKeycloakUserToken(request, {
+    email: BUSINESS_LOGIN.email,
+    password: BUSINESS_LOGIN.password as string,
+  });
+}
 
 test.describe("template content integrity", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -40,11 +51,7 @@ test.describe("template content integrity", () => {
   }) => {
     const { createHash } = await import("node:crypto");
 
-    const login = await request.post("/api/auth/login", {
-      data: BUSINESS_LOGIN,
-    });
-    if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
-    const { access_token } = await login.json();
+    const access_token = await businessToken(request);
 
     const list = await request.get("/api/templates/available", {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -86,11 +93,7 @@ test.describe("template content integrity", () => {
   test("template download returns no-store headers (prevent stale browser cache)", async ({
     request,
   }) => {
-    const login = await request.post("/api/auth/login", {
-      data: BUSINESS_LOGIN,
-    });
-    if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
-    const { access_token } = await login.json();
+    const access_token = await businessToken(request);
     const r = await request.get(
       "/api/templates/halal_policy/download?lang=vi",
       {

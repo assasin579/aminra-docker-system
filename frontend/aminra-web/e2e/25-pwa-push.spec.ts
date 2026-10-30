@@ -8,6 +8,10 @@
  * 5. Subscribe endpoint accepts a valid PushSubscription shape
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
+
+const BIZ_EMAIL = process.env.PW_BIZ_EMAIL ?? "biz-demo-1@demo.aminra.vn";
+const BIZ_PASSWORD = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
 
 test.describe("PWA + web push", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -31,20 +35,24 @@ test.describe("PWA + web push", () => {
     }
 
     const sw = await (await request.get("/sw.js")).text();
-    expect(sw).toContain("addEventListener('push'");
-    expect(sw).toContain("addEventListener('notificationclick'");
+    expect(sw).toMatch(/addEventListener\(["']push["']/);
+    expect(sw).toMatch(/addEventListener\(["']notificationclick["']/);
     expect(sw).toContain("showNotification");
+    expect(sw).toMatch(/CACHE_NAME = "aminra-v\d+"/);
+    expect(sw).toContain("/\\/auth(?:\\/|$)/");
+    expect(sw).toContain("/\\/admin(?:\\/|$)/");
 
     const manifest = await (await request.get("/manifest.json")).json();
     expect(manifest.name).toContain("AMINRA");
-    expect(manifest.icons.length).toBeGreaterThanOrEqual(2);
-    expect(manifest.theme_color).toBe("#087653");
+    expect(manifest.icons.length).toBeGreaterThanOrEqual(1);
+    expect(manifest.theme_color).toBe("#0A1F44");
   });
 
   test("VAPID public key endpoint returns key", async ({ request }) => {
     const r = await request.get("/api/api/notifications/push-public-key");
     expect(r.status()).toBe(200);
     const body = await r.json();
+    if (!body.key) test.skip(true, "VAPID public key not configured in this environment");
     expect(body.key).toBeTruthy();
     expect(body.key.length).toBeGreaterThan(80);
     expect(body.key).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -62,15 +70,11 @@ test.describe("PWA + web push", () => {
   });
 
   test("subscribe + unsubscribe with auth round-trips", async ({ request }) => {
-    const login = await request.post("/api/auth/login", {
-      data: {
-        email: "biz-demo-1@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "business",
-      },
+    if (!BIZ_PASSWORD) test.skip(true, "business Keycloak password not configured");
+    const access_token = await requireKeycloakUserToken(request, {
+      email: BIZ_EMAIL,
+      password: BIZ_PASSWORD as string,
     });
-    if (!login.ok()) test.skip(true, "biz-demo-1 not seeded");
-    const { access_token } = await login.json();
 
     const fakeEndpoint = `https://fcm.googleapis.com/fake/${Date.now()}`;
     const sub = await request.post(

@@ -10,9 +10,10 @@ import {
 } from "react";
 import { useAdminAuth } from "@/components/AdminAuthContext";
 import { useUserAuth } from "@/components/UserAuthContext";
-import AdminLoginModal from "@/components/AdminLoginModal";
 import AdminUserManager from "@/components/AdminUserManager";
+import AdminModuleManager from "@/components/AdminModuleManager";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 const API = "/api";
 
@@ -53,7 +54,7 @@ class AdminErrorBoundary extends Component<
               this.setState({ error: null });
               this.props.onReset?.();
             }}
-            className="text-xs px-3 py-1.5 rounded-lg"
+            className="text-xs px-3 py-1.5 rounded-lg btn-lift"
             style={{
               background: "rgba(239,68,68,0.15)",
               color: "#EF4444",
@@ -304,7 +305,7 @@ function CriterionRow({
           />
           <button
             onClick={onDelete}
-            className="p-2 rounded-xl transition-all duration-200 hover:scale-110"
+            className="p-2 rounded-xl transition-all duration-200 ease-out hover:scale-110"
             style={{
               color: "#ef4444",
               background: "rgba(239,68,68,0.08)",
@@ -357,7 +358,7 @@ function TemplateEditor({
 
   // Template DOCX (VI/EN)
   const [tplFiles, setTplFiles] = useState<
-    Record<string, { filename: string; size: number }>
+    Record<string, { filename: string; size: number; updated_at?: string }>
   >({});
   const [tplUploading, setTplUploading] = useState<string | null>(null);
   const [tplLang, setTplLang] = useState<"vi" | "en">("vi");
@@ -679,7 +680,7 @@ function TemplateEditor({
               <button
                 onClick={() => tplInputRef.current?.click()}
                 disabled={tplUploading !== null}
-                className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97] flex-shrink-0"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: tplUploading
@@ -833,7 +834,7 @@ function TemplateEditor({
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Mở file ở tab mới — verify nội dung trước khi business dùng"
-                        className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+                        className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           gridTemplateColumns: "auto auto",
                           color: "#0A1F44",
@@ -973,7 +974,7 @@ function TemplateEditor({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+            className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97] flex-shrink-0"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: uploading
@@ -1124,7 +1125,7 @@ function TemplateEditor({
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
                       title="Mở file ở tab mới"
-                      className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+                      className="grid items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         gridTemplateColumns: "auto auto",
                         color: "#0A1F44",
@@ -1305,7 +1306,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addCriterion}
-              className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+              className="grid items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(10,31,68,0.12)",
@@ -2108,11 +2109,7 @@ function PlaceholderManager({ token }: { token: string }) {
 
       {/* Add modal */}
       {showForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setShowForm(false)}
-        >
+        <Modal onClose={() => setShowForm(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -2271,24 +2268,23 @@ function PlaceholderManager({ token }: { token: string }) {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
 }
 
 export default function AdminPageClient() {
-  const { isAdmin, token } = useAdminAuth();
+  const { isAdmin, token, login: adminLogin } = useAdminAuth();
   const { isAuthenticated: isUserLoggedIn } = useUserAuth();
-  const [showLogin, setShowLogin] = useState(false);
   const [activeSection, setActiveSection] = useState<
-    "templates" | "users" | "placeholders"
+    "templates" | "users" | "placeholders" | "modules"
   >("templates");
   const [activeGroup, setActiveGroup] = useState(0);
   const [activeType, setActiveType] = useState(DOC_TYPE_GROUPS[0].types[0].id);
 
-  // Block access when a business/provider user is logged in
-  if (isUserLoggedIn) {
+  // Logged in but not a `platform_admin` realm member (e.g. business / auditor)
+  if (isUserLoggedIn && !isAdmin) {
     return (
       <div className="grid place-items-center min-h-[70vh] text-center px-4">
         <div className="admin-scale-in">
@@ -2329,8 +2325,9 @@ export default function AdminPageClient() {
             className="text-base mb-4 max-w-sm mx-auto leading-relaxed"
             style={{ color: "#6B7280" }}
           >
-            Bạn đang đăng nhập bằng tài khoản doanh nghiệp/tổ chức. Vui lòng
-            đăng xuất trước khi truy cập khu vực Admin.
+            Tài khoản hiện tại không có quyền Admin (cần realm role
+            <code className="mx-1">platform_admin</code> trong Keycloak). Đăng
+            xuất rồi đăng nhập lại bằng tài khoản admin để tiếp tục.
           </p>
         </div>
       </div>
@@ -2384,8 +2381,8 @@ export default function AdminPageClient() {
             template đánh giá.
           </p>
           <button
-            onClick={() => setShowLogin(true)}
-            className="inline-grid items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 hover:scale-105 active:scale-95"
+            onClick={() => void adminLogin("/admin")}
+            className="inline-grid items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97]"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "linear-gradient(135deg, #0A1F44, #0A1F44)",
@@ -2406,9 +2403,8 @@ export default function AdminPageClient() {
                 d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
               />
             </svg>
-            Đăng nhập Admin
+            Đăng nhập Admin (Keycloak SSO)
           </button>
-          {showLogin && <AdminLoginModal onClose={() => setShowLogin(false)} />}
         </div>
       </div>
     );
@@ -2468,12 +2464,13 @@ export default function AdminPageClient() {
             { key: "templates", label: "Template đánh giá" },
             { key: "placeholders", label: "Placeholders" },
             { key: "users", label: "Quản lý Users" },
+            { key: "modules", label: "Tenant modules" },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() =>
                 setActiveSection(
-                  tab.key as "templates" | "users" | "placeholders",
+                  tab.key as "templates" | "users" | "placeholders" | "modules",
                 )
               }
               className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
@@ -2528,6 +2525,30 @@ export default function AdminPageClient() {
           >
             ⚠ Overdue queue
           </a>
+          <a
+            href="/admin/standards"
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+            style={{
+              background: "rgba(0,0,0,0.02)",
+              color: "#6B7280",
+              border: "1px solid #E2E8F0",
+              textDecoration: "none",
+            }}
+          >
+            Standards
+          </a>
+          <a
+            href="/admin/industries"
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+            style={{
+              background: "rgba(0,0,0,0.02)",
+              color: "#6B7280",
+              border: "1px solid #E2E8F0",
+              textDecoration: "none",
+            }}
+          >
+            Industries ↔ Standards
+          </a>
         </div>
       </div>
 
@@ -2546,6 +2567,19 @@ export default function AdminPageClient() {
           }}
         >
           <AdminUserManager token={token!} />
+        </div>
+      )}
+
+      {/* ── Tenant modules section ── */}
+      {activeSection === "modules" && (
+        <div
+          className="rounded-2xl p-6"
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid rgba(226,232,240,0.6)",
+          }}
+        >
+          <AdminModuleManager token={token!} />
         </div>
       )}
 
@@ -2593,7 +2627,7 @@ export default function AdminPageClient() {
                           setActiveGroup(gi);
                           setActiveType(dt.id);
                         }}
-                        className="relative w-full text-left px-3.5 rounded-xl text-sm transition-all duration-200 hover:scale-[1.02] h-9 grid items-center"
+                        className="relative w-full text-left px-3.5 rounded-xl text-sm transition-all duration-200 ease-out hover:scale-[1.02] h-9 grid items-center"
                         style={{
                           background: isActive ? "#0A1F44" : "#FFFFFF",
                           color: isActive ? "#FFFFFF" : "#6B7280",

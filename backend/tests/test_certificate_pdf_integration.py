@@ -11,6 +11,7 @@ path not stored, etc.
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from datetime import date, timezone
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,18 @@ class FakeConn:
         self.fetchrow_responses: list[tuple[str, FakeRecord | None]] = []
         self.fetchval_responses: list[tuple[str, Any]] = []
 
+    @asynccontextmanager
+    async def transaction(self):
+        """Match asyncpg's async transaction context protocol for route tests."""
+        self.calls.append(("transaction", ("begin", ())))
+        try:
+            yield self
+        except Exception:
+            self.calls.append(("transaction", ("rollback", ())))
+            raise
+        else:
+            self.calls.append(("transaction", ("commit", ())))
+
     def _match(self, sql: str, table: list[tuple[str, Any]]) -> Any:
         for needle, value in table:
             if needle in sql:
@@ -49,6 +62,10 @@ class FakeConn:
 
     async def fetchrow(self, sql: str, *args):
         self.calls.append(("fetchrow", (sql, args)))
+        if "SELECT id FROM users WHERE keycloak_sub = $1 OR id = $1 LIMIT 1" in sql:
+            return FakeRecord(id=args[0]) if args else None
+        if "SELECT id, tenant_id, is_owner FROM users WHERE id = $1" in sql:
+            return FakeRecord(id=args[0], tenant_id=PROVIDER_TENANT_ID, is_owner=True) if args else None
         return self._match(sql, self.fetchrow_responses)
 
     async def fetchval(self, sql: str, *args):
@@ -94,12 +111,14 @@ def happy_path_db() -> FakeConn:
     """All submissions approved, no existing cert, biz owner found."""
     db = FakeConn()
     db.fetch_responses = [
-        ("FROM submissions WHERE business_tenant", [
+        ("FROM submissions", [
             FakeRecord(id=uuid4(), status="approved"),
             FakeRecord(id=uuid4(), status="approved"),
         ]),
     ]
     db.fetchrow_responses = [
+        # Approved independent certification decision gates certificate issuance
+        ("FROM certification_decisions", FakeRecord(status="approved", provider_id=PROVIDER_TENANT_ID)),
         # No existing active cert
         ("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'",
          None),
@@ -179,7 +198,7 @@ class TestIssueCertificateEndpoint:
 
         db = FakeConn()
         db.fetch_responses = [
-            ("FROM submissions WHERE business_tenant", [
+            ("FROM submissions", [
                 FakeRecord(id=uuid4(), status="approved"),
                 FakeRecord(id=uuid4(), status="reviewing"),  # not approved
             ]),
@@ -202,11 +221,12 @@ class TestIssueCertificateEndpoint:
 
         db = FakeConn()
         db.fetch_responses = [
-            ("FROM submissions WHERE business_tenant", [
+            ("FROM submissions", [
                 FakeRecord(id=uuid4(), status="approved"),
             ]),
         ]
         db.fetchrow_responses = [
+            ("FROM certification_decisions", FakeRecord(status="approved", provider_id=PROVIDER_TENANT_ID)),
             ("FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2 AND status='active'",
              FakeRecord(id=uuid4(), cert_number="HALAL-2026-0001")),
         ]

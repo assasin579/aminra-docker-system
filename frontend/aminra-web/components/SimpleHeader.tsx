@@ -15,13 +15,13 @@ export default function SimpleHeader() {
     <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img
             src="/aminra-mark.png"
             alt=""
             className="h-8 w-8 object-contain"
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img
             src="/aminra-wordmark-navy.png"
             alt="AMINRA"

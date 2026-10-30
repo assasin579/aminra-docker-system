@@ -9,11 +9,12 @@ from datetime import datetime
 
 from uuid import UUID as _UUID
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import Response, APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel
 from asyncpg import Connection
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, require_business_owner
 from auth.notification_router import notify
 from services.audit_log import log_audit
@@ -69,11 +70,14 @@ class ResubmitIn(BaseModel):
 # ── Helper: access filter for owner vs auditor ──────────────────────────────
 
 
-def _provider_filter(user: dict, alias: str = "s"):
-    """Return (where_clause, param) for owner vs auditor access."""
+async def _provider_filter(user: dict, db, alias: str = "s"):
+    """Return (where_clause, canonical AMINRA user/tenant id) for owner vs auditor access."""
     col = "provider_id" if user.get("is_owner") else "auditor_id"
     prefix = f"{alias}." if alias else ""
-    return f"{prefix}{col} = $1", user["sub"]
+    param = await resolve_canonical_tenant_id(user, db) if user.get("is_owner") else await resolve_canonical_user_id(user, db)
+    if not param:
+        raise HTTPException(404, "User not found")
+    return f"{prefix}{col} = $1", param
 
 
 # W3-M2 — full submission state transition matrix.
@@ -108,17 +112,242 @@ def _validate_transition(from_status: str, to_status: str) -> None:
 # ── CB Dashboard: comprehensive stats ────────────────────────────────────────
 
 
+async def _resolve_cb_provider_actor(user: dict, db) -> Optional[dict]:
+    """Resolve an active provider principal and scope without identity reconciliation.
+
+    Caller-supplied owner/tenant claims are never the authorization source.
+    ``cb_admin`` is the Keycloak role for a CB owner; ``is_owner`` from the
+    canonical row distinguishes it from provider auditors. A platform admin
+    normalized to the provider app-role is explicitly denied.
+    """
+    if user.get("role") != "provider":
+        return None
+    realm_roles = user.get("realm_roles") or []
+    if not isinstance(realm_roles, (list, tuple, set)):
+        return None
+    roles = {str(role).lower() for role in realm_roles}
+    if roles & {"platform_admin", "business"}:
+        return None
+
+    raw_app_id = user.get("app_user_id")
+    raw_subject = user.get("keycloak_sub") or user.get("sub")
+    try:
+        if raw_app_id:
+            actor_id = _UUID(str(raw_app_id))
+            predicate = "id = $1"
+        elif user.get("_keycloak"):
+            actor_id = _UUID(str(raw_subject))
+            predicate = "keycloak_sub = $1"
+        else:
+            actor_id = _UUID(str(raw_subject))
+            predicate = "id = $1"
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+    row = await db.fetchrow(
+        f"SELECT id, role, status, is_owner, tenant_id FROM users WHERE {predicate}",
+        actor_id,
+    )
+    if not row or row["role"] != "provider" or row["status"] != "active":
+        return None
+    if row["is_owner"] is True:
+        if "auditor" in roles:
+            return None
+        owner = True
+        raw_tenant_id = row["tenant_id"] or row["id"]
+    elif row["is_owner"] is False:
+        owner = False
+        raw_tenant_id = row["tenant_id"]
+    else:
+        return None
+
+    try:
+        canonical_id = _UUID(str(row["id"]))
+        tenant_id = _UUID(str(raw_tenant_id))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return {"actor_id": canonical_id, "tenant_id": tenant_id, "is_owner": owner}
+
+
+async def _resolve_cb_metrics_owner_scope(user: dict, db) -> Optional[_UUID]:
+    """Return a canonical, active CB-owner tenant ID using read-only SQL."""
+    scope = await _resolve_cb_provider_actor(user, db)
+    return scope["tenant_id"] if scope and scope["is_owner"] else None
+
+
+@router.get("/cb-performance")
+async def cb_performance_90d(
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+    response: Response = None,
+):
+    """Owner-only auditor performance, attributed to CB report acceptance time."""
+    if response is not None:
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["Vary"] = "Authorization"
+    provider_id = await _resolve_cb_metrics_owner_scope(user, db)
+    if provider_id is None:
+        raise HTTPException(403, "Chỉ chủ CB được xem hiệu suất auditor")
+
+    rows = await db.fetch(
+        """
+        WITH accepted_visits AS (
+            SELECT av.auditor_id,
+                   auditor.company_name AS auditor_name,
+                   av.report_accepted_at,
+                   av.created_at,
+                   av.scheduled_date
+            FROM audit_visits av
+            LEFT JOIN users auditor
+              ON auditor.id = av.auditor_id
+             AND auditor.tenant_id = av.provider_id
+             AND auditor.role = 'provider'
+             AND auditor.is_owner = false
+            WHERE av.provider_id = $1
+              AND av.auditor_id IS NOT NULL
+              AND av.status = 'report_accepted'
+              AND av.report_accepted_at >= NOW() - INTERVAL '180 days'
+              AND av.report_accepted_at <= NOW()
+        )
+        SELECT auditor_id,
+               MAX(auditor_name) AS auditor_name,
+               GROUPING(auditor_id) AS is_total,
+               COUNT(*) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_completed,
+               COUNT(*) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_completed,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_cycle_median_hours,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_cycle_p90_hours,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_cycle_median_hours,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY EXTRACT(EPOCH FROM (report_accepted_at - created_at)) / 3600.0
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_cycle_p90_hours,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_visit_turnaround_median_days,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '90 days'
+                     AND report_accepted_at <= NOW()
+               ) AS current_visit_turnaround_p90_days,
+               percentile_cont(0.5) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_visit_turnaround_median_days,
+               percentile_cont(0.9) WITHIN GROUP (
+                   ORDER BY (report_accepted_at::date - scheduled_date)
+               ) FILTER (
+                   WHERE report_accepted_at >= NOW() - INTERVAL '180 days'
+                     AND report_accepted_at < NOW() - INTERVAL '90 days'
+               ) AS previous_visit_turnaround_p90_days
+        FROM accepted_visits
+        GROUP BY GROUPING SETS ((auditor_id), ())
+        ORDER BY GROUPING(auditor_id) DESC, auditor_name NULLS LAST
+        """,
+        provider_id,
+    )
+
+    def _number(row, key, digits=1):
+        value = row[key]
+        return round(float(value), digits) if value is not None else None
+
+    def _summary(row):
+        return {
+            "completed": {
+                "current_90d": int(row["current_completed"] or 0),
+                "previous_90d": int(row["previous_completed"] or 0),
+            },
+            "cycle_time_hours": {
+                "current_median": _number(row, "current_cycle_median_hours"),
+                "current_p90": _number(row, "current_cycle_p90_hours"),
+                "previous_median": _number(row, "previous_cycle_median_hours"),
+                "previous_p90": _number(row, "previous_cycle_p90_hours"),
+            },
+            "scheduled_to_acceptance_days": {
+                "current_median": _number(row, "current_visit_turnaround_median_days"),
+                "current_p90": _number(row, "current_visit_turnaround_p90_days"),
+                "previous_median": _number(row, "previous_visit_turnaround_median_days"),
+                "previous_p90": _number(row, "previous_visit_turnaround_p90_days"),
+            },
+        }
+
+    total_row = next((row for row in rows if row["is_total"]), None)
+    auditor_rows = [row for row in rows if not row["is_total"]]
+    zero_summary = {
+        "completed": {"current_90d": 0, "previous_90d": 0},
+        "cycle_time_hours": {
+            "current_median": None,
+            "current_p90": None,
+            "previous_median": None,
+            "previous_p90": None,
+        },
+        "scheduled_to_acceptance_days": {
+            "current_median": None,
+            "current_p90": None,
+            "previous_median": None,
+            "previous_p90": None,
+        },
+    }
+    return {
+        "window_days": 90,
+        "attribution": "report_accepted_at",
+        "total": _summary(total_row) if total_row else zero_summary,
+        "auditors": [
+            {
+                "auditor_id": str(row["auditor_id"]),
+                "name": row["auditor_name"],
+                **_summary(row),
+            }
+            for row in auditor_rows
+        ],
+        "limitations": [
+            "Cancellation and reschedule attribution is not available: the current audit-visit model does not persist those events.",
+            "Overdue reports, rework, checklist evidence, NCR follow-through, repeat visits, and conflict declarations are not included until authoritative data contracts are verified.",
+        ],
+    }
+
+
 @router.get("/cb-stats")
 async def cb_stats(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
+    response: Response = None,
 ):
-    """Comprehensive CB dashboard stats — owner only."""
-    if user["role"] != "provider":
-        raise HTTPException(403)
-    if not user.get("is_owner"):
-        raise HTTPException(403, "Chỉ chủ tổ chức")
-    pid = user.get("tenant_id") or user["sub"]
+    """Comprehensive CB dashboard stats — active persisted CB owners only."""
+    if response is not None:
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["Vary"] = "Authorization"
+    pid = await _resolve_cb_metrics_owner_scope(user, db)
+    if pid is None:
+        raise HTTPException(403, "Chỉ chủ CB được xem số liệu tổ chức")
 
     # Portfolio size
     portfolio = await db.fetchval(
@@ -137,8 +366,8 @@ async def cb_stats(
         SELECT
             COUNT(*) AS total,
             COUNT(*) FILTER (WHERE status='active') AS active,
-            COUNT(*) FILTER (WHERE status='active' AND expiry_date < NOW() + INTERVAL '90 days') AS expiring_soon,
-            COUNT(*) FILTER (WHERE status='suspended' OR status='revoked') AS inactive
+            COUNT(*) FILTER (WHERE status='active' AND expiry_date >= CURRENT_DATE AND expiry_date <= CURRENT_DATE + INTERVAL '60 days') AS expiring_soon,
+            COUNT(*) FILTER (WHERE status IN ('suspended','revoked')) AS inactive
         FROM halal_certificates WHERE issued_by=$1
     """,
         pid,
@@ -149,8 +378,8 @@ async def cb_stats(
         """
         SELECT
             COUNT(*) AS total,
-            COUNT(*) FILTER (WHERE status IN ('completed','report_submitted')) AS completed,
-            ROUND(AVG(compliance_score) FILTER (WHERE compliance_score IS NOT NULL)) AS avg_compliance
+            COUNT(*) FILTER (WHERE status='report_accepted') AS completed,
+            ROUND(AVG(compliance_score) FILTER (WHERE status='report_accepted' AND compliance_score IS NOT NULL)) AS avg_compliance
         FROM audit_visits WHERE provider_id=$1
     """,
         pid,
@@ -182,12 +411,14 @@ async def cb_stats(
         pid,
     )
 
-    # Expiring certs (next 90 days)
+    # Certificate summary uses the spec's 60-day expiry window.
     expiring = await db.fetch(
         """
         SELECT cert_number, company_name, expiry_date
         FROM halal_certificates
-        WHERE issued_by=$1 AND status='active' AND expiry_date < NOW() + INTERVAL '90 days'
+        WHERE issued_by=$1 AND status='active'
+          AND expiry_date >= CURRENT_DATE
+          AND expiry_date <= CURRENT_DATE + INTERVAL '60 days'
         ORDER BY expiry_date ASC LIMIT 10
     """,
         pid,
@@ -242,10 +473,13 @@ async def provider_stats(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    if user["role"] != "provider":
-        raise HTTPException(403, "Chỉ dành cho tổ chức")
-
-    where, param = _provider_filter(user)
+    scope = await _resolve_cb_provider_actor(user, db)
+    if scope is None:
+        raise HTTPException(403, "Chỉ thành viên tổ chức đang hoạt động được xem hàng đợi")
+    if scope["is_owner"]:
+        where, param = "s.provider_id = $1", scope["tenant_id"]
+    else:
+        where, param = "s.auditor_id = $1", scope["actor_id"]
 
     # Counts by status
     counts = await db.fetchrow(
@@ -275,7 +509,7 @@ async def provider_stats(
     # Recent 5 submissions
     recent = await db.fetch(
         f"""
-        SELECT s.id, s.company_name, s.status, s.submitted_at,
+        SELECT s.id, s.business_tenant, s.company_name, s.status, s.submitted_at,
                array_length(s.document_ids, 1) AS doc_count, s.deadline
         FROM submissions s WHERE {where}
         ORDER BY s.submitted_at DESC LIMIT 5
@@ -306,6 +540,36 @@ async def provider_stats(
     }
 
 
+# ── Provider: overdue queue (SLA escalation, scoped to org) ───────────────────
+
+
+@router.get("/overdue")
+async def provider_overdue(
+    limit: int = Query(100, ge=0, le=500),
+    user: dict = Depends(get_current_user),
+    db: Connection = Depends(get_db),
+):
+    """Provider-scoped overdue queue.
+
+    Owner (cb_admin) sees all submissions of their CB org past deadline.
+    Auditor (non-owner) sees only submissions assigned to them.
+    Same SLA semantics as admin queue, but tenant-scoped.
+    """
+    if user.get("role") != "provider":
+        raise HTTPException(403, "Chỉ dành cho tổ chức")
+
+    from services.submission_sla import list_overdue_submissions
+
+    kwargs = {"limit": limit}
+    if user.get("is_owner"):
+        kwargs["provider_id"] = await resolve_canonical_tenant_id(user, db)
+    else:
+        kwargs["auditor_id"] = await resolve_canonical_user_id(user, db)
+
+    items = await list_overdue_submissions(db, **kwargs)
+    return {"items": items, "count": len(items)}
+
+
 # ── Business: list providers ──────────────────────────────────────────────────
 
 
@@ -329,7 +593,12 @@ async def submit_documents(
     db: Connection = Depends(get_db),
 ):
     """Business sends selected documents to a provider."""
-    tenant_id = owner["tenant_id"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
+    if not tenant_id:
+        raise HTTPException(404, "Tenant not found")
+    _validate_uuid(req.provider_id)
+    for document_id in req.document_ids:
+        _validate_uuid(document_id)
 
     # Verify provider is an organization owner (not an auditor)
     provider = await db.fetchrow(
@@ -350,18 +619,41 @@ async def submit_documents(
         if count != len(doc_uuids):
             raise HTTPException(400, "Một số tài liệu không hợp lệ")
 
+    requirements_version_id = None
+    binding_status = "unknown"
+    if doc_uuids:
+        dossier_rows = await db.fetch(
+            "SELECT DISTINCT dossier_id FROM documents WHERE id=ANY($1::uuid[]) AND tenant_id=$2",
+            doc_uuids,tenant_id,
+        )
+        linked_ids = [r['dossier_id'] for r in dossier_rows if r['dossier_id'] is not None]
+        if linked_ids:
+            if len(dossier_rows) != 1:
+                raise HTTPException(409, "Chỉ nộp tài liệu của một hồ sơ trong mỗi lần gửi")
+            dossier = await db.fetchrow(
+                "SELECT requirements_version_id, requirements_binding_status FROM dossiers "
+                "WHERE id=$1 AND tenant_id=$2 AND status != 'cancelled'",
+                linked_ids[0],tenant_id,
+            )
+            if not dossier or dossier['requirements_binding_status'] != 'bound':
+                raise HTTPException(409, "Hồ sơ chưa có bộ yêu cầu được chốt")
+            requirements_version_id = dossier['requirements_version_id']
+            binding_status = 'bound'
+
     # Get business company name
-    biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", owner["sub"])
+    biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", await resolve_canonical_user_id(owner, db))
     company_name = biz["company_name"] if biz else ""
 
     row = await db.fetchrow(
-        """INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name)
-           VALUES ($1, $2, $3::uuid[], $4, $5) RETURNING id, submitted_at""",
+        """INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name, requirements_version_id, requirements_binding_status)
+           VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7) RETURNING id, submitted_at""",
         tenant_id,
         req.provider_id,
         doc_uuids,
         req.notes,
         company_name,
+        requirements_version_id,
+        binding_status,
     )
 
     log.info(f"[submission] {company_name} → {provider['company_name']}: {len(doc_uuids)} docs")
@@ -409,7 +701,7 @@ async def cert_timeline(
 ):
     if user["role"] != "business":
         raise HTTPException(403)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
 
     rows = await db.fetch(
         """
@@ -463,7 +755,7 @@ async def request_renewal(
         raise HTTPException(400)
     if user["role"] != "business":
         raise HTTPException(403)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
 
     cert = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND business_tenant=$2", cert_id, tenant_id)
     if not cert:
@@ -573,7 +865,7 @@ async def received_submissions(
     if user["role"] != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
 
-    where, param = _provider_filter(user)
+    where, param = await _provider_filter(user, db)
     rows = await db.fetch(
         f"""SELECT s.id, s.business_tenant, s.status, s.notes, s.auditor_notes,
                   s.submitted_at, s.updated_at, s.company_name,
@@ -628,10 +920,10 @@ async def submission_documents(
         sub = await db.fetchrow(
             "SELECT document_ids FROM submissions WHERE id=$1 AND business_tenant=$2",
             submission_id,
-            user.get("tenant_id"),
+            await resolve_canonical_tenant_id(user, db),
         )
     elif user["role"] == "provider":
-        where, param = _provider_filter(user, alias="")
+        where, param = await _provider_filter(user, db, alias="")
         sub = await db.fetchrow(
             f"SELECT document_ids FROM submissions WHERE id = $1 AND {where.replace('$1', '$2')}", submission_id, param
         )
@@ -713,7 +1005,7 @@ async def update_submission_status(
     # W3-M2 — enforce transition matrix before mutating
     _validate_transition(prev_status, req.status)
 
-    where, param = _provider_filter(user, alias="")
+    where, param = await _provider_filter(user, db, alias="")
     result = await db.execute(
         f"UPDATE submissions SET status = $1, auditor_notes = $2, updated_at = NOW() WHERE id = $3 AND {where.replace('$1', '$4')}",
         req.status,
@@ -785,7 +1077,7 @@ async def provider_request_revision(
         raise HTTPException(403, "Chỉ tổ chức cấp chứng nhận")
 
     # Auditor or owner of the CB — both can request revision on their assigned submissions
-    where, param = _provider_filter(user, alias="")
+    where, param = await _provider_filter(user, db, alias="")
     sub_check = await db.fetchrow(
         f"SELECT id FROM submissions WHERE id = $2 AND {where.replace('$1', '$1')}",
         param,
@@ -795,7 +1087,7 @@ async def provider_request_revision(
         raise HTTPException(404, "Không tìm thấy hồ sơ trong phạm vi của bạn")
 
     # Lookup requester display name
-    me = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", user["sub"])
+    me = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", await resolve_canonical_user_id(user, db))
     requester_name = (me["company_name"] if me else None) or user.get("email", "Provider")
 
     doc_feedback = [
@@ -808,11 +1100,12 @@ async def provider_request_revision(
         for df in req.document_feedback
     ]
 
+    requester_id = await resolve_canonical_user_id(user, db)
     try:
         result = await request_revision(
             db,
             submission_id=submission_id,
-            requester_id=user["sub"],
+            requester_id=str(requester_id) if requester_id else None,
             requester_name=requester_name,
             feedback=req.feedback,
             document_feedback=doc_feedback,
@@ -972,19 +1265,31 @@ async def get_revision_history(
 
     # Decision #2 — non-owner business members CAN read sibling revisions
     # within their own tenant (intra-tenant collaboration).
-    is_business = user["role"] == "business" and str(sub["business_tenant"]) == user.get("tenant_id")
+    # Canonical resolver returns UUID objects, not token claim strings.
+    # Resolve once and keep absent identities denied rather than stringifying None.
+    tenant_id = None
+    if user["role"] == "business" or (
+        user["role"] == "provider" and user.get("is_owner")
+    ):
+        tenant_id = await resolve_canonical_tenant_id(user, db)
+    is_business = (
+        user["role"] == "business"
+        and tenant_id is not None
+        and str(sub["business_tenant"]) == str(tenant_id)
+    )
     # C9 fix — auditor must be the assigned auditor (or CB owner). Old code
     # let any auditor across any CB read any submission's history.
     is_provider_owner = (
         user["role"] == "provider"
         and user.get("is_owner")
-        and str(sub["provider_id"]) == (user.get("tenant_id") or user["sub"])
+        and tenant_id is not None
+        and str(sub["provider_id"]) == str(tenant_id)
     )
     is_assigned_auditor = (
         user["role"] == "provider"
         and not user.get("is_owner")
         and sub["auditor_id"] is not None
-        and str(sub["auditor_id"]) == user["sub"]
+        and str(sub["auditor_id"]) == str(await resolve_canonical_user_id(user, db))
     )
     if not (is_business or is_provider_owner or is_assigned_auditor):
         raise HTTPException(403, "Không có quyền xem hồ sơ này")
@@ -1007,11 +1312,12 @@ async def assign_auditor(
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được gán auditor")
 
-    # Verify auditor belongs to this provider's team
+    # Verify auditor belongs to this provider's team using canonical AMINRA user/tenant ids.
+    provider_owner_id = await resolve_canonical_user_id(user, db)
     auditor = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
         req.auditor_id,
-        user["sub"],
+        provider_owner_id,
     )
     if not auditor:
         raise HTTPException(404, "Auditor không tồn tại trong tổ chức")
@@ -1020,7 +1326,7 @@ async def assign_auditor(
         "UPDATE submissions SET auditor_id = $1, status = 'assigned', updated_at = NOW() WHERE id = $2 AND provider_id = $3",
         req.auditor_id,
         submission_id,
-        user["sub"],
+        provider_owner_id,
     )
     if result == "UPDATE 0":
         raise HTTPException(404, "Không tìm thấy hồ sơ")
@@ -1067,16 +1373,16 @@ async def _check_submission_access(submission_id: str, user: dict, db):
     _validate_uuid(submission_id)
     if user["role"] == "business":
         row = await db.fetchrow(
-            "SELECT id FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, user.get("tenant_id")
+            "SELECT id FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, await resolve_canonical_tenant_id(user, db)
         )
     elif user["role"] == "provider":
         if user.get("is_owner"):
             row = await db.fetchrow(
-                "SELECT id FROM submissions WHERE id=$1 AND provider_id=$2", submission_id, user["sub"]
+                "SELECT id FROM submissions WHERE id=$1 AND provider_id=$2", submission_id, await resolve_canonical_tenant_id(user, db)
             )
         else:
             row = await db.fetchrow(
-                "SELECT id FROM submissions WHERE id=$1 AND auditor_id=$2", submission_id, user["sub"]
+                "SELECT id FROM submissions WHERE id=$1 AND auditor_id=$2", submission_id, await resolve_canonical_user_id(user, db)
             )
     else:
         row = None
@@ -1147,6 +1453,7 @@ async def save_evaluation(
 
     checklist_json = _json.dumps(req.checklist)
 
+    evaluator_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         """
         INSERT INTO submission_evaluations (submission_id, auditor_id, checklist, score, notes)
@@ -1155,7 +1462,7 @@ async def save_evaluation(
         DO UPDATE SET checklist=$3::jsonb, score=$4, notes=$5, updated_at=NOW()
     """,
         submission_id,
-        user["sub"],
+        evaluator_id,
         checklist_json,
         req.score,
         req.notes,
@@ -1174,12 +1481,12 @@ async def save_evaluation(
             await db.execute("UPDATE submissions SET status='reviewing', updated_at=NOW() WHERE id=$1", submission_id)
 
         # Get evaluator name
-        evaluator = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", user["sub"])
+        evaluator = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", await resolve_canonical_user_id(user, db))
         eval_name = evaluator["company_name"] if evaluator else "Auditor"
         score_text = f"Điểm: {req.score}/100" if req.score is not None else ""
 
         # Notify provider owner
-        if str(sub_info["provider_id"]) != user["sub"]:
+        if str(sub_info["provider_id"]) != str(await resolve_canonical_tenant_id(user, db)):
             await notify(
                 db,
                 str(sub_info["provider_id"]),
@@ -1203,7 +1510,7 @@ async def save_evaluation(
                 "/submissions",
             )
 
-    log.info(f"[eval] {user['sub']} scored submission {submission_id}: {req.score}")
+    log.info(f"[eval] {user.get('email')} scored submission {submission_id}: {req.score}")
     return {"message": "Đã lưu đánh giá", "score": req.score}
 
 
@@ -1216,12 +1523,17 @@ async def approve_final(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
+    async with db.transaction():
+        return await _approve_final_transaction(submission_id, user, db)
+
+
+async def _approve_final_transaction(submission_id: str, user: dict, db):
     """Auditor/Provider approves submission → auto-finalize for business."""
     _validate_uuid(submission_id)
     if user["role"] != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
 
-    where, param = _provider_filter(user, alias="")
+    where, param = await _provider_filter(user, db, alias="")
     sub = await db.fetchrow(
         f"SELECT * FROM submissions WHERE id=$1 AND {where.replace('$1', '$2')}", submission_id, param
     )
@@ -1309,7 +1621,7 @@ async def approve_final(
         )
 
     # Get names
-    approver = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", user["sub"])
+    approver = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", await resolve_canonical_user_id(user, db))
     approver_name = approver["company_name"] if approver else "Auditor"
 
     # Notify business owner with congratulations
@@ -1327,7 +1639,7 @@ async def approve_final(
         )
 
     # Also notify provider owner if auditor approved
-    if not user.get("is_owner") and str(sub["provider_id"]) != user["sub"]:
+    if not user.get("is_owner") and str(sub["provider_id"]) != str(await resolve_canonical_tenant_id(user, db)):
         await notify(
             db,
             str(sub["provider_id"]),
@@ -1337,7 +1649,10 @@ async def approve_final(
             "/submissions",
         )
 
-    log.info(f"[submission] {submission_id} approved by {user['sub']}")
+    from services.dossier_reviews import record_bound_submission_review
+    await record_bound_submission_review(db, submission=sub, user=user)
+
+    log.info(f"[submission] {submission_id} approved by {user.get('email')}")
     return {"message": f"Đã phê duyệt hồ sơ từ {sub['company_name']}. Doanh nghiệp sẽ hoàn tất hồ sơ."}
 
 
@@ -1364,21 +1679,22 @@ async def replace_submission_document(
     _validate_uuid(new_doc_id)
 
     sub = await db.fetchrow(
-        "SELECT id, document_ids, status FROM submissions WHERE id=$1 AND business_tenant=$2",
+        "SELECT id, document_ids, status, archived_at FROM submissions WHERE id=$1 AND business_tenant=$2",
         submission_id,
-        user.get("tenant_id"),
+        await resolve_canonical_tenant_id(user, db),
     )
     if not sub:
         raise HTTPException(404)
 
     # C1 fix — never let docs swap on terminal-state submissions; cert may already
     # cover the old set. Business must request a fresh submission instead.
-    if sub["status"] in ("approved", "rejected"):
+    archived_at = sub["archived_at"] if "archived_at" in sub.keys() else None
+    if sub["status"] in ("approved", "rejected") or archived_at is not None:
         raise HTTPException(400, "Hồ sơ đã ở trạng thái cuối — không thể thay tài liệu. Tạo hồ sơ mới nếu cần.")
 
     # Verify new doc belongs to tenant
     new_doc = await db.fetchrow(
-        "SELECT id FROM documents WHERE id=$1 AND tenant_id=$2", new_doc_id, user.get("tenant_id")
+        "SELECT id FROM documents WHERE id=$1 AND tenant_id=$2", new_doc_id, await resolve_canonical_tenant_id(user, db)
     )
     if not new_doc:
         raise HTTPException(400, "Tài liệu mới không hợp lệ")
@@ -1505,7 +1821,7 @@ async def finalize_submission(
         raise HTTPException(403, "Chỉ chủ doanh nghiệp được hoàn tất hồ sơ")
 
     sub = await db.fetchrow(
-        "SELECT * FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, user.get("tenant_id")
+        "SELECT * FROM submissions WHERE id=$1 AND business_tenant=$2", submission_id, await resolve_canonical_tenant_id(user, db)
     )
     if not sub:
         raise HTTPException(404)
@@ -1520,7 +1836,7 @@ async def finalize_submission(
         submission_id,
     )
 
-    log.info(f"[submission] {submission_id} finalized (archived) by business {user['sub']}")
+    log.info(f"[submission] {submission_id} finalized (archived) by business {user.get('email')}")
     return {"message": "Đã lưu và hoàn tất hồ sơ"}
 
 
@@ -1553,7 +1869,7 @@ async def set_deadline(
         "UPDATE submissions SET deadline=$1, updated_at=NOW() WHERE id=$2 AND provider_id=$3",
         deadline_val,
         submission_id,
-        user["sub"],
+        await resolve_canonical_tenant_id(user, db),
     )
     if result == "UPDATE 0":
         raise HTTPException(404)

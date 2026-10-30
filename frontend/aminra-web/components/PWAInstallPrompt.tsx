@@ -74,7 +74,7 @@ export default function PWAInstallPrompt() {
           className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
           style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src="/aminra-mark.png" alt="AMINRA" className="w-7 h-7" />
         </div>
         <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export default function PWAInstallPrompt() {
             {!iosVisible && (
               <button
                 onClick={install}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{ background: "#0A1F44" }}
               >
                 Cài đặt

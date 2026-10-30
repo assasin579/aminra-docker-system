@@ -1,0 +1,752 @@
+/* ─── Inter font (bundled local, weights 400/500/600/700/900 + italic) ─── */
+
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Regular.woff2') format('woff2');  font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Italic.woff2') format('woff2');   font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Medium.woff2') format('woff2');   font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Bold.woff2') format('woff2');     font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Inter'; src: url('../_shared/fonts/Inter-Black.woff2') format('woff2');    font-weight: 900; font-style: normal; font-display: block; }
+
+/* ─── Design tokens (3-layer system) ─────────────────────────────────────────
+ *
+ * L1  raw primitives  — never used directly in templates; only referenced by L2.
+ * L2  semantic        — what templates SHOULD use (--c-brand-*, --fs-*, --sp-*).
+ * L3  component-level — overrideable per template (--cover-bg, --stat-bg, …).
+ *
+ * Doc-specific style.css MUST only override L3 component tokens or layout
+ * (margin/padding/grid). Raw values (#hex, font-size, font-family) in any
+ * file other than this one will fail `bash scripts/lint-templates.sh`.
+ *
+ * Adding a new color/size: add a primitive in L1, expose via L2 semantic,
+ * then optionally bind to a L3 component. Don't skip layers.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── L1 — Raw primitives ─────────────────────────────────────────────── */
+
+  --raw-navy-900:    #0a1f44;
+  --raw-navy-700:    #0f2a5c;
+  --raw-navy-500:    #1f3d80;
+  --raw-emerald-700: #128039;
+  --raw-emerald-600: #16a34a;
+  --raw-emerald-300: #4ade80;
+  --raw-amber-600:   #d97706;
+  --raw-rose-600:    #dc2626;
+  --raw-cream-50:    #faf7f2;
+  --raw-cream-100:   #f0ebe0;
+  --raw-ink-900:     #0b1220;
+  --raw-slate-800:   #12203d;
+  --raw-slate-600:   #475569;
+  --raw-slate-400:   #94a3b8;
+  --raw-slate-200:   #e2e8f0;
+  --raw-slate-100:   #f1f5f9;
+  --raw-white:       #ffffff;
+
+  /* ── L2 — Semantic (use these in templates) ──────────────────────────── */
+
+  /* Brand */
+  --c-brand-primary:  var(--raw-navy-900);
+  --c-brand-primary-700: var(--raw-navy-700);
+  --c-brand-primary-500: var(--raw-navy-500);
+  --c-brand-accent:   var(--raw-emerald-600);
+  --c-brand-accent-700: var(--raw-emerald-700);
+  --c-brand-accent-300: var(--raw-emerald-300);
+  --c-brand-warn:     var(--raw-amber-600);
+  --c-brand-danger:   var(--raw-rose-600);
+  --c-paper:          var(--raw-cream-50);
+  --c-paper-dark:     var(--raw-cream-100);
+
+  /* Text */
+  --c-ink:            var(--raw-ink-900);
+  --c-text:           var(--raw-slate-800);
+  --c-text-muted:     var(--raw-slate-600);
+  --c-text-soft:      var(--raw-slate-400);
+  --c-text-on-brand:  var(--raw-white);
+
+  /* Surfaces / borders */
+  --c-border:         var(--raw-slate-200);
+  --c-border-soft:    var(--raw-slate-100);
+  --c-surface:        var(--raw-white);
+  --c-surface-soft:   var(--raw-cream-50);
+
+  /* Gradients */
+  --grad-hero:        linear-gradient(135deg, var(--raw-navy-900) 0%, var(--raw-navy-700) 35%, var(--raw-emerald-600) 100%);
+  --grad-strip:       linear-gradient(90deg,  var(--raw-navy-900) 0%, var(--raw-emerald-600) 100%);
+  --grad-accent:      linear-gradient(180deg, var(--raw-emerald-600) 0%, var(--raw-emerald-700) 100%);
+
+  /* Type */
+  --font-sans:        'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-display:       64pt;
+  --fs-h1:            28pt;
+  --fs-h2:            18pt;
+  --fs-h3:            13pt;
+  --fs-body:          11pt;
+  --fs-small:         9.5pt;
+  --fs-tiny:          8pt;
+  --lh-tight:         1.05;
+  --lh-snug:          1.25;
+  --lh-base:          1.55;
+  /* Font weights — use these tokens instead of raw numbers in doc-specific CSS. */
+  --fw-regular:       400;
+  --fw-medium:        500;
+  --fw-semibold:      600;
+  --fw-bold:          700;
+  --fw-black:         900;
+
+  /* Spacing scale (mm — print-native) */
+  --sp-1: 1mm;  --sp-2: 2mm;  --sp-3: 3mm;  --sp-4: 5mm;
+  --sp-5: 8mm;  --sp-6: 12mm; --sp-7: 18mm; --sp-8: 24mm;
+
+  /* Radii */
+  --r-sm: 1.5mm; --r-md: 3mm; --r-lg: 6mm;
+
+  /* ── L3 — Component tokens (override these in doc-specific style.css) ── */
+
+  --cover-bg:           var(--grad-hero);
+  --cover-text:         var(--c-text-on-brand);
+  --cover-eyebrow:      var(--c-brand-accent-300);
+  --cover-strip:        var(--grad-accent);
+  --cover-title-size:   var(--fs-display);
+
+  --section-num-color:  var(--c-paper-dark);
+  --section-eyebrow:    var(--c-brand-accent);
+  --section-rule:       var(--c-brand-accent);
+
+  --stat-bg:            var(--c-paper);
+  --stat-num-color:     var(--c-brand-primary);
+  --stat-bar:           var(--grad-accent);
+
+  --table-head-bg:      var(--c-brand-primary);
+  --table-head-text:    var(--c-text-on-brand);
+  --table-zebra:        var(--c-paper);
+  --table-border:       var(--c-border);
+
+  --pull-bar:           var(--c-brand-accent);
+  --pull-quote-mark:    var(--c-brand-accent);
+  --pull-text:          var(--c-brand-primary);
+
+  --callout-bg:         var(--c-paper);
+  --callout-badge-bg:   var(--c-brand-accent);
+
+  --bullet-marker:      var(--c-brand-accent);
+
+  /* DRAFT watermark colour (pale red) */
+  --draft-color:        rgba(220, 38, 38, 0.05);
+
+  /* ── BACKWARDS COMPAT (deprecated — DO NOT USE in new code) ─────────── */
+  /* These map old short names to new semantic names so old templates still
+   * render during migration. Remove after Phase 2 finishes refactor. */
+  --c-navy:        var(--c-brand-primary);
+  --c-navy-700:    var(--c-brand-primary-700);
+  --c-navy-500:    var(--c-brand-primary-500);
+  --c-emerald:     var(--c-brand-accent);
+  --c-emerald-700: var(--c-brand-accent-700);
+  --c-emerald-300: var(--c-brand-accent-300);
+  --c-amber:       var(--c-brand-warn);
+  --c-rose:        var(--c-brand-danger);
+  --c-cream:       var(--c-paper);
+  --c-cream-dark:  var(--c-paper-dark);
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+img, svg { max-width: 100%; height: auto; display: block; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-base);
+  color: var(--c-text);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  font-feature-settings: "ss01", "cv11", "tnum";
+}
+
+/* ─── Typography utilities ───────────────────────────────────────────────── */
+
+h1, h2, h3, h4 { margin: 0; line-height: var(--lh-snug); color: var(--c-navy); }
+h1 { font-size: var(--fs-h1); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: var(--fs-h3); font-weight: 600; }
+p  { margin: 0 0 var(--sp-3) 0; }
+strong { font-weight: 600; color: var(--c-ink); }
+em { font-style: italic; }
+
+.eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-emerald);
+}
+
+.dim { color: var(--c-text-muted); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ─── COVER PAGE — solid color hero (perf-tuned) ──────────────────────────
+ *
+ * Why no gradient: every gradient (linear OR radial) becomes a PDF
+ * Shading object; viewers (Chrome, Firefox, Acrobat) re-evaluate the
+ * shading at every paint frame. Stacking 3 of them under the cover made
+ * the page unscrollable. Solid background fills are a single Path op
+ * → instant repaint.
+ *
+ * Visual identity is preserved by the deep-navy brand colour + a single
+ * accent strip on the right edge (solid block, also cheap). We removed:
+ *   - .cover::before     two radial gradients
+ *   - .cover::after      dot grid + mask (removed 2026-05-06)
+ *   - .cover__mark       SVG with internal gradients (removed 2026-05-06)
+ *   - cover linear-gradient (replaced with solid)
+ */
+
+.cover {
+  position: relative;
+  page-break-after: always;
+  break-after: page;
+  width: 210mm;
+  height: 297mm;
+  margin: -18mm -15mm 0 -15mm;          /* cancel @page margins for full bleed */
+  background: var(--c-brand-primary);
+  color: var(--c-text-on-brand);
+  overflow: hidden;
+  /* Asymmetric padding — generous left indent so title/meta have visual
+   * breathing room from the page edge. Right side is tighter because the
+   * accent strip already provides a hard edge. */
+  padding: 26mm 22mm 22mm 30mm;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Decorative cover-mark SVG kept addressable in macros but hidden on
+ * cover by default; bring back via per-doc style.css if a specific
+ * template wants a visible mark. */
+.cover__mark { display: none; }
+
+.cover__head {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-start; gap: var(--sp-5);
+}
+.cover__logo {
+  width: 52mm; height: auto;
+  filter: brightness(0) invert(1);       /* flatten to white on the gradient */
+}
+.cover__year {
+  margin-left: auto;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: rgba(255,255,255,0.7);
+  border: 0.5pt solid rgba(255,255,255,0.35);
+  border-radius: 100px;
+  padding: 1.3mm 4mm;
+}
+
+.cover__core {
+  position: relative; z-index: 2;
+  margin-top: var(--sp-7);
+}
+.cover__eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--c-emerald-300);
+  margin-bottom: var(--sp-4);
+}
+.cover__title {
+  font-size: var(--cover-title-size);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: var(--lh-tight);
+  color: var(--cover-text);
+  max-width: 165mm;
+}
+.cover__sub {
+  margin-top: var(--sp-4);
+  font-size: 13pt;
+  font-weight: 400;
+  color: rgba(255,255,255,0.78);
+  max-width: 150mm;
+  line-height: 1.45;
+}
+
+.cover__rule {
+  position: relative; z-index: 2;
+  height: 1pt; width: 60mm;
+  background: var(--c-emerald-300);
+  margin: var(--sp-6) 0 var(--sp-5) 0;
+}
+
+.cover__meta {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+  margin-top: auto;            /* push to bottom */
+  border-top: 0.5pt solid rgba(255,255,255,0.18);
+  padding-top: var(--sp-5);
+}
+.cover__meta-cell { font-size: var(--fs-small); }
+.cover__meta-cell-label {
+  font-size: var(--fs-tiny);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: var(--sp-1);
+}
+.cover__meta-cell-value {
+  font-weight: 600;
+  color: #fff;
+  font-size: 11.5pt;
+  line-height: 1.3;
+}
+
+/* Vertical strip on right edge of cover — solid colour for instant paint
+ * (was a gradient prior to 2026-05-06 perf fix). */
+.cover__strip {
+  position: absolute; top: 0; right: 0;
+  width: 9mm; height: 100%;
+  background: var(--c-brand-accent);
+  z-index: 1;
+}
+
+/* .cover__mark hidden by default (declared near .cover above). The
+ * positional rules are kept here so a doc-specific stylesheet can
+ * unhide + customise placement without redefining geometry. */
+.cover__mark--positioned {
+  position: absolute; right: 22mm; bottom: 36mm; z-index: 2;
+  width: 36mm; height: 36mm;
+  opacity: 0.85;
+}
+
+/* ─── SECTION OPENER — compact inline format (was giant 110pt number) ─────
+ *
+ * Old design assumed each section gets its own page (giant "01" cream
+ * watermark filled the empty space). With auto-flow + max 2 sections per
+ * page (see .section nth-of-type rules below), the giant number became
+ * overpowering. New layout puts a small navy chip "01" + eyebrow on one
+ * line, title on the next — total height ~12mm vs old ~30mm.
+ */
+
+.section-opener {
+  margin: 0 0 var(--sp-4) 0;
+  page-break-after: avoid;
+  break-after: avoid;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.section-opener__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+
+.section-opener__num {
+  display: inline-block;
+  background: var(--c-brand-primary);
+  color: var(--c-text-on-brand);
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  padding: 0.8mm 2.5mm;
+  border-radius: 1.5mm;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.section-opener__eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-brand-accent);
+}
+
+.section-opener__title {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  line-height: var(--lh-snug);
+  color: var(--c-brand-primary);
+  margin: 0;
+}
+
+.section-opener__rule {
+  height: 1pt;
+  width: 14mm;
+  background: var(--c-brand-accent);
+  margin-top: var(--sp-2);
+}
+
+/* ─── CONTENT BLOCKS ─────────────────────────────────────────────────────── */
+
+.section {
+  /* Generous breathing room between sections so two on the same page
+   * read as separate units, not a wall of text. sp-7 = 18mm. */
+  margin: 0 0 var(--sp-7) 0;
+  padding-top: var(--sp-5);     /* 8mm above section opener */
+}
+
+/* First content section after cover: cover already broke; no extra top
+ * padding (page starts clean). */
+.cover + .section {
+  padding-top: 0;
+}
+
+/* Max 2 sections per page — break before every NEXT pair start.
+ * <section> nth-of-type ordering counts cover (1) + body sections (2,3,...).
+ * Pairs: (cover) | (2,3) | (4,5) | (6,7)
+ * Break before sections at index 4, 6, 8, ... = even index excluding 2.
+ */
+.section:nth-of-type(even):not(:nth-of-type(2)) {
+  page-break-before: always;
+  break-before: page;
+  padding-top: 0;     /* fresh page — no extra padding above */
+}
+.section h2 { margin-bottom: var(--sp-3); }
+.section h3 { margin-top: var(--sp-4); margin-bottom: var(--sp-2); }
+
+.lede {
+  font-size: 13pt;
+  line-height: 1.55;
+  color: var(--c-text);
+  font-weight: 500;
+  margin: 0 0 var(--sp-5) 0;
+}
+
+/* Stat cards grid */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0 var(--sp-5) 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+.stat-grid--2 { grid-template-columns: repeat(2, 1fr); }
+.stat-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.stat-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.stat-grid--6 { grid-template-columns: repeat(6, 1fr); }
+
+.stat {
+  position: relative;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 1.5mm);
+  background: var(--c-cream);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.stat::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 1mm; background: var(--grad-accent);
+}
+.stat__num {
+  font-size: 28pt;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--c-navy);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat__unit {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  margin-left: 1.5mm;
+}
+.stat__label {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+.stat__hint {
+  margin-top: 1mm;
+  font-size: var(--fs-small);
+  color: var(--c-text);
+  line-height: 1.35;
+}
+
+/* Definition list (key/value), used in cover meta + section info */
+dl.kv {
+  display: grid;
+  grid-template-columns: minmax(34mm, max-content) 1fr;
+  column-gap: var(--sp-5);
+  row-gap: 1.6mm;
+  font-size: var(--fs-body);
+  margin: 0 0 var(--sp-3) 0;
+}
+dl.kv dt {
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+dl.kv dd {
+  color: var(--c-ink);
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Tables */
+table.data {
+  font-size: var(--fs-small);
+  border: none;
+  margin: var(--sp-3) 0 var(--sp-4) 0;
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+table.data thead th {
+  background: var(--c-navy);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: var(--fs-tiny);
+  padding: 2.4mm 3.4mm;
+  text-align: left;
+  border: none;
+}
+table.data tbody td {
+  padding: 2.6mm 3.4mm;
+  border: none;
+  border-bottom: 0.5pt solid var(--c-border);
+  vertical-align: top;
+}
+table.data tbody tr:nth-child(odd) td { background: var(--table-zebra); }
+table.data tbody tr:last-child td { border-bottom: none; }
+table.data tbody td:first-child { font-weight: 600; color: var(--c-ink); }
+
+/* Pull-quote */
+blockquote.pull {
+  position: relative;
+  margin: var(--sp-5) 0;
+  padding: var(--sp-3) 0 var(--sp-3) var(--sp-5);
+  border-left: 3pt solid var(--c-emerald);
+  font-family: var(--font-sans);
+  font-size: 16pt;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--c-navy);
+  page-break-inside: avoid; break-inside: avoid;
+}
+blockquote.pull::before {
+  content: "“";
+  position: absolute; left: var(--sp-3); top: -3mm;
+  font-size: 36pt;
+  font-weight: 900;
+  color: var(--c-emerald);
+  line-height: 1;
+}
+blockquote.pull cite {
+  display: block;
+  margin-top: var(--sp-3);
+  font-style: normal;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  letter-spacing: 0.04em;
+}
+blockquote.pull cite::before { content: "— "; }
+
+/* Callout */
+.callout {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-4);
+  background: var(--c-cream);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  margin: var(--sp-4) 0;
+  font-size: var(--fs-small);
+  page-break-inside: avoid; break-inside: avoid;
+}
+.callout__badge {
+  align-self: flex-start;
+  background: var(--callout-badge-bg);
+  color: var(--c-text-on-brand);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 1.2mm 3mm;
+  border-radius: 100px;
+}
+.callout__body strong { display: block; color: var(--c-brand-primary); margin-bottom: 1mm; }
+
+/* Callout variants — only the badge colour changes; body bg stays paper. */
+.callout--info    { /* default */ }
+.callout--success { --callout-badge-bg: var(--c-brand-accent); }
+.callout--warning { --callout-badge-bg: var(--c-brand-warn); }
+.callout--danger  { --callout-badge-bg: var(--c-brand-danger); }
+.callout--brand   { --callout-badge-bg: var(--c-brand-primary); }
+
+/* Bullet list */
+ul.lst { list-style: none; padding: 0; margin: 0 0 var(--sp-3) 0; }
+ul.lst li {
+  position: relative;
+  padding-left: 6mm;
+  margin-bottom: 1.6mm;
+  line-height: 1.45;
+}
+ul.lst li::before {
+  content: "";
+  position: absolute; left: 0; top: 1.6mm;
+  width: 2.6mm; height: 2.6mm;
+  border-radius: 100px;
+  background: var(--c-emerald);
+  opacity: 0.85;
+}
+
+/* Approval block on cover */
+.approval-grid {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: repeat(3,1fr); gap: var(--sp-5);
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 0.5pt solid rgba(255,255,255,0.18);
+}
+.approval-cell { font-size: var(--fs-tiny); color: rgba(255,255,255,0.7); }
+.approval-cell strong { color: #fff; display: block; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.approval-line { height: 12mm; border-bottom: 0.5pt solid rgba(255,255,255,0.4); margin-bottom: 1mm; }
+
+/* ─── Approval block (signatures + stamp) ─────────────────────────────── */
+
+.approval-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0 var(--sp-3) 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+
+.approval-cell {
+  border: 0.5pt solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+  font-size: var(--fs-small);
+  display: flex;
+  flex-direction: column;
+}
+
+.approval-cell__role {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-brand-primary);
+  margin-bottom: var(--sp-2);
+}
+
+.approval-cell__signature-area {
+  height: 22mm;
+  border-bottom: 0.5pt dashed var(--c-text-soft);
+  margin-bottom: var(--sp-2);
+}
+
+.approval-cell__name {
+  font-weight: var(--fw-semibold);
+  color: var(--c-ink);
+  font-size: var(--fs-small);
+}
+
+.approval-cell__title {
+  font-size: var(--fs-tiny);
+  color: var(--c-text-muted);
+  margin-top: 1mm;
+  letter-spacing: 0.02em;
+}
+
+.approval-cell__date {
+  font-size: var(--fs-tiny);
+  color: var(--c-text-soft);
+  margin-top: 1mm;
+}
+
+/* Stamp variant — circular dashed placeholder where the rubber stamp goes. */
+.approval-cell--stamp .approval-cell__stamp-area {
+  height: 22mm;
+  display: grid;
+  place-items: center;
+  margin-bottom: var(--sp-2);
+}
+
+.approval-cell__stamp-circle {
+  width: 18mm;
+  height: 18mm;
+  border: 0.5pt dashed var(--c-text-soft);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-soft);
+}
+
+
+/* Style-guide-only utilities (swatch + spacing ruler) */
+
+.swatch-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 var(--sp-5) 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+.swatch {
+  height: 18mm;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: flex-end;
+  padding: var(--sp-2);
+  color: var(--c-text-on-brand);
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.swatch span { background: rgba(0,0,0,0.4); padding: 0.6mm 1.5mm; border-radius: 0.5mm; }
+
+.sp-bar {
+  display: inline-block;
+  height: 4mm;
+  background: var(--c-brand-accent);
+  border-radius: 0.5mm;
+  vertical-align: middle;
+}
+
+code {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: var(--fs-small);
+  background: var(--c-paper);
+  color: var(--c-brand-primary);
+  padding: 0.4mm 1.5mm;
+  border-radius: 0.5mm;
+}
+
+/* DRAFT watermark — only when body.is-draft */
+body.is-draft .section,
+body.is-draft .section-opener {
+  position: relative;
+}
+body.is-draft .section::after {
+  content: "DRAFT";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-22deg);
+  font-size: 100pt;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: rgba(220, 38, 38, 0.05);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
+body.is-draft .section > * { position: relative; z-index: 1; }

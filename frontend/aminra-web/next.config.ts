@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   reactCompiler: false,
@@ -30,5 +30,9 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   widenClientFileUpload: true,
   sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
-  disableLogger: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
 });

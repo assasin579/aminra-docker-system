@@ -29,6 +29,18 @@ class BusinessRegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one lowercase letter")
         if not re.search(r"[0-9]", v):
             raise ValueError("Password must contain at least one digit")
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError("Password must contain at least one special character")
+        return v
+
+    @field_validator("company_name")
+    @classmethod
+    def company_name_rejects_markup(cls, v):
+        # Keycloak stores company_name in profile fields. Reject obvious HTML/
+        # script markup before calling the IdP so hostile input cannot turn
+        # into a 502 from Keycloak validation or be persisted unsafely.
+        if "<" in v or ">" in v:
+            raise ValueError("Company name must not contain HTML markup")
         return v
 
 
@@ -49,6 +61,15 @@ class ProviderRegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one lowercase letter")
         if not re.search(r"[0-9]", v):
             raise ValueError("Password must contain at least one digit")
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError("Password must contain at least one special character")
+        return v
+
+    @field_validator("company_name")
+    @classmethod
+    def company_name_rejects_markup(cls, v):
+        if "<" in v or ">" in v:
+            raise ValueError("Company name must not contain HTML markup")
         return v
 
 
@@ -83,6 +104,8 @@ class UserProfile(BaseModel):
     phone: Optional[str] = None
     representative_name: Optional[str] = None
     permissions: Optional[dict] = None
+    industry_schema_id: Optional[str] = None
+    industry_schema_code: Optional[str] = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -111,10 +134,12 @@ class LoginResponse(BaseModel):
 
 
 class RegisterBusinessResponse(BaseModel):
-    access_token: str
-    refresh_token: Optional[str] = None
-    token_type: str = "bearer"
-    user: UserProfile
+    """Phase 4b: register returns Keycloak user id + status. FE redirects
+    to Keycloak SSO to complete login flow (no token returned by BE)."""
+    user_id: str
+    email: str
+    status: str
+    message: str
 
 
 class RegisterProviderResponse(BaseModel):

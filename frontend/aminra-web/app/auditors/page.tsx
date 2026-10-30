@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface Auditor {
   id: string;
@@ -290,7 +291,7 @@ export default function AuditorsPage() {
           </div>
           <button
             onClick={() => setShowInvite(true)}
-            className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+            className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
             style={{
               gridTemplateColumns: "auto 1fr",
               background: "#0A1F44",
@@ -447,14 +448,14 @@ export default function AuditorsPage() {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                       style={{ background: "#0A1F44" }}
                     >
                       {saving ? "Lưu..." : "Lưu"}
                     </button>
                     <button
                       onClick={() => setEditId(null)}
-                      className="px-4 py-1.5 rounded-lg text-xs"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
                       style={{ color: "#6B7280", border: "1px solid #E2E8F0" }}
                     >
                       Huỷ
@@ -511,7 +512,7 @@ export default function AuditorsPage() {
                     <button
                       onClick={() => openCerts(a.id)}
                       title="Chứng chỉ"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FFFBEB",
                         border: "1px solid #FDE68A",
@@ -535,7 +536,7 @@ export default function AuditorsPage() {
                     <button
                       onClick={() => startEdit(a)}
                       title="Sửa"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(14,165,233,0.1)",
                         border: "1px solid rgba(14,165,233,0.2)",
@@ -560,7 +561,7 @@ export default function AuditorsPage() {
                       onClick={() => handleRemove(a.id)}
                       title="Xoá"
                       disabled={removeId === a.id}
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "rgba(239,68,68,0.08)",
                         border: "1px solid rgba(239,68,68,0.15)",
@@ -591,13 +592,7 @@ export default function AuditorsPage() {
 
       {/* Invite modal */}
       {showInvite && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <Modal>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -718,7 +713,7 @@ export default function AuditorsPage() {
               <button
                 type="submit"
                 disabled={inviting}
-                className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold text-white btn-lift disabled:opacity-50"
                 style={{
                   background: inviting ? "#E2E8F0" : "#0A1F44",
                   color: inviting ? "#6B7280" : "white",
@@ -731,16 +726,12 @@ export default function AuditorsPage() {
               </p>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Certificates modal */}
       {certsOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setCertsOpen(null)}
-        >
+        <Modal onClose={() => setCertsOpen(null)}>
           <div
             className="w-full max-w-lg rounded-2xl animate-modal-content"
             style={{
@@ -781,7 +772,7 @@ export default function AuditorsPage() {
                 <button
                   onClick={() => certInputRef.current?.click()}
                   disabled={certUploading}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                   style={{ background: "#0A1F44" }}
                 >
                   {certUploading ? "Đang upload..." : "Upload chứng chỉ"}
@@ -893,7 +884,7 @@ export default function AuditorsPage() {
                       <button
                         onClick={() => viewCert(certsOpen!, c.id)}
                         title="Xem"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -923,7 +914,7 @@ export default function AuditorsPage() {
                       <button
                         onClick={() => deleteCert(certsOpen!, c.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110 opacity-0 group-hover:opacity-100"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110 opacity-0 group-hover:opacity-100"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",
@@ -960,7 +951,7 @@ export default function AuditorsPage() {
               </p>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

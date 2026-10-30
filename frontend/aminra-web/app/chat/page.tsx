@@ -677,7 +677,7 @@ export default function HomePage() {
                   });
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="fixed bottom-36 right-4 z-50 p-2.5 rounded-full shadow-lg transition-all hover:scale-110 lg:absolute lg:bottom-auto lg:top-3 lg:right-3"
+                className="fixed bottom-36 right-4 z-50 p-2.5 rounded-full shadow-lg transition-all duration-200 ease-out hover:scale-110 lg:absolute lg:bottom-auto lg:top-3 lg:right-3"
                 style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
                 title="Lên đầu trang"
               >
@@ -709,7 +709,7 @@ export default function HomePage() {
                   });
                   setTimeout(() => inputRef.current?.focus(), 400);
                 }}
-                className="fixed bottom-24 right-4 z-50 p-2.5 rounded-full shadow-lg transition-all hover:scale-110 lg:absolute lg:bottom-auto lg:top-12 lg:right-3"
+                className="fixed bottom-24 right-4 z-50 p-2.5 rounded-full shadow-lg transition-all duration-200 ease-out hover:scale-110 lg:absolute lg:bottom-auto lg:top-12 lg:right-3"
                 style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
                 title="Xuống cuối trang"
               >
@@ -1005,7 +1005,7 @@ export default function HomePage() {
                       key={key}
                       onClick={() => setInput(t(`home.${key}`))}
                       disabled={loading}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105 disabled:opacity-40"
+                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ease-out hover:scale-105 disabled:opacity-40"
                       style={{
                         background: "#F5F1E8",
                         border: "1px solid #E2E8F0",

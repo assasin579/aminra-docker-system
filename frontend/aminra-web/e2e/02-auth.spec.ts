@@ -1,7 +1,8 @@
 import { test, expect } from "./fixtures";
+import { keycloakPasswordGrant } from "./helpers/auth-token";
 
 test.describe("02. Authentication flows", () => {
-  test("Business register + login returns JWT", async ({ biz }) => {
+  test("Seeded business Keycloak login returns JWT", async ({ biz }) => {
     expect(biz.token).toBeTruthy();
     expect(biz.token.length).toBeGreaterThan(20);
   });
@@ -20,17 +21,19 @@ test.describe("02. Authentication flows", () => {
   });
 
   test("Wrong password rejected 401", async ({ api, biz }) => {
-    const r = await api.post("/auth/login", {
-      data: { email: biz.email, password: "wrongpassword" },
+    const r = await keycloakPasswordGrant(api, {
+      email: biz.email,
+      password: "wrongpassword",
     });
-    expect([401, 403]).toContain(r.status());
+    expect([400, 401]).toContain(r.status());
   });
 
   test("Nonexistent email rejected", async ({ api }) => {
-    const r = await api.post("/auth/login", {
-      data: { email: `never-${Date.now()}@nowhere.vn`, password: "x" },
+    const r = await keycloakPasswordGrant(api, {
+      email: `never-${Date.now()}@nowhere.vn`,
+      password: "x",
     });
-    expect([401, 404]).toContain(r.status());
+    expect([400, 401]).toContain(r.status());
   });
 
   test("Duplicate email returns 409/422", async ({ api, biz }) => {
@@ -40,7 +43,7 @@ test.describe("02. Authentication flows", () => {
     expect([400, 409, 422]).toContain(r.status());
   });
 
-  test("Admin login returns token", async ({ admin }) => {
+  test("Admin Keycloak token is available", async ({ admin }) => {
     expect(admin.token).toBeTruthy();
   });
 });

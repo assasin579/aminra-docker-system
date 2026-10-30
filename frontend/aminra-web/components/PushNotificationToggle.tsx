@@ -92,7 +92,7 @@ export default function PushNotificationToggle() {
           <button
             onClick={onEnable}
             disabled={busy}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105 disabled:opacity-50"
             style={{ background: "#0A1F44" }}
           >
             {busy ? "Đang bật..." : "Bật thông báo"}

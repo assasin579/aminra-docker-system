@@ -6,24 +6,61 @@ import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef } from "react";
 import { useAdminAuth } from "./AdminAuthContext";
 import { useUserAuth } from "./UserAuthContext";
-import AdminLoginModal from "./AdminLoginModal";
 import NotificationBell from "./NotificationBell";
+import { apiJson } from "@/lib/apiClient";
+
+type TenantModulePayload = {
+  modules?: Array<{ code?: string; status?: string }>;
+};
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const [clientReady, setClientReady] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
-  const { isAdmin, logout: logoutAdmin } = useAdminAuth();
+  const { isAdmin, login: adminLogin, logout: logoutAdmin } = useAdminAuth();
   const { user, isAuthenticated, logout: logoutUser, token } = useUserAuth();
-  const [showLogin, setShowLogin] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [enabledModuleCodes, setEnabledModuleCodes] = useState<Set<string> | null>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setClientReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "business" || !token) {
+      setEnabledModuleCodes(null);
+      return;
+    }
+
+    let cancelled = false;
+    apiJson<TenantModulePayload>("/api/api/me/modules", {
+      token,
+      fallbackError: "Không tải được cấu hình module.",
+    })
+      .then((payload) => {
+        if (cancelled) return;
+        const enabled = new Set(
+          (payload.modules || [])
+            .filter((module) => module.code && ["enabled", "trial"].includes(module.status || ""))
+            .map((module) => module.code as string),
+        );
+        setEnabledModuleCodes(enabled);
+      })
+      .catch(() => {
+        // Fail open for sidebar rendering during gradual rollout. Backend guards
+        // will enforce access later behind MODULE_GUARDS_ENABLED.
+        if (!cancelled) setEnabledModuleCodes(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, token, user?.role]);
+
+  const hasModule = (...codes: string[]) =>
+    enabledModuleCodes === null || codes.some((code) => enabledModuleCodes.has(code));
 
   // Close avatar dropdown on outside click
   useEffect(() => {
@@ -35,20 +72,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "vi", name: "Tiếng Việt" },
-    { code: "ms", name: "Bahasa Malaysia" },
-    { code: "ar", name: "العربية" },
-  ];
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    setLangOpen(false);
-  };
+  const isAdminRoute = pathname.startsWith("/admin");
+  const shouldShowAdminNavigation = isAdminRoute && isAdmin;
 
-  const dashboardHref =
-    user?.role === "business"
+  const dashboardHref = shouldShowAdminNavigation
+    ? null
+    : user?.role === "business"
       ? "/dashboard/business"
       : user?.role === "provider"
         ? "/dashboard/provider"
@@ -60,8 +90,42 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     ? `/api/auth/company-logo/${user.tenant_id}`
     : null;
 
-  const navItems = [
-    ...(dashboardHref
+  const adminNavItems = [
+    { label: "Admin Panel", href: "/admin" },
+    { label: "Analytics", href: "/admin/analytics" },
+    { label: "Audit logs", href: "/admin/audit-logs" },
+    { label: "Overdue queue", href: "/admin/overdue-submissions" },
+    { label: "Standards", href: "/admin/standards" },
+    { label: "Industries ↔ Standards", href: "/admin/industries" },
+  ].map((item) => ({
+    ...item,
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    ),
+  }));
+
+  const navItems = shouldShowAdminNavigation
+    ? adminNavItems
+    : [
+    ...(!shouldShowAdminNavigation && dashboardHref
       ? [
           {
             label: "Dashboard",
@@ -82,6 +146,29 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               </svg>
             ),
           },
+          ...(user?.role === "business"
+            ? [
+                {
+                  label: "Gói module",
+                  href: "/modules",
+                  icon: (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"
+                      />
+                    </svg>
+                  ),
+                },
+              ]
+            : []),
         ]
       : []),
     {
@@ -103,7 +190,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </svg>
       ),
     },
-    ...(user?.role === "business"
+    ...(!shouldShowAdminNavigation && user?.role === "business"
       ? [
           {
             label: "Tài liệu",
@@ -145,7 +232,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           },
         ]
       : []),
-    ...(user?.role === "business" && user?.is_owner
+    ...(!shouldShowAdminNavigation && user?.role === "business" && user?.is_owner
       ? [
           {
             label: "Thành viên",
@@ -168,7 +255,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           },
         ]
       : []),
-    ...(user?.role === "business"
+    ...(!shouldShowAdminNavigation && user?.role === "business"
       ? [
           {
             label: "Nguyên vật liệu",
@@ -229,7 +316,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           },
         ]
       : []),
-    ...(user?.role === "provider" && user?.is_owner
+    ...(!shouldShowAdminNavigation && user?.role === "provider" && user?.is_owner
       ? [
           {
             label: "Doanh nghiệp",
@@ -290,7 +377,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           },
         ]
       : []),
-    ...(user?.role === "provider"
+    ...(!shouldShowAdminNavigation && user?.role === "provider"
       ? [
           {
             label: "Hồ sơ nhận",
@@ -313,7 +400,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           },
         ]
       : []),
-    ...(user?.role === "provider"
+    ...(!shouldShowAdminNavigation && user?.role === "provider"
       ? [
           {
             label: "Kiểm định",
@@ -336,8 +423,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           },
         ]
       : []),
-    ...(!isAuthenticated && isAdmin
-      ? [
+    ...(shouldShowAdminNavigation
+      ? []
+      : isAdmin
+        ? [
           {
             label: "Admin Panel",
             href: "/admin",
@@ -364,48 +453,54 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             ),
           },
         ]
-      : []),
+        : []),
   ];
+
+  const moduleByHref: Record<string, string> = {
+    "/supply-chain/materials": "supplier_management",
+    "/supply-chain/process": "process_digitization",
+    "/supply-chain/batches": "traceability",
+  };
+
+  const visibleNavItems = navItems.filter((item) => {
+    const requiredModule = moduleByHref[item.href];
+    return !requiredModule || hasModule(requiredModule);
+  });
 
   return (
     <aside
       className="w-64 min-h-screen flex flex-col overflow-hidden"
       style={{ background: "#0A1F44", borderRight: "1px solid #334155" }}
     >
-      {/* ── Top: AMINRA Logo (not logged in) OR Company Avatar (logged in) ── */}
-      {!isAuthenticated && (
-        <div
-          className="px-3 py-4"
-          style={{ borderBottom: "1px solid #334155" }}
-        >
-          <div className="flex items-center gap-3 px-2">
-            <div
-              className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
-              style={{
-                background: "#FFFFFF",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/aminra-mark.png"
-                alt=""
-                className="w-7 h-7 object-contain"
-              />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/aminra-wordmark-white.png"
-                alt="AMINRA"
-                className="h-4 object-contain self-start"
-              />
-            </div>
+      {/* ── Top: AMINRA brand (luôn hiện, nền trắng để nổi bật) ── */}
+      <div
+        className="px-3 py-4"
+        style={{ background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}
+      >
+        <div className="flex items-center gap-3 px-2">
+          <div
+            className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
+            style={{ background: "#FFFFFF" }}
+          >
+            { }
+            <img
+              src="/aminra-mark.png"
+              alt=""
+              className="w-9 h-9 object-contain"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            { }
+            <img
+              src="/aminra-wordmark-navy.png"
+              alt="AMINRA"
+              className="h-5 object-contain self-start"
+            />
           </div>
         </div>
-      )}
+      </div>
 
-      {isAuthenticated && user && (
+      {!shouldShowAdminNavigation && isAuthenticated && user && (
         <div
           className="px-3 py-3"
           style={{ borderBottom: "1px solid #334155" }}
@@ -537,7 +632,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                   <button
                     onClick={() => {
                       logoutUser();
-                      router.push("/landing");
                       setAvatarOpen(false);
                       onClose?.();
                     }}
@@ -565,8 +659,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       )}
 
-      {/* ── Admin logged in (no user) ── */}
-      {!isAuthenticated && isAdmin && (
+      {/* ── Admin logged in or active admin route ── */}
+      {shouldShowAdminNavigation && (
         <div
           className="px-3 py-3"
           style={{ borderBottom: "1px solid #334155" }}
@@ -580,7 +674,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           >
             <span style={{ color: "#102A5C", fontSize: 10 }}>●</span>
             <span className="text-xs font-medium" style={{ color: "#102A5C" }}>
-              Admin
+              AMINRA Platform Admin
             </span>
           </div>
         </div>
@@ -588,8 +682,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* ── Navigation ── */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item, i) => {
-          const active = pathname === item.href;
+        {visibleNavItems.map((item, i) => {
+          const [itemPath] = item.href.split("?");
+          const active = shouldShowAdminNavigation
+            ? pathname === itemPath
+            : pathname === item.href;
           return (
             <Link
               key={item.href}
@@ -619,14 +716,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* ── Notifications ── */}
-      {isAuthenticated && (
+      {!shouldShowAdminNavigation && isAuthenticated && (
         <div className="px-3 py-2" style={{ borderTop: "1px solid #334155" }}>
           <NotificationBell token={token || ""} />
         </div>
       )}
 
       {/* ── Login / Logout (when not logged in as user) ── */}
-      {!isAuthenticated && (
+      {(!isAuthenticated || shouldShowAdminNavigation) && (
         <div
           className="px-3 py-3 space-y-1"
           style={{ borderTop: "1px solid #334155" }}
@@ -635,7 +732,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <button
               onClick={() => {
                 logoutAdmin();
-                router.push("/landing");
                 onClose?.();
               }}
               className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors"
@@ -700,7 +796,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 Đăng nhập Tổ chức
               </Link>
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => void adminLogin("/admin")}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-[#0A1F44]/20 hover:text-white transition-colors"
               >
                 <svg
@@ -723,50 +819,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       )}
 
-      {/* ── Language ── */}
-      <div
-        className="px-3 pb-2"
-        style={{ borderTop: "1px solid #334155", paddingTop: "10px" }}
-      >
-        <div className="relative">
-          <button
-            onClick={() => setLangOpen(!langOpen)}
-            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white transition-colors"
-            style={{ border: "1px solid #334155" }}
-          >
-            <span>{t("navbar.language")}</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${langOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-          {langOpen && (
-            <div
-              className="absolute bottom-full left-0 right-0 mb-1 rounded-lg shadow-lg z-50 animate-dropdown-up"
-              style={{ background: "#263548", border: "1px solid #334155" }}
-            >
-              {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => changeLanguage(lang.code)}
-                  className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
-                >
-                  {lang.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* ── Footer ── */}
       <div className="px-3 py-2" style={{ borderTop: "1px solid #334155" }}>
@@ -779,17 +831,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </p>
       </div>
 
-      {showLogin && (
-        <AdminLoginModal
-          onClose={(loggedIn) => {
-            setShowLogin(false);
-            if (loggedIn) {
-              router.push("/admin");
-              onClose?.();
-            }
-          }}
-        />
-      )}
     </aside>
   );
 }

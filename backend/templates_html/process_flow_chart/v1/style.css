@@ -1,0 +1,89 @@
+/* Process flow chart — visual step list with arrows and CCP badges. */
+
+:root {
+  --cover-title-size: 56pt;
+}
+
+.flow-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: var(--sp-4) 0;
+}
+
+.flow-step {
+  display: grid;
+  grid-template-columns: 14mm 1fr;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-paper);
+  border-radius: var(--r-md);
+  border-left: 3pt solid var(--c-brand-accent);
+  page-break-inside: avoid; break-inside: avoid;
+}
+
+.flow-step--ccp {
+  border-left-color: var(--c-brand-danger);
+  background: var(--c-paper-dark);
+}
+
+.flow-step__num {
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-black);
+  color: var(--c-brand-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.flow-step__title {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  color: var(--c-brand-primary);
+  margin-bottom: 1.5mm;
+}
+
+.ccp-badge {
+  display: inline-block;
+  padding: 0.5mm 2mm;
+  background: var(--c-brand-danger);
+  color: var(--c-text-on-brand);
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.16em;
+  border-radius: 100px;
+  margin-left: var(--sp-2);
+  vertical-align: middle;
+}
+
+.flow-step__desc {
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  margin-bottom: var(--sp-2);
+}
+
+.flow-step__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: var(--fs-tiny);
+  color: var(--c-text-muted);
+}
+
+.flow-step__ccp {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2);
+  background: var(--c-surface);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-small);
+  color: var(--c-brand-primary);
+  border: 0.5pt solid var(--c-brand-danger);
+}
+
+.flow-arrow {
+  text-align: center;
+  font-size: var(--fs-h2);
+  color: var(--c-brand-accent);
+  font-weight: var(--fw-bold);
+  margin: 0;
+}

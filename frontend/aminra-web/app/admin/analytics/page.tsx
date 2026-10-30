@@ -1,20 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { readAdminToken } from "@/lib/adminAuth";
+import { DashboardCard, DonutChart, MonthlyBarChart, completeMonthlySeries } from "@/components/dashboard/DashboardCharts";
+import motion from "@/components/dashboard/DashboardMotion.module.css";
 
 type Analytics = {
-  cert_buckets: {
-    healthy: number;
-    expiring_90d: number;
-    expiring_60d: number;
-    expiring_30d: number;
-    expired: number;
-    suspended: number;
-    revoked: number;
-    total: number;
-  };
+  cert_buckets: { healthy: number; expiring_90d: number; expiring_60d: number; expiring_30d: number; expired: number; suspended: number; revoked: number; total: number };
   funnel: Record<string, number>;
   monthly_trend: { month: string; issued: number }[];
   top_actions: { action: string; count: number }[];
@@ -22,396 +15,83 @@ type Analytics = {
   generated_at: string;
 };
 
+const STATUS_LABELS: Record<string, string> = { pending: "Đang chờ", assigned: "Đã giao", reviewing: "Đang đánh giá", returned: "Bị trả lại", approved: "Đã duyệt", rejected: "Bị từ chối" };
+const ACTION_LABELS: Record<string, string> = { "login.success": "Đăng nhập thành công", "submission.submit": "Gửi hồ sơ", "submission.approve": "Duyệt hồ sơ", "submission.reject": "Từ chối hồ sơ", "certificate.issue": "Cấp chứng chỉ" };
+
 export default function AdminAnalyticsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => { setToken(readAdminToken()); }, []);
 
-  useEffect(() => {
-    setToken(readAdminToken());
-  }, []);
-
-  useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/admin/analytics", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
-        setData(body);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Lỗi không xác định");
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const load = useCallback(async () => {
+    if (!token) { setLoading(false); return; }
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/auth/admin/analytics", { headers: { Authorization: `Bearer ${token}` } });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
+      setData(body);
+    } catch (err) { setError(err instanceof Error ? err.message : "Không thể tải dữ liệu phân tích."); }
+    finally { setLoading(false); }
   }, [token]);
+  useEffect(() => { void load(); }, [load]);
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8" data-page>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "#0A1F44" }}>
-            Analytics dashboard
-          </h1>
-          {data && (
-            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
-              Cập nhật: {new Date(data.generated_at).toLocaleString("vi-VN")}
-            </p>
-          )}
-        </div>
-        <Link
-          href="/admin"
-          className="text-sm font-medium"
-          style={{ color: "#0A1F44" }}
-        >
-          ← Quay lại Admin
-        </Link>
+  const buckets = data?.cert_buckets;
+  const certificateData = buckets ? [
+    { label: "Khỏe mạnh · ≥90 ngày", value: buckets.healthy, color: "var(--navy-600)" },
+    { label: "Còn 60–90 ngày", value: buckets.expiring_90d, color: "var(--navy-500)" },
+    { label: "Còn 30–60 ngày", value: buckets.expiring_60d, color: "var(--gold-500)" },
+    { label: "Còn 0–30 ngày", value: buckets.expiring_30d, color: "var(--gold-600)" },
+    { label: "Đã hết hạn", value: buckets.expired, color: "var(--gold-700)" },
+    { label: "Đình chỉ", value: buckets.suspended, color: "var(--ink-500)" },
+    { label: "Thu hồi", value: buckets.revoked, color: "var(--ink-700)" },
+  ] : [];
+  const statusData = data ? Object.entries(STATUS_LABELS).map(([key, label]) => ({
+    label,
+    value: Math.max(0, data.funnel[key] ?? 0),
+    color: ({ pending: "var(--gold-500)", assigned: "var(--navy-500)", reviewing: "var(--navy-700)", returned: "var(--gold-600)", approved: "var(--navy-600)", rejected: "var(--gold-700)" } as Record<string, string>)[key],
+  })) : [];
+  const actionData = data ? data.top_actions.slice(0, 5).map((action, index) => ({
+    label: ACTION_LABELS[action.action] || action.action.replace(/[._-]+/g, " "),
+    value: Math.max(0, action.count),
+    color: ["var(--navy-500)", "var(--navy-600)", "var(--gold-500)", "var(--navy-700)", "var(--gold-700)"][index],
+  })) : [];
+  const monthData = data ? completeMonthlySeries(data.monthly_trend) : [];
+
+  return <main className={`mx-auto w-full max-w-[1440px] bg-cream-100 px-4 py-6 sm:px-6 lg:px-8 ${motion.page}`} data-page data-dashboard="admin-analytics" data-dashboard-motion-root="true">
+    <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gold-700">AMINRA · OPERATIONS</p><h1 className="text-3xl font-bold tracking-tight text-navy-900">Tổng quan vận hành</h1><p className="mt-2 max-w-2xl text-sm text-ink-700">Tình trạng chứng chỉ, hồ sơ và hoạt động hệ thống — chỉ số được cập nhật từ dữ liệu vận hành.</p>{data && <p className="mt-2 text-xs text-ink-500">Cập nhật: {new Date(data.generated_at).toLocaleString("vi-VN")}</p>}</div>
+      <Link href="/admin" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-cream-200 px-4 text-sm font-semibold text-ink-700 hover:bg-cream-100">← Quay lại Admin</Link>
+    </header>
+
+    {!token && !loading && <div data-dashboard-motion="alert" role="alert" className={`mb-5 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 ${motion.alert}`}>Cần đăng nhập bằng tài khoản Admin. <Link href="/admin" className="font-semibold underline">Mở cổng đăng nhập Admin</Link></div>}
+    {error && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{error}</span><button type="button" onClick={() => void load()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+    {loading && <div role="status" aria-live="polite" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div data-dashboard-motion="skeleton" key={index} className={`h-28 rounded-2xl bg-cream-200 ${motion.skeleton}`} />)}<span className="sr-only">Đang tải dữ liệu phân tích…</span></div>}
+    {data && !loading && <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <DashboardCard title="Tình trạng chứng chỉ" description="Phân bố theo hạn và trạng thái; các khoảng ngày không chồng lấn.">
+          <DonutChart title="Tình trạng chứng chỉ" data={certificateData} />
+        </DashboardCard>
+        <DashboardCard title="Hồ sơ theo trạng thái" description="Số lượng hồ sơ hiện tại — không phải funnel chuyển đổi.">
+          <DonutChart title="Hồ sơ theo trạng thái" data={statusData} />
+        </DashboardCard>
+        <DashboardCard title="Hành động phổ biến · 7 ngày" description="Tối đa 5 nhóm đứng đầu; tổng chỉ cộng các nhóm đang hiển thị.">
+          <DonutChart title="Hành động phổ biến trong 7 ngày" data={actionData} centerLabel="Sự kiện" />
+        </DashboardCard>
       </div>
-
-      {!token && !loading && (
-        <div
-          className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm"
-          style={{ color: "#7c2d12" }}
-        >
-          Cần đăng nhập admin.{" "}
-          <Link href="/provider/login" className="underline font-medium">
-            Đăng nhập
-          </Link>
-        </div>
-      )}
-
-      {error && (
-        <div
-          role="alert"
-          className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm mb-4"
-          style={{ color: "#991b1b" }}
-        >
-          {error}
-        </div>
-      )}
-
-      {loading && (
-        <p className="text-sm" style={{ color: "#94A3B8" }}>
-          Đang tải...
-        </p>
-      )}
-
-      {data && (
-        <>
-          <CertBucketsSection buckets={data.cert_buckets} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <FunnelSection funnel={data.funnel} />
-            <TopActionsSection actions={data.top_actions} />
-          </div>
-          <MonthlyTrendSection trend={data.monthly_trend} />
-          <HeatmapSection cells={data.heatmap} />
-        </>
-      )}
-    </div>
-  );
-}
-
-// ── Cert buckets ───────────────────────────────────────────────────────────
-
-function CertBucketsSection({
-  buckets,
-}: {
-  buckets: Analytics["cert_buckets"];
-}) {
-  const cards = [
-    {
-      label: "Khoẻ mạnh",
-      value: buckets.healthy,
-      color: "#102A5C",
-      urgent: false,
-    },
-    {
-      label: "Hết hạn ≤90d",
-      value: buckets.expiring_90d,
-      color: "#0ea5e9",
-      urgent: false,
-    },
-    {
-      label: "Hết hạn ≤60d",
-      value: buckets.expiring_60d,
-      color: "#f59e0b",
-      urgent: false,
-    },
-    {
-      label: "Hết hạn ≤30d",
-      value: buckets.expiring_30d,
-      color: "#dc2626",
-      urgent: true,
-    },
-    {
-      label: "Đã hết hạn",
-      value: buckets.expired,
-      color: "#7c2d12",
-      urgent: true,
-    },
-    {
-      label: "Đình chỉ",
-      value: buckets.suspended,
-      color: "#6b7280",
-      urgent: false,
-    },
-    {
-      label: "Thu hồi",
-      value: buckets.revoked,
-      color: "#374151",
-      urgent: false,
-    },
-  ];
-  return (
-    <section className="mb-6">
-      <h2 className="text-lg font-bold mb-3" style={{ color: "#0A1F44" }}>
-        Trạng thái chứng chỉ ({buckets.total})
-      </h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="p-4 rounded-xl bg-white"
-            style={{
-              border: `1px solid ${c.urgent && c.value > 0 ? c.color : "#E2E8F0"}`,
-              boxShadow:
-                c.urgent && c.value > 0 ? `0 0 0 3px ${c.color}15` : "none",
-            }}
-          >
-            <div
-              className="text-xs font-medium mb-1"
-              style={{ color: "#6B7280" }}
-            >
-              {c.label}
-            </div>
-            <div className="text-2xl font-bold" style={{ color: c.color }}>
-              {c.value}
-            </div>
-          </div>
-        ))}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <DashboardCard title="Chứng chỉ được cấp theo tháng" description="12 tháng gần nhất; tháng không có bản ghi được hiển thị là 0."><MonthlyBarChart title="Số chứng chỉ cấp theo tháng trong 12 tháng gần nhất" data={monthData} /></DashboardCard>
+        <DashboardCard title="Nhịp hoạt động hệ thống" description="Sự kiện audit theo ngày trong tuần và giờ ghi nhận."><Heatmap cells={data.heatmap} /></DashboardCard>
       </div>
-    </section>
-  );
+    </div>}
+  </main>;
 }
 
-// ── Submission funnel ──────────────────────────────────────────────────────
-
-const FUNNEL_LABELS: Record<string, string> = {
-  pending: "Đang chờ",
-  assigned: "Đã giao",
-  reviewing: "Đang đánh giá",
-  returned: "Bị trả lại",
-  approved: "Đã duyệt",
-  rejected: "Bị từ chối",
-};
-
-function FunnelSection({ funnel }: { funnel: Record<string, number> }) {
-  const max = Math.max(1, ...Object.values(funnel));
-  return (
-    <section
-      className="bg-white rounded-2xl p-5"
-      style={{ border: "1px solid #E2E8F0" }}
-    >
-      <h2 className="text-lg font-bold mb-3" style={{ color: "#0A1F44" }}>
-        Funnel hồ sơ
-      </h2>
-      <div className="space-y-2">
-        {Object.entries(FUNNEL_LABELS).map(([key, label]) => {
-          const v = funnel[key] ?? 0;
-          const pct = (v / max) * 100;
-          return (
-            <div key={key}>
-              <div
-                className="flex items-baseline justify-between text-xs mb-1"
-                style={{ color: "#6B7280" }}
-              >
-                <span>{label}</span>
-                <span className="font-mono">{v}</span>
-              </div>
-              <div
-                className="h-2 rounded-full overflow-hidden"
-                style={{ background: "#F1F5F9" }}
-              >
-                <div
-                  className="h-full"
-                  style={{ width: `${pct}%`, background: "#0A1F44" }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-// ── Top actions ────────────────────────────────────────────────────────────
-
-function TopActionsSection({
-  actions,
-}: {
-  actions: { action: string; count: number }[];
-}) {
-  return (
-    <section
-      className="bg-white rounded-2xl p-5"
-      style={{ border: "1px solid #E2E8F0" }}
-    >
-      <h2 className="text-lg font-bold mb-3" style={{ color: "#0A1F44" }}>
-        Top hoạt động (7 ngày qua)
-      </h2>
-      {actions.length === 0 ? (
-        <p className="text-sm" style={{ color: "#94A3B8" }}>
-          Chưa có dữ liệu
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {actions.map((a) => (
-            <li
-              key={a.action}
-              className="flex items-center justify-between text-sm"
-            >
-              <code
-                className="px-2 py-0.5 rounded text-xs"
-                style={{ background: "#FFFFFF", color: "#0A1F44" }}
-              >
-                {a.action}
-              </code>
-              <span className="font-mono" style={{ color: "#0A1F44" }}>
-                {a.count}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-// ── Monthly trend ──────────────────────────────────────────────────────────
-
-function MonthlyTrendSection({
-  trend,
-}: {
-  trend: { month: string; issued: number }[];
-}) {
-  const max = Math.max(1, ...trend.map((t) => t.issued));
-  return (
-    <section
-      className="bg-white rounded-2xl p-5 mb-6"
-      style={{ border: "1px solid #E2E8F0" }}
-    >
-      <h2 className="text-lg font-bold mb-3" style={{ color: "#0A1F44" }}>
-        Chứng chỉ cấp theo tháng (12 tháng gần nhất)
-      </h2>
-      {trend.length === 0 ? (
-        <p className="text-sm" style={{ color: "#94A3B8" }}>
-          Chưa có chứng chỉ nào được cấp
-        </p>
-      ) : (
-        <div className="flex items-end gap-2 h-32">
-          {trend.map((t) => (
-            <div
-              key={t.month}
-              className="flex-1 flex flex-col items-center gap-1"
-            >
-              <div className="text-xs font-mono" style={{ color: "#0A1F44" }}>
-                {t.issued}
-              </div>
-              <div
-                className="w-full rounded-t"
-                style={{
-                  height: `${(t.issued / max) * 100}%`,
-                  background: "#0A1F44",
-                  minHeight: t.issued > 0 ? 4 : 0,
-                }}
-              />
-              <div className="text-[10px]" style={{ color: "#94A3B8" }}>
-                {t.month.slice(5)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-// ── Heatmap ────────────────────────────────────────────────────────────────
-
-const DOW_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-
-function HeatmapSection({
-  cells,
-}: {
-  cells: { dow: number; hour: number; count: number }[];
-}) {
-  const max = Math.max(1, ...cells.map((c) => c.count));
-  const grid: Record<string, number> = {};
-  cells.forEach((c) => {
-    grid[`${c.dow}-${c.hour}`] = c.count;
-  });
-
-  return (
-    <section
-      className="bg-white rounded-2xl p-5"
-      style={{ border: "1px solid #E2E8F0" }}
-    >
-      <h2 className="text-lg font-bold mb-3" style={{ color: "#0A1F44" }}>
-        Heatmap hoạt động (30 ngày gần nhất)
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="text-xs">
-          <thead>
-            <tr>
-              <th className="w-8" />
-              {Array.from({ length: 24 }, (_, h) => (
-                <th
-                  key={h}
-                  className="w-6 font-normal pb-1"
-                  style={{ color: "#94A3B8" }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {DOW_LABELS.map((dowLabel, dow) => (
-              <tr key={dow}>
-                <td className="pr-2 text-right" style={{ color: "#6B7280" }}>
-                  {dowLabel}
-                </td>
-                {Array.from({ length: 24 }, (_, h) => {
-                  const v = grid[`${dow}-${h}`] ?? 0;
-                  const intensity = v / max;
-                  return (
-                    <td
-                      key={h}
-                      title={`${dowLabel} ${h}h: ${v} events`}
-                      className="w-6 h-6"
-                      style={{
-                        background:
-                          v === 0
-                            ? "#FFFFFF"
-                            : `rgba(10,31,68, ${0.15 + intensity * 0.85})`,
-                        border: "1px solid #fff",
-                      }}
-                    />
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
+const DAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
+function Heatmap({ cells }: { cells: Analytics["heatmap"] }) {
+  const grid = new Map(cells.map((cell) => [`${cell.dow}-${cell.hour}`, Math.max(0, cell.count)]));
+  const max = Math.max(1, ...cells.map((cell) => cell.count));
+  return <div className="overflow-x-auto pb-1"><table className="min-w-[760px] w-full border-separate border-spacing-1 text-xs"><thead><tr><th className="w-24 text-left font-medium text-ink-500">Ngày · giờ</th>{Array.from({ length: 24 }, (_, hour) => <th key={hour} className="font-normal text-ink-500">{hour}</th>)}</tr></thead><tbody>{DAYS.map((day, dow) => <tr key={day}><th scope="row" className="pr-2 text-left font-medium text-ink-700">{day}</th>{Array.from({ length: 24 }, (_, hour) => { const value = grid.get(`${dow}-${hour}`) ?? 0; return <td key={hour} aria-label={`${day}, ${hour}:00 — ${value} sự kiện`} title={`${day}, ${hour}:00 — ${value} sự kiện`} className={`h-7 min-w-5 rounded-sm ${motion.heatmapCell}`} data-dashboard-motion="heatmap-cell" style={{ backgroundColor: value === 0 ? "var(--cream-200)" : `color-mix(in srgb, var(--navy-700) ${Math.round((0.18 + (value / max) * 0.82) * 100)}%, var(--cream-50))` }} />; })}</tr>)}</tbody></table><p className="mt-3 text-xs text-ink-500">Múi giờ theo thời điểm ghi nhận của hệ thống. Màu đậm hơn = nhiều sự kiện hơn.</p></div>;
 }

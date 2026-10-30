@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 
 FROM base AS deps
@@ -18,16 +17,28 @@ COPY . .
 # NEXT_PUBLIC_ vars must be set at build time to be embedded in the JS bundle
 ARG NEXT_PUBLIC_API_BASE_URL=/api
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED=false
+ENV NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED=$NEXT_PUBLIC_AUTH_KEYCLOAK_ENABLED
+ARG NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8180
+ENV NEXT_PUBLIC_KEYCLOAK_URL=$NEXT_PUBLIC_KEYCLOAK_URL
+ARG NEXT_PUBLIC_KEYCLOAK_REALM=aminra
+ENV NEXT_PUBLIC_KEYCLOAK_REALM=$NEXT_PUBLIC_KEYCLOAK_REALM
+ARG NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=aminra-frontend
+ENV NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=$NEXT_PUBLIC_KEYCLOAK_CLIENT_ID
 
 # BACKEND_URL is server-side only (Route Handlers), set at runtime via docker-compose
 ARG BACKEND_URL=http://aminra-backend:8000
 ENV BACKEND_URL=$BACKEND_URL
 
-# Build the application
-RUN npm run build
+# Build the application. Next 16 defaults to Turbopack, but Alpine build
+# images can fall back to WASM SWC where Turbopack is unsupported; force
+# Webpack for deterministic container builds.
+RUN npm run build -- --webpack
 
 # Production image, copy all the files and run next
 FROM base AS runner
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Ho_Chi_Minh
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -47,6 +58,9 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Next 16.3/Turbopack can resolve @swc/helpers ESM files at runtime even when
+# output tracing only carries the CJS subset into .next/standalone.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@swc/helpers ./node_modules/@swc/helpers
 
 USER nextjs
 

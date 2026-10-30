@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUserAuth } from "@/components/UserAuthContext";
+import { useFeatureFlags } from "@/lib/featureFlags";
+import { downloadPdfHtml, RenderPdfError } from "@/lib/renderPdfHtml";
 import Link from "next/link";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -11,6 +13,8 @@ interface TemplateInfo {
   label: string;
   has_vi: boolean;
   has_en: boolean;
+  has_pdf?: boolean;
+  format_available?: "docx" | "pdf" | "both";
   vi_size: number | null;
   en_size: number | null;
 }
@@ -24,6 +28,39 @@ interface CompanyProfile {
   manager_name: string | null;
 }
 
+interface StandardSummary {
+  id: string;
+  code: string;
+  name_vi: string;
+  is_default: boolean;
+}
+
+interface IndustrySchemaSummary {
+  id: string;
+  code: string;
+  name_vi: string;
+  icon: string | null;
+  available_standards: StandardSummary[];
+}
+
+interface StandardDetail {
+  id: string;
+  code: string;
+  name_vi: string;
+  organization: string | null;
+  scheme_version: string | null;
+  doc_types: Array<{ doc_type: string; required: boolean; display_order: number }>;
+}
+
+const INDUSTRY_ICON_MAP: Record<string, string> = {
+  factory: "🏭",
+  restaurant: "🏨",
+  cow: "🐄",
+  pharmacy: "💊",
+  cosmetic: "💄",
+  truck: "🚛",
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function CreateDocumentPage() {
@@ -31,6 +68,9 @@ export default function CreateDocumentPage() {
 
   const [step, setStep] = useState(1);
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  const [industry, setIndustry] = useState<IndustrySchemaSummary | null>(null);
+  const [standard, setStandard] = useState<StandardDetail | null>(null);
+  const [selectedStandardCode, setSelectedStandardCode] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +78,17 @@ export default function CreateDocumentPage() {
   const [generated, setGenerated] = useState(false);
   const [error, setError] = useState("");
   const [lang, setLang] = useState<"vi" | "en">("vi");
+  const [outputFormat, setOutputFormat] = useState<"docx" | "pdf">("docx");
+
+  // Multi-doc_type PDF flag check via the FeatureFlagProvider context map.
+  // We avoid one useFeature() per doc_type (hook order would explode as
+  // more templates ship in Phase 2+).
+  const { flags: featureFlags } = useFeatureFlags();
+  const isPdfEnabledFor = useCallback(
+    (docType: string) =>
+      featureFlags[`pdf_html_renderer_v1.${docType}`] === true,
+    [featureFlags],
+  );
   const [allPlaceholders, setAllPlaceholders] = useState<
     Array<{
       key: string;
@@ -55,12 +106,17 @@ export default function CreateDocumentPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [tplRes, profileRes, phRes] = await Promise.all([
+        const [tplRes, profileRes, phRes, industryRes] = await Promise.all([
           fetch("/api/templates/available"),
           fetch("/api/auth/company-profile", {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch("/api/placeholders"),
+          user?.industry_schema_code
+            ? fetch(`/api/industry-schemas/${user.industry_schema_code}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+            : Promise.resolve(null),
         ]);
 
         if (tplRes.ok) {
@@ -76,6 +132,17 @@ export default function CreateDocumentPage() {
           const phData = await phRes.json();
           setAllPlaceholders(phData.placeholders || []);
         }
+
+        if (industryRes && industryRes.ok) {
+          const industryData: IndustrySchemaSummary = await industryRes.json();
+          setIndustry(industryData);
+          // Auto-select default standard if exactly 1 available, else pre-select default
+          if (industryData.available_standards.length > 0) {
+            const def = industryData.available_standards.find((s) => s.is_default);
+            const auto = def ?? industryData.available_standards[0];
+            setSelectedStandardCode(auto.code);
+          }
+        }
       } catch {
         setError("Không thể tải dữ liệu");
       } finally {
@@ -84,7 +151,21 @@ export default function CreateDocumentPage() {
     };
 
     fetchData();
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, user?.industry_schema_code]);
+
+  // Fetch standard detail (doc_types list) when user picks a standard
+  useEffect(() => {
+    if (!token || !selectedStandardCode) {
+      setStandard(null);
+      return;
+    }
+    (async () => {
+      const res = await fetch(`/api/standard-types/${selectedStandardCode}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setStandard(await res.json());
+    })();
+  }, [token, selectedStandardCode]);
 
   // ── Toggle template selection ────────────────────────────────────────────
 
@@ -248,13 +329,124 @@ export default function CreateDocumentPage() {
     [token, profile, lang, allPlaceholders],
   );
 
+  // ── Build minimal payload per doc_type ─────────────────────────────────
+  //
+  // Every Pydantic schema requires at minimum {business_name, issued_date}
+  // (+ effective_date for SOPs / halal_policy / has_manual). The 3-stage
+  // backend pipeline (aggregator + filter) merges company DB data and
+  // admin_templates JSON cfg on top, so the frontend only needs to send
+  // what it has. Rich free-form fields (clauses, chapters, procedure
+  // steps) come from admin-uploaded DOCX content via the aggregator —
+  // not from the frontend.
+  const buildPdfData = useCallback(
+    (docType: string): Record<string, unknown> | null => {
+      const today = new Date().toISOString().slice(0, 10);
+      const businessName = profile?.company_name?.trim();
+      if (!businessName) return null;
+
+      // company_profile passes through extra fields that the frontend
+      // does collect (address, phone, email, representative).
+      if (docType === "company_profile") {
+        return {
+          business_name: businessName,
+          address: profile?.address || undefined,
+          representative: profile?.representative_name || undefined,
+          phone: profile?.phone || undefined,
+          email: profile?.email || undefined,
+          issued_date: today,
+        };
+      }
+
+      // 6× SOP variants — same SopData schema; admin cfg fills the rest.
+      if (docType.startsWith("sop_")) {
+        return {
+          business_name: businessName,
+          effective_date: today,
+          issued_date: today,
+        };
+      }
+
+      // halal_policy: halal_commitment is a required non-empty string —
+      // we provide a generic boilerplate that admin can override via
+      // admin_templates/halal_policy.json (cfg.defaults.halal_commitment)
+      // if they want their own wording.
+      if (docType === "halal_policy") {
+        return {
+          business_name: businessName,
+          halal_commitment:
+            `Chúng tôi — Ban lãnh đạo ${businessName} — cam kết tuyệt đối tuân thủ tiêu chuẩn Halal MS 1500:2019 trong mọi sản phẩm và hoạt động sản xuất, từ nguyên liệu đầu vào đến sản phẩm cuối tới tay người tiêu dùng.`,
+          effective_date: today,
+          issued_date: today,
+        };
+      }
+
+      // has_manual + halal_manual share schema (HasManualData).
+      if (docType === "has_manual" || docType === "halal_manual") {
+        return {
+          business_name: businessName,
+          effective_date: today,
+          issued_date: today,
+        };
+      }
+
+      // Doc type not yet wired to HTML renderer → caller falls back to DOCX.
+      return null;
+    },
+    [profile],
+  );
+
+  const generatePdfFallbackDocx = useCallback(
+    async (docType: string) => {
+      const data = buildPdfData(docType);
+      if (!data || !token) {
+        await generateDocx(docType);
+        return;
+      }
+      const safeName = (profile?.company_name || "company").replace(/\s+/g, "_");
+      try {
+        await downloadPdfHtml({
+          docType,
+          data,
+          title: profile?.company_name
+            ? `${profile.company_name} — Hồ sơ doanh nghiệp`
+            : undefined,
+          isDraft: true,
+          lang,
+          token,
+          filename: `${docType}_${safeName}.pdf`,
+        });
+      } catch (err) {
+        // 404 (flag off / template not implemented) or 501 → silent fallback
+        // to DOCX so the user always gets a file. Other errors propagate.
+        if (
+          err instanceof RenderPdfError &&
+          (err.status === 404 || err.status === 501)
+        ) {
+          await generateDocx(docType);
+          return;
+        }
+        throw err;
+      }
+    },
+    [buildPdfData, generateDocx, profile, lang, token],
+  );
+
   const handleGenerate = async () => {
     setGenerating(true);
     setError("");
     setGenerated(false);
     try {
       for (const docType of selectedTypes) {
-        await generateDocx(docType);
+        // Per-doc auto-pick: PDF-only templates force PDF regardless of
+        // user's outputFormat choice (DOCX would fail — admin chưa upload).
+        const tpl = templates.find((t) => t.doc_type === docType);
+        const isPdfOnly = tpl?.format_available === "pdf";
+        const useFormat = isPdfOnly ? "pdf" : outputFormat;
+        if (useFormat === "pdf") {
+          await generatePdfFallbackDocx(docType);
+        } else {
+          await generateDocx(docType);
+        }
       }
       setGenerated(true);
     } catch (err: unknown) {
@@ -278,7 +470,7 @@ export default function CreateDocumentPage() {
           </p>
           <Link
             href="/business/login"
-            className="inline-block px-6 py-3 rounded-xl font-semibold text-white"
+            className="inline-block px-6 py-3 rounded-xl font-semibold text-white btn-lift"
             style={{ background: "#0A1F44" }}
           >
             Đăng nhập
@@ -364,6 +556,74 @@ export default function CreateDocumentPage() {
           </p>
         </div>
 
+        {/* TASK #19 — Industry + Standard chooser */}
+        {industry && (
+          <div
+            className="rounded-2xl p-4 animate-section space-y-3"
+            style={{
+              background: "rgba(10,31,68,0.04)",
+              border: "1px solid #E2E8F0",
+            }}
+            data-testid="industry-context-badge"
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-3xl leading-none">
+                {INDUSTRY_ICON_MAP[industry.icon ?? ""] ?? "📋"}
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold" style={{ color: "#0A1F44" }}>
+                  Ngành: {industry.name_vi}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
+                  Chọn tiêu chuẩn cho hồ sơ này:
+                </div>
+              </div>
+              <Link
+                href="/settings/company"
+                className="text-xs underline"
+                style={{ color: "#6B7280" }}
+              >
+                Đổi ngành
+              </Link>
+            </div>
+
+            {industry.available_standards.length > 1 ? (
+              <div className="flex flex-wrap gap-2">
+                {industry.available_standards.map((s) => {
+                  const sel = selectedStandardCode === s.code;
+                  return (
+                    <button
+                      key={s.code}
+                      type="button"
+                      onClick={() => setSelectedStandardCode(s.code)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{
+                        background: sel ? "#0A1F44" : "#FFFFFF",
+                        color: sel ? "#FFFFFF" : "#0A1F44",
+                        border: sel
+                          ? "1px solid #0A1F44"
+                          : "1px solid #E2E8F0",
+                        cursor: "pointer",
+                      }}
+                      data-testid={`standard-pick-${s.code}`}
+                    >
+                      {s.name_vi.split(" — ")[0]}
+                      {s.is_default && " ★"}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              standard && (
+                <div className="text-xs" style={{ color: "#6B7280" }}>
+                  Tiêu chuẩn: <strong>{standard.name_vi.split(" — ")[0]}</strong>
+                  {" "}({standard.doc_types.length} mẫu tài liệu chuẩn)
+                </div>
+              )
+            )}
+          </div>
+        )}
+
         {/* Step indicator */}
         <div
           className="grid items-center justify-center animate-section"
@@ -440,7 +700,7 @@ export default function CreateDocumentPage() {
                   Thông tin doanh nghiệp
                 </h3>
                 <Link
-                  href="/settings"
+                  href="/settings/company"
                   className="text-xs px-3 py-1 rounded-lg transition-colors hover:opacity-80"
                   style={{
                     background: "rgba(10,31,68,0.1)",
@@ -462,8 +722,8 @@ export default function CreateDocumentPage() {
                   }}
                 >
                   Thông tin chưa đầy đủ. Vui lòng vào{" "}
-                  <Link href="/settings" className="underline font-semibold">
-                    Cài đặt tài khoản
+                  <Link href="/settings/company" className="underline font-semibold">
+                    Thông tin doanh nghiệp
                   </Link>{" "}
                   để cập nhật trước khi tạo hồ sơ.
                 </div>
@@ -532,7 +792,14 @@ export default function CreateDocumentPage() {
                       "repeat(auto-fill, minmax(180px, 1fr))",
                   }}
                 >
-                  {templates.map((t) => {
+                  {(standard
+                    ? templates.filter((t) =>
+                        standard.doc_types.some(
+                          (dt) => dt.doc_type === t.doc_type,
+                        ),
+                      )
+                    : templates
+                  ).map((t) => {
                     const selected = selectedTypes.includes(t.doc_type);
                     const disabled = !selected && selectedTypes.length >= 3;
 
@@ -582,7 +849,7 @@ export default function CreateDocumentPage() {
                               </svg>
                             )}
                           </div>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <div
                               className="text-sm font-semibold"
                               style={{ color: "#0A1F44" }}
@@ -595,8 +862,49 @@ export default function CreateDocumentPage() {
                             >
                               {[t.has_vi && "VI", t.has_en && "EN"]
                                 .filter(Boolean)
-                                .join(" · ")}
+                                .join(" · ") || "Chỉ PDF"}
                             </div>
+                            {t.format_available && (
+                              <div className="mt-2 flex gap-1">
+                                {t.format_available === "both" && (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{
+                                      background: "rgba(22,163,74,0.1)",
+                                      color: "#16A34A",
+                                      border: "1px solid rgba(22,163,74,0.3)",
+                                    }}
+                                  >
+                                    DOCX+PDF
+                                  </span>
+                                )}
+                                {t.format_available === "docx" && (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{
+                                      background: "#F1F5F9",
+                                      color: "#0A1F44",
+                                      border: "1px solid #E2E8F0",
+                                    }}
+                                  >
+                                    DOCX
+                                  </span>
+                                )}
+                                {t.format_available === "pdf" && (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{
+                                      background: "rgba(217,119,6,0.1)",
+                                      color: "#D97706",
+                                      border: "1px solid rgba(217,119,6,0.3)",
+                                    }}
+                                    title="Chỉ render qua PDF (admin chưa upload DOCX)"
+                                  >
+                                    PDF only
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </button>
@@ -693,6 +1001,89 @@ export default function CreateDocumentPage() {
               </div>
             </div>
 
+            {/* Output format selection — show when ANY selected doc_type has its
+                pdf_html_renderer_v1.* flag on. Per-doc fallback to DOCX is
+                handled silently in handleGenerate. */}
+            {selectedTypes.some((dt) => isPdfEnabledFor(dt)) && (
+              <div
+                className="rounded-2xl p-5"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                }}
+              >
+                <h3
+                  className="text-xs font-medium mb-3"
+                  style={{ color: "#6B7280" }}
+                >
+                  Định dạng tài liệu
+                </h3>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        id: "docx" as const,
+                        label: "DOCX",
+                        desc: "Mở bằng Word, có thể chỉnh sửa",
+                      },
+                      {
+                        id: "pdf" as const,
+                        label: "PDF (đẹp)",
+                        desc: "Layout chuyên nghiệp, font Inter, sẵn sàng in",
+                      },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setOutputFormat(opt.id)}
+                      className="rounded-xl p-4 text-left transition-all"
+                      style={{
+                        background:
+                          outputFormat === opt.id
+                            ? "rgba(10,31,68,0.06)"
+                            : "#FFFFFF",
+                        border: `2px solid ${outputFormat === opt.id ? "#0A1F44" : "#E2E8F0"}`,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div
+                        className="text-sm font-semibold"
+                        style={{ color: "#0A1F44" }}
+                      >
+                        {opt.label}
+                      </div>
+                      <div
+                        className="text-xs mt-1"
+                        style={{ color: "#6B7280" }}
+                      >
+                        {opt.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {outputFormat === "pdf" &&
+                  selectedTypes.some((dt) => !isPdfEnabledFor(dt)) && (
+                    <div
+                      className="text-xs mt-3"
+                      style={{ color: "#d97706" }}
+                    >
+                      Lưu ý: PDF chuyên nghiệp đang hỗ trợ:{" "}
+                      <strong>
+                        {selectedTypes
+                          .filter(isPdfEnabledFor)
+                          .map(
+                            (dt) =>
+                              templates.find((t) => t.doc_type === dt)?.label ||
+                              dt,
+                          )
+                          .join(", ")}
+                      </strong>
+                      . Các tài liệu còn lại sẽ tự động tạo bản DOCX.
+                    </div>
+                  )}
+              </div>
+            )}
+
             {/* Summary */}
             <div
               className="rounded-2xl p-5"
@@ -764,7 +1155,8 @@ export default function CreateDocumentPage() {
                   color: "#0A1F44",
                 }}
               >
-                Tạo thành công {selectedTypes.length} file DOCX! Kiểm tra thư
+                Tạo thành công {selectedTypes.length} file{" "}
+                {outputFormat === "pdf" ? "PDF" : "DOCX"}! Kiểm tra thư
                 mục Downloads.
               </div>
             )}
@@ -788,7 +1180,7 @@ export default function CreateDocumentPage() {
               <button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="w-full py-3.5 rounded-xl font-semibold text-base transition-all hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ease-out hover:scale-[1.01] active:scale-[0.99]"
                 style={{
                   background: generating ? "#E2E8F0" : "#0A1F44",
                   color: "#fff",
@@ -804,7 +1196,7 @@ export default function CreateDocumentPage() {
                     Đang tạo...
                   </span>
                 ) : (
-                  `Tạo ${selectedTypes.length} file DOCX`
+                  `Tạo ${selectedTypes.length} file ${outputFormat === "pdf" ? "PDF" : "DOCX"}`
                 )}
               </button>
             </div>

@@ -11,6 +11,7 @@
  *   1. NO file may read 'aminra_admin_token' directly except:
  *        - components/AdminAuthContext.tsx     (defines the key)
  *        - lib/adminAuth.ts                    (the shared helper)
+ *        - lib/auth-session-cleanup.ts         (central purge-only helper)
  *        - components/UserAuthContext.tsx      (cross-context cleanup on login/logout)
  *        - app/account/confirm-deletion/page.tsx (clears all tokens on delete)
  *
@@ -29,6 +30,7 @@ const ADMIN_KEY_ALLOWED = new Set<string>([
   "components/AdminAuthContext.tsx",
   "components/UserAuthContext.tsx",
   "lib/adminAuth.ts",
+  "lib/auth-session-cleanup.ts",
   "app/account/confirm-deletion/page.tsx",
 ]);
 
@@ -36,6 +38,7 @@ const USER_KEY_ALLOWED = new Set<string>([
   "components/UserAuthContext.tsx",
   "components/AdminAuthContext.tsx",
   "lib/adminAuth.ts",
+  "lib/auth-session-cleanup.ts",
   "app/account/confirm-deletion/page.tsx",
 ]);
 
