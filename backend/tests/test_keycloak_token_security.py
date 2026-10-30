@@ -16,8 +16,8 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import HTTPException
-from jose import jwt as jose_jwt
-from jose.utils import base64url_encode
+import jwt as pyjwt
+from jwt.utils import base64url_encode
 
 from auth import keycloak_validator as kv
 
@@ -59,7 +59,7 @@ def _claims(**overrides) -> dict[str, Any]:
 
 def _sign(priv_pem: str, payload: dict, alg: str = "RS256",
           headers: dict | None = None) -> str:
-    return jose_jwt.encode(payload, priv_pem, algorithm=alg, headers=headers or {})
+    return pyjwt.encode(payload, priv_pem, algorithm=alg, headers=headers or {})
 
 
 @pytest.fixture(autouse=True)
@@ -83,7 +83,7 @@ def test_alg_none_rejected_outright(monkeypatch, kp):
     """Attacker strips signature: alg=none, header.kid=valid."""
     _, jwk = kp
     monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
-    # Manually craft an unsigned token (jose refuses to encode alg=none)
+    # Manually craft an unsigned token instead of relying on library support for alg=none
     import base64, json
     header = base64.urlsafe_b64encode(
         json.dumps({"alg": "none", "typ": "JWT", "kid": "test-kid"}).encode()
@@ -130,16 +130,16 @@ def test_token_with_rs384_alg_when_jwk_says_rs256_rejected(monkeypatch, kp):
     monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
     token = _sign(priv_pem, _claims(), alg="RS384",
                   headers={"kid": "test-kid"})
-    # python-jose validates against header alg; we pass header alg —
-    # this test documents the CURRENT behaviour: validator trusts header
-    # alg from a key marked RS256. Defense-in-depth opportunity.
-    # If implementation tightens: assert raises. For now: it accepts.
-    out = kv.validate_keycloak_token(token)
-    assert out["sub"] == "kc-uuid-1"
+    # PyJWT would validate against the header alg if we handed it through,
+    # but AMINRA rejects header/JWK alg drift before signature validation.
+    with pytest.raises(HTTPException) as exc:
+        kv.validate_keycloak_token(token)
+    assert exc.value.status_code == 401
+    assert "alg" in exc.value.detail.lower()
 
 
 def test_alg_field_completely_missing_in_header(monkeypatch, kp):
-    """Malformed header without alg. python-jose raises; we wrap as 401."""
+    """Malformed header without alg. PyJWT raises; we wrap as 401."""
     _, jwk = kp
     monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
     import base64, json
@@ -391,11 +391,11 @@ def test_expired_token_at_various_intervals(monkeypatch, kp, seconds_ago):
     assert exc.value.status_code == 401
 
 
-def test_token_expires_in_one_second_still_valid(monkeypatch, kp):
+def test_token_with_future_exp_remains_valid(monkeypatch, kp):
     priv_pem, jwk = kp
     monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
     token = _sign(priv_pem,
-                  _claims(exp=int(time.time()) + 1),
+                  _claims(exp=int(time.time()) + 60),
                   headers={"kid": "test-kid"})
     out = kv.validate_keycloak_token(token)
     assert out["sub"] == "kc-uuid-1"
@@ -412,28 +412,39 @@ def test_nbf_in_future_rejected(monkeypatch, kp):
         kv.validate_keycloak_token(token)
 
 
-def test_iat_in_future_accepted_but_documented(monkeypatch, kp):
-    """iat in future is unusual but library may not enforce. Document
-    the actual behaviour so future changes don't surprise."""
+def test_iat_in_future_rejected(monkeypatch, kp):
+    """iat in future is unusual and should fail closed instead of accepting
+    a token that claims it was issued later than now."""
     priv_pem, jwk = kp
     monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
     token = _sign(priv_pem,
                   _claims(iat=int(time.time()) + 86400),
                   headers={"kid": "test-kid"})
-    # python-jose doesn't enforce iat — passes
-    out = kv.validate_keycloak_token(token)
-    assert out["sub"] == "kc-uuid-1"
+    with pytest.raises(HTTPException) as exc:
+        kv.validate_keycloak_token(token)
+    assert exc.value.status_code == 401
 
 
-def test_exp_missing_entirely(monkeypatch, kp):
+@pytest.mark.parametrize("missing_claim", ["exp", "iat", "sub"])
+def test_required_time_and_subject_claims_must_be_present(monkeypatch, kp, missing_claim):
     priv_pem, jwk = kp
     monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
     payload = _claims()
-    payload.pop("exp")
+    payload.pop(missing_claim)
     token = _sign(priv_pem, payload, headers={"kid": "test-kid"})
-    # python-jose treats missing exp as no expiry — passes
-    out = kv.validate_keycloak_token(token)
-    assert out["sub"] == "kc-uuid-1"
+    with pytest.raises(HTTPException) as exc:
+        kv.validate_keycloak_token(token)
+    assert exc.value.status_code == 401
+
+
+@pytest.mark.parametrize("subject", ["", "   ", None, 42])
+def test_subject_must_be_a_non_empty_string(monkeypatch, kp, subject):
+    priv_pem, jwk = kp
+    monkeypatch.setattr(kv, "_fetch_jwks", lambda force=False: [jwk])
+    token = _sign(priv_pem, _claims(sub=subject), headers={"kid": "test-kid"})
+    with pytest.raises(HTTPException) as exc:
+        kv.validate_keycloak_token(token)
+    assert exc.value.status_code == 401
 
 
 @pytest.mark.parametrize("exp", [

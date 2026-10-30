@@ -3,6 +3,10 @@ FROM ${BACKEND_BASE_IMAGE}
 
 WORKDIR /app
 
+# Remove vulnerable JWT packages inherited from the historical base image.
+RUN python -m pip uninstall -y python-jose ecdsa && \
+    python -c "import importlib.util; assert importlib.util.find_spec('jose') is None; assert importlib.util.find_spec('ecdsa') is None; import jwt; print('PyJWT', jwt.__version__)"
+
 # Copy only app/runtime source on top of the heavyweight base. Keep this list
 # explicit so deploy builds are deterministic and do not ingest host caches,
 # venvs, docs/qa output, or other generated artifacts.

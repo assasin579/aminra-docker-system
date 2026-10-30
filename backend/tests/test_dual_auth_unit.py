@@ -13,8 +13,8 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import HTTPException
-from jose import jwt as jose_jwt
-from jose.utils import base64url_encode
+import jwt as pyjwt
+from jwt.utils import base64url_encode
 
 from auth import keycloak_validator as kv
 
@@ -38,7 +38,7 @@ def _make_rsa_jwk(kid: str = "test-kid"):
 
 
 def _sign_rs256(priv_pem: str, claims: dict, kid: str = "test-kid") -> str:
-    return jose_jwt.encode(claims, priv_pem, algorithm="RS256", headers={"kid": kid})
+    return pyjwt.encode(claims, priv_pem, algorithm="RS256", headers={"kid": kid})
 
 
 @pytest.fixture(autouse=True)
@@ -63,7 +63,7 @@ def test_looks_like_keycloak_returns_true_for_rs256_with_kid(keypair):
 
 
 def test_looks_like_keycloak_returns_false_for_hs256():
-    token = jose_jwt.encode({"sub": "u"}, "test-secret", algorithm="HS256")
+    token = pyjwt.encode({"sub": "u"}, "test-secret", algorithm="HS256")
     assert kv.looks_like_keycloak_token(token) is False
 
 

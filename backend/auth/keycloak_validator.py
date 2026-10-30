@@ -13,15 +13,17 @@ the migration. Phase 4 will add Keycloak custom token mappers.
 
 from __future__ import annotations
 
+import json
 import os
 import time
 import threading
 from typing import Optional
 
 import httpx
+import jwt
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
-from jose.utils import base64url_decode
+from jwt import PyJWTError
+from jwt.algorithms import RSAAlgorithm
 
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080").rstrip("/")
 # When backend runs inside docker network but token issuer is the public
@@ -74,7 +76,7 @@ def looks_like_keycloak_token(token: str) -> bool:
     token is HS256-issued by the legacy path."""
     try:
         header = jwt.get_unverified_header(token)
-    except JWTError:
+    except PyJWTError:
         return False
     return header.get("alg") in ("RS256", "RS384", "RS512") and bool(header.get("kid"))
 
@@ -86,7 +88,7 @@ def validate_keycloak_token(token: str) -> dict:
     """
     try:
         header = jwt.get_unverified_header(token)
-    except JWTError as e:
+    except PyJWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Malformed token: {e}")
 
     kid = header.get("kid")
@@ -103,24 +105,43 @@ def validate_keycloak_token(token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Disallowed alg: {alg}",
         )
+    if key.get("kty") != "RSA":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unsupported signing key type",
+        )
+    key_alg = key.get("alg")
+    if key_alg and key_alg != alg:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token alg does not match JWK alg",
+        )
     try:
+        verification_key = RSAAlgorithm.from_jwk(json.dumps(key))
         claims = jwt.decode(
             token,
-            key,
+            verification_key,  # type: ignore[arg-type]
             algorithms=[alg],
             audience=KEYCLOAK_AUDIENCE,
             issuer=_ISSUER,
+            options={"require": ["exp", "iat", "sub"]},
         )
-    except JWTError as e:
+    except PyJWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
     except Exception as e:
-        # python-jose can raise TypeError on malformed numeric claims
-        # (exp/nbf/iat as string/list/dict) and JWKError on unsupported
-        # key shapes. We MUST surface those as 401, not 500 — otherwise
-        # an attacker can DoS or fingerprint by triggering server errors.
+        # PyJWT/cryptography can raise TypeError or ValueError on malformed
+        # numeric claims or unsupported key shapes. We MUST surface those as
+        # 401, not 500 — otherwise an attacker can DoS or fingerprint by
+        # triggering server errors.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Token rejected: {type(e).__name__}",
+        )
+
+    if not isinstance(claims.get("sub"), str) or not claims["sub"].strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid subject claim",
         )
 
     return claims
