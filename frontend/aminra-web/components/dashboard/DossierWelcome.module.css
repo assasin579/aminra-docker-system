@@ -1,0 +1,58 @@
+.card {
+  position: relative;
+  isolation: isolate;
+  flex-shrink: 0;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  align-items: center;
+  gap: 24px;
+  overflow: hidden;
+  padding: 30px 32px;
+  border: 1px solid var(--cream-300);
+  border-radius: 24px;
+  background: linear-gradient(120deg, var(--cream-50), var(--cream-100));
+  color: var(--navy-900);
+  animation: enter 440ms ease-out both;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(ellipse at 95% 45%, color-mix(in srgb, var(--gold-400) 18%, transparent), transparent 60%);
+  pointer-events: none;
+}
+.eyebrow { margin: 0 0 9px; font-size: 10px; font-weight: 750; letter-spacing: .16em; color: var(--gold-700); }
+.title { margin: 0; font-size: clamp(20px, 2.3vw, 28px); line-height: 1.25; font-weight: 750; letter-spacing: -.025em; }
+.description { max-width: 480px; margin: 12px 0 20px; color: var(--ink-500); font-size: 14px; line-height: 1.7; }
+.action { display: inline-flex; align-items: center; gap: 16px; padding: 12px 19px; border-radius: 12px; background: var(--navy-900); color: var(--cream-50); font-size: 13px; font-weight: 650; text-decoration: none; transition: transform 180ms ease, box-shadow 180ms ease; }
+.action:hover { transform: translateY(-2px); box-shadow: 0 7px 20px color-mix(in srgb, var(--navy-900) 18%, transparent); }
+.action:focus-visible { outline: 3px solid var(--gold-500); outline-offset: 4px; }
+.action svg { transition: transform 180ms ease; }
+.action:hover svg { transform: translateX(3px); }
+.steps { display: flex; flex-wrap: wrap; gap: 9px 18px; margin: 20px 0 0; padding: 0; list-style: none; color: var(--ink-500); font-size: 11px; }
+.step { display: inline-flex; align-items: center; gap: 7px; animation: enter 420ms ease-out both; }
+.step:nth-child(1) { animation-delay: 80ms; }
+.step:nth-child(2) { animation-delay: 140ms; }
+.step:nth-child(3) { animation-delay: 200ms; }
+.number { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid var(--cream-300); border-radius: 50%; background: var(--cream-50); color: var(--navy-700); font-size: 10px; font-weight: 650; }
+.art { width: 230px; max-width: 100%; justify-self: end; overflow: visible; animation: float 3s ease-in-out 2; }
+.sheet { transform-box: fill-box; transform-origin: center; animation: sheetEnter 650ms cubic-bezier(.2,.75,.25,1) both; }
+.seal { transform-box: fill-box; transform-origin: center; animation: sealEnter 650ms cubic-bezier(.2,.9,.3,1.15) 180ms both; }
+.check { stroke-dasharray: 45; stroke-dashoffset: 0; animation: draw 500ms ease-out 550ms both; }
+@keyframes enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sheetEnter { from { opacity: 0; transform: translateY(12px) rotate(-5deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+@keyframes sealEnter { from { opacity: 0; transform: scale(.75); } to { opacity: 1; transform: scale(1); } }
+@keyframes draw { from { stroke-dashoffset: 45; } to { stroke-dashoffset: 0; } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@media (max-width: 640px) {
+  .card { grid-template-columns: minmax(0, 1fr); padding: 24px; gap: 0; }
+  .art { display: none; }
+  .steps { gap: 10px 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .art, .sheet, .seal, .check, .step { animation: none; }
+  .action, .action svg { transition: none; }
+  .action:hover, .action:hover svg { transform: none; }
+}

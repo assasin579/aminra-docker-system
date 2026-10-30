@@ -4,26 +4,22 @@ from uuid import UUID as _UUID
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from asyncpg import Connection, UniqueViolationError
 
 from .db import get_db
-from .password import hash_password, verify_password
 from .jwt_utils import (
-    create_access_token,
-    create_refresh_token,
-    decode_refresh_token,
     get_current_user,
     require_business_owner,
 )
+from . import keycloak_admin
+from .identity import get_or_reconcile_user_from_keycloak_claims, resolve_canonical_tenant_id, resolve_canonical_user_id
 from .rate_limit import rate_limit_api
 from .models import (
     BusinessRegisterRequest,
     ProviderRegisterRequest,
-    LoginRequest,
     InviteMemberRequest,
     UpdateMemberRequest,
-    LoginResponse,
     RegisterBusinessResponse,
     RegisterProviderResponse,
     UserProfile,
@@ -32,9 +28,7 @@ from .models import (
     InviteAuditorRequest,
     AuditorItem,
     AuditorsResponse,
-    RefreshRequest,
     CompanyProfileUpdate,
-    ChangePasswordRequest,
     MAX_MEMBERS,
 )
 
@@ -51,7 +45,7 @@ log = logging.getLogger("aminra.auth")
 router = APIRouter()
 
 
-def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
+def _row_to_profile(row, member_count: int | None = None, industry_code: str | None = None) -> UserProfile:
     from auth.permissions import get_user_permissions
 
     perms = get_user_permissions(dict(row))
@@ -69,6 +63,8 @@ def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
         phone=row.get("phone"),
         representative_name=row.get("representative_name"),
         permissions=perms,
+        industry_schema_id=str(row["industry_schema_id"]) if row.get("industry_schema_id") else None,
+        industry_schema_code=industry_code,
     )
 
 
@@ -77,42 +73,45 @@ def _row_to_profile(row, member_count: int | None = None) -> UserProfile:
 
 @router.post("/business/register", response_model=RegisterBusinessResponse, status_code=201)
 async def register_business(
-    req: BusinessRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+    req: BusinessRegisterRequest, _: None = Depends(rate_limit_api)
 ):
-    pw_hash = hash_password(req.password)
+    """Create business user in Keycloak (Phase 4b cutover — ADR-005).
+
+    Post-creation, user logs in via Keycloak SSO. PG profile row is JIT
+    auto-provisioned on first /auth/me call (see keycloak_validator.enrich_keycloak_claims).
+    """
+    keycloak_user_id: str | None = None
     try:
-        row = await db.fetchrow(
-            """
-            INSERT INTO users (email, password_hash, role, company_name, company_code,
-                               status, is_owner, tenant_id)
-            VALUES ($1, $2, 'business', $3, $4, 'active', true, NULL)
-            RETURNING *
-            """,
-            req.email,
-            pw_hash,
-            req.company_name,
-            req.company_code,
+        keycloak_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="business",
+            tenant_id=None,  # business owner = own tenant — set by JIT provisioning post-login
+            is_owner=True,
+            user_status="active",
+            company_name=req.company_name,
         )
-    except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
+        keycloak_admin.send_verify_email(keycloak_user_id)
+    except keycloak_admin.KeycloakAdminError as e:
+        if keycloak_user_id is not None:
+            try:
+                keycloak_admin.delete_user(keycloak_user_id)
+            except keycloak_admin.KeycloakAdminError as cleanup_error:
+                log.warning(
+                    "[auth] Failed to cleanup business registration after email error: "
+                    f"{req.email} (sub={keycloak_user_id}): {cleanup_error.detail}"
+                )
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tài khoản doanh nghiệp khác")
+        raise
 
-    # Set tenant_id = own id (owner is their own tenant root)
-    await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
-    row = await db.fetchrow("SELECT * FROM users WHERE id = $1", row["id"])
-
-    profile = _row_to_profile(row, member_count=0)
-    token_data = {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": "business",
-        "status": "active",
-        "is_owner": True,
-        "tenant_id": str(row["id"]),
-    }
-    token = create_access_token(token_data)
-    refresh = create_refresh_token(token_data)
-    log.info(f"[auth] Business registered: {req.email}")
-    return RegisterBusinessResponse(access_token=token, refresh_token=refresh, user=profile)
+    log.info(f"[auth] Business registered in Keycloak and verification email triggered: {req.email} (sub={keycloak_user_id})")
+    return RegisterBusinessResponse(
+        user_id=keycloak_user_id,
+        email=req.email,
+        status="active",
+        message="Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác minh email trước khi đăng nhập.",
+    )
 
 
 # ── Register provider ──────────────────────────────────────────────────────────
@@ -120,133 +119,48 @@ async def register_business(
 
 @router.post("/provider/register", response_model=RegisterProviderResponse, status_code=201)
 async def register_provider(
-    req: ProviderRegisterRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
+    req: ProviderRegisterRequest, _: None = Depends(rate_limit_api)
 ):
-    pw_hash = hash_password(req.password)
+    """Create provider user in Keycloak with status=pending (admin approval required)."""
+    keycloak_user_id: str | None = None
     try:
-        row = await db.fetchrow(
-            """
-            INSERT INTO users (email, password_hash, role, company_name, company_code,
-                               status, is_owner)
-            VALUES ($1, $2, 'provider', $3, $4, 'pending', true)
-            RETURNING id, email, status
-            """,
-            req.email,
-            pw_hash,
-            req.company_name,
-            req.company_code,
+        keycloak_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="provider",
+            tenant_id=None,
+            is_owner=True,
+            user_status="pending",
+            company_name=req.company_name,
         )
-    except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
+        keycloak_admin.send_verify_email(keycloak_user_id)
+    except keycloak_admin.KeycloakAdminError as e:
+        if keycloak_user_id is not None:
+            try:
+                keycloak_admin.delete_user(keycloak_user_id)
+            except keycloak_admin.KeycloakAdminError as cleanup_error:
+                log.warning(
+                    "[auth] Failed to cleanup provider registration after email error: "
+                    f"{req.email} (sub={keycloak_user_id}): {cleanup_error.detail}"
+                )
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký cho tổ chức khác")
+        raise
 
-    log.info(f"[auth] Provider registered (pending): {req.email}")
+    log.info(f"[auth] Provider registered in Keycloak (pending) and verification email triggered: {req.email} (sub={keycloak_user_id})")
     return RegisterProviderResponse(
-        user_id=str(row["id"]),
-        email=row["email"],
-        status=row["status"],
-        message="Tài khoản của bạn đang chờ xét duyệt. Admin sẽ xem xét và thông báo kết quả.",
+        user_id=keycloak_user_id,
+        email=req.email,
+        status="pending",
+        message="Tài khoản của bạn đang chờ xét duyệt. Vui lòng xác minh email; admin sẽ xem xét và thông báo kết quả.",
     )
 
 
-# ── Login ──────────────────────────────────────────────────────────────────────
-
-
-@router.post("/login", response_model=LoginResponse)
-async def login(
-    req: LoginRequest, request: Request, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)
-):
-    from services.audit_log import log_audit
-
-    if req.role and req.role in ("business", "provider"):
-        row = await db.fetchrow("SELECT * FROM users WHERE email = $1 AND role = $2", req.email, req.role)
-    else:
-        row = await db.fetchrow("SELECT * FROM users WHERE email = $1", req.email)
-    if not row or not verify_password(req.password, row["password_hash"]):
-        await log_audit(
-            db,
-            action="login.failed",
-            entity_type="user",
-            metadata={"email": req.email, "reason": "invalid_credentials"},
-            request=request,
-        )
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email hoặc mật khẩu không đúng")
-
-    if row["status"] == "pending":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đang chờ xét duyệt")
-    if row["status"] == "suspended":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị tạm khoá")
-    # GDPR/PDPL: deleted accounts can never log in.
-    if row.get("deleted_at") is not None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị xoá")
-
-    # Auto-set tenant_id for provider owners (migration for existing accounts)
-    if row["role"] == "provider" and row["is_owner"] and not row["tenant_id"]:
-        await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", row["id"])
-        row = await db.fetchrow("SELECT * FROM users WHERE id = $1", row["id"])
-
-    # Count members for owners
-    member_count = None
-    if row["is_owner"] and row["tenant_id"]:
-        member_count = await db.fetchval(
-            "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
-            row["id"],
-        )
-
-    profile = _row_to_profile(row, member_count=member_count)
-    token_data = {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": row["role"],
-        "status": row["status"],
-        "is_owner": row["is_owner"],
-        "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
-    }
-    token = create_access_token(token_data)
-    refresh = create_refresh_token(token_data)
-
-    await log_audit(
-        db,
-        user=token_data,
-        action="login.success",
-        entity_type="user",
-        entity_id=str(row["id"]),
-        request=request,
-    )
-    return LoginResponse(access_token=token, refresh_token=refresh, user=profile)
-
-
-# ── Refresh token ─────────────────────────────────────────────────────────────
-
-
-@router.post("/refresh", response_model=LoginResponse)
-async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _: None = Depends(rate_limit_api)):
-    payload = decode_refresh_token(req.refresh_token)
-
-    row = await db.fetchrow("SELECT * FROM users WHERE id = $1", payload["sub"])
-    if not row:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
-    if row["status"] != "active":
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User account is not active")
-
-    member_count = None
-    if row["is_owner"] and row["tenant_id"]:
-        member_count = await db.fetchval(
-            "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
-            row["id"],
-        )
-
-    profile = _row_to_profile(row, member_count=member_count)
-    token_data = {
-        "sub": str(row["id"]),
-        "email": row["email"],
-        "role": row["role"],
-        "status": row["status"],
-        "is_owner": row["is_owner"],
-        "tenant_id": str(row["tenant_id"]) if row["tenant_id"] else None,
-    }
-    new_access = create_access_token(token_data)
-    new_refresh = create_refresh_token(token_data)
-    return LoginResponse(access_token=new_access, refresh_token=new_refresh, user=profile)
+# ── Login + Refresh: REMOVED in Phase 4b (ADR-005 cutover 2026-05-14) ──────
+# All authentication now goes through Keycloak SSO. FE redirects to
+# auth.silvergem.org for login; backend validates Keycloak JWT via
+# `get_current_user` in jwt_utils.py. Token refresh is handled by Keycloak's
+# /token endpoint (RFC 6749) directly from FE.
 
 
 # ── Get current user ───────────────────────────────────────────────────────────
@@ -254,9 +168,9 @@ async def refresh_token(req: RefreshRequest, db: Connection = Depends(get_db), _
 
 @router.get("/me", response_model=UserProfile)
 async def get_me(user: dict = Depends(get_current_user), db: Connection = Depends(get_db)):
-    row = await db.fetchrow("SELECT * FROM users WHERE id = $1", user["sub"])
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    # /auth/me is the reconciliation gate: Keycloak identity wins for account
+    # linkage/status, AMINRA returns the canonical application profile row.
+    row = await get_or_reconcile_user_from_keycloak_claims(user, db)
 
     member_count = None
     if row["role"] == "business" and row["is_owner"]:
@@ -264,7 +178,13 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
             "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
             row["id"],
         )
-    return _row_to_profile(row, member_count=member_count)
+    industry_code = None
+    if row.get("industry_schema_id"):
+        industry_code = await db.fetchval(
+            "SELECT code FROM industry_schemas WHERE id = $1",
+            row["industry_schema_id"],
+        )
+    return _row_to_profile(row, member_count=member_count, industry_code=industry_code)
 
 
 # ── Invite member (business owner, max 7) ──────────────────────────────────────
@@ -276,7 +196,14 @@ async def invite_member(
     owner: dict = Depends(require_business_owner),
     db: Connection = Depends(get_db),
 ):
-    tenant_id = owner["tenant_id"]
+    """Phase 4c-3: provision the member in Keycloak first, mirror into PG.
+    Owner vouches → email_verified=True so the new member can log in
+    immediately via SSO without an email round-trip."""
+    owner_id = await resolve_canonical_user_id(owner, db)
+    if not owner_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Owner user not found")
+
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     current_count = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
         tenant_id,
@@ -284,27 +211,50 @@ async def invite_member(
     if current_count >= MAX_MEMBERS:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Tenant đã đạt giới hạn {MAX_MEMBERS} thành viên")
 
-    pw_hash = hash_password(req.password)
+    existing = await db.fetchval("SELECT id FROM users WHERE email = $1", req.email)
+    if existing:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký")
+
+    try:
+        kc_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="business",
+            tenant_id=str(tenant_id),
+            is_owner=False,
+            user_status="active",
+            company_name=req.display_name,
+            email_verified=True,
+        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký trong Keycloak")
+        raise
+
     try:
         row = await db.fetchrow(
             """
-            INSERT INTO users (email, password_hash, role, company_name,
+            INSERT INTO users (email, keycloak_sub, role, company_name,
                                status, is_owner, tenant_id, invited_by, ihc_role, department)
             VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6, $7)
             RETURNING id, email, company_name, status, created_at
             """,
             req.email,
-            pw_hash,
+            kc_user_id,
             req.display_name,
             tenant_id,
-            owner["sub"],
+            owner_id,
             req.ihc_role or None,
             req.department or None,
         )
-    except UniqueViolationError:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email đã được đăng ký")
+    except Exception:
+        try:
+            keycloak_admin.delete_user(kc_user_id)
+        except Exception:
+            log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+        raise
 
-    log.info(f"[auth] Member invited: {req.email} → tenant {tenant_id}")
+    log.info(f"[auth] Member invited (KC): {req.email} → tenant {tenant_id}")
     return {
         "member_id": str(row["id"]),
         "email": row["email"],
@@ -332,7 +282,7 @@ async def create_invite_link(
     db: Connection = Depends(get_db),
 ):
     """Create invite link — member sets their own password when accepting."""
-    tenant_id = owner["tenant_id"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     current_count = await db.fetchval("SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id)
     if current_count >= MAX_MEMBERS:
         raise HTTPException(422, f"Đã đạt giới hạn {MAX_MEMBERS} thành viên")
@@ -416,28 +366,51 @@ async def accept_invite(token: str, request: Request, db: Connection = Depends(g
     if row["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         raise HTTPException(410, "Link đã hết hạn")
 
-    pw_hash = hash_password(password)
+    existing = await db.fetchval("SELECT id FROM users WHERE email = $1", row["email"])
+    if existing:
+        raise HTTPException(409, "Email đã được đăng ký")
+
     try:
-        user_row = await db.fetchrow(
+        kc_user_id = keycloak_admin.create_user(
+            email=row["email"],
+            password=password,
+            role="business",
+            tenant_id=str(row["tenant_id"]),
+            is_owner=False,
+            user_status="active",
+            company_name=display_name or row["email"],
+            email_verified=True,
+        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(409, "Email đã được đăng ký trong Keycloak")
+        raise
+
+    try:
+        await db.fetchrow(
             """
-            INSERT INTO users (email, password_hash, role, company_name,
+            INSERT INTO users (email, keycloak_sub, role, company_name,
                                status, is_owner, tenant_id, ihc_role, department)
             VALUES ($1, $2, 'business', $3, 'active', false, $4, $5, $6)
             RETURNING id
         """,
             row["email"],
-            pw_hash,
+            kc_user_id,
             display_name or row["email"],
             row["tenant_id"],
             row["role"],
             row["department"],
         )
-    except UniqueViolationError:
-        raise HTTPException(409, "Email đã được đăng ký")
+    except Exception:
+        try:
+            keycloak_admin.delete_user(kc_user_id)
+        except Exception:
+            log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+        raise
 
     await db.execute("UPDATE member_invites SET accepted_at = NOW() WHERE id = $1", row["id"])
 
-    log.info(f"[auth] Invite accepted: {row['email']} → tenant {row['tenant_id']}")
+    log.info(f"[auth] Invite accepted (KC): {row['email']} → tenant {row['tenant_id']}")
     return {"message": "Đã tham gia thành công! Bạn có thể đăng nhập ngay.", "email": row["email"]}
 
 
@@ -452,7 +425,7 @@ async def get_member_permissions(
 ):
     _validate_uuid(member_id)
     row = await db.fetchrow(
-        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, owner["tenant_id"]
+        "SELECT permissions FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, await resolve_canonical_tenant_id(owner, db)
     )
     if not row:
         raise HTTPException(404, "Thành viên không tồn tại")
@@ -480,7 +453,7 @@ async def update_member_permissions(
     """Owner sets permissions for a member."""
     _validate_uuid(member_id)
     row = await db.fetchrow(
-        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, owner["tenant_id"]
+        "SELECT id FROM users WHERE id=$1 AND tenant_id=$2 AND is_owner=false", member_id, await resolve_canonical_tenant_id(owner, db)
     )
     if not row:
         raise HTTPException(404, "Thành viên không tồn tại")
@@ -514,7 +487,7 @@ async def list_members(
         FROM users WHERE tenant_id = $1 AND is_owner = false
         ORDER BY created_at
         """,
-        owner["tenant_id"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     return MembersResponse(
         members=[
@@ -561,7 +534,7 @@ async def update_member(
         idx += 1
     if not updates:
         return {"message": "Không có thay đổi"}
-    params.extend([member_id, owner["tenant_id"]])
+    params.extend([member_id, await resolve_canonical_tenant_id(owner, db)])
     result = await db.execute(
         f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx} AND tenant_id = ${idx + 1} AND is_owner = false",
         *params,
@@ -580,10 +553,10 @@ async def export_ihc(
     db: Connection = Depends(get_db),
 ):
     """Export Internal Halal Committee document as DOCX."""
-    tenant_id = owner["tenant_id"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
 
     # Get owner info
-    owner_row = await db.fetchrow("SELECT company_name, email FROM users WHERE id = $1", owner["sub"])
+    owner_row = await db.fetchrow("SELECT company_name, email FROM users WHERE id = $1", await resolve_canonical_user_id(owner, db))
     company_name = owner_row["company_name"] if owner_row else "N/A"
 
     # Get all members
@@ -685,13 +658,14 @@ async def remove_member(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(member_id)
-    result = await db.execute(
-        "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
-        member_id,
-        owner["tenant_id"],
+    from auth.team_account_removal import remove_team_account
+
+    await remove_team_account(
+        db,
+        user_id=_UUID(member_id),
+        tenant_id=await resolve_canonical_tenant_id(owner, db),
+        provider_only=False,
     )
-    if result == "DELETE 0":
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
 
 
 # ── Provider Auditor Management ────────────────────────────────────────────────
@@ -708,10 +682,14 @@ async def invite_auditor(
     db: Connection = Depends(get_db),
 ):
     """Provider owner creates an auditor account."""
-    tenant_id = owner["tenant_id"] or owner["sub"]
+    owner_id = await resolve_canonical_user_id(owner, db)
+    if not owner_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Owner user not found")
+
+    tenant_id = await resolve_canonical_tenant_id(owner, db) or owner_id
     # Auto-fix: set tenant_id on provider if missing
-    if not owner["tenant_id"]:
-        await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", owner["sub"])
+    if not await resolve_canonical_tenant_id(owner, db):
+        await db.execute("UPDATE users SET tenant_id = id WHERE id = $1", owner_id)
 
     current = await db.fetchval(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false",
@@ -720,24 +698,47 @@ async def invite_auditor(
     if current >= MAX_AUDITORS:
         raise HTTPException(422, f"Đã đạt giới hạn {MAX_AUDITORS} auditor")
 
-    pw_hash = hash_password(req.password)
+    existing = await db.fetchval("SELECT id FROM users WHERE email = $1", req.email)
+    if existing:
+        raise HTTPException(409, "Email đã được đăng ký")
+
+    try:
+        kc_user_id = keycloak_admin.create_user(
+            email=req.email,
+            password=req.password,
+            role="auditor",
+            tenant_id=str(tenant_id),
+            is_owner=False,
+            user_status="active",
+            company_name=req.display_name,
+            email_verified=True,
+        )
+    except keycloak_admin.KeycloakAdminError as e:
+        if "409" in str(e.detail) or "exists" in str(e.detail).lower():
+            raise HTTPException(409, "Email đã được đăng ký trong Keycloak")
+        raise
+
     try:
         row = await db.fetchrow(
-            """INSERT INTO users (email, password_hash, role, company_name,
+            """INSERT INTO users (email, keycloak_sub, role, company_name,
                                   status, is_owner, tenant_id, invited_by, department)
                VALUES ($1, $2, 'provider', $3, 'active', false, $4, $5, $6)
                RETURNING id, email, company_name, status, created_at""",
             req.email,
-            pw_hash,
+            kc_user_id,
             req.display_name,
             tenant_id,
-            owner["sub"],
+            owner_id,
             req.specialty or None,
         )
-    except UniqueViolationError:
-        raise HTTPException(409, "Email đã được đăng ký")
+    except Exception:
+        try:
+            keycloak_admin.delete_user(kc_user_id)
+        except Exception:
+            log.exception("Compensating delete_user failed for kc_sub=%s", kc_user_id)
+        raise
 
-    log.info(f"[auth] Auditor invited: {req.email} → provider {tenant_id}")
+    log.info(f"[auth] Auditor invited (KC): {req.email} → provider {tenant_id}")
     return {"auditor_id": str(row["id"]), "email": row["email"], "message": "Đã tạo auditor"}
 
 
@@ -746,7 +747,7 @@ async def list_auditors(
     owner: dict = Depends(require_provider_owner),
     db: Connection = Depends(get_db),
 ):
-    tenant_id = owner["tenant_id"] or owner["sub"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     rows = await db.fetch(
         """SELECT id, email, company_name, status, created_at, department
            FROM users WHERE tenant_id = $1 AND is_owner = false AND role = 'provider'
@@ -777,7 +778,7 @@ async def update_auditor(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(auditor_id)
-    tenant_id = owner["tenant_id"] or owner["sub"]
+    tenant_id = await resolve_canonical_tenant_id(owner, db)
     updates, params, idx = [], [], 1
 
     if "display_name" in req and req["display_name"]:
@@ -798,12 +799,9 @@ async def update_auditor(
         updates.append(f"email = ${idx}")
         params.append(req["email"])
         idx += 1
-    if "password" in req and req["password"]:
-        if len(req["password"]) < 8:
-            raise HTTPException(400, "Mật khẩu tối thiểu 8 ký tự")
-        updates.append(f"password_hash = ${idx}")
-        params.append(hash_password(req["password"]))
-        idx += 1
+    # Phase 4c-3: password updates go through Keycloak — the provider owner
+    # asks the auditor to reset via the KC account console or via a future
+    # /provider/auditors/{id}/reset-password proxy. Silently ignore here.
 
     if not updates:
         return {"message": "Không có thay đổi"}
@@ -824,13 +822,14 @@ async def remove_auditor(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(auditor_id)
-    result = await db.execute(
-        "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
-        auditor_id,
-        owner["tenant_id"] or owner["sub"],
+    from auth.team_account_removal import remove_team_account
+
+    await remove_team_account(
+        db,
+        user_id=_UUID(auditor_id),
+        tenant_id=await resolve_canonical_tenant_id(owner, db),
+        provider_only=True,
     )
-    if result == "DELETE 0":
-        raise HTTPException(404, "Auditor not found")
 
 
 # ── Auditor Certificates ──────────────────────────────────────────────────────
@@ -845,17 +844,20 @@ async def list_auditor_certificates(
     """List certificate files for an auditor."""
     _validate_uuid(auditor_id)
     # Verify auditor belongs to this provider
+    owner_tenant_id = await resolve_canonical_tenant_id(owner, db)
+    if not owner_tenant_id:
+        raise HTTPException(404, "User not found")
     row = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
         auditor_id,
-        owner["tenant_id"] or owner["sub"],
+        owner_tenant_id,
     )
     if not row:
         raise HTTPException(404, "Auditor không tồn tại")
 
     from pathlib import Path as _P
 
-    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(owner_tenant_id) / "certificates" / auditor_id
     if not cert_dir.exists():
         return {"certificates": []}
 
@@ -887,7 +889,7 @@ async def upload_auditor_certificate(
     row = await db.fetchrow(
         "SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND role = 'provider'",
         auditor_id,
-        owner["tenant_id"] or owner["sub"],
+        await resolve_canonical_tenant_id(owner, db),
     )
     if not row:
         raise HTTPException(404, "Auditor không tồn tại")
@@ -911,7 +913,7 @@ async def upload_auditor_certificate(
     from pathlib import Path as _P
     import uuid as _uuid
 
-    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(owner_tenant_id) / "certificates" / auditor_id
     cert_dir.mkdir(parents=True, exist_ok=True)
 
     file_id = str(_uuid.uuid4())[:8]
@@ -929,6 +931,7 @@ async def view_auditor_certificate(
     cert_id: str,
     request: Request,
     token: str | None = None,
+    db: Connection = Depends(get_db),
 ):
     """View certificate as PDF (convert if needed). Supports ?token= for window.open."""
     from auth.jwt_utils import decode_token as _decode
@@ -944,10 +947,13 @@ async def view_auditor_certificate(
     if user.get("role") != "provider":
         raise HTTPException(403)
 
-    tenant_id = user.get("tenant_id") or user.get("sub")
+    # Certificate storage is tenant-scoped; never fall back to Keycloak sub.
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    if not tenant_id:
+        raise HTTPException(404, "User not found")
     from pathlib import Path as _P
 
-    cert_dir = _P("docs") / tenant_id / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(tenant_id) / "certificates" / auditor_id
 
     target = None
     if cert_dir.exists():
@@ -1029,7 +1035,7 @@ async def delete_auditor_certificate(
     """Delete a certificate file."""
     from pathlib import Path as _P
 
-    cert_dir = _P("docs") / (owner["tenant_id"] or owner["sub"]) / "certificates" / auditor_id
+    cert_dir = _P("docs") / str(owner_tenant_id) / "certificates" / auditor_id
     if cert_dir.exists():
         for f in cert_dir.iterdir():
             if f.name.startswith(cert_id):
@@ -1054,7 +1060,7 @@ async def list_minutes(
     db: Connection = Depends(get_db),
 ):
     """List all meeting minutes for the tenant."""
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     if not minutes_dir.exists():
         return {"minutes": []}
 
@@ -1084,7 +1090,7 @@ async def upload_minutes(
     file: UploadFile = File(...),
 ):
     """Upload a meeting minutes file."""
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     minutes_dir.mkdir(parents=True, exist_ok=True)
 
     doc_uuid = str(_uuid.uuid4())[:8]
@@ -1126,7 +1132,7 @@ async def view_minutes(
         raise HTTPException(401, "Not authenticated")
     if owner.get("role") != "business" or not owner.get("is_owner"):
         raise HTTPException(403, "Business owner access required")
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     if not minutes_dir.exists():
         raise HTTPException(404, "Không tìm thấy biên bản")
 
@@ -1208,7 +1214,7 @@ async def delete_minutes(
     db: Connection = Depends(get_db),
 ):
     """Delete a minutes file."""
-    minutes_dir = DOCS_DIR / owner["tenant_id"] / "minutes"
+    minutes_dir = DOCS_DIR / await resolve_canonical_tenant_id(owner, db) / "minutes"
     if not minutes_dir.exists():
         raise HTTPException(404, "Không tìm thấy biên bản")
 
@@ -1229,18 +1235,24 @@ async def get_company_profile(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    """Get company profile (from tenant owner) for template placeholder data."""
+    """Get company profile (from tenant owner) for template placeholder data.
+
+    The JWT `tenant_id` claim may be a slug from the Keycloak user-attribute
+    mapper (e.g. "demo-biz") rather than a UUID — feeding it straight into
+    `WHERE id = $1` 500s on the asyncpg UUID coercion. Resolve the canonical
+    AMINRA users.id via the shared helper instead.
+    """
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
-    if not tenant_id:
-        raise HTTPException(400, "Tenant không xác định")
+    user_id = await resolve_canonical_user_id(user, db)
+    if user_id is None:
+        raise HTTPException(404, "Không tìm thấy thông tin công ty")
 
     row = await db.fetchrow(
         """SELECT company_name, email, address, phone, representative_name, manager_name
            FROM users WHERE id = $1 AND is_owner = true""",
-        tenant_id,
+        user_id,
     )
     if not row:
         raise HTTPException(404, "Không tìm thấy thông tin công ty")
@@ -1262,6 +1274,10 @@ async def update_company_profile(
     db: Connection = Depends(get_db),
 ):
     """Update company profile fields (owner only)."""
+    target_id = await resolve_canonical_user_id(owner, db)
+    if target_id is None:
+        raise HTTPException(404, "User row not found. Call /auth/me first.")
+
     await db.execute(
         """UPDATE users
            SET company_name = COALESCE(NULLIF($1, ''), company_name),
@@ -1277,40 +1293,15 @@ async def update_company_profile(
         req.phone,
         req.email,
         req.manager_name,
-        owner["sub"],
+        target_id,
     )
-    log.info(f"[auth] Company profile updated by {owner['sub']}")
+    log.info(f"[auth] Company profile updated by {owner.get('email')}")
     return {"message": "Đã cập nhật thông tin công ty"}
 
 
-# ── Change password ──────────────────────────────────────────────────────────
-
-
-@router.put("/change-password")
-async def change_password(
-    req: ChangePasswordRequest,
-    user: dict = Depends(get_current_user),
-    db: Connection = Depends(get_db),
-):
-    """Change password for current user."""
-    from auth.password import WeakPasswordError, validate_password_strength
-
-    row = await db.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["sub"])
-    if not row:
-        raise HTTPException(404, "User không tồn tại")
-
-    if not verify_password(req.current_password, row["password_hash"]):
-        raise HTTPException(400, "Mật khẩu hiện tại không đúng")
-
-    try:
-        validate_password_strength(req.new_password)
-    except WeakPasswordError as e:
-        raise HTTPException(400, str(e))
-
-    new_hash = hash_password(req.new_password)
-    await db.execute("UPDATE users SET password_hash = $1 WHERE id = $2", new_hash, user["sub"])
-    log.info(f"[auth] Password changed for {user['sub']}")
-    return {"message": "Đã đổi mật khẩu thành công"}
+# ── Change password: REMOVED in Phase 4b (Keycloak owns passwords) ──────────
+# User changes password via Keycloak account console at:
+# https://auth.silvergem.org/realms/aminra/account/#/security/signing-in
 
 
 # ── Upload company logo ──────────────────────────────────────────────────────
@@ -1357,7 +1348,7 @@ async def get_company_logo(tenant_id: str):
         if path.exists():
             mime = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}[ext[1:]]
             return FileResponse(path=str(path), media_type=mime)
-    raise HTTPException(404, "Logo chưa được upload")
+    return Response(status_code=204)
 
 
 # ── Notification preferences ─────────────────────────────────────────────────
@@ -1370,7 +1361,7 @@ async def get_notification_preferences(
 ):
     row = await db.fetchrow(
         "SELECT notify_eval_done, notify_submission_reply FROM users WHERE id = $1",
-        user["sub"],
+        await resolve_canonical_user_id(user, db),
     )
     if not row:
         raise HTTPException(404)
@@ -1393,7 +1384,7 @@ async def update_notification_preferences(
         """UPDATE users SET notify_eval_done = $1, notify_submission_reply = $2 WHERE id = $3""",
         body.get("notify_eval_done", True),
         body.get("notify_submission_reply", True),
-        user["sub"],
+        await resolve_canonical_user_id(user, db),
     )
     return {"message": "Đã cập nhật cài đặt thông báo"}
 

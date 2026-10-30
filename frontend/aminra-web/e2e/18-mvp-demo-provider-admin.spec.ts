@@ -4,16 +4,37 @@
  * Flows 12-20 from docs/mvp-demo-test-script.md.
  */
 import { test, expect } from "./fixtures";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
+import type { Page } from "@playwright/test";
 
-const DEMO_PW = "DemoP@ss2026";
+const BIZ_DEMO_PW = process.env.PW_BIZ_PASSWORD ?? process.env.DEMO_PW;
+const PROVIDER_DEMO_PW =
+  process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+const AUDITOR_DEMO_PW = process.env.PW_AUDITOR_PASSWORD ?? process.env.AUDITOR_DEMO_PW ?? process.env.DEMO_PW;
 
-async function loginAs(api: any, email: string) {
-  const res = await api.post("/auth/login", {
-    data: { email, password: DEMO_PW },
-  });
-  if (res.status() !== 200) return null;
-  const body = await res.json();
-  return body.access_token as string;
+const SEEDED_PASSWORD_BY_EMAIL: Record<string, string | undefined> = {
+  "biz-demo-1@demo.aminra.vn": BIZ_DEMO_PW,
+  "cb-demo@demo.aminra.vn": PROVIDER_DEMO_PW,
+  "auditor-demo@demo.aminra.vn": AUDITOR_DEMO_PW,
+};
+
+async function loginAs(api: Parameters<typeof requireKeycloakUserToken>[0], email: string) {
+  const password = SEEDED_PASSWORD_BY_EMAIL[email] ?? BIZ_DEMO_PW;
+  if (!password) return null;
+  return requireKeycloakUserToken(api, { email, password }).catch(
+    () => null,
+  );
+}
+
+async function frontendStatus(page: Page, path: string): Promise<number> {
+  try {
+    const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+    return response?.status() ?? 500;
+  } catch (error) {
+    if (!String(error).includes("net::ERR_ABORTED")) throw error;
+    const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+    return response?.status() ?? 500;
+  }
 }
 
 // ── Flow 12: Provider login → portfolio ───────────────────────────────────
@@ -172,7 +193,7 @@ test.describe("MVP Flow 18-20: Admin dashboard + queue + provider approve", () =
       "/admin/audit-logs",
       "/admin/overdue-submissions",
     ]) {
-      const status = await page.goto(path).then((r) => r?.status() ?? 500);
+      const status = await frontendStatus(page, path);
       // 200 = renders (may show login prompt within page)
       expect([200, 307]).toContain(status);
     }

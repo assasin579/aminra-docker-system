@@ -19,6 +19,10 @@ export function parseApiError(
   if (!body || typeof body !== "object") return fallback;
   const detail = (body as { detail?: unknown }).detail;
   if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object") {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
   if (Array.isArray(detail) && detail.length > 0) {
     const first = detail[0] as FastApiValidationItem;
     const field = Array.isArray(first.loc)
@@ -39,5 +43,6 @@ export function validatePassword(pw: string): string | null {
   if (!/[A-Z]/.test(pw)) return "Mật khẩu phải có ít nhất 1 chữ hoa (A-Z)";
   if (!/[a-z]/.test(pw)) return "Mật khẩu phải có ít nhất 1 chữ thường (a-z)";
   if (!/[0-9]/.test(pw)) return "Mật khẩu phải có ít nhất 1 chữ số (0-9)";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt";
   return null;
 }

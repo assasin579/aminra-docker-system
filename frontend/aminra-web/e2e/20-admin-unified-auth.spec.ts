@@ -1,16 +1,27 @@
 /**
  * Admin auth unification (Option 2):
- * Verify that after logging in via the legacy /admin flow (opaque token in
- * `aminra_admin_token`), the analytics + audit-logs + overdue-submissions
- * pages can call their /api/auth/admin/* endpoints successfully.
+ * Verify that after storing a Keycloak platform_admin token in
+ * `aminra_user_token`, the analytics + audit-logs + overdue-submissions pages
+ * can call their /api/auth/admin/* endpoints successfully.
  *
  * This is the regression gate for the bug where these 3 pages only read
- * `aminra_user_token`, leaving an admin who logged in via /admin stranded.
+ * the frontend accidentally looked for the retired opaque admin session.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import { requireAdminToken } from "./helpers/admin-token";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "aminra2026";
+async function gotoAdminPage(page: Page, path: string) {
+  // Public sandbox navigation can occasionally abort during full-suite runs
+  // while the route itself is healthy. Retry only navigation-level aborts;
+  // assertions below still fail on real auth/render regressions.
+  try {
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+  } catch (error) {
+    if (!String(error).includes("net::ERR_ABORTED")) throw error;
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+  }
+}
 
 test.describe("admin unified auth", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -20,55 +31,43 @@ test.describe("admin unified auth", () => {
     );
   });
 
-  test("legacy /admin token unlocks analytics + audit-logs + overdue", async ({
+  test("Keycloak platform_admin token unlocks analytics + audit-logs + overdue", async ({
     page,
     request,
   }) => {
-    const loginRes = await request.post("/api/admin/login", {
-      data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
-    });
-    expect(loginRes.ok()).toBeTruthy();
-    const { token } = await loginRes.json();
-    expect(token).toBeTruthy();
+    const token = await requireAdminToken(request);
 
     await page.addInitScript((t) => {
-      localStorage.setItem("aminra_admin_token", t);
-      localStorage.removeItem("aminra_user_token");
+      localStorage.setItem("aminra_user_token", t);
+      localStorage.removeItem("aminra_admin_token");
     }, token);
 
-    await page.goto("/admin/analytics");
+    await gotoAdminPage(page, "/admin/analytics");
     await expect(
       page.getByRole("heading", { name: "Analytics dashboard" }),
     ).toBeVisible();
     await expect(page.getByText(/Cập nhật:/)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
 
-    await page.goto("/admin/audit-logs");
+    await gotoAdminPage(page, "/admin/audit-logs");
     await expect(
       page.getByText(/Audit logs|Nhật ký|audit/i).first(),
     ).toBeVisible();
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
 
-    await page.goto("/admin/overdue-submissions");
+    await gotoAdminPage(page, "/admin/overdue-submissions");
     await expect(page.getByText("Cần đăng nhập admin")).toHaveCount(0);
   });
 
   test("non-admin JWT is rejected by admin endpoints (regression)", async ({
     request,
   }) => {
-    const r = await request.post("/api/auth/login", {
-      data: {
-        email: "cb-demo@demo.aminra.vn",
-        password: "DemoP@ss2026",
-        role: "provider",
-      },
+    const password = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+    if (!password) test.skip(true, "provider Keycloak password not configured");
+    const access_token = await requireKeycloakUserToken(request, {
+      email: process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn",
+      password: password as string,
     });
-    if (!r.ok())
-      test.skip(
-        true,
-        "demo provider not seeded; skipping non-admin regression",
-      );
-    const { access_token } = await r.json();
 
     const an = await request.get("/api/auth/admin/analytics", {
       headers: { Authorization: `Bearer ${access_token}` },

@@ -1,0 +1,8 @@
+/* SOP-specific overrides — lightweight, only L3 token tweaks.
+ * Linter check: no raw hex / no raw font properties.
+ */
+
+:root {
+  /* Slightly more compact cover title (SOP names tend to be longer) */
+  --cover-title-size: 56pt;
+}

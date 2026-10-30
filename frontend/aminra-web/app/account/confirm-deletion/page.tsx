@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { purgeAuthSessionState } from "@/lib/auth-session-cleanup";
 
-export default function ConfirmDeletionPage() {
+function ConfirmDeletionContent() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
@@ -29,18 +30,10 @@ export default function ConfirmDeletionPage() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
 
-      // Clear stored credentials so the user is logged out everywhere
-      [
-        "aminra_user_token",
-        "aminra_user_profile",
-        "aminra_admin_token",
-      ].forEach((k) => {
-        localStorage.removeItem(k);
-        sessionStorage.removeItem(k);
-      });
+      await purgeAuthSessionState("self_reset");
 
       setDone(true);
-      setTimeout(() => router.push("/"), 5000);
+      setTimeout(() => router.push("/landing"), 5000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lỗi không xác định");
     } finally {
@@ -67,7 +60,7 @@ export default function ConfirmDeletionPage() {
             5 giây...
           </p>
           <Link
-            href="/"
+            href="/landing"
             className="inline-block mt-4 font-medium"
             style={{ color: "#0A1F44" }}
           >
@@ -128,5 +121,21 @@ export default function ConfirmDeletionPage() {
         </>
       )}
     </article>
+  );
+}
+
+export default function ConfirmDeletionPage() {
+  return (
+    <Suspense
+      fallback={
+        <article className="max-w-xl mx-auto px-6 py-12" data-page>
+          <p className="text-sm" style={{ color: "#6B7280" }}>
+            Đang tải liên kết xác nhận...
+          </p>
+        </article>
+      }
+    >
+      <ConfirmDeletionContent />
+    </Suspense>
   );
 }

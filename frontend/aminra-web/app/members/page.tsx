@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface Member {
   id: string;
@@ -347,7 +348,7 @@ export default function MembersPage() {
             <button
               onClick={handleExportIHC}
               disabled={exporting || members.length === 0}
-              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-105 disabled:opacity-40"
+              className="grid items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold btn-lift disabled:opacity-40"
               style={{
                 gridTemplateColumns: "auto 1fr",
                 background: "rgba(100,116,139,0.1)",
@@ -373,7 +374,7 @@ export default function MembersPage() {
             {members.length < MAX && (
               <button
                 onClick={() => setShowInvite(true)}
-                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "#0A1F44",
@@ -403,7 +404,7 @@ export default function MembersPage() {
                   setGeneratedLink("");
                   setInviteLink({ email: "", ihc_role: "", department: "" });
                 }}
-                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "#F5F3FF",
@@ -676,14 +677,14 @@ export default function MembersPage() {
                           <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                             style={{ background: "#0A1F44" }}
                           >
                             {saving ? "Đang lưu..." : "Lưu"}
                           </button>
                           <button
                             onClick={() => setEditId(null)}
-                            className="px-4 py-1.5 rounded-lg text-xs"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
                             style={{
                               color: "#6B7280",
                               border: "1px solid #E2E8F0",
@@ -768,7 +769,7 @@ export default function MembersPage() {
                           <button
                             onClick={() => startEdit(m)}
                             title="Sửa"
-                            className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                            className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                             style={{
                               background: "rgba(100,116,139,0.08)",
                               border: "1px solid rgba(100,116,139,0.2)",
@@ -804,7 +805,7 @@ export default function MembersPage() {
                               }
                             }}
                             title="Phân quyền"
-                            className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                            className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                             style={{
                               background: "#F5F3FF",
                               border: "1px solid #DDD6FE",
@@ -829,7 +830,7 @@ export default function MembersPage() {
                             onClick={() => handleRemove(m.id)}
                             title="Xoá"
                             disabled={removeId === m.id}
-                            className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                            className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                             style={{
                               background: "rgba(239,68,68,0.08)",
                               border: "1px solid rgba(239,68,68,0.15)",
@@ -861,13 +862,7 @@ export default function MembersPage() {
 
           {/* Invite modal */}
           {showInvite && (
-            <div
-              className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-              style={{
-                background: "rgba(0,0,0,0.75)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
+            <Modal>
               <div
                 className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
                 style={{
@@ -1043,7 +1038,7 @@ export default function MembersPage() {
                   </p>
                 </form>
               </div>
-            </div>
+            </Modal>
           )}
         </div>
       )}
@@ -1076,7 +1071,7 @@ export default function MembersPage() {
               <button
                 onClick={() => minutesInputRef.current?.click()}
                 disabled={uploadingMinutes}
-                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+                className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{
                   gridTemplateColumns: "auto 1fr",
                   background: "#0A1F44",
@@ -1202,7 +1197,7 @@ export default function MembersPage() {
                       <button
                         onClick={() => viewMinutes(m.id)}
                         title="Xem"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "rgba(100,116,139,0.08)",
                           border: "1px solid rgba(100,116,139,0.2)",
@@ -1233,7 +1228,7 @@ export default function MembersPage() {
                         onClick={() => deleteMinutes(m.id)}
                         title="Xoá"
                         disabled={deletingMinuteId === m.id}
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "rgba(239,68,68,0.08)",
                           border: "1px solid rgba(239,68,68,0.15)",
@@ -1265,11 +1260,7 @@ export default function MembersPage() {
 
       {/* Permissions Modal */}
       {permModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setPermModal(null)}
-        >
+        <Modal onClose={() => setPermModal(null)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1378,16 +1369,12 @@ export default function MembersPage() {
               {permSaving ? "Đang lưu..." : "Lưu phân quyền"}
             </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Invite Link Modal */}
       {showInviteLink && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowInviteLink(false)}
-        >
+        <Modal onClose={() => setShowInviteLink(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1434,7 +1421,7 @@ export default function MembersPage() {
                         navigator.clipboard.writeText(generatedLink);
                         alert("Đã copy!");
                       }}
-                      className="px-3 py-2 rounded-lg text-xs font-medium text-white flex-shrink-0"
+                      className="px-3 py-2 rounded-lg text-xs font-medium text-white flex-shrink-0 btn-lift"
                       style={{ background: "#0A1F44" }}
                     >
                       Copy
@@ -1572,7 +1559,7 @@ export default function MembersPage() {
               </div>
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

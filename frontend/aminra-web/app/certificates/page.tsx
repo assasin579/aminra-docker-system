@@ -6,6 +6,8 @@ import { useUserAuth } from "@/components/UserAuthContext";
 import ExpiryUrgency from "@/components/certificates/ExpiryUrgency";
 import { openAuthed } from "@/lib/authedOpen";
 import RevealOnScroll from "@/components/RevealOnScroll";
+import Modal from "@/components/Modal";
+import { apiFetch } from "@/lib/apiClient";
 
 interface CertStats {
   active: number;
@@ -130,20 +132,20 @@ export default function CertificatesPage() {
     if (!confirmAction || !reason.trim()) return;
     setActionLoading(true);
     try {
-      await fetch(
+      await apiFetch(
         `/api/api/submissions/certificates/${confirmAction.id}/status`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: confirmAction.action, reason }),
+          token,
+          json: { status: confirmAction.action, reason },
+          fallbackError: "Không thể cập nhật trạng thái chứng nhận",
         },
       );
       setConfirmAction(null);
       setReason("");
       fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Không thể cập nhật trạng thái chứng nhận");
     } finally {
       setActionLoading(false);
     }
@@ -412,7 +414,7 @@ export default function CertificatesPage() {
                           },
                         );
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         background: "rgba(10,31,68,0.1)",
                         color: "#0A1F44",
@@ -430,7 +432,7 @@ export default function CertificatesPage() {
                               action: "suspended",
                             })
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(217,119,6,0.1)",
                             color: "#D97706",
@@ -443,7 +445,7 @@ export default function CertificatesPage() {
                           onClick={() =>
                             setConfirmAction({ id: cert.id, action: "revoked" })
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(220,38,38,0.1)",
                             color: "#DC2626",
@@ -464,13 +466,7 @@ export default function CertificatesPage() {
 
       {/* Confirm dialog */}
       {confirmAction && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <Modal>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -553,7 +549,7 @@ export default function CertificatesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

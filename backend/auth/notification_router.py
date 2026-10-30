@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from asyncpg import Connection
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user
 
 log = logging.getLogger("aminra.notifications")
@@ -69,14 +70,15 @@ async def list_notifications(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
+    actor_id = await resolve_canonical_user_id(user, db)
     offset = (page - 1) * limit
     rows = await db.fetch(
         "SELECT * FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-        user["sub"],
+        actor_id,
         limit,
         offset,
     )
-    total = await db.fetchval("SELECT COUNT(*) FROM notifications WHERE user_id=$1", user["sub"])
+    total = await db.fetchval("SELECT COUNT(*) FROM notifications WHERE user_id=$1", actor_id)
     return {
         "notifications": [
             {
@@ -100,7 +102,8 @@ async def unread_count(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    count = await db.fetchval("SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND read=false", user["sub"])
+    actor_id = await resolve_canonical_user_id(user, db)
+    count = await db.fetchval("SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND read=false", actor_id)
     return {"count": count}
 
 
@@ -111,10 +114,11 @@ async def mark_read(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(notification_id)
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         "UPDATE notifications SET read=true WHERE id=$1 AND user_id=$2",
         notification_id,
-        user["sub"],
+        actor_id,
     )
     return {"message": "OK"}
 
@@ -124,7 +128,8 @@ async def mark_all_read(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
-    await db.execute("UPDATE notifications SET read=true WHERE user_id=$1 AND read=false", user["sub"])
+    actor_id = await resolve_canonical_user_id(user, db)
+    await db.execute("UPDATE notifications SET read=true WHERE user_id=$1 AND read=false", actor_id)
     return {"message": "OK"}
 
 
@@ -156,6 +161,7 @@ async def subscribe_push(
 
     The browser may rotate the endpoint; treat each as a distinct subscription.
     """
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         """INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, user_agent)
            VALUES ($1, $2, $3, $4, $5)
@@ -165,7 +171,7 @@ async def subscribe_push(
                auth=EXCLUDED.auth,
                user_agent=EXCLUDED.user_agent,
                last_used_at=NOW()""",
-        user["sub"],
+        actor_id,
         req.endpoint,
         req.p256dh,
         req.auth,
@@ -180,9 +186,10 @@ async def unsubscribe_push(
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         "DELETE FROM push_subscriptions WHERE endpoint=$1 AND user_id=$2",
         endpoint,
-        user["sub"],
+        actor_id,
     )
     return {"message": "unsubscribed"}

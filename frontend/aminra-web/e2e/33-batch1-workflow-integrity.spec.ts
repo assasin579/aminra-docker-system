@@ -16,17 +16,15 @@
  *   D#4    audit_logs immutability via DB trigger
  */
 import { test, expect } from "@playwright/test";
+import { requireKeycloakUserToken } from "./helpers/auth-token";
 
-const BIZ_LOGIN = {
-  email: "biz-demo-1@demo.aminra.vn",
-  password: "DemoP@ss2026",
-  role: "business",
-};
-const PROV_LOGIN = {
-  email: "cb-demo@demo.aminra.vn",
-  password: "DemoP@ss2026",
-  role: "provider",
-};
+const PROVIDER_EMAIL = process.env.PW_PROVIDER_EMAIL ?? "cb-demo@demo.aminra.vn";
+const PROVIDER_PASSWORD = process.env.PW_PROVIDER_PASSWORD ?? process.env.PROVIDER_DEMO_PW ?? process.env.DEMO_PW;
+
+async function providerToken(request: Parameters<typeof requireKeycloakUserToken>[0]): Promise<string> {
+  if (!PROVIDER_PASSWORD) test.skip(true, "provider Keycloak password not configured");
+  return requireKeycloakUserToken(request, { email: PROVIDER_EMAIL, password: PROVIDER_PASSWORD as string });
+}
 
 test.describe("Phase 1 Batch 1 — workflow integrity", () => {
   test.beforeEach(async ({}, testInfo) => {
@@ -76,9 +74,7 @@ test.describe("Phase 1 Batch 1 — workflow integrity", () => {
   test("DB-level: status CHECK constraint blocks garbage values", async ({
     request,
   }) => {
-    const login = await request.post("/api/auth/login", { data: PROV_LOGIN });
-    if (!login.ok()) test.skip(true, "cb-demo not seeded");
-    const { access_token } = await login.json();
+    const access_token = await providerToken(request);
     const list = await request.get("/api/api/submissions/received", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
@@ -103,8 +99,7 @@ test.describe("Phase 1 Batch 1 — workflow integrity", () => {
   test("approve-final rejects when no evaluation saved (W3-M11)", async ({
     request,
   }) => {
-    const login = await request.post("/api/auth/login", { data: PROV_LOGIN });
-    const { access_token } = await login.json();
+    const access_token = await providerToken(request);
     const list = await request.get("/api/api/submissions/received", {
       headers: { Authorization: `Bearer ${access_token}` },
     });

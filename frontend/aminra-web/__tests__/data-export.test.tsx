@@ -3,10 +3,17 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DataExportPage from "@/app/settings/data-export/page";
 
+const authState = vi.hoisted(() => ({ token: null as string | null }));
+
+vi.mock("@/components/UserAuthContext", () => ({
+  useUserAuth: () => ({ token: authState.token }),
+}));
+
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
   localStorage.clear();
   sessionStorage.clear();
+  authState.token = null;
 
   // jsdom doesn't implement these
   global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
@@ -49,7 +56,7 @@ describe("DataExportPage", () => {
   });
 
   test("clicking export downloads file with Authorization header", async () => {
-    localStorage.setItem("aminra_user_token", "jwt-token-xyz");
+    authState.token = "jwt-token-xyz";
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       respond(200, '{"user_id":"abc","data_subject":{}}', {
         "content-disposition":
@@ -89,7 +96,7 @@ describe("DataExportPage", () => {
   });
 
   test("shows backend error message on failure", async () => {
-    localStorage.setItem("aminra_user_token", "jwt");
+    authState.token = "jwt";
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       respond(429, { detail: "Rate limit exceeded. Try again in 3600s." }),
     );

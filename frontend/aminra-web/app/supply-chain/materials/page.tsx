@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
+import Modal from "@/components/Modal";
+import ModuleAccessGate from "@/components/ModuleAccessGate";
+import { ApiClientError, apiFetch } from "@/lib/apiClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,6 +50,17 @@ interface Material {
   created_at: string;
 }
 
+interface CertificateRiskAlert {
+  id: string;
+  supplier_id: string;
+  supplier_name: string | null;
+  event_type: string;
+  severity: string;
+  message: string;
+  status: string;
+  created_at: string;
+}
+
 const CATEGORIES = [
   { id: "meat", label: "Thịt" },
   { id: "dairy", label: "Sữa" },
@@ -80,7 +94,7 @@ const STATUS_COLORS: Record<
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-export default function MaterialsPage() {
+function MaterialsWorkspacePage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading } = useUserAuth();
 
@@ -108,6 +122,7 @@ export default function MaterialsPage() {
 
   // Suppliers state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [eligibleSuppliers, setEligibleSuppliers] = useState<Supplier[]>([]);
   const [supLoading, setSupLoading] = useState(false);
   const [showSupForm, setShowSupForm] = useState(false);
   const [editSup, setEditSup] = useState<Supplier | null>(null);
@@ -131,6 +146,9 @@ export default function MaterialsPage() {
   const [certType, setCertType] = useState("halal_cert");
   const certRef = useRef<HTMLInputElement>(null);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
+  const [riskAlerts, setRiskAlerts] = useState<CertificateRiskAlert[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [alertUpdating, setAlertUpdating] = useState<string | null>(null);
 
   const CERT_TYPES = [
     { id: "halal_cert", label: "Chứng nhận Halal" },
@@ -174,22 +192,82 @@ export default function MaterialsPage() {
     if (!token) return;
     setSupLoading(true);
     try {
-      const res = await fetch("/api/api/supply-chain/suppliers", { headers });
-      if (res.ok) {
-        const d = await res.json();
+      const [allRes, eligibleRes] = await Promise.all([
+        fetch("/api/api/supply-chain/suppliers", { headers }),
+        fetch("/api/api/supply-chain/suppliers/eligible", { headers }),
+      ]);
+      if (allRes.ok) {
+        const d = await allRes.json();
         setSuppliers(d.suppliers || []);
+      }
+      if (eligibleRes.ok) {
+        const d = await eligibleRes.json();
+        setEligibleSuppliers(d.suppliers || []);
       }
     } finally {
       setSupLoading(false);
     }
   }, [token]);
 
+  const fetchEligibleSuppliers = useCallback(
+    async (category?: string) => {
+      if (!token) return;
+      const params = new URLSearchParams();
+      if (category) params.set("material_category", category);
+      const suffix = params.toString() ? `?${params.toString()}` : "";
+      const res = await fetch(`/api/api/supply-chain/suppliers/eligible${suffix}`, {
+        headers,
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setEligibleSuppliers(d.suppliers || []);
+      }
+    },
+    [token],
+  );
+
+  const fetchRiskAlerts = useCallback(async () => {
+    if (!token) return;
+    setAlertsLoading(true);
+    try {
+      const res = await fetch("/api/api/supply-chain/certificate-risk-alerts?status=open", { headers });
+      if (res.ok) {
+        const d = await res.json();
+        setRiskAlerts(d.alerts || []);
+      }
+    } finally {
+      setAlertsLoading(false);
+    }
+  }, [token]);
+
+  const updateRiskAlert = async (id: string, status: "acknowledged" | "resolved") => {
+    setAlertUpdating(id);
+    try {
+      await apiFetch(`/api/api/supply-chain/certificate-risk-alerts/${id}`, {
+        method: "PUT",
+        token,
+        json: { status },
+        fallbackError: "Không thể cập nhật cảnh báo",
+      });
+      await fetchRiskAlerts();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Không thể cập nhật cảnh báo");
+    } finally {
+      setAlertUpdating(null);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchSuppliers();
       fetchMaterials();
+      fetchRiskAlerts();
     }
-  }, [isAuthenticated, fetchSuppliers, fetchMaterials]);
+  }, [isAuthenticated, fetchSuppliers, fetchMaterials, fetchRiskAlerts]);
+
+  useEffect(() => {
+    if (isAuthenticated && showMatForm) fetchEligibleSuppliers(matForm.category);
+  }, [isAuthenticated, showMatForm, matForm.category, fetchEligibleSuppliers]);
 
   // ── Material CRUD ──────────────────────────────────────────────────────────
 
@@ -223,32 +301,41 @@ export default function MaterialsPage() {
     if (!matForm.name || !matForm.supplier_id) return;
     setMatSaving(true);
     try {
+      // Strip empty optional strings → null so Pydantic Optional[…] validators
+      // don't fail on blank inputs the user simply skipped.
+      const payload: Record<string, unknown> = { ...matForm };
+      for (const k of Object.keys(payload)) {
+        if (payload[k] === "") payload[k] = null;
+      }
       const url = editMat
         ? `/api/api/supply-chain/materials/${editMat.id}`
         : "/api/api/supply-chain/materials";
-      const res = await fetch(url, {
+      await apiFetch(url, {
         method: editMat ? "PUT" : "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify(matForm),
+        token,
+        json: payload,
+        fallbackError: editMat ? "Cập nhật nguyên liệu thất bại" : "Tạo nguyên liệu thất bại",
       });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Lỗi");
-        return;
-      }
       setShowMatForm(false);
       fetchMaterials();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Lưu nguyên liệu thất bại");
     } finally {
       setMatSaving(false);
     }
   };
   const deleteMaterial = async (id: string) => {
     if (!confirm("Xác nhận xoá nguyên liệu này?")) return;
-    await fetch(`/api/api/supply-chain/materials/${id}`, {
-      method: "DELETE",
-      headers,
-    });
-    fetchMaterials();
+    try {
+      await apiFetch(`/api/api/supply-chain/materials/${id}`, {
+        method: "DELETE",
+        token,
+        fallbackError: "Xoá nguyên liệu thất bại",
+      });
+      fetchMaterials();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xoá nguyên liệu thất bại");
+    }
   };
 
   // ── Supplier CRUD ──────────────────────────────────────────────────────────
@@ -289,12 +376,17 @@ export default function MaterialsPage() {
       )
     )
       return;
-    await fetch(`/api/api/supply-chain/suppliers/${id}`, {
-      method: "DELETE",
-      headers,
-    });
-    fetchSuppliers();
-    fetchMaterials();
+    try {
+      await apiFetch(`/api/api/supply-chain/suppliers/${id}`, {
+        method: "DELETE",
+        token,
+        fallbackError: "Xoá nhà cung cấp thất bại",
+      });
+      fetchSuppliers();
+      fetchMaterials();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xoá nhà cung cấp thất bại");
+    }
   };
 
   // ── Certificates ───────────────────────────────────────────────────────────
@@ -321,17 +413,14 @@ export default function MaterialsPage() {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("cert_type", certType);
-      const res = await fetch(
+      await apiFetch(
         `/api/api/supply-chain/suppliers/${supId}/certificates`,
-        { method: "POST", headers, body: fd },
+        { method: "POST", token, body: fd, fallbackError: "Upload thất bại" },
       );
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Upload thất bại");
-        return;
-      }
       openCerts(supId);
       fetchSuppliers();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Upload thất bại");
     } finally {
       setCertUploading(false);
       if (certRef.current) certRef.current.value = "";
@@ -345,12 +434,16 @@ export default function MaterialsPage() {
   };
   const deleteCert = async (supId: string, certId: string) => {
     if (!confirm("Xoá chứng chỉ này?")) return;
-    await fetch(
-      `/api/api/supply-chain/suppliers/${supId}/certificates/${certId}`,
-      { method: "DELETE", headers },
-    );
-    openCerts(supId);
-    fetchSuppliers();
+    try {
+      await apiFetch(
+        `/api/api/supply-chain/suppliers/${supId}/certificates/${certId}`,
+        { method: "DELETE", token, fallbackError: "Xoá chứng chỉ thất bại" },
+      );
+      openCerts(supId);
+      fetchSuppliers();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xoá chứng chỉ thất bại");
+    }
   };
 
   // ── Invite & Verify ─────────────────────────────────────────────────────────
@@ -358,37 +451,34 @@ export default function MaterialsPage() {
   const sendInvite = async (supId: string) => {
     setInviteLoading(supId);
     try {
-      const res = await fetch(
+      const data = await apiFetch(
         `/api/api/supply-chain/suppliers/${supId}/invite`,
-        { method: "POST", headers },
-      );
-      if (!res.ok) {
-        alert("Lỗi tạo link");
-        return;
-      }
-      const data = await res.json();
+        { method: "POST", token, fallbackError: "Lỗi tạo link" },
+      ).then((res) => res.json());
       const fullUrl = `${window.location.origin}${data.portal_url}`;
       await navigator.clipboard.writeText(fullUrl);
       alert(
         `Đã copy link mời:\n${fullUrl}\n\nGửi link này cho nhà cung cấp để họ upload hồ sơ.`,
       );
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Lỗi tạo link");
     } finally {
       setInviteLoading(null);
     }
   };
 
   const verifySupplier = async (supId: string) => {
-    const res = await fetch(`/api/api/supply-chain/suppliers/${supId}/verify`, {
-      method: "POST",
-      headers,
-    });
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      alert(e.detail || "Không thể xác minh");
-      return;
+    try {
+      await apiFetch(`/api/api/supply-chain/suppliers/${supId}/verify`, {
+        method: "POST",
+        token,
+        fallbackError: "Không thể xác minh",
+      });
+      alert("Đã xác minh nhà cung cấp!");
+      fetchSuppliers();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Không thể xác minh");
     }
-    alert("Đã xác minh nhà cung cấp!");
-    fetchSuppliers();
   };
 
   // ── Guards ─────────────────────────────────────────────────────────────────
@@ -458,7 +548,7 @@ export default function MaterialsPage() {
           </div>
           <button
             onClick={activeTab === "materials" ? openMatCreate : openSupCreate}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
             style={{ background: "#0A1F44" }}
           >
             +{" "}
@@ -468,6 +558,71 @@ export default function MaterialsPage() {
           </button>
         </div>
       </div>
+
+
+      {(riskAlerts.length > 0 || alertsLoading) && (
+        <div
+          className="rounded-2xl p-4 mb-5 animate-section"
+          style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}
+          role="region"
+          aria-label="Cảnh báo chứng nhận NCC"
+        >
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-sm font-bold" style={{ color: "#991B1B" }}>
+                Cảnh báo chứng nhận NCC
+              </h2>
+              <p className="text-xs mt-1" style={{ color: "#7F1D1D" }}>
+                NCC bị hết hạn/thu hồi/tạm ngưng có thể ảnh hưởng đến nguyên liệu và lô hàng mới.
+              </p>
+            </div>
+            <span
+              className="px-2 py-1 rounded-lg text-xs font-semibold"
+              style={{ background: "#FFFFFF", color: "#991B1B", border: "1px solid #FECACA" }}
+            >
+              {alertsLoading ? "Đang tải..." : `${riskAlerts.length} cảnh báo mở`}
+            </span>
+          </div>
+          <div className="mt-3 space-y-2">
+            {riskAlerts.slice(0, 3).map((riskAlert) => (
+              <div
+                key={riskAlert.id}
+                className="flex items-center justify-between gap-3 rounded-xl p-3 flex-wrap"
+                style={{ background: "#FFFFFF", border: "1px solid #FECACA" }}
+              >
+                <div className="min-w-[220px] flex-1">
+                  <div className="text-sm font-semibold" style={{ color: "#0A1F44" }}>
+                    {riskAlert.supplier_name || "NCC"} · {riskAlert.severity.toUpperCase()}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                    {riskAlert.message}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateRiskAlert(riskAlert.id, "acknowledged")}
+                    disabled={alertUpdating === riskAlert.id}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-60"
+                    style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A" }}
+                  >
+                    Đã xem
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateRiskAlert(riskAlert.id, "resolved")}
+                    disabled={alertUpdating === riskAlert.id}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-60"
+                    style={{ background: "#DCE3F0", color: "#102A5C", border: "1px solid #C7D2FE" }}
+                  >
+                    Đã xử lý
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sub-tabs */}
       <div
@@ -616,7 +771,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => openMatEdit(m)}
                         title="Sửa"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -640,7 +795,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => deleteMaterial(m.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",
@@ -753,7 +908,7 @@ export default function MaterialsPage() {
                         <button
                           onClick={() => verifySupplier(s.id)}
                           title="Xác minh NCC"
-                          className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                          className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                           style={{
                             background: "#DCE3F0",
                             border: "1px solid #D9B96E",
@@ -780,7 +935,7 @@ export default function MaterialsPage() {
                         onClick={() => sendInvite(s.id)}
                         title="Gửi yêu cầu hồ sơ"
                         disabled={inviteLoading === s.id}
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F5F3FF",
                           border: "1px solid #DDD6FE",
@@ -808,7 +963,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => openCerts(s.id)}
                         title="Chứng chỉ"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FFFBEB",
                           border: "1px solid #FDE68A",
@@ -832,7 +987,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => openSupEdit(s)}
                         title="Sửa"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -856,7 +1011,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => deleteSupplier(s.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",
@@ -888,11 +1043,7 @@ export default function MaterialsPage() {
 
       {/* ── Material Form Modal ── */}
       {showMatForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowMatForm(false)}
-        >
+        <Modal onClose={() => setShowMatForm(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -974,7 +1125,7 @@ export default function MaterialsPage() {
                   <select
                     value={matForm.category}
                     onChange={(e) =>
-                      setMatForm((f) => ({ ...f, category: e.target.value }))
+                      setMatForm((f) => ({ ...f, category: e.target.value, supplier_id: "" }))
                     }
                     className="w-full px-4 py-2.5 rounded-lg text-sm outline-none"
                     style={inputStyle}
@@ -1017,6 +1168,9 @@ export default function MaterialsPage() {
                 >
                   Nhà cung cấp *
                 </label>
+                <p className="mb-2 rounded-lg px-3 py-2 text-xs" style={{ background: "#FFFBEB", color: "#92400E" }}>
+                  Chỉ NCC có chứng nhận CB đang hiệu lực và đúng phạm vi mới xuất hiện trong danh sách này.
+                </p>
                 <select
                   value={matForm.supplier_id}
                   onChange={(e) =>
@@ -1026,7 +1180,7 @@ export default function MaterialsPage() {
                   style={inputStyle}
                 >
                   <option value="">Chọn nhà cung cấp...</option>
-                  {suppliers.map((s) => (
+                  {eligibleSuppliers.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
                     </option>
@@ -1071,16 +1225,12 @@ export default function MaterialsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Supplier Form Modal ── */}
       {showSupForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowSupForm(false)}
-        >
+        <Modal onClose={() => setShowSupForm(false)}>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -1246,25 +1396,29 @@ export default function MaterialsPage() {
                   if (!supForm.name) return;
                   setSupSaving(true);
                   try {
+                    // Pydantic Optional[EmailStr] still rejects empty string
+                    // (only None passes). Strip empty optional strings to None
+                    // so blank fields don't trip server-side validation.
+                    const payload: Record<string, unknown> = {
+                      ...supForm,
+                    };
+                    for (const k of Object.keys(payload)) {
+                      if (payload[k] === "") payload[k] = null;
+                    }
                     const url = editSup
                       ? `/api/api/supply-chain/suppliers/${editSup.id}`
                       : "/api/api/supply-chain/suppliers";
-                    const res = await fetch(url, {
+                    await apiFetch(url, {
                       method: editSup ? "PUT" : "POST",
-                      headers: {
-                        ...headers,
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify(supForm),
+                      token,
+                      json: payload,
+                      fallbackError: editSup ? "Cập nhật nhà cung cấp thất bại" : "Tạo nhà cung cấp thất bại",
                     });
-                    if (!res.ok) {
-                      const e = await res.json().catch(() => ({}));
-                      alert(e.detail || "Lỗi");
-                      return;
-                    }
                     setShowSupForm(false);
                     fetchSuppliers();
                     fetchMaterials();
+                  } catch (err) {
+                    alert(err instanceof ApiClientError ? err.message : "Lưu nhà cung cấp thất bại");
                   } finally {
                     setSupSaving(false);
                   }
@@ -1284,16 +1438,12 @@ export default function MaterialsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Certificates Modal ── */}
       {certsOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setCertsOpen(null)}
-        >
+        <Modal onClose={() => setCertsOpen(null)}>
           <div
             className="w-full max-w-lg rounded-2xl animate-modal-content"
             style={{
@@ -1404,7 +1554,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => viewCert(certsOpen!, c.id)}
                         title="Xem"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#F0F9FF",
                           border: "1px solid #BAE6FD",
@@ -1434,7 +1584,7 @@ export default function MaterialsPage() {
                       <button
                         onClick={() => deleteCert(certsOpen!, c.id)}
                         title="Xoá"
-                        className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110 opacity-0 group-hover:opacity-100"
+                        className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110 opacity-0 group-hover:opacity-100"
                         style={{
                           background: "#FEF2F2",
                           border: "1px solid #FECACA",
@@ -1461,8 +1611,16 @@ export default function MaterialsPage() {
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
+  );
+}
+
+export default function MaterialsPage() {
+  return (
+    <ModuleAccessGate moduleCode="supplier_management" routePath="/supply-chain/materials">
+      <MaterialsWorkspacePage />
+    </ModuleAccessGate>
   );
 }

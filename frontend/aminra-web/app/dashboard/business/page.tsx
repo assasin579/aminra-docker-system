@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
+import { AMINRA_DASHBOARD_PALETTE, DonutChart, DashboardCard } from "@/components/dashboard/DashboardCharts";
+import motion from "@/components/dashboard/DashboardMotion.module.css";
+import BusinessReadinessProfiles from "@/components/dashboard/BusinessReadinessProfiles";
 
 interface DocTypeProgress {
   doc_type: string;
@@ -23,11 +26,14 @@ interface RecentItem {
   uploaded_by: string | null;
   uploaded_at: string | null;
 }
+interface DashboardCertificate {
+  cert_number: string;
+  provider_name: string | null;
+  status: string;
+  days_remaining: number;
+  expiry_date: string;
+}
 interface DashboardStats {
-  readiness: number;
-  compliant_count: number;
-  total_types: number;
-  submitted_count: number;
   total_documents: number;
   avg_score: number | null;
   member_count: number;
@@ -36,29 +42,17 @@ interface DashboardStats {
 }
 
 const STATUS_STYLE = {
-  cb_approved: {
-    label: "Duyệt bởi CB",
-    bg: "rgba(10,31,68,0.15)",
-    color: "#0A1F44",
-  },
-  compliant: { label: "Đạt", bg: "rgba(10,31,68,0.1)", color: "#0A1F44" },
-  needs_review: {
-    label: "Cần sửa",
-    bg: "rgba(245,158,11,0.15)",
-    color: "#d97706",
-  },
-  non_compliant: {
-    label: "Chưa đạt",
-    bg: "rgba(239,68,68,0.15)",
-    color: "#f87171",
-  },
+  cb_approved: { label: "Duyệt bởi CB", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy800 },
+  compliant: { label: "AI: phù hợp", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy900 },
+  needs_review: { label: "Cần sửa", bg: AMINRA_DASHBOARD_PALETTE.gold100, color: AMINRA_DASHBOARD_PALETTE.gold700 },
+  non_compliant: { label: "Chưa đạt", bg: AMINRA_DASHBOARD_PALETTE.gold100, color: AMINRA_DASHBOARD_PALETTE.gold700 },
 };
 
 function scoreColor(s: number | null) {
-  if (s === null) return "#94A3B8";
-  if (s >= 75) return "#0A1F44";
-  if (s >= 50) return "#d97706";
-  return "#f87171";
+  if (s === null) return AMINRA_DASHBOARD_PALETTE.ink300;
+  if (s >= 75) return AMINRA_DASHBOARD_PALETTE.navy900;
+  if (s >= 50) return AMINRA_DASHBOARD_PALETTE.gold600;
+  return AMINRA_DASHBOARD_PALETTE.gold700;
 }
 
 function timeAgo(iso: string | null) {
@@ -81,18 +75,31 @@ export default function BusinessDashboard() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading, logout } = useUserAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [certs, setCerts] = useState<any[]>([]);
+  const [certs, setCerts] = useState<DashboardCertificate[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== "business")) {
       router.replace("/business/login");
+      return;
+    }
+    // TASK #19: tenant owner without industry_schema_id → onboarding
+    if (
+      !loading &&
+      isAuthenticated &&
+      user?.role === "business" &&
+      user?.is_owner &&
+      !user?.industry_schema_id
+    ) {
+      router.replace("/business/onboarding/industry-select");
     }
   }, [loading, isAuthenticated, user, router]);
 
   const fetchStats = useCallback(async () => {
     if (!token) return;
     setLoadingStats(true);
+    setStatsError("");
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [statsRes, certsRes] = await Promise.all([
@@ -100,10 +107,15 @@ export default function BusinessDashboard() {
         fetch("/api/api/submissions/cert-timeline", { headers }),
       ]);
       if (statsRes.ok) setStats(await statsRes.json());
+      if (!statsRes.ok) throw new Error(`Không tải được số liệu hồ sơ (${statsRes.status}).`);
       if (certsRes.ok) {
         const d = await certsRes.json();
         setCerts(d.certificates || []);
+      } else {
+        throw new Error(`Không tải được dòng thời gian chứng chỉ (${certsRes.status}).`);
       }
+    } catch (error) {
+      setStatsError(error instanceof Error ? error.message : "Không thể tải dashboard.");
     } finally {
       setLoadingStats(false);
     }
@@ -117,180 +129,119 @@ export default function BusinessDashboard() {
     return (
       <div className="grid place-items-center min-h-[60vh]">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
-          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
-          <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-navy-900 animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-navy-900 animate-pulse-dot" />
+          <div className="w-2 h-2 rounded-full bg-navy-900 animate-pulse-dot" />
         </div>
       </div>
     );
   }
 
   const s = stats;
+  const documentStatusData = s?.doc_type_progress.reduce<Record<string, number>>((counts, document) => {
+    const status = document.score === null
+      ? (document.filename ? "Chưa được chấm" : "Chưa tải lên")
+      : STATUS_STYLE[document.status as keyof typeof STATUS_STYLE]?.label || "Đang xử lý";
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {}) ?? {};
+  const documentStatusChartData = Object.entries(documentStatusData).map(([label, value]) => ({
+    label,
+    value,
+    color: ({
+      "AI: phù hợp": AMINRA_DASHBOARD_PALETTE.navy900,
+      "Duyệt bởi CB": AMINRA_DASHBOARD_PALETTE.navy700,
+      "Cần sửa": AMINRA_DASHBOARD_PALETTE.gold500,
+      "Chưa đạt": AMINRA_DASHBOARD_PALETTE.gold700,
+      "Chưa tải lên": AMINRA_DASHBOARD_PALETTE.ink300,
+      "Chưa được chấm": AMINRA_DASHBOARD_PALETTE.gold400,
+      "Đang xử lý": AMINRA_DASHBOARD_PALETTE.navy500,
+    } as Record<string, string>)[label],
+  }));
+  const scoreCounts = s?.doc_type_progress.reduce<Record<string, number>>((counts, document) => {
+    const band = document.score === null
+      ? (document.filename ? "Đã tải · chờ chấm" : "Chưa tải lên")
+      : document.score >= 75 ? "75–100" : document.score >= 50 ? "50–74" : "0–49";
+    counts[band] = (counts[band] || 0) + 1;
+    return counts;
+  }, { "75–100": 0, "50–74": 0, "0–49": 0, "Đã tải · chờ chấm": 0, "Chưa tải lên": 0 }) ?? {};
+  const scoreBandData = [
+    { label: "75–100", value: scoreCounts["75–100"], color: AMINRA_DASHBOARD_PALETTE.navy900 },
+    { label: "50–74", value: scoreCounts["50–74"], color: AMINRA_DASHBOARD_PALETTE.gold500 },
+    { label: "0–49", value: scoreCounts["0–49"], color: AMINRA_DASHBOARD_PALETTE.gold700 },
+    { label: "Đã tải · chờ chấm", value: scoreCounts["Đã tải · chờ chấm"], color: AMINRA_DASHBOARD_PALETTE.navy500 },
+    { label: "Chưa tải lên", value: scoreCounts["Chưa tải lên"], color: AMINRA_DASHBOARD_PALETTE.ink300 },
+  ];
+  const certificateStatusData = [
+    { label: "Còn hiệu lực · >60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining > 60).length, color: AMINRA_DASHBOARD_PALETTE.navy900 },
+    { label: "Sắp hết hạn · 0–60 ngày", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining >= 0 && cert.days_remaining <= 60).length, color: AMINRA_DASHBOARD_PALETTE.gold500 },
+    { label: "Quá ngày hết hạn", value: certs.filter((cert) => cert.status === "active" && cert.days_remaining < 0).length, color: AMINRA_DASHBOARD_PALETTE.gold700 },
+    { label: "Không hoạt động / khác", value: certs.filter((cert) => cert.status !== "active").length, color: AMINRA_DASHBOARD_PALETTE.ink500 },
+  ];
 
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
-      {/* Header */}
-      <div className="mb-6 animate-section">
-        <p className="text-sm mb-1" style={{ color: "#6B7280" }}>
-          {greeting()},
-        </p>
-        <h1 className="text-2xl font-bold" style={{ color: "#0A1F44" }}>
-          {user.company_name}
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
-          {user.email}
-        </p>
+    <div className={`flex flex-col flex-1 lg:min-h-0 w-full bg-cream-100 text-navy-900 ${motion.page}`} data-page data-dashboard-motion-root="true" data-dashboard-experience="business-v2">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 animate-section">
+        <div>
+          <div className="mb-1.5 flex items-center gap-2">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-700">{greeting()}</p>
+            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-cream-300" />
+            <span className="text-[11px] font-medium text-ink-500">Tổng quan doanh nghiệp</span>
+          </div>
+          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-navy-900 sm:text-[30px]">{user.company_name}</h1>
+          <p className="mt-1 text-sm text-ink-500">{user.email}</p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-full border border-gold-500 bg-gold-100 px-3 py-1.5 text-xs font-semibold text-navy-900">
+          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-gold-500" /> Hồ sơ doanh nghiệp
+        </span>
       </div>
 
-      {/* Certification Readiness */}
-      {s && (
-        <div
-          className="rounded-2xl p-6 mb-6 animate-section doc-card-hover"
-          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
-        >
-          <div
-            className="grid items-center gap-6"
-            style={{ gridTemplateColumns: "auto 1fr" }}
-          >
-            {/* Circular progress */}
-            <div className="relative w-24 h-24">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  stroke="#E2E8F0"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  className="animate-score-fill"
-                  stroke={
-                    s.readiness >= 75
-                      ? "#0A1F44"
-                      : s.readiness >= 40
-                        ? "#f59e0b"
-                        : "#ef4444"
-                  }
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${s.readiness * 2.64} 264`}
-                />
-              </svg>
-              <div className="absolute inset-0 grid place-items-center">
-                <div className="text-center">
-                  <span
-                    className="text-2xl font-bold"
-                    style={{ color: "#0A1F44" }}
-                  >
-                    {s.readiness}%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h2
-                className="text-lg font-bold mb-1"
-                style={{ color: "#0A1F44" }}
-              >
-                Sẵn sàng chứng nhận
-              </h2>
-              <p className="text-sm" style={{ color: "#6B7280" }}>
-                <strong style={{ color: "#0A1F44" }}>
-                  {s.compliant_count}
-                </strong>
-                /{s.total_types} loại tài liệu đạt chuẩn
-                {s.submitted_count > 0 && s.submitted_count < s.total_types && (
-                  <span>
-                    {" "}
-                    · {s.total_types - s.submitted_count} chưa upload
-                  </span>
-                )}
-              </p>
-              {/* Mini progress bar */}
-              <div
-                className="mt-3 h-2 rounded-full overflow-hidden"
-                style={{ background: "#E2E8F0" }}
-              >
-                <div
-                  className="h-full rounded-full animate-progress"
-                  style={{
-                    width: `${s.readiness}%`,
-                    background:
-                      s.readiness >= 75
-                        ? "#0A1F44"
-                        : s.readiness >= 40
-                          ? "#f59e0b"
-                          : "#ef4444",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => void fetchStats()} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-section">
+      <BusinessReadinessProfiles
+        token={token}
+        key={JSON.stringify({ actor: user.id, organization: user.tenant_id, role: user.role, status: user.status, owner: user.is_owner, permissions: user.permissions ?? null, entitlement: user.industry_schema_id ?? null })}
+        contextKey={JSON.stringify({ actor: user.id, organization: user.tenant_id, role: user.role, status: user.status, owner: user.is_owner, permissions: user.permissions ?? null, entitlement: user.industry_schema_id ?? null })}
+      />
+
+
+      {s && <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-dashboard-section="overview-charts">
+        <DashboardCard title="Trạng thái tài liệu" description="Phân bố hiện tại theo loại tài liệu; không phải xu hướng theo thời gian.">
+          <DonutChart title="Trạng thái tài liệu doanh nghiệp" data={documentStatusChartData} centerLabel="Loại tài liệu" />
+        </DashboardCard>
+        <DashboardCard title="Phân bố điểm tài liệu" description="Điểm trung bình trên tài liệu đã chấm; biểu đồ tách riêng trạng thái chưa tải/chờ chấm.">
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-cream-100 px-3 py-2"><span className="h-2 w-2 rounded-full bg-gold-500"/><span className="text-xs text-ink-500">Điểm trung bình</span><strong className="ml-auto text-base font-extrabold tabular-nums text-navy-900">{s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}</strong></div>
+          <DonutChart title="Phân bố điểm theo loại tài liệu" data={scoreBandData} centerLabel="Loại tài liệu" />
+        </DashboardCard>
+        <DashboardCard title="Phân bố chứng chỉ" description="Theo trạng thái API và số ngày còn lại đến hạn; khoảng ngày không chồng lấn.">
+          <DonutChart title="Tình trạng chứng chỉ" data={certificateStatusData} centerLabel="Chứng chỉ" />
+        </DashboardCard>
+      </div>}
+
+      {/* KPI strip — color-coded, but values remain API-owned */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3" data-dashboard-section="key-metrics">
         {(
           [
-            {
-              label: "Tài liệu",
-              numeric: s?.total_documents,
-              sub: "đã upload",
-              color: "#0EA5E9",
-            },
-            {
-              label: "Điểm TB",
-              numeric: s?.avg_score ?? null,
-              suffix: "%",
-              sub: "compliance",
-              color: scoreColor(s?.avg_score ?? null),
-            },
-            {
-              label: "Đạt chuẩn",
-              numeric: s?.compliant_count,
-              suffix: ` / ${s?.total_types ?? 13}`,
-              sub: "loại tài liệu đạt",
-              color: "#0A1F44",
-            },
-            {
-              label: "Thành viên",
-              numeric: user.member_count ?? 0,
-              suffix: "/7",
-              sub: "đang hoạt động",
-              color: "#818cf8",
-            },
+            { label: "Tài liệu", numeric: s?.total_documents, sub: "đã upload", color: "var(--navy-600)", tint: "var(--navy-100)", symbol: "▤" },
+            { label: "Điểm TB", numeric: s?.avg_score ?? null, suffix: "%", sub: "trên tài liệu đã chấm", color: scoreColor(s?.avg_score ?? null), tint: "var(--gold-100)", symbol: "◉" },
+            { label: "Thành viên", numeric: user.member_count ?? 0, suffix: "", sub: "đang hoạt động", color: "var(--navy-700)", tint: "var(--navy-100)", symbol: "◈" },
           ] as const
         ).map((st, i) => (
-          <SpotlightCard
-            key={st.label}
-            className={`rounded-xl p-4 animate-list-item stagger-${i + 1}`}
-            style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
-          >
-            <div
-              className="text-xl font-bold mb-0.5"
-              style={{ color: st.color }}
-            >
-              {st.numeric == null ? (
-                "—"
-              ) : (
-                <CountUp
-                  value={Number(st.numeric)}
-                  suffix={("suffix" in st ? st.suffix : "") as string}
-                />
-              )}
+          <SpotlightCard key={st.label} data-dashboard-kpi={st.label}
+            className={`relative min-h-[124px] overflow-hidden rounded-2xl p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md sm:p-5 animate-list-item stagger-${i + 1}`}
+            style={{ background: `linear-gradient(145deg, var(--cream-50) 15%, ${st.tint} 145%)`, border: "1px solid var(--cream-200)" }}>
+            <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-8 h-24 w-24 rounded-full opacity-50 blur-xl" style={{ background: st.tint }} />
+            <div className="relative flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[27px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[30px]" style={{ color: st.color }}>
+                  {st.numeric == null ? "—" : <CountUp value={Number(st.numeric)} suffix={("suffix" in st ? st.suffix : "") as string} />}
+                </div>
+                <div className="mt-3 text-sm font-bold text-navy-900">{st.label}</div>
+                <div className="mt-0.5 text-xs text-ink-500">{st.sub}</div>
+              </div>
+              <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] text-lg font-bold shadow-sm ring-1 ring-cream-100/80" style={{ color: st.color, background: st.tint }}>{st.symbol}</span>
             </div>
-            <div className="text-xs font-medium" style={{ color: "#0A1F44" }}>
-              {st.label}
-            </div>
-            <div className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
-              {st.sub}
-            </div>
+            <div aria-hidden="true" className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full opacity-70" style={{ background: `linear-gradient(90deg, ${st.color}, transparent)` }} />
           </SpotlightCard>
         ))}
       </div>
@@ -299,17 +250,17 @@ export default function BusinessDashboard() {
       {certs.length > 0 && (
         <div
           className="rounded-xl mb-6 animate-section"
-          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+          style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
         >
           <div
             className="px-5 py-3"
-            style={{ borderBottom: "1px solid #E2E8F0" }}
+            style={{ borderBottom: "1px solid var(--cream-200)" }}
           >
-            <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+            <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
               Chứng nhận Halal
             </h3>
           </div>
-          <div className="divide-y" style={{ borderColor: "#F0F0F0" }}>
+          <div className="divide-y" style={{ borderColor: "var(--cream-200)" }}>
             {certs.map((cert) => {
               return (
                 <div
@@ -318,7 +269,7 @@ export default function BusinessDashboard() {
                 >
                   <div>
                     <p className="text-sm font-semibold">{cert.cert_number}</p>
-                    <p className="text-xs" style={{ color: "#6B7280" }}>
+                    <p className="text-xs" style={{ color: "var(--ink-500)" }}>
                       {cert.provider_name} · hết hạn{" "}
                       {new Date(cert.expiry_date).toLocaleDateString("vi-VN")}
                     </p>
@@ -329,20 +280,20 @@ export default function BusinessDashboard() {
                       style={{
                         background:
                           cert.status !== "active"
-                            ? "#FEF2F2"
+                            ? "var(--gold-100)"
                             : cert.days_remaining > 90
-                              ? "#DCE3F0"
+                              ? "var(--navy-100)"
                               : cert.days_remaining > 30
-                                ? "#FEF3C7"
-                                : "#FEF2F2",
+                                ? "var(--gold-100)"
+                                : "var(--gold-100)",
                         color:
                           cert.status !== "active"
-                            ? "#DC2626"
+                            ? "var(--gold-700)"
                             : cert.days_remaining > 90
-                              ? "#0A1F44"
+                              ? "var(--navy-900)"
                               : cert.days_remaining > 30
-                                ? "#D97706"
-                                : "#DC2626",
+                                ? "var(--gold-700)"
+                                : "var(--gold-700)",
                       }}
                     >
                       {cert.status !== "active"
@@ -366,20 +317,20 @@ export default function BusinessDashboard() {
             className="grid items-center mb-3"
             style={{ gridTemplateColumns: "1fr auto" }}
           >
-            <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+            <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
               Tiến trình tài liệu
             </h3>
             <Link
               href="/upload"
               className="text-xs font-medium"
-              style={{ color: "#0A1F44" }}
+              style={{ color: "var(--navy-900)" }}
             >
               Upload tài liệu →
             </Link>
           </div>
           <div
             className="rounded-xl overflow-hidden flex-1 lg:min-h-0 lg:overflow-y-auto"
-            style={{ border: "1px solid #E2E8F0" }}
+            style={{ border: "1px solid var(--cream-200)" }}
           >
             {loadingStats ? (
               <div className="p-4 space-y-3">
@@ -407,14 +358,14 @@ export default function BusinessDashboard() {
                         >
                           <span
                             className="text-xs w-36 truncate"
-                            style={{ color: missing ? "#DC2626" : "#6B7280" }}
+                            style={{ color: missing ? "var(--gold-700)" : "var(--ink-500)" }}
                           >
                             {missing ? "\u26A0\uFE0F " : ""}
                             {dt.label}
                           </span>
                           <div
                             className="flex-1 h-2 rounded-full overflow-hidden"
-                            style={{ background: "#E2E8F0" }}
+                            style={{ background: "var(--cream-200)" }}
                           >
                             <div
                               className="h-full rounded-full animate-progress"
@@ -422,12 +373,12 @@ export default function BusinessDashboard() {
                                 width: `${pct}%`,
                                 background:
                                   pct >= 75
-                                    ? "#0A1F44"
+                                    ? "var(--navy-900)"
                                     : pct >= 50
-                                      ? "#D97706"
+                                      ? "var(--gold-700)"
                                       : pct > 0
-                                        ? "#EF4444"
-                                        : "#E2E8F0",
+                                        ? "var(--gold-700)"
+                                        : "var(--cream-200)",
                               }}
                             />
                           </div>
@@ -436,10 +387,10 @@ export default function BusinessDashboard() {
                             style={{
                               color:
                                 pct >= 75
-                                  ? "#0A1F44"
+                                  ? "var(--navy-900)"
                                   : pct >= 50
-                                    ? "#D97706"
-                                    : "#EF4444",
+                                    ? "var(--gold-700)"
+                                    : "var(--gold-700)",
                             }}
                           >
                             {missing ? "\u2014" : `${pct}%`}
@@ -452,7 +403,7 @@ export default function BusinessDashboard() {
                 <table className="w-full text-sm">
                   <thead
                     style={{
-                      background: "#F5F1E8",
+                      background: "var(--cream-100)",
                       position: "sticky",
                       top: 0,
                     }}
@@ -463,7 +414,7 @@ export default function BusinessDashboard() {
                           <th
                             key={h}
                             className="text-left px-4 py-2.5 text-xs font-medium"
-                            style={{ color: "#6B7280" }}
+                            style={{ color: "var(--ink-500)" }}
                           >
                             {h}
                           </th>
@@ -481,15 +432,15 @@ export default function BusinessDashboard() {
                           key={dt.doc_type}
                           className={`animate-row stagger-${Math.min(i + 1, 12)}`}
                           style={{
-                            background: i % 2 === 0 ? "#FFFFFF" : "#FFFFFF",
-                            borderTop: "1px solid #E2E8F0",
+                            background: i % 2 === 0 ? "var(--cream-50)" : "var(--cream-50)",
+                            borderTop: "1px solid var(--cream-200)",
                             opacity: submitted ? 1 : 0.5,
                           }}
                         >
                           <td className="px-4 py-3">
                             <span
                               className="text-xs font-medium"
-                              style={{ color: "#0A1F44" }}
+                              style={{ color: "var(--navy-900)" }}
                             >
                               {dt.label}
                             </span>
@@ -498,7 +449,7 @@ export default function BusinessDashboard() {
                             {dt.filename ? (
                               <span
                                 className="text-xs truncate block max-w-[140px]"
-                                style={{ color: "#6B7280" }}
+                                style={{ color: "var(--ink-500)" }}
                                 title={dt.filename}
                               >
                                 {dt.filename}
@@ -506,7 +457,7 @@ export default function BusinessDashboard() {
                             ) : (
                               <span
                                 className="text-xs"
-                                style={{ color: "#94A3B8" }}
+                                style={{ color: "var(--ink-300)" }}
                               >
                                 —
                               </span>
@@ -531,7 +482,7 @@ export default function BusinessDashboard() {
                             ) : (
                               <span
                                 className="text-xs"
-                                style={{ color: "#94A3B8" }}
+                                style={{ color: "var(--ink-300)" }}
                               >
                                 Chưa upload
                               </span>
@@ -550,23 +501,23 @@ export default function BusinessDashboard() {
         {/* Right: Recent activity + Quick actions */}
         <div className="flex flex-col gap-5">
           {/* Recent activity */}
-          <div className="rounded-xl" style={{ border: "1px solid #E2E8F0" }}>
+          <div className="rounded-xl" style={{ border: "1px solid var(--cream-200)" }}>
             <div
               className="px-4 py-3"
               style={{
-                borderBottom: "1px solid #E2E8F0",
-                background: "#F5F1E8",
+                borderBottom: "1px solid var(--cream-200)",
+                background: "var(--cream-100)",
               }}
             >
-              <h3 className="text-xs font-bold" style={{ color: "#0A1F44" }}>
+              <h3 className="text-xs font-bold" style={{ color: "var(--navy-900)" }}>
                 Hoạt động gần đây
               </h3>
             </div>
-            <div className="divide-y" style={{ borderColor: "#E2E8F0" }}>
+            <div className="divide-y" style={{ borderColor: "var(--cream-200)" }}>
               {(s?.recent_activity ?? []).length === 0 ? (
                 <div
                   className="p-6 text-center text-xs"
-                  style={{ color: "#94A3B8" }}
+                  style={{ color: "var(--ink-300)" }}
                 >
                   Chưa có hoạt động
                 </div>
@@ -575,18 +526,18 @@ export default function BusinessDashboard() {
                   <div
                     key={i}
                     className={`px-4 py-3 animate-list-item stagger-${Math.min(i + 1, 12)}`}
-                    style={{ borderColor: "#E2E8F0" }}
+                    style={{ borderColor: "var(--cream-200)" }}
                   >
                     <p
                       className="text-xs font-medium truncate"
-                      style={{ color: "#0A1F44" }}
+                      style={{ color: "var(--navy-900)" }}
                       title={r.filename}
                     >
                       {r.filename}
                     </p>
                     <div
                       className="grid grid-flow-col items-center gap-2 mt-1 justify-start text-xs"
-                      style={{ color: "#6B7280" }}
+                      style={{ color: "var(--ink-500)" }}
                     >
                       {r.score !== null && (
                         <span
@@ -608,7 +559,7 @@ export default function BusinessDashboard() {
 
           {/* Quick actions */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold px-1" style={{ color: "#0A1F44" }}>
+            <h3 className="text-xs font-bold px-1" style={{ color: "var(--navy-900)" }}>
               Thao tác nhanh
             </h3>
             {[
@@ -616,21 +567,21 @@ export default function BusinessDashboard() {
                 href: "/upload",
                 label: "Đánh giá tài liệu",
                 desc: "Upload & kiểm tra Halal",
-                color: "#0A1F44",
+                color: "var(--navy-900)",
                 icon: "M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12",
               },
               {
                 href: "/",
                 label: "Hỏi đáp AI",
                 desc: "Tư vấn quy trình chứng nhận",
-                color: "#0EA5E9",
+                color: "var(--navy-500)",
                 icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
               },
               {
                 href: "/documents",
                 label: "Tài liệu",
                 desc: "Xem & quản lý tài liệu",
-                color: "#818cf8",
+                color: "var(--navy-600)",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
               },
               ...(user.is_owner
@@ -639,7 +590,7 @@ export default function BusinessDashboard() {
                       href: "/members",
                       label: "Thành viên",
                       desc: `${user.member_count ?? 0}/7 thành viên`,
-                      color: "#c084fc",
+                      color: "var(--navy-700)",
                       icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
                     },
                   ]
@@ -651,8 +602,8 @@ export default function BusinessDashboard() {
                 className={`grid items-center gap-3 px-4 py-3 rounded-xl doc-card-hover animate-list-item stagger-${i + 1}`}
                 style={{
                   gridTemplateColumns: "2rem 1fr",
-                  background: "#F5F1E8",
-                  border: "1px solid #E2E8F0",
+                  background: "var(--cream-100)",
+                  border: "1px solid var(--cream-200)",
                 }}
               >
                 <div
@@ -680,11 +631,11 @@ export default function BusinessDashboard() {
                 <div>
                   <div
                     className="text-xs font-semibold"
-                    style={{ color: "#0A1F44" }}
+                    style={{ color: "var(--navy-900)" }}
                   >
                     {a.label}
                   </div>
-                  <div className="text-xs" style={{ color: "#6B7280" }}>
+                  <div className="text-xs" style={{ color: "var(--ink-500)" }}>
                     {a.desc}
                   </div>
                 </div>

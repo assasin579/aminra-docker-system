@@ -13,10 +13,12 @@ from pydantic import BaseModel
 from asyncpg import Connection
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user
+from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from services.audit_log import log_audit
 from services.certificate_pdf import CertificateData, generate_pdf
+from services.certification_decisions import assert_certificate_issue_allowed
 
 log = logging.getLogger("aminra.certificates")
 
@@ -30,6 +32,22 @@ def _validate_uuid(v: str) -> str:
     except ValueError:
         raise HTTPException(400, "Invalid ID")
     return v
+
+
+async def _enriched_user_from_header_or_query(request: Request, token: Optional[str]) -> dict:
+    auth = request.headers.get("Authorization", "")
+    tk = auth[7:] if auth.startswith("Bearer ") else token
+    if not tk:
+        raise HTTPException(401, "Unauthorized")
+    try:
+        claims = decode_token(tk)
+        from auth import keycloak_validator
+        from auth.db import get_pool
+        return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(401, "Invalid token")
 
 
 class IssueCertRequest(BaseModel):
@@ -50,7 +68,7 @@ async def issue_certificate_legacy(
     if not sub:
         raise HTTPException(404)
     # Delegate to company-level
-    return await issue_certificate_for_company(str(sub["business_tenant"]), req, user, db)
+    return await issue_certificate_for_company(str(sub["business_tenant"]), req, user, db, required_submission_id=submission_id)
 
 
 @router.post("/issue-certificate/{business_tenant_id}")
@@ -59,18 +77,27 @@ async def issue_certificate_for_company(
     req: IssueCertRequest,
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
+    *,
+    required_submission_id: str | None = None,
 ):
     """Provider owner issues Halal certificate for a company — ALL submissions must be approved."""
     _validate_uuid(business_tenant_id)
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được cấp chứng nhận")
 
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
 
     # All currently-active dossiers must be approved before cert can be issued.
     # Terminal-state 'rejected' submissions are historical and don't block future certs.
     active_subs = await db.fetch(
-        "SELECT id, status FROM submissions WHERE business_tenant=$1 AND provider_id=$2 AND status <> 'rejected'",
+        """
+        SELECT id, status
+        FROM submissions
+        WHERE business_tenant=$1 AND provider_id=$2 AND status <> 'rejected'
+        ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC
+        """,
         business_tenant_id,
         provider_id,
     )
@@ -83,6 +110,12 @@ async def issue_certificate_for_company(
             400,
             f"Còn {len(not_approved)} hồ sơ chưa được duyệt. Phải duyệt tất cả hồ sơ đang hoạt động trước khi cấp chứng nhận.",
         )
+
+    if required_submission_id and all(str(s["id"]) != str(required_submission_id) for s in active_subs):
+        raise HTTPException(404, "Submission not found in active approved company dossiers")
+    submission_id = required_submission_id or active_subs[0]["id"]
+    for active_sub in active_subs:
+        await assert_certificate_issue_allowed(db, submission_id=str(active_sub["id"]), provider_id=str(provider_id))
 
     # Check if active cert already exists for this company
     existing = await db.fetchrow(
@@ -100,7 +133,7 @@ async def issue_certificate_for_company(
     expiry_date = issue_date + relativedelta(months=req.expiry_months)
 
     # Get names (used in PDF)
-    provider = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", user["sub"])
+    provider = await db.fetchrow("SELECT company_name FROM users WHERE id=$1", provider_id)
     provider_name = provider["company_name"] if provider else "N/A"
     biz_user = await db.fetchrow(
         "SELECT company_name FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", business_tenant_id
@@ -124,12 +157,13 @@ async def issue_certificate_for_company(
         try:
             row = await db.fetchrow(
                 """
-                INSERT INTO halal_certificates (cert_number, issued_by, business_tenant, company_name,
+                INSERT INTO halal_certificates (submission_id, cert_number, issued_by, business_tenant, company_name,
                                                 issue_date, expiry_date, pdf_path, notes)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
             """,
+                submission_id,
                 candidate,
-                user["sub"],
+                provider_id,
                 business_tenant_id,
                 business_name,
                 issue_date,
@@ -227,7 +261,7 @@ async def list_certificates(
     """List certificates — provider sees issued, business sees received."""
     if user["role"] == "provider":
         rows = await db.fetch(
-            "SELECT * FROM halal_certificates WHERE issued_by=$1 ORDER BY created_at DESC", user["sub"]
+            "SELECT * FROM halal_certificates WHERE issued_by=$1 ORDER BY created_at DESC", await resolve_canonical_tenant_id(user, db)
         )
     elif user["role"] == "business":
         rows = await db.fetch(
@@ -257,14 +291,16 @@ async def list_certificates(
 @router.get("/certificates/registry")
 async def cert_registry(
     status: Optional[str] = Query(None),
-    expiring_days: int = Query(0),
+    expiring_days: int = Query(0, ge=0, le=365),
     user: dict = Depends(get_current_user),
     db: Connection = Depends(get_db),
 ):
     """Provider owner: full cert registry with filters and stats."""
     if user["role"] != "provider" or not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
 
     # Stats
     stats = await db.fetchrow(
@@ -453,7 +489,10 @@ async def update_cert_status(
     if new_status not in ("active", "suspended", "revoked"):
         raise HTTPException(400, "Status: active | suspended | revoked")
 
-    row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2", cert_id, user["sub"])
+    provider_id = await resolve_canonical_tenant_id(user, db)
+    if not provider_id:
+        raise HTTPException(404, "User not found")
+    row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1 AND issued_by=$2", cert_id, provider_id)
     if not row:
         raise HTTPException(404)
 
@@ -470,14 +509,19 @@ async def update_cert_status(
                 db,
                 cert_id=cert_id,
                 reason=req.get("reason", ""),
-                revoked_by_user_id=user["sub"],
+                revoked_by_user_id=await resolve_canonical_user_id(user, db),
             )
         except InvalidRevocation as e:
             raise HTTPException(400, f"Cần có lý do khi thu hồi: {e}")
         except AlreadyRevoked:
             raise HTTPException(400, "Chứng nhận đã bị thu hồi trước đó")
     else:
-        await db.execute("UPDATE halal_certificates SET status=$1 WHERE id=$2", new_status, cert_id)
+        if row["status"] == "revoked" or row["revoked_at"] is not None:
+            raise HTTPException(
+                409,
+                "Chứng nhận đã bị thu hồi; không thể kích hoạt lại bằng đổi trạng thái. Cần cấp chứng nhận thay thế.",
+            )
+        await db.execute("UPDATE halal_certificates SET status=$1, updated_at=NOW() WHERE id=$2", new_status, cert_id)
 
     await log_audit(
         db,
@@ -522,26 +566,21 @@ async def download_certificate_pdf(
     _validate_uuid(cert_id)
 
     # Support token from header or query param (for <a href> links)
-    from auth.jwt_utils import decode_token
-
-    auth = request.headers.get("Authorization", "")
-    tk = auth[7:] if auth.startswith("Bearer ") else token
-    if not tk:
-        raise HTTPException(401, "Unauthorized")
-    try:
-        user = decode_token(tk)
-    except Exception:
-        raise HTTPException(401, "Invalid token")
+    user = await _enriched_user_from_header_or_query(request, token)
 
     row = await db.fetchrow("SELECT * FROM halal_certificates WHERE id=$1", cert_id)
     if not row:
         raise HTTPException(404)
 
     # Access check
-    if user["role"] == "provider" and str(row["issued_by"]) != user["sub"]:
-        raise HTTPException(403)
-    if user["role"] == "business" and str(row["business_tenant"]) != user.get("tenant_id"):
-        raise HTTPException(403)
+    if user["role"] == "provider":
+        provider_id = await resolve_canonical_tenant_id(user, db)
+        if str(row["issued_by"]) != str(provider_id):
+            raise HTTPException(403)
+    if user["role"] == "business":
+        tenant_id = await resolve_canonical_tenant_id(user, db)
+        if str(row["business_tenant"]) != str(tenant_id):
+            raise HTTPException(403)
 
     if not row["pdf_path"]:
         raise HTTPException(404, "PDF chưa được tạo")

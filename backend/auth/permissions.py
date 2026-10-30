@@ -80,10 +80,12 @@ async def check_permission_db(user: dict, permission: str):
         return
 
     from auth.db import get_pool
+    from auth.identity import resolve_canonical_user_id
 
     pool = get_pool()
     async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT permissions, ihc_role FROM users WHERE id = $1", user.get("sub"))
+        user_id = await resolve_canonical_user_id(user, conn)
+        row = await conn.fetchrow("SELECT permissions, ihc_role FROM users WHERE id = $1", user_id)
 
     perms = DEFAULT_PERMISSIONS.copy()
     if row and row["permissions"]:

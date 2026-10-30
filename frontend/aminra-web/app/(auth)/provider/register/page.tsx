@@ -137,14 +137,14 @@ export default function ProviderRegisterPage() {
             boxShadow: "0 8px 24px rgba(10,31,68,0.12)",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img
             src="/aminra-mark.png"
             alt=""
             className="w-11 h-11 object-contain"
           />
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img
           src="/aminra-wordmark-navy.png"
           alt="AMINRA"
@@ -242,7 +242,7 @@ export default function ProviderRegisterPage() {
                 onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
               />
               <p className="text-xs mt-1.5" style={{ color: "#94A3B8" }}>
-                10+ ký tự, có chữ hoa, thường, số
+                10+ ký tự, có chữ hoa, thường, số và ký tự đặc biệt
               </p>
             </div>
             <div>

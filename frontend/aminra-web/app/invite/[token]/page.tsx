@@ -165,7 +165,7 @@ export default function InviteAcceptPage({
           </p>
           <Link
             href="/business/login"
-            className="inline-block px-6 py-3 rounded-xl font-semibold text-white"
+            className="inline-block px-6 py-3 rounded-xl font-semibold text-white btn-lift"
             style={{ background: "#0A1F44" }}
           >
             Đăng nhập ngay
@@ -195,7 +195,7 @@ export default function InviteAcceptPage({
             className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-4"
             style={{ background: "#0A1F44" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src="/aminra-mark.png" alt="AMINRA" className="w-9 h-9" />
           </div>
           <h1 className="text-2xl font-bold" style={{ color: "#0A1F44" }}>

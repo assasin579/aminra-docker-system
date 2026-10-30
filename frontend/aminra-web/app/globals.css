@@ -72,6 +72,19 @@
   --duration-page: 0.5s; /* page enter */
   --duration-entry: 0.52s; /* hero blocks enter */
   --duration-hero: 0.72s; /* score dial, key reveal */
+
+  /* Z-index scale — dùng tokens thay magic numbers */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 30;
+  --z-sidebar: 40;
+  --z-dropdown: 50;
+  --z-overlay: 80;
+  --z-modal-backdrop: 100;
+  --z-modal: 110;
+  --z-toast: 130;
+  --z-tooltip: 150;
+  --z-nav-progress: 200;
 }
 
 @theme inline {
@@ -79,6 +92,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Override Tailwind default transition (150ms → 220ms, ease-in-out → ease-out-quart).
+     Áp dụng cho toàn bộ transition-all, duration-* không explicit. */
+  --default-transition-duration: 220ms;
+  --default-transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 html {
@@ -92,12 +109,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.text-xs {
-  font-size: 0.8rem !important;
-}
-.text-sm {
-  font-size: 0.9rem !important;
-}
+/* Note: .text-xs/.text-sm overrides removed — chúng đã break Tailwind defaults. */
 
 /* ── Global smooth rendering ── */
 * {
@@ -105,23 +117,54 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── A11y: focus-visible ring (keyboard nav) ── */
+:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(201, 162, 74, 0.18);
+}
+
 /* ═══════════════════════════════════════════════════
    1. INTERACTIVE ELEMENTS — buttons, inputs, cards
    ═══════════════════════════════════════════════════ */
 
-/* Buttons — universal spring feel */
-button,
-a[class*="rounded"] {
-  transition:
-    transform var(--duration-fast) var(--ease-spring),
-    box-shadow 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    opacity 0.2s ease;
+/* ─── Convert hover:scale → translateY (GPU-only, zero layout repaint) ───
+   hover:scale-* gây repaint layout khi element size thay đổi → jerky.
+   translateY chạy hoàn toàn trên compositor thread → smooth 60fps.
+   Non-layered CSS wins over @layer utilities (Tailwind) cùng specificity.
+   Escape hatch: thêm class .keep-scale để giữ nguyên scale nếu cần. */
+.hover\:scale-105:not(.keep-scale):hover,
+.hover\:scale-\[1\.05\]:not(.keep-scale):hover {
+  transform: translateY(-2px) !important;
 }
-button:active:not(:disabled) {
-  transform: scale(0.97);
+.hover\:scale-\[1\.02\]:not(.keep-scale):hover,
+.hover\:scale-\[1\.01\]:not(.keep-scale):hover {
+  transform: translateY(-1px) !important;
+}
+.hover\:scale-110:not(.keep-scale):hover {
+  transform: translateY(-2px) scale(1.02) !important;
+}
+
+/* ─── Universal transition baseline (duration + easing) ──────────────────
+   Ghi đè Tailwind default 150ms ease-in-out → 200ms ease-out-quart.
+   !important cần thiết vì Tailwind class (0,1,0) > element selector (0,0,1). */
+:is(button, a, [role="button"]) {
+  transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1) !important;
+  transition-duration: 200ms !important;
+  will-change: transform;
+}
+:is(button, a, [role="button"]):active:not(:disabled) {
+  transition-duration: 100ms !important;
+}
+:is(button, a, [role="button"]):disabled {
+  will-change: auto;
+  cursor: not-allowed;
 }
 
 /* Input fields — smooth focus glow */
@@ -171,7 +214,7 @@ select:focus {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 main,
@@ -187,7 +230,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .animate-section {
@@ -225,7 +268,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .animate-list-item {
@@ -338,10 +381,19 @@ main,
     transform: scale(0.96) translateY(6px);
   }
 }
+/* Modal overlay self-contained primitive — đảm bảo backdrop có background +
+   z-index đúng dù JSX không set inline. Background đen (không navy) để contrast
+   trên cả vùng sidebar (dark) lẫn main content (light). */
 .animate-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  background: rgba(0, 0, 0, 0.55);
   animation: modalOverlayIn 0.28s var(--ease-decelerate) forwards;
 }
 .animate-modal-content {
+  position: relative;
+  z-index: var(--z-modal);
   animation: modalContentIn 0.42s var(--ease-bounce-soft) forwards;
 }
 
@@ -387,7 +439,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .animate-tab-content {
@@ -572,7 +624,7 @@ main,
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
 }
 .animate-nav-item {
@@ -841,21 +893,22 @@ main,
 
 .btn-lift {
   transition:
-    transform 0.2s var(--ease-spring),
-    box-shadow 0.25s ease,
-    background-color 0.2s ease,
-    opacity 0.2s ease;
+    transform 240ms cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 240ms cubic-bezier(0.25, 1, 0.5, 1),
+    background-color 180ms ease,
+    opacity 180ms ease;
   will-change: transform, box-shadow;
 }
 .btn-lift:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow:
-    0 6px 20px rgba(10, 31, 68, 0.18),
-    0 2px 6px rgba(10, 31, 68, 0.08);
+    0 8px 24px rgba(10, 31, 68, 0.20),
+    0 2px 8px rgba(10, 31, 68, 0.08);
 }
 .btn-lift:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 6px rgba(10, 31, 68, 0.12);
+  transition-duration: 100ms;
+  box-shadow: 0 2px 6px rgba(10, 31, 68, 0.10);
 }
 
 /* ═══════════════════════════════════════════════════

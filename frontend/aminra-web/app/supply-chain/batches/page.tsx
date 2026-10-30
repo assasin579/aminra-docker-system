@@ -4,10 +4,15 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { openAuthed } from "@/lib/authedOpen";
+import Modal from "@/components/Modal";
+import ModuleAccessGate from "@/components/ModuleAccessGate";
+import { ApiClientError, apiFetch } from "@/lib/apiClient";
 
 interface Batch {
   id: string;
   batch_code: string;
+  public_trace_id?: string | null;
+  public_trace_enabled?: boolean;
   product_name: string;
   process_template_id: string | null;
   process_name: string | null;
@@ -40,7 +45,7 @@ const STATUS = {
   rejected: { label: "Từ chối", bg: "#FEF2F2", color: "#DC2626" },
 };
 
-export default function BatchesPage() {
+function BatchesWorkspacePage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading } = useUserAuth();
   const headers = useMemo(
@@ -147,22 +152,20 @@ export default function BatchesPage() {
       const mats = Object.entries(selectedMats)
         .filter(([, q]) => q)
         .map(([id, q]) => ({ material_id: id, quantity: parseFloat(q) || 0 }));
-      const res = await fetch("/api/api/supply-chain/batches", {
+      await apiFetch("/api/api/supply-chain/batches", {
         method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
+        token,
+        json: {
           ...createForm,
           process_template_id: createForm.process_template_id || null,
           materials: mats.length > 0 ? mats : null,
-        }),
+        },
+        fallbackError: "Tạo lô hàng thất bại",
       });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Lỗi");
-        return;
-      }
       setShowCreate(false);
       fetchBatches();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Tạo lô hàng thất bại");
     } finally {
       setCreating(false);
     }
@@ -189,45 +192,52 @@ export default function BatchesPage() {
   const assignMember = async (bid: string, memberId: string) => {
     setAssigning(true);
     try {
-      const res = await fetch(
+      const d = await apiFetch(
         `/api/api/supply-chain/batches/${bid}/assign-member`,
         {
           method: "PUT",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ member_id: memberId }),
+          token,
+          json: { member_id: memberId },
+          fallbackError: "Ủy quyền thất bại",
         },
-      );
-      if (res.ok) {
-        const d = await res.json();
-        alert(`Đã ủy quyền cho ${d.assigned_name}`);
-        openDetail(bid);
-      } else {
-        const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Lỗi");
-      }
+      ).then((res) => res.json());
+      alert(`Đã ủy quyền cho ${d.assigned_name}`);
+      openDetail(bid);
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Ủy quyền thất bại");
     } finally {
       setAssigning(false);
     }
   };
 
   const updateStep = async (bid: string, stepId: string, data: any) => {
-    await fetch(`/api/api/supply-chain/batches/${bid}/steps/${stepId}`, {
-      method: "PUT",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    openDetail(bid);
-    fetchBatches();
+    try {
+      await apiFetch(`/api/api/supply-chain/batches/${bid}/steps/${stepId}`, {
+        method: "PUT",
+        token,
+        json: data,
+        fallbackError: "Cập nhật bước thất bại",
+      });
+      openDetail(bid);
+      fetchBatches();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Cập nhật bước thất bại");
+    }
   };
 
   const updateBatchStatus = async (bid: string, status: string) => {
-    await fetch(`/api/api/supply-chain/batches/${bid}`, {
-      method: "PUT",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    openDetail(bid);
-    fetchBatches();
+    try {
+      await apiFetch(`/api/api/supply-chain/batches/${bid}`, {
+        method: "PUT",
+        token,
+        json: { status },
+        fallbackError: "Cập nhật trạng thái lô hàng thất bại",
+      });
+      openDetail(bid);
+      fetchBatches();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Cập nhật trạng thái lô hàng thất bại");
+    }
   };
 
   const downloadQR = async (bid: string) => {
@@ -248,12 +258,15 @@ export default function BatchesPage() {
   };
 
   const exportPDF = async (bid: string) => {
-    const res = await fetch(`/api/api/supply-chain/batches/${bid}/export-pdf`, {
-      method: "POST",
-      headers,
-    });
-    if (!res.ok) {
-      alert("Xuất PDF thất bại");
+    let res: Response;
+    try {
+      res = await apiFetch(`/api/api/supply-chain/batches/${bid}/export-pdf`, {
+        method: "POST",
+        token,
+        fallbackError: "Xuất PDF thất bại",
+      });
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xuất PDF thất bại");
       return;
     }
     const blob = await res.blob();
@@ -267,12 +280,17 @@ export default function BatchesPage() {
 
   const deleteBatch = async (bid: string) => {
     if (!confirm("Xác nhận xoá lô hàng?")) return;
-    await fetch(`/api/api/supply-chain/batches/${bid}`, {
-      method: "DELETE",
-      headers,
-    });
-    if (detail?.batch?.id === bid) setDetail(null);
-    fetchBatches();
+    try {
+      await apiFetch(`/api/api/supply-chain/batches/${bid}`, {
+        method: "DELETE",
+        token,
+        fallbackError: "Xoá lô hàng thất bại",
+      });
+      if (detail?.batch?.id === bid) setDetail(null);
+      fetchBatches();
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xoá lô hàng thất bại");
+    }
   };
 
   if (authLoading || !user)
@@ -335,7 +353,7 @@ export default function BatchesPage() {
           </div>
           <button
             onClick={openCreate}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
             style={{ background: "#0A1F44" }}
           >
             + Tạo lô hàng
@@ -496,7 +514,7 @@ export default function BatchesPage() {
                         exportPDF(b.id);
                       }}
                       title="Xuất PDF"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FFFBEB",
                         border: "1px solid #FDE68A",
@@ -523,7 +541,7 @@ export default function BatchesPage() {
                         downloadQR(b.id);
                       }}
                       title="Tải QR"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#F0F9FF",
                         border: "1px solid #BAE6FD",
@@ -550,7 +568,7 @@ export default function BatchesPage() {
                         deleteBatch(b.id);
                       }}
                       title="Xoá"
-                      className="w-8 h-8 rounded-lg grid place-items-center transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
                         background: "#FEF2F2",
                         border: "1px solid #FECACA",
@@ -581,11 +599,7 @@ export default function BatchesPage() {
 
       {/* ── Create Modal ── */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowCreate(false)}
-        >
+        <Modal onClose={() => setShowCreate(false)}>
           <div
             className="w-full max-w-lg rounded-2xl p-6 animate-modal-content overflow-y-auto"
             style={{ ...cardStyle, maxHeight: "calc(100vh - 4rem)" }}
@@ -757,16 +771,12 @@ export default function BatchesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Detail Modal ── */}
       {(detail || detailLoading) && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={() => setDetail(null)}
-        >
+        <Modal onClose={() => setDetail(null)}>
           <div
             className="w-full max-w-2xl rounded-2xl animate-modal-content overflow-hidden"
             style={{ ...cardStyle, maxHeight: "calc(100vh - 4rem)" }}
@@ -821,7 +831,7 @@ export default function BatchesPage() {
                           onClick={() =>
                             updateBatchStatus(detail.batch.id, "in_progress")
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                           style={{ background: "#B45309" }}
                         >
                           Bắt đầu SX
@@ -832,7 +842,7 @@ export default function BatchesPage() {
                           onClick={() =>
                             updateBatchStatus(detail.batch.id, "completed")
                           }
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                           style={{ background: "#102A5C" }}
                         >
                           Hoàn thành
@@ -842,23 +852,21 @@ export default function BatchesPage() {
                         !detail.batch.integrity_hash && (
                           <button
                             onClick={async () => {
-                              const res = await fetch(
-                                `/api/api/supply-chain/batches/${detail.batch.id}/approve`,
-                                { method: "POST", headers },
-                              );
-                              if (res.ok) {
-                                const d = await res.json();
+                              try {
+                                const d = await apiFetch(
+                                  `/api/api/supply-chain/batches/${detail.batch.id}/approve`,
+                                  { method: "POST", token, fallbackError: "Seal lô hàng thất bại" },
+                                ).then((res) => res.json());
                                 alert(
                                   `Lô hàng đã sealed!\n\nHash: ${d.integrity_hash}\n\nDữ liệu không thể thay đổi sau bước này.`,
                                 );
-                              } else {
-                                const e = await res.json().catch(() => ({}));
-                                alert(e.detail || "Lỗi");
+                                openDetail(detail.batch.id);
+                                fetchBatches();
+                              } catch (err) {
+                                alert(err instanceof ApiClientError ? err.message : "Seal lô hàng thất bại");
                               }
-                              openDetail(detail.batch.id);
-                              fetchBatches();
                             }}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                             style={{ background: "#0A1F44" }}
                           >
                             Seal & Xác nhận
@@ -1131,7 +1139,7 @@ export default function BatchesPage() {
                                     }}
                                   />
                                   <label
-                                    className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all hover:scale-105"
+                                    className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all duration-200 ease-out hover:scale-105"
                                     style={{
                                       background: "#F0F9FF",
                                       color: "#0369A1",
@@ -1147,15 +1155,20 @@ export default function BatchesPage() {
                                         if (!f) return;
                                         const fd = new FormData();
                                         fd.append("file", f);
-                                        await fetch(
-                                          `/api/api/supply-chain/batches/${detail.batch.id}/steps/${step.id}/photo`,
-                                          {
-                                            method: "POST",
-                                            headers,
-                                            body: fd,
-                                          },
-                                        );
-                                        openDetail(detail.batch.id);
+                                        try {
+                                          await apiFetch(
+                                            `/api/api/supply-chain/batches/${detail.batch.id}/steps/${step.id}/photo`,
+                                            {
+                                              method: "POST",
+                                              token,
+                                              body: fd,
+                                              fallbackError: "Upload ảnh bước thất bại",
+                                            },
+                                          );
+                                          openDetail(detail.batch.id);
+                                        } catch (err) {
+                                          alert(err instanceof ApiClientError ? err.message : "Upload ảnh bước thất bại");
+                                        }
                                       }}
                                     />
                                     {step.photo_path ? "Đổi ảnh" : "Upload ảnh"}
@@ -1200,7 +1213,7 @@ export default function BatchesPage() {
                                         token || "",
                                       )
                                     }
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded transition-all hover:scale-105"
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded transition-all duration-200 ease-out hover:scale-105"
                                     style={{
                                       background: "#F0F9FF",
                                       color: "#0369A1",
@@ -1264,7 +1277,7 @@ export default function BatchesPage() {
                                           status: "completed",
                                         })
                                       }
-                                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white btn-lift"
                                       style={{ background: "#0A1F44" }}
                                     >
                                       Hoàn thành bước
@@ -1273,11 +1286,15 @@ export default function BatchesPage() {
                                     <>
                                       <button
                                         onClick={async () => {
-                                          await fetch(
-                                            `/api/api/supply-chain/batches/${detail.batch.id}/steps/${step.id}/approve`,
-                                            { method: "POST", headers },
-                                          );
-                                          openDetail(detail.batch.id);
+                                          try {
+                                            await apiFetch(
+                                              `/api/api/supply-chain/batches/${detail.batch.id}/steps/${step.id}/approve`,
+                                              { method: "POST", token, fallbackError: "Xác nhận bước thất bại" },
+                                            );
+                                            openDetail(detail.batch.id);
+                                          } catch (err) {
+                                            alert(err instanceof ApiClientError ? err.message : "Xác nhận bước thất bại");
+                                          }
                                         }}
                                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                                         style={{
@@ -1344,8 +1361,16 @@ export default function BatchesPage() {
               )
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
+  );
+}
+
+export default function BatchesPage() {
+  return (
+    <ModuleAccessGate moduleCode="traceability" routePath="/supply-chain/batches">
+      <BatchesWorkspacePage />
+    </ModuleAccessGate>
   );
 }

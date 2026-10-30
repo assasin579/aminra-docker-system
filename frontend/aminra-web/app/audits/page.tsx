@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { parseApiError } from "@/lib/apiError";
 import RevealOnScroll from "@/components/RevealOnScroll";
+import Modal from "@/components/Modal";
 
 interface AuditVisit {
   id: string;
@@ -294,7 +295,7 @@ export default function AuditsPage() {
                 setShowCreate(true);
                 fetchTemplates();
               }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
               style={{
                 background: "#0A1F44",
                 boxShadow: "0 4px 12px rgba(10,31,68,0.3)",
@@ -459,7 +460,7 @@ export default function AuditsPage() {
                         setAssignId(v.id);
                         fetchAuditors();
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                       style={{
                         background: "rgba(14,165,233,0.1)",
                         color: "#0EA5E9",
@@ -478,13 +479,7 @@ export default function AuditsPage() {
 
       {/* Create visit modal */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <Modal>
           <div
             className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
             style={{
@@ -664,19 +659,12 @@ export default function AuditsPage() {
               </button>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Assign auditor modal */}
       {assignId && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-          onClick={() => {
-            setAssignId(null);
-            setSelectedAuditor("");
-          }}
-        >
+        <Modal onClose={() => setAssignId(null)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{
@@ -742,7 +730,7 @@ export default function AuditsPage() {
               </>
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

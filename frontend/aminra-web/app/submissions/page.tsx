@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import RevisionPanel from "@/components/submissions/RevisionPanel";
 import SlaBadge from "@/components/submissions/SlaBadge";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
+import Modal from "@/components/Modal";
 
 interface Submission {
   id: string;
@@ -87,12 +88,12 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
 
 function scoreColor(s: number | null) {
   if (s === null) return "#6B7280";
-  if (s >= 75) return "#0A1F44";
-  if (s >= 50) return "#F59E0B";
-  return "#f87171";
+  if (s >= 75) return "#16A34A";
+  if (s >= 50) return "#D97706";
+  return "#DC2626";
 }
 
-export default function SubmissionsPage() {
+function SubmissionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token, isAuthenticated, loading } = useUserAuth();
@@ -149,6 +150,23 @@ export default function SubmissionsPage() {
   >([]);
   const [loadingRevisions, setLoadingRevisions] = useState(false);
 
+  // Submit new application (business only)
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [providers, setProviders] = useState<
+    Array<{ id: string; company_name: string; email: string }>
+  >([]);
+  const [selectedProvider, setSelectedProvider] = useState("");
+  const [submitDocs, setSubmitDocs] = useState<
+    Array<{
+      id: string;
+      original_filename: string;
+      doc_type_label: string | null;
+    }>
+  >([]);
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+  const [submitNotes, setSubmitNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   // Deadline state
   const [deadlineModal, setDeadlineModal] = useState<string | null>(null);
   const [deadlineValue, setDeadlineValue] = useState("");
@@ -159,7 +177,7 @@ export default function SubmissionsPage() {
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/business/login");
     if (!loading && isAuthenticated && !isBusiness && !isProvider)
-      router.replace("/");
+      router.replace("/landing");
   }, [loading, isAuthenticated, user, router, isBusiness, isProvider]);
 
   const [auditors, setAuditors] = useState<
@@ -514,6 +532,61 @@ export default function SubmissionsPage() {
     }
   };
 
+  const openSubmitModal = async () => {
+    try {
+      const [provRes, docRes] = await Promise.all([
+        fetch("/api/api/submissions/providers", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/api/documents?page=1&page_size=100", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (provRes.ok) {
+        const d = await provRes.json();
+        setProviders(d.providers || []);
+      }
+      if (docRes.ok) {
+        const d = await docRes.json();
+        const docs = d.documents || [];
+        setSubmitDocs(docs);
+        setSelectedDocs(new Set(docs.map((doc: any) => doc.id)));
+      }
+    } catch {}
+    setShowSubmit(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedProvider || selectedDocs.size === 0) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/api/submissions/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          provider_id: selectedProvider,
+          document_ids: Array.from(selectedDocs),
+          notes: submitNotes,
+        }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.detail || "Gửi thất bại");
+      }
+      setShowSubmit(false);
+      setSubmitNotes("");
+      setSelectedProvider("");
+      fetchSubs();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const setDeadline = async (subId: string) => {
     if (!deadlineValue) return;
     try {
@@ -580,45 +653,76 @@ export default function SubmissionsPage() {
         className="rounded-2xl p-6 mb-6 animate-section"
         style={{ background: "#F5F1E8", border: "1px solid #E2E8F0" }}
       >
-        <div className="grid grid-flow-col items-center gap-3 justify-start">
-          <div
-            className="w-10 h-10 rounded-xl grid place-items-center"
-            style={{
-              background: "rgba(14,165,233,0.15)",
-              border: "1px solid rgba(14,165,233,0.3)",
-            }}
-          >
-            <svg
-              className="w-5 h-5"
-              style={{ color: "#0EA5E9" }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <div
+          className="grid items-center gap-3"
+          style={{ gridTemplateColumns: "1fr auto" }}
+        >
+          <div className="grid grid-flow-col items-center gap-3 justify-start">
+            <div
+              className="w-10 h-10 rounded-xl grid place-items-center"
+              style={{
+                background: "rgba(14,165,233,0.15)",
+                border: "1px solid rgba(14,165,233,0.3)",
+              }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
+              <svg
+                className="w-5 h-5"
+                style={{ color: "#0EA5E9" }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold" style={{ color: "#0A1F44" }}>
+                {isBusiness
+                  ? "Hồ sơ đã gửi"
+                  : selectedCompany
+                    ? selectedCompany
+                    : "Hồ sơ nhận được"}
+              </h1>
+              <p className="text-sm" style={{ color: "#6B7280" }}>
+                {isBusiness
+                  ? `${subs.length} hồ sơ`
+                  : selectedCompany
+                    ? `${subs.filter((s) => s.company_name === selectedCompany).length} hồ sơ từ ${selectedCompany}`
+                    : `${new Set(subs.map((s) => s.company_name)).size} doanh nghiệp · ${subs.length} hồ sơ`}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold" style={{ color: "#0A1F44" }}>
-              {isBusiness
-                ? "Hồ sơ đã gửi"
-                : selectedCompany
-                  ? selectedCompany
-                  : "Hồ sơ nhận được"}
-            </h1>
-            <p className="text-sm" style={{ color: "#6B7280" }}>
-              {isBusiness
-                ? `${subs.length} hồ sơ`
-                : selectedCompany
-                  ? `${subs.filter((s) => s.company_name === selectedCompany).length} hồ sơ từ ${selectedCompany}`
-                  : `${new Set(subs.map((s) => s.company_name)).size} doanh nghiệp · ${subs.length} hồ sơ`}
-            </p>
-          </div>
+          {isBusiness && (
+            <button
+              onClick={openSubmitModal}
+              className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
+              style={{
+                gridTemplateColumns: "auto 1fr",
+                background: "#0A1F44",
+                boxShadow: "0 4px 12px rgba(10,31,68,0.3)",
+              }}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+              Gửi hồ sơ mới
+            </button>
+          )}
         </div>
       </div>
 
@@ -738,7 +842,7 @@ export default function SubmissionsPage() {
                                   setCertExpiryMonths(12);
                                 }
                               }}
-                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105"
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ease-out hover:scale-105"
                               style={{
                                 background: "#C9A24A",
                                 color: "#0A1F44",
@@ -944,7 +1048,7 @@ export default function SubmissionsPage() {
                             e.stopPropagation();
                             setDeadlineModal(sub.id);
                           }}
-                          className="px-2 py-0.5 rounded-full text-xs font-medium transition-all hover:scale-105"
+                          className="px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                           style={{
                             background: "rgba(14,165,233,0.1)",
                             color: "#0EA5E9",
@@ -961,7 +1065,7 @@ export default function SubmissionsPage() {
                           setDeadlineModal(sub.id);
                           setDeadlineValue(sub.deadline!.slice(0, 10));
                         }}
-                        className="px-2 py-0.5 rounded-full text-xs font-medium transition-all hover:scale-105"
+                        className="px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ease-out hover:scale-105"
                         style={{
                           background: "rgba(14,165,233,0.1)",
                           color: "#0EA5E9",
@@ -1007,7 +1111,7 @@ export default function SubmissionsPage() {
                                 disabled={
                                   updatingId === sub.id || sub.status === s
                                 }
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                                 style={{
                                   background:
                                     sub.status === s
@@ -1077,7 +1181,7 @@ export default function SubmissionsPage() {
                                 if (sel) assignAuditor(sub.id, sel);
                               }}
                               disabled={assigningId === sub.id}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                               style={{
                                 background: "#0A1F44",
                                 whiteSpace: "nowrap",
@@ -1223,7 +1327,7 @@ export default function SubmissionsPage() {
                                   }}
                                   disabled={uploading}
                                   title="Upload phiên bản mới"
-                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                   style={{
                                     background: "rgba(245,158,11,0.1)",
                                     border: "1px solid rgba(245,158,11,0.2)",
@@ -1249,7 +1353,7 @@ export default function SubmissionsPage() {
                               <button
                                 onClick={() => viewDoc(doc.id)}
                                 title="Xem"
-                                className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                 style={{
                                   background: "rgba(14,165,233,0.1)",
                                   border: "1px solid rgba(14,165,233,0.2)",
@@ -1283,7 +1387,7 @@ export default function SubmissionsPage() {
                                     openRevisions(sub.id, doc.doc_type!)
                                   }
                                   title="Lịch sử phiên bản"
-                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                  className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                   style={{
                                     background: "rgba(162,28,175,0.08)",
                                     border: "1px solid rgba(162,28,175,0.2)",
@@ -1318,7 +1422,7 @@ export default function SubmissionsPage() {
                                   )
                                 }
                                 title="Tải xuống"
-                                className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                                className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                 style={{
                                   background: "rgba(10,31,68,0.1)",
                                   border: "1px solid rgba(10,31,68,0.2)",
@@ -1411,7 +1515,7 @@ export default function SubmissionsPage() {
                           <button
                             onClick={() => handleFinalize(sub.id)}
                             disabled={finalizing}
-                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105 active:scale-[0.97] flex-shrink-0"
                             style={{
                               background:
                                 "linear-gradient(135deg, #0A1F44, #0A1F44)",
@@ -1573,7 +1677,7 @@ export default function SubmissionsPage() {
                             <button
                               onClick={() => saveEvaluation(sub.id)}
                               disabled={savingEval}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-lift"
                               style={{ background: "#0A1F44" }}
                             >
                               {savingEval ? "Đang lưu..." : "Lưu đánh giá"}
@@ -1597,10 +1701,9 @@ export default function SubmissionsPage() {
                                 <button
                                   onClick={() => approveFinal(sub.id)}
                                   disabled={approvingFinal}
-                                  className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                  className="w-full px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
                                   style={{
-                                    background:
-                                      "linear-gradient(135deg, #0A1F44, #0A1F44)",
+                                    background: "#0A1F44",
                                     boxShadow: "0 4px 12px rgba(10,31,68,0.3)",
                                   }}
                                 >
@@ -1624,11 +1727,7 @@ export default function SubmissionsPage() {
 
       {/* Certificate modal */}
       {certModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setCertModal(null)}
-        >
+        <Modal onClose={() => setCertModal(null)}>
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 animate-modal-content"
             style={{ border: "1px solid #E2E8F0" }}
@@ -1671,7 +1770,7 @@ export default function SubmissionsPage() {
                       filename: `${certResult.cert_number}.pdf`,
                     })
                   }
-                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-105"
+                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ease-out hover:scale-105"
                   style={{
                     background: "#0A1F44",
                     color: "#C9A24A",
@@ -1743,7 +1842,7 @@ export default function SubmissionsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCertModal(null)}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
                     style={{
                       background: "#F5F1E8",
                       color: "#6B7280",
@@ -1755,7 +1854,7 @@ export default function SubmissionsPage() {
                   <button
                     onClick={() => issueCertificate(certModal)}
                     disabled={issuingCert}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
                     style={{ background: "#0A1F44" }}
                   >
                     {issuingCert ? "Đang cấp..." : "Xác nhận cấp"}
@@ -1764,16 +1863,12 @@ export default function SubmissionsPage() {
               </div>
             )}
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Deadline modal */}
       {deadlineModal && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setDeadlineModal(null)}
-        >
+        <Modal onClose={() => setDeadlineModal(null)}>
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 animate-modal-content"
             style={{ border: "1px solid #E2E8F0" }}
@@ -1807,22 +1902,252 @@ export default function SubmissionsPage() {
               </button>
               <button
                 onClick={() => setDeadline(deadlineModal)}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                 style={{ background: "#0A1F44" }}
               >
                 Lưu
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
+      {/* Submit new application modal (business only) */}
+      {showSubmit && (
+        <Modal onClose={() => setShowSubmit(false)}>
+          <div
+            className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E2E8F0",
+              maxHeight: "calc(100vh - 4rem)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.1)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="px-6 py-5 flex-shrink-0"
+              style={{ borderBottom: "1px solid #E2E8F0" }}
+            >
+              <div
+                className="grid items-center gap-3"
+                style={{ gridTemplateColumns: "1fr auto" }}
+              >
+                <div>
+                  <h2
+                    className="text-base font-bold"
+                    style={{ color: "#0A1F44" }}
+                  >
+                    Gửi hồ sơ đến tổ chức chứng nhận
+                  </h2>
+                  <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
+                    Chọn tổ chức và tài liệu cần gửi
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSubmit(false)}
+                  className="w-8 h-8 rounded-lg grid place-items-center"
+                  style={{ background: "rgba(0,0,0,0.05)" }}
+                >
+                  <span style={{ color: "#6B7280" }}>✕</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+              {/* Provider select */}
+              <div>
+                <label
+                  className="text-xs font-medium mb-1.5 block"
+                  style={{ color: "#6B7280" }}
+                >
+                  Tổ chức chứng nhận *
+                </label>
+                {providers.length === 0 ? (
+                  <p className="text-sm" style={{ color: "#6B7280" }}>
+                    Chưa có tổ chức nào trong hệ thống
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {providers.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedProvider(p.id)}
+                        className="w-full grid items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
+                        style={{
+                          gridTemplateColumns: "auto 1fr",
+                          background:
+                            selectedProvider === p.id
+                              ? "rgba(14,165,233,0.08)"
+                              : "#FFFFFF",
+                          border: `1px solid ${selectedProvider === p.id ? "rgba(14,165,233,0.4)" : "#E2E8F0"}`,
+                        }}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg grid place-items-center"
+                          style={{
+                            background: "rgba(14,165,233,0.15)",
+                            color: "#0EA5E9",
+                          }}
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: "#0A1F44" }}
+                          >
+                            {p.company_name}
+                          </p>
+                          <p className="text-xs" style={{ color: "#6B7280" }}>
+                            {p.email}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Document selection */}
+              <div>
+                <label
+                  className="text-xs font-medium mb-1.5 block"
+                  style={{ color: "#6B7280" }}
+                >
+                  Tài liệu gửi ({selectedDocs.size}/{submitDocs.length})
+                </label>
+                {submitDocs.length === 0 ? (
+                  <div
+                    className="rounded-xl p-5 text-center"
+                    style={{
+                      background: "#F5F1E8",
+                      border: "1px solid #E2E8F0",
+                    }}
+                  >
+                    <p className="text-sm mb-2" style={{ color: "#6B7280" }}>
+                      Bạn chưa có tài liệu nào
+                    </p>
+                    <a
+                      href="/documents"
+                      className="text-sm font-semibold"
+                      style={{ color: "#0EA5E9" }}
+                    >
+                      Upload tài liệu →
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {submitDocs.map((doc) => (
+                      <label
+                        key={doc.id}
+                        className="grid items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
+                        style={{
+                          gridTemplateColumns: "auto 1fr auto",
+                          background: selectedDocs.has(doc.id)
+                            ? "rgba(10,31,68,0.08)"
+                            : "#FFFFFF",
+                          border: `1px solid ${selectedDocs.has(doc.id) ? "rgba(10,31,68,0.25)" : "#E2E8F0"}`,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedDocs.has(doc.id)}
+                          onChange={(e) => {
+                            const next = new Set(selectedDocs);
+                            e.target.checked
+                              ? next.add(doc.id)
+                              : next.delete(doc.id);
+                            setSelectedDocs(next);
+                          }}
+                          className="rounded"
+                        />
+                        <span
+                          className="text-sm truncate"
+                          style={{ color: "#0A1F44" }}
+                        >
+                          {doc.original_filename}
+                        </span>
+                        <span className="text-xs" style={{ color: "#6B7280" }}>
+                          {doc.doc_type_label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label
+                  className="text-xs font-medium mb-1.5 block"
+                  style={{ color: "#6B7280" }}
+                >
+                  Ghi chú (tuỳ chọn)
+                </label>
+                <textarea
+                  value={submitNotes}
+                  onChange={(e) => setSubmitNotes(e.target.value)}
+                  placeholder="Thông tin thêm cho tổ chức chứng nhận..."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
+                    color: "#0A1F44",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div
+              className="px-6 py-4 flex-shrink-0"
+              style={{ borderTop: "1px solid #E2E8F0" }}
+            >
+              <button
+                onClick={handleSubmit}
+                disabled={
+                  submitting || !selectedProvider || selectedDocs.size === 0
+                }
+                className="w-full py-3 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background:
+                    !selectedProvider || selectedDocs.size === 0
+                      ? "#E2E8F0"
+                      : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                  boxShadow:
+                    selectedProvider && selectedDocs.size > 0
+                      ? "0 4px 15px rgba(37,99,235,0.3)"
+                      : "none",
+                  color:
+                    !selectedProvider || selectedDocs.size === 0
+                      ? "#6B7280"
+                      : "white",
+                }}
+              >
+                {submitting
+                  ? "Đang gửi..."
+                  : `Gửi ${selectedDocs.size} tài liệu`}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Revision history modal */}
       {revisionDocType && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-          onClick={() => setRevisionDocType(null)}
-        >
+        <Modal onClose={() => setRevisionDocType(null)}>
           <div
             className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1933,7 +2258,7 @@ export default function SubmissionsPage() {
                         <button
                           onClick={() => viewDoc(rev.id)}
                           title="Xem"
-                          className="w-7 h-7 rounded-lg grid place-items-center transition-all hover:scale-110"
+                          className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                           style={{
                             background: "rgba(14,165,233,0.1)",
                             border: "1px solid rgba(14,165,233,0.2)",
@@ -1970,7 +2295,7 @@ export default function SubmissionsPage() {
                                 selectRevision(expanded, currentDoc.id, rev.id);
                             }}
                             title="Sử dụng phiên bản này"
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200 ease-out hover:scale-105"
                             style={{ background: "#0A1F44" }}
                           >
                             Chọn
@@ -1983,8 +2308,24 @@ export default function SubmissionsPage() {
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
+  );
+}
+
+export default function SubmissionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6" data-page>
+          <p className="text-sm" style={{ color: "#6B7280" }}>
+            Đang tải hồ sơ...
+          </p>
+        </div>
+      }
+    >
+      <SubmissionsContent />
+    </Suspense>
   );
 }

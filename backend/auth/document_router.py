@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from uuid import uuid4 as _uuid4
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, decode_token
 from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
@@ -37,18 +38,33 @@ from services.document_versioning import (
     reject_self_supersede,
     transition_allowed,
 )
+from services.official_artifacts import OFFICIAL_ARTIFACTS_DIR, create_official_artifact_for_document
 
 UPLOAD_DIR = _Path(os.getenv("UPLOAD_DIR", "./docs"))
 
 
-def _get_user_from_header_or_query(request: Request, token: str | None) -> dict:
-    """Try Authorization header first, then fall back to ?token= query param."""
+async def _get_user_from_header_or_query(request: Request, token: str | None) -> dict:
+    """Try Authorization header first, then fall back to ?token= query param.
+
+    `decode_token()` returns raw Keycloak claims only. File/preview routes need
+    the same enriched app identity (`role`, `tenant_id`, `is_owner`) as normal
+    `get_current_user`, otherwise valid Keycloak tokens can crash with KeyError
+    or bypass tenant checks. Keep query-token compatibility for signed/download
+    links, but always enrich before authorization decisions.
+    """
     auth = request.headers.get("Authorization", "")
+    raw_token = None
     if auth.startswith("Bearer "):
-        return decode_token(auth[7:])
-    if token:
-        return decode_token(token)
-    raise HTTPException(401, "Not authenticated")
+        raw_token = auth[7:]
+    elif token:
+        raw_token = token
+    if not raw_token:
+        raise HTTPException(401, "Not authenticated")
+
+    claims = decode_token(raw_token)
+    from auth import keycloak_validator
+    from auth.db import get_pool
+    return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
 
 
 def _validate_uuid(value: str) -> str:
@@ -109,7 +125,28 @@ class DocumentListResponse(BaseModel):
     page_size: int
 
 
+class OfficialArtifactItem(BaseModel):
+    id: str
+    source_document_id: str
+    artifact_kind: str
+    original_filename: str
+    file_size: int
+    mime_type: str
+    sha256: str
+    approved_by_user_id: Optional[str] = None
+    approved_at: datetime
+    effective_date: Optional[date] = None
+    next_review_date: Optional[date] = None
+    retention_expires_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class OfficialArtifactListResponse(BaseModel):
+    artifacts: list[OfficialArtifactItem]
+    total: int
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 
 def _parse_result(raw) -> Optional[dict]:
@@ -156,6 +193,92 @@ class RevisionListResponse(BaseModel):
     total: int
 
 
+# ── Official artifacts (immutable approved artifacts) ──────────────────────────
+
+
+@router.get("/official-artifacts", response_model=OfficialArtifactListResponse)
+async def list_official_artifacts(
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user["role"] != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    if not tenant_id:
+        raise HTTPException(400, "Tenant không xác định")
+
+    rows = await db.fetch(
+        """
+        SELECT id, source_document_id, artifact_kind, original_filename,
+               file_size, mime_type, sha256, approved_by_user_id, approved_at,
+               effective_date, next_review_date, retention_expires_at, created_at
+          FROM official_artifacts
+         WHERE tenant_id = $1
+         ORDER BY approved_at DESC, created_at DESC
+        """,
+        tenant_id,
+    )
+    return OfficialArtifactListResponse(
+        artifacts=[
+            OfficialArtifactItem(
+                id=str(r["id"]),
+                source_document_id=str(r["source_document_id"]),
+                artifact_kind=r["artifact_kind"],
+                original_filename=r["original_filename"],
+                file_size=r["file_size"],
+                mime_type=r["mime_type"],
+                sha256=r["sha256"],
+                approved_by_user_id=str(r["approved_by_user_id"]) if r["approved_by_user_id"] else None,
+                approved_at=r["approved_at"],
+                effective_date=r["effective_date"],
+                next_review_date=r["next_review_date"],
+                retention_expires_at=r["retention_expires_at"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ],
+        total=len(rows),
+    )
+
+
+@router.get("/official-artifacts/{artifact_id}/file")
+async def get_official_artifact_file(
+    artifact_id: str,
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    _validate_uuid(artifact_id)
+    if user["role"] != "business":
+        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    row = await db.fetchrow(
+        """
+        SELECT storage_path, original_filename, mime_type
+          FROM official_artifacts
+         WHERE id = $1 AND tenant_id = $2
+        """,
+        artifact_id,
+        tenant_id,
+    )
+    if not row:
+        raise HTTPException(404, "Bản chính thức không tồn tại")
+    artifact_path = _Path(row["storage_path"])
+    try:
+        resolved = artifact_path.resolve()
+        official_root = OFFICIAL_ARTIFACTS_DIR.resolve()
+    except Exception:
+        raise HTTPException(500, "Đường dẫn bản chính thức không an toàn")
+    if not resolved.is_relative_to(official_root):
+        raise HTTPException(500, "Đường dẫn bản chính thức không an toàn")
+    if not resolved.exists():
+        raise HTTPException(404, "File bản chính thức không tồn tại")
+    return _FileResponse(
+        resolved,
+        media_type=row["mime_type"] or "application/octet-stream",
+        filename=row["original_filename"],
+    )
+
+
 @router.get("/documents", response_model=DocumentListResponse)
 async def list_documents(
     page: int = Query(1, ge=1),
@@ -169,7 +292,7 @@ async def list_documents(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
@@ -270,7 +393,7 @@ async def list_revisions(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
@@ -325,7 +448,7 @@ async def promote_document(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "SELECT id, doc_type FROM documents WHERE id = $1 AND tenant_id = $2",
         doc_id,
@@ -340,7 +463,7 @@ async def promote_document(
         doc_id,
     )
 
-    log.info(f"[documents] Promoted {doc_id} (type={row['doc_type']}) by {user['sub']}")
+    log.info(f"[documents] Promoted {doc_id} (type={row['doc_type']}) by {user.get('email')}")
     return {"message": "Đã chọn phiên bản này làm tài liệu chính thức"}
 
 
@@ -354,7 +477,7 @@ async def get_document(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     # Tier-1 #24: include approval columns (always SELECT, conditionally surface)
     row = await db.fetchrow(
         """
@@ -416,7 +539,7 @@ async def preview_document(
     db=Depends(get_db),
 ):
     """Convert document to PDF for inline viewing. Caches the result."""
-    user = _get_user_from_header_or_query(request, token)
+    user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
     row = None
     if user["role"] == "business":
@@ -438,7 +561,7 @@ async def preview_document(
                      AND $1 = ANY(s.document_ids)
                )""",
             doc_id,
-            user["sub"],
+            await resolve_canonical_user_id(user, db),
         )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -533,7 +656,7 @@ async def get_document_file(
     db=Depends(get_db),
 ):
     """Serve the original uploaded file for viewing."""
-    user = _get_user_from_header_or_query(request, token)
+    user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
     row = None
     if user["role"] == "business":
@@ -552,7 +675,7 @@ async def get_document_file(
                      AND $1 = ANY(s.document_ids)
                )""",
             doc_id,
-            user["sub"],
+            await resolve_canonical_user_id(user, db),
         )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
@@ -575,6 +698,7 @@ async def get_document_file(
 async def upload_document(
     file: UploadFile = File(...),
     doc_type: Optional[str] = Form(None),
+    dossier_id: Optional[_UUID] = Form(None),
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
@@ -583,14 +707,30 @@ async def upload_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await check_permission_db(user, "can_upload")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
+
+    if dossier_id is not None:
+        dossier = await db.fetchrow(
+            "SELECT requirements_version_id, requirements_binding_status FROM dossiers "
+            "WHERE id=$1 AND tenant_id=$2 AND status NOT IN ('cancelled','cert_issued')",
+            dossier_id, tenant_id,
+        )
+        if not dossier:
+            raise HTTPException(404, "Hồ sơ không tồn tại")
+        if dossier['requirements_binding_status'] != 'bound':
+            raise HTTPException(409, "Hồ sơ chưa có bộ yêu cầu được chốt")
+        if not doc_type or not await db.fetchval(
+            "SELECT 1 FROM standard_requirement_version_slots WHERE requirements_version_id=$1 AND doc_type=$2",
+            dossier['requirements_version_id'],doc_type,
+        ):
+            raise HTTPException(422, "Loại tài liệu không thuộc bộ yêu cầu của hồ sơ")
 
     content = await validate_upload(file)
     file_size = len(content)
 
-    tenant_dir = UPLOAD_DIR / tenant_id
+    tenant_dir = UPLOAD_DIR / str(tenant_id)
     tenant_dir.mkdir(parents=True, exist_ok=True)
     doc_uuid = str(_uuid4())
     safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in (file.filename or "file")).strip()
@@ -600,20 +740,32 @@ async def upload_document(
     save_path.write_bytes(content)
 
     mime = file.content_type or "application/octet-stream"
-    row = await db.fetchrow(
-        """INSERT INTO documents
-              (filename, original_filename, file_path, file_size, mime_type,
-               user_id, tenant_id, doc_type)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, uploaded_at""",
-        save_path.name,
-        file.filename,
-        str(save_path),
-        file_size,
-        mime,
-        user["sub"],
-        tenant_id,
-        doc_type,
-    )
+    canonical_user_id = await resolve_canonical_user_id(user, db)
+    try:
+        row = await db.fetchrow(
+            """INSERT INTO documents
+                  (filename, original_filename, file_path, file_size, mime_type,
+                   user_id, tenant_id, doc_type, dossier_id)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, uploaded_at""",
+            save_path.name,
+            file.filename,
+            str(save_path),
+            file_size,
+            mime,
+            canonical_user_id,
+            tenant_id,
+            doc_type,
+            dossier_id,
+        )
+    except Exception:
+        try:
+            if save_path.exists() and save_path.resolve().is_relative_to(tenant_dir.resolve()):
+                save_path.unlink()
+        except Exception:
+            log.exception("[documents] Failed to cleanup orphan upload after DB insert failure")
+        log.exception("[documents] Upload DB insert failed for tenant %s", tenant_id)
+        raise HTTPException(500, "Không thể lưu metadata tài liệu")
+
     log.info(f"[documents] Uploaded {file.filename} for tenant {tenant_id} (no eval)")
     return {"id": str(row["id"]), "filename": file.filename, "doc_type": doc_type}
 
@@ -723,7 +875,7 @@ async def evaluate_existing_document(
     if lang not in ("vi", "en"):
         lang = "vi"
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "SELECT file_path, original_filename, doc_type, status FROM documents WHERE id = $1 AND tenant_id = $2",
         doc_id,
@@ -763,7 +915,7 @@ async def delete_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await check_permission_db(user, "can_delete")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "SELECT id, file_path FROM documents WHERE id = $1 AND tenant_id = $2",
         doc_id,
@@ -772,15 +924,56 @@ async def delete_document(
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
-    # Delete physical file if exists
+    # Validate physical file path before DB mutation, but unlink only after the
+    # database delete succeeds. Version FK/trigger rejection must never produce
+    # a false file unlink.
+    resolved_file = None
     if row["file_path"]:
         from pathlib import Path
 
         p = Path(row["file_path"])
-        p.unlink(missing_ok=True)
+        try:
+            upload_root = UPLOAD_DIR.resolve()
+            resolved_file = p.resolve()
+        except Exception:
+            log.exception("[documents] Refusing to delete document %s with unresolved file path", doc_id)
+            raise HTTPException(500, "Đường dẫn file tài liệu không an toàn")
+        if not resolved_file.is_relative_to(upload_root):
+            log.error(
+                "[documents] Refusing to delete document %s outside upload root: %s",
+                doc_id,
+                resolved_file,
+            )
+            raise HTTPException(500, "Đường dẫn file tài liệu không an toàn")
 
-    await db.execute("DELETE FROM documents WHERE id = $1", doc_id)
-    log.info(f"[documents] Deleted {doc_id} by {user['sub']}")
+    artifact_ref = await db.fetchrow(
+        "SELECT 1 FROM official_artifacts WHERE source_document_id = $1 LIMIT 1",
+        doc_id,
+    )
+    if artifact_ref:
+        raise HTTPException(409, "Không thể xoá tài liệu đã có bản chính thức")
+
+    child = await db.fetchrow(
+        "SELECT 1 FROM documents WHERE tenant_id = $1 AND version_parent_id = $2 LIMIT 1",
+        tenant_id,
+        doc_id,
+    )
+    if child:
+        raise HTTPException(409, "Không thể xoá tài liệu đang có phiên bản con")
+
+    try:
+        await db.execute("DELETE FROM documents WHERE id = $1", doc_id)
+    except Exception as e:
+        # asyncpg raises IntegrityConstraintViolationError/ForeignKeyViolationError
+        # for version trigger/FK rejections; map to a stable API contract.
+        sqlstate = getattr(e, "sqlstate", "")
+        if sqlstate and sqlstate.startswith("23"):
+            raise HTTPException(409, "Không thể xoá tài liệu đang có liên kết phiên bản")
+        raise
+
+    if resolved_file:
+        resolved_file.unlink(missing_ok=True)
+    log.info(f"[documents] Deleted {doc_id} by {user.get('email')}")
     return {"message": "Đã xoá tài liệu"}
 
 
@@ -813,7 +1006,7 @@ async def dashboard_stats(
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
 
@@ -830,7 +1023,6 @@ async def dashboard_stats(
     )
 
     doc_type_progress = []
-    compliant_count = 0
     total_score = 0
     scored_count = 0
 
@@ -844,8 +1036,6 @@ async def dashboard_stats(
         if score is not None:
             total_score += score
             scored_count += 1
-        if status in ("compliant", "cb_approved"):
-            compliant_count += 1
         doc_type_progress.append(
             {
                 "doc_type": dt,
@@ -857,20 +1047,6 @@ async def dashboard_stats(
             }
         )
 
-    # Add missing doc types
-    for dt, label in _ALL_DOC_TYPES.items():
-        if dt not in submitted_types:
-            doc_type_progress.append(
-                {
-                    "doc_type": dt,
-                    "label": label,
-                    "score": None,
-                    "status": None,
-                    "filename": None,
-                    "uploaded_at": None,
-                }
-            )
-
     # Sort: submitted first (by label), then missing (by label)
     doc_type_progress.sort(key=lambda x: (x["score"] is None, x["label"]))
 
@@ -880,8 +1056,6 @@ async def dashboard_stats(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id
     )
 
-    total_types = len(_ALL_DOC_TYPES)
-    readiness = round((compliant_count / total_types) * 100) if total_types > 0 else 0
 
     # 3. Recent activity (last 5 documents)
     recent_rows = await db.fetch(
@@ -914,10 +1088,6 @@ async def dashboard_stats(
         )
 
     return {
-        "readiness": readiness,
-        "compliant_count": compliant_count,
-        "total_types": total_types,
-        "submitted_count": len(submitted_types),
         "total_documents": total_docs_row["count"],
         "avg_score": round(total_score / scored_count) if scored_count > 0 else None,
         "member_count": member_count_row["count"],
@@ -955,7 +1125,7 @@ class _SupersedeRequest(BaseModel):
 async def _require_versioning_flag(db, user) -> None:
     """404 when feature flag is OFF (deliberately not 403 — fewer surface
     leaks during rollout). Tenant-scoped flag resolution per migration 016."""
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     if not await is_feature_enabled(db, tenant_id, "document_versioning_v1"):
         raise HTTPException(404)
 
@@ -1009,6 +1179,9 @@ async def _audit_strict(
     ua = request.headers.get("user-agent") if request else None
     if ua:
         enriched.setdefault("user_agent", ua)
+    # Resolve canonical AMINRA users.id — `user["sub"]` is the Keycloak UUID
+    # under SSO and would FK-violate audit_logs.user_id.
+    actor_id = await resolve_canonical_user_id(user, db)
     await db.execute(
         """
         INSERT INTO audit_logs
@@ -1016,7 +1189,7 @@ async def _audit_strict(
              action, entity_type, entity_id, changes, metadata)
         VALUES ($1,$2,$3,$4,$5,'document',$6,NULL,$7::jsonb)
         """,
-        user.get("sub"),
+        actor_id,
         user.get("email"),
         user.get("role"),
         user.get("tenant_id"),
@@ -1040,7 +1213,7 @@ async def submit_for_approval(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
     await check_permission_db(user, "can_edit")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if row["approval_status"] != "draft":
         raise HTTPException(
@@ -1064,7 +1237,7 @@ async def submit_for_approval(
             request=request,
             metadata={"prev_status": "draft", "new_status": "pending_approval"},
         )
-    log.info(f"[documents] {doc_id} submitted for approval by {user.get('sub')}")
+    log.info(f"[documents] {doc_id} submitted for approval by {user.get('email')}")
     return {"message": "Đã trình duyệt", "approval_status": "pending_approval"}
 
 
@@ -1083,7 +1256,7 @@ async def approve_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
     await check_permission_db(user, "can_approve_documents")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if row["approval_status"] != "pending_approval":
         raise HTTPException(
@@ -1098,8 +1271,14 @@ async def approve_document(
     retention = body.retention_period_days or RETENTION_FLOOR_DAYS
     if retention < RETENTION_FLOOR_DAYS:
         raise HTTPException(422, f"retention_period_days phải >= {RETENTION_FLOOR_DAYS} (5 năm)")
+    if nxt < eff:
+        raise HTTPException(422, "next_review_date phải sau hoặc bằng effective_date")
 
     # Trigger auto-computes retention_expires_at; we just SET the inputs.
+    approver_id = await resolve_canonical_user_id(user, db)
+    if not approver_id:
+        raise HTTPException(404, "User not found")
+
     async with db.transaction():
         await db.execute(
             """
@@ -1113,7 +1292,7 @@ async def approve_document(
              WHERE id = $1
             """,
             doc_id,
-            user.get("sub"),
+            approver_id,
             eff,
             nxt,
             retention,
@@ -1130,7 +1309,12 @@ async def approve_document(
                 "retention_period_days": retention,
             },
         )
-    log.info(f"[documents] {doc_id} approved by {user.get('sub')}")
+        await create_official_artifact_for_document(
+            db,
+            document_id=doc_id,
+            approved_by_user_id=str(approver_id),
+        )
+    log.info(f"[documents] {doc_id} approved by {user.get('email')}")
     return {
         "message": "Đã phê duyệt",
         "approval_status": "approved",
@@ -1154,7 +1338,7 @@ async def reject_document(
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
     await check_permission_db(user, "can_approve_documents")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if row["approval_status"] != "pending_approval":
         raise HTTPException(
@@ -1175,7 +1359,7 @@ async def reject_document(
             request=request,
             metadata={"reason": body.reason},
         )
-    log.info(f"[documents] {doc_id} rejected by {user.get('sub')}: {body.reason[:80]}")
+    log.info(f"[documents] {doc_id} rejected by {user.get('email')}: {body.reason[:80]}")
     return {"message": "Đã từ chối", "approval_status": "draft"}
 
 
@@ -1203,13 +1387,13 @@ async def supersede_document(
     except ValueError as e:
         raise HTTPException(422, str(e))
 
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     old_row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     if old_row["approval_status"] != "approved":
         raise HTTPException(409, "Chỉ có thể thay thế tài liệu đã được phê duyệt")
     new_row = await _load_doc_in_tenant(db, body.new_document_id, tenant_id)
-    if new_row["approval_status"] == "obsolete":
-        raise HTTPException(409, "Tài liệu thay thế không được ở trạng thái obsolete")
+    if new_row["approval_status"] != "approved":
+        raise HTTPException(409, "Tài liệu thay thế phải được phê duyệt trước khi thay thế")
 
     async with db.transaction():
         # Set superseded_by — trigger auto-flips approval_status to 'obsolete'
@@ -1237,7 +1421,7 @@ async def supersede_document(
                 "new_version_number": next_version,
             },
         )
-    log.info(f"[documents] {doc_id} superseded by {body.new_document_id} (actor={user.get('sub')})")
+    log.info(f"[documents] {doc_id} superseded by {body.new_document_id} (actor={user.get('email')})")
     return {
         "message": "Đã thay thế phiên bản",
         "old_document_id": doc_id,
@@ -1258,7 +1442,7 @@ async def get_versions(
     if user.get("role") != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     await _load_doc_in_tenant(db, doc_id, tenant_id)  # 404 if missing/cross-tenant
 
     # Recursive CTE to walk both directions: ancestors (parent chain) + descendants
@@ -1320,7 +1504,7 @@ async def get_approval_status(
     if user.get("role") != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
     await _require_versioning_flag(db, user)
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await _load_doc_in_tenant(db, doc_id, tenant_id)
     block = _approval_block(row)
     # Look up approver name if available (denormalized for UI)

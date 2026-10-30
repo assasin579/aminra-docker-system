@@ -63,14 +63,14 @@ export default function LayoutShell({
             {/* Mobile overlay */}
             {sidebarOpen && (
               <div
-                className="fixed inset-0 bg-black/60 z-40 md:hidden animate-overlay"
+                className="fixed inset-0 bg-black/60 z-30 md:hidden animate-overlay"
                 onClick={() => setSidebarOpen(false)}
               />
             )}
 
             {/* Sidebar — fixed width, no shrink */}
             <div
-              className={`fixed inset-y-0 left-0 z-50 w-64 flex-shrink-0 transition-transform duration-300 md:relative md:translate-x-0 ${
+              className={`fixed inset-y-0 left-0 z-40 w-64 flex-shrink-0 transition-transform duration-300 md:relative md:translate-x-0 ${
                 sidebarOpen
                   ? "translate-x-0"
                   : "-translate-x-full md:translate-x-0"
@@ -108,13 +108,13 @@ export default function LayoutShell({
                     />
                   </svg>
                 </button>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   src="/aminra-mark.png"
                   alt=""
                   className="h-7 w-7 mr-2 object-contain"
                 />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   src="/aminra-wordmark-white.png"
                   alt="AMINRA"

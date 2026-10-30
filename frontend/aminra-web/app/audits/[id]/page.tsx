@@ -179,6 +179,16 @@ export default function AuditVisitDetailPage({
   // Signature canvas refs
   const auditorCanvasRef = useRef<HTMLCanvasElement>(null);
   const businessCanvasRef = useRef<HTMLCanvasElement>(null);
+  const handleSaveAuditorSignature = () => uploadSignature("auditor", auditorCanvasRef.current);
+  const handleSaveBusinessSignature = () => uploadSignature("business", businessCanvasRef.current);
+  const bindAuditorCanvas = (canvas: HTMLCanvasElement | null) => {
+    auditorCanvasRef.current = canvas;
+    setupCanvas(canvas);
+  };
+  const bindBusinessCanvas = (canvas: HTMLCanvasElement | null) => {
+    businessCanvasRef.current = canvas;
+    setupCanvas(canvas);
+  };
 
   const headers = useCallback(
     () => ({
@@ -556,8 +566,6 @@ export default function AuditVisitDetailPage({
               type === "auditor"
                 ? visit.has_auditor_sig
                 : visit.has_business_sig;
-            const ref =
-              type === "auditor" ? auditorCanvasRef : businessCanvasRef;
             return (
               <div key={type} className="mb-4">
                 <label className={labelCls}>
@@ -567,12 +575,7 @@ export default function AuditVisitDetailPage({
                 {!done && (
                   <>
                     <canvas
-                      ref={(el) => {
-                        (
-                          ref as React.MutableRefObject<HTMLCanvasElement | null>
-                        ).current = el;
-                        setupCanvas(el);
-                      }}
+                      ref={type === "auditor" ? bindAuditorCanvas : bindBusinessCanvas}
                       width={300}
                       height={120}
                       className="border border-[#E2E8F0] rounded-lg w-full max-w-[300px]"
@@ -580,7 +583,7 @@ export default function AuditVisitDetailPage({
                     />
                     <button
                       className={`${btnOutline} mt-2`}
-                      onClick={() => uploadSignature(type, ref.current)}
+                      onClick={type === "auditor" ? handleSaveAuditorSignature : handleSaveBusinessSignature}
                     >
                       Lưu chữ ký
                     </button>

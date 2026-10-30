@@ -1,0 +1,135 @@
+{% extends "_base/base.html" %}
+{% from "_base/macros.html" import doc_cover, section_opener, stat_grid, kv_block, data_table, pull_quote, callout, bullet_list, lede %}
+
+{% block extra_css %}<link rel="stylesheet" href="{{ asset('company_profile/v1/style.css') }}">{% endblock %}
+
+{% block content %}
+
+{{ doc_cover(
+    title=data.business_name,
+    eyebrow=cfg.doc_type_label or "Hồ sơ doanh nghiệp",
+    subtitle=data.get('business_name_en'),
+    year=data.issued_date[:4] if data.issued_date else None,
+    meta=[
+        {"label": "Mã số thuế",      "value": data.get('tax_code')},
+        {"label": "Người đại diện",  "value": data.get('representative')},
+        {"label": "Ngày phát hành",  "value": data.issued_date},
+    ],
+    approval_block=cfg.show_approval_block,
+) }}
+
+{# ────────── Section 01 — Tổng quan + stats + thông tin chi tiết ────────── #}
+<section class="section">
+  {{ section_opener(1, "Tổng quan", "Thông tin chung doanh nghiệp") }}
+
+  {{ lede(
+    data.business_name
+    ~ (" thành lập năm " ~ data.get('founded_year') if data.get('founded_year') else "")
+    ~ ", hoạt động trong lĩnh vực sản xuất – kinh doanh các sản phẩm đáp ứng tiêu chuẩn Halal, hướng tới thị trường trong nước và xuất khẩu."
+  ) }}
+
+  {% set _products = data.get('products') or [] %}
+  {% set _activities = data.get('business_activities') or [] %}
+  {{ stat_grid([
+    {"value": data.get('founded_year'), "label": "Năm thành lập"},
+    {"value": data.get('employee_count'), "unit": "người", "label": "Quy mô lao động"},
+    {"value": _products|length, "label": "Sản phẩm chính"},
+    {"value": _activities|length, "label": "Lĩnh vực hoạt động"},
+  ], columns=4) }}
+
+  <h3>Thông tin chi tiết</h3>
+  {{ kv_block([
+    {"label": "Tên doanh nghiệp",       "value": data.business_name},
+    {"label": "Tên giao dịch quốc tế",  "value": data.get('business_name_en')},
+    {"label": "Mã số thuế",             "value": data.get('tax_code')},
+    {"label": "Vốn điều lệ",            "value": data.get('charter_capital')},
+    {"label": "Địa chỉ trụ sở",         "value": data.get('address')},
+    {"label": "Địa chỉ nhà xưởng",      "value": data.get('factory_address') if data.get('factory_address') and data.get('factory_address') != data.get('address') else None},
+    {"label": "Điện thoại",             "value": data.get('phone')},
+    {"label": "Email",                  "value": data.get('email')},
+    {"label": "Website",                "value": data.get('website')},
+  ], keep_empty=True) }}
+</section>
+
+{# ────────── Section 02 — Hoạt động + sản phẩm ────────── #}
+{% if data.get('business_activities') or [] or data.get('products') or [] %}
+<section class="section">
+  {{ section_opener(2, "Hoạt động kinh doanh", "Lĩnh vực & Sản phẩm chính") }}
+
+  {% if data.get('business_activities') or [] %}
+  <h3>Lĩnh vực hoạt động</h3>
+  {{ bullet_list(data.get('business_activities') or []) }}
+  {% endif %}
+
+  {% if data.get('products') or [] %}
+  <h3>Danh mục sản phẩm</h3>
+  {% set product_rows = [] %}
+  {% for p in data.get('products') or [] %}
+    {% set _ = product_rows.append([p.name, p.description or "—", p.annual_output or "—"]) %}
+  {% endfor %}
+  {{ data_table(
+      columns=[
+        {"label": "Sản phẩm",        "width": "30%"},
+        {"label": "Mô tả"},
+        {"label": "Sản lượng / năm", "width": "22%", "align": "right"},
+      ],
+      rows=product_rows,
+      numeric_last=True,
+  ) }}
+  {% endif %}
+</section>
+{% endif %}
+
+{# ────────── Section 03 — Cam kết Halal ────────── #}
+<section class="section">
+  {{ section_opener(3, "Cam kết tuân thủ", "Cam kết Halal & Trách nhiệm") }}
+
+  {% if data.get('halal_commitment') %}
+    {{ pull_quote(data.get('halal_commitment'), cite=data.business_name) }}
+  {% else %}
+    {{ lede("Doanh nghiệp cam kết tuân thủ đầy đủ tiêu chuẩn Halal trong toàn bộ chu trình sản xuất — từ lựa chọn nguồn nguyên liệu, quy trình chế biến, lưu kho, đóng gói đến phân phối thành phẩm cuối cùng.") }}
+  {% endif %}
+
+  {% if data.get('halal_responsible_person') %}
+    {% set p = data.get('halal_responsible_person') %}
+    {% set body %}<strong>{{ p.get('name', '—') }}</strong>{{ p.get('title') or "Chuyên viên phụ trách Halal" }}{% if p.get('email') %}<br><span class="dim">{{ p['email'] }}</span>{% endif %}{% endset %}
+    {{ callout("Halal Lead", body, variant="info") }}
+  {% endif %}
+</section>
+
+{# ────────── Custom sections from cfg ────────── #}
+{% set _custom = cfg.custom_sections or [] %}
+{% if _custom %}
+<section class="section">
+  {{ section_opener(4, "Bổ sung", "Nội dung tuỳ chỉnh") }}
+  {% for sec in _custom %}
+    {% if sec.title %}<h3>{{ sec.title }}</h3>{% endif %}
+    {% if sec.content %}
+      {% for line in sec.content.split('\n') %}
+        {% set stripped = line.strip() %}
+        {% if stripped.startswith('- ') %}
+          {{ bullet_list([stripped[2:]]) }}
+        {% elif stripped %}
+          <p>{{ stripped }}</p>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{# ────────── Free-form additional content ────────── #}
+{% if content %}
+<section class="section">
+  {% for paragraph in content.split('\n\n') %}
+    {% if paragraph.strip() %}<p>{{ paragraph.strip() }}</p>{% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{# ────────── Footer note ────────── #}
+<section class="section">
+  {% set fnote %}<strong>Tài liệu tự động</strong>Tài liệu này được tạo bởi nền tảng AMINRA Halal vào ngày {{ data.issued_date }}. Mọi thông tin được kê khai bởi <strong style="color:var(--c-brand-accent);">{{ data.business_name }}</strong> và là cơ sở cho hồ sơ chứng nhận Halal.{% endset %}
+  {{ callout("Lưu ý", fnote, variant="brand") }}
+</section>
+{% endblock %}

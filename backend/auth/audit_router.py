@@ -13,8 +13,10 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user
+from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
+from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
+from services.conflict_interest import assert_no_unresolved_conflict
 
 log = logging.getLogger("aminra.audits")
 router = APIRouter()
@@ -28,12 +30,33 @@ def _validate_uuid(v: str) -> str:
     return v
 
 
-def _audit_filter(user: dict):
+async def _enriched_user_from_header_or_query(request: Request, token: Optional[str]) -> dict:
+    auth = request.headers.get("Authorization", "")
+    tk = auth[7:] if auth.startswith("Bearer ") else token
+    if not tk:
+        raise HTTPException(401)
+    try:
+        claims = decode_token(tk)
+        from auth import keycloak_validator
+        from auth.db import get_pool
+        return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(401)
+
+
+async def _audit_filter(user: dict, db):
     """Owner sees all visits for their provider, auditor sees only assigned."""
     if user.get("is_owner"):
-        return "provider_id = $1", user["sub"]
-    else:
-        return "auditor_id = $1", user["sub"]
+        provider_id = await resolve_canonical_tenant_id(user, db)
+        if not provider_id:
+            raise HTTPException(404, "User not found")
+        return "provider_id = $1", provider_id
+    auditor_id = await resolve_canonical_user_id(user, db)
+    if not auditor_id:
+        raise HTTPException(404, "User not found")
+    return "auditor_id = $1", auditor_id
 
 
 def _require_provider(user: dict):
@@ -69,7 +92,7 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_db)):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
 
     rows = await db.fetch(
         """
@@ -132,7 +155,7 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
 
     biz = await db.fetchrow(
         "SELECT id, company_name, email, phone, address FROM users "
@@ -264,7 +287,7 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
 
     biz_exists = await db.fetchval(
         "SELECT 1 FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", business_id
@@ -375,7 +398,7 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
 @router.get("/stats")
 async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
     _require_provider(user)
-    where, param = _audit_filter(user)
+    where, param = await _audit_filter(user, db)
     counts = await db.fetchrow(
         f"""
         SELECT
@@ -420,7 +443,7 @@ async def list_templates(user=Depends(get_current_user), db=Depends(get_db)):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    tid = user.get("tenant_id") or user["sub"]
+    tid = await resolve_canonical_tenant_id(user, db)
     rows = await db.fetch("SELECT * FROM audit_checklist_templates WHERE provider_id=$1 ORDER BY created_at DESC", tid)
     return {
         "templates": [
@@ -446,7 +469,7 @@ async def create_template(req: dict, user=Depends(get_current_user), db=Depends(
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    tid = user.get("tenant_id") or user["sub"]
+    tid = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "INSERT INTO audit_checklist_templates (provider_id, name, standard, items) VALUES ($1,$2,$3,$4::jsonb) RETURNING id",
         tid,
@@ -463,7 +486,7 @@ async def update_template(tid: str, req: dict, user=Depends(get_current_user), d
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
-    provider = user.get("tenant_id") or user["sub"]
+    provider = await resolve_canonical_tenant_id(user, db)
     updates, params, idx = [], [], 1
     if "name" in req:
         updates.append(f"name=${idx}")
@@ -492,7 +515,7 @@ async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(g
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
-    provider = user.get("tenant_id") or user["sub"]
+    provider = await resolve_canonical_tenant_id(user, db)
     await db.execute("DELETE FROM audit_checklist_templates WHERE id=$1 AND provider_id=$2", tid, provider)
     return {"message": "Đã xóa"}
 
@@ -501,7 +524,7 @@ async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(g
 @router.get("/")
 async def list_visits(user=Depends(get_current_user), db=Depends(get_db)):
     _require_provider(user)
-    where, param = _audit_filter(user)
+    where, param = await _audit_filter(user, db)
     rows = await db.fetch(
         f"""
         SELECT v.*, u.company_name AS business_name, a.company_name AS auditor_name
@@ -542,7 +565,7 @@ async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depe
     if req.visit_type not in ("initial", "renewal", "surprise"):
         raise HTTPException(400, "visit_type không hợp lệ")
 
-    provider = user.get("tenant_id") or user["sub"]
+    provider = await resolve_canonical_tenant_id(user, db)
     template_id = req.template_id
     if template_id:
         _validate_uuid(template_id)
@@ -570,7 +593,7 @@ async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depe
 async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(vid)
     _require_provider(user)
-    where, param = _audit_filter(user)
+    where, param = await _audit_filter(user, db)
     row = await db.fetchrow(
         f"""
         SELECT v.*, u.company_name AS business_name, a.company_name AS auditor_name
@@ -656,7 +679,7 @@ async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
-    provider = user.get("tenant_id") or user["sub"]
+    provider = await resolve_canonical_tenant_id(user, db)
     updates, params, idx = [], [], 1
     if req.visit_type:
         updates.append(f"visit_type=${idx}")
@@ -690,7 +713,7 @@ async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
-    provider = user.get("tenant_id") or user["sub"]
+    provider = await resolve_canonical_tenant_id(user, db)
     result = await db.execute(
         "DELETE FROM audit_visits WHERE id=$1 AND provider_id=$2 AND status='scheduled'", vid, provider
     )
@@ -706,7 +729,7 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
-    provider = user.get("tenant_id") or user["sub"]
+    provider = await resolve_canonical_tenant_id(user, db)
     auditor_id = req.get("auditor_id")
     if not auditor_id:
         raise HTTPException(400, "Thiếu auditor_id")
@@ -719,6 +742,21 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
     )
     if not auditor:
         raise HTTPException(404, "Auditor không tồn tại")
+
+    visit_scope = await db.fetchrow(
+        "SELECT business_tenant FROM audit_visits WHERE id=$1 AND provider_id=$2",
+        vid,
+        provider,
+    )
+    if not visit_scope:
+        raise HTTPException(404, "Audit visit not found")
+    await assert_no_unresolved_conflict(
+        db,
+        provider_id=str(provider),
+        business_tenant=str(visit_scope["business_tenant"]),
+        person_user_id=str(auditor_id),
+        action="audit.assign",
+    )
 
     await db.execute("UPDATE audit_visits SET auditor_id=$1 WHERE id=$2 AND provider_id=$3", auditor_id, vid, provider)
 
@@ -750,13 +788,33 @@ async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user
     new_status = req.get("status")
     if new_status not in ("scheduled", "in_progress", "completed", "report_submitted"):
         raise HTTPException(400, "Status không hợp lệ")
+    if new_status == "report_submitted" and user.get("is_owner"):
+        raise HTTPException(403, "Chỉ kiểm tra viên được phân công mới được gửi báo cáo")
 
-    where, param = _audit_filter(user)
+    where, param = await _audit_filter(user, db)
+    # Submission is an assigned-auditor transition from completed. Once submitted,
+    # the report cannot be silently reset; only the CB-owner acceptance route moves it.
+    state_guard = "status <> 'report_accepted' AND status <> 'report_submitted'"
+    if new_status == "report_submitted":
+        state_guard = "status = 'completed'"
     result = await db.execute(
-        f"UPDATE audit_visits SET status=$1 WHERE id=$2 AND {where.replace('$1', '$3')}", new_status, vid, param
+        f"UPDATE audit_visits SET status=$1 WHERE id=$2 AND {where.replace('$1', '$3')} AND {state_guard}",
+        new_status,
+        vid,
+        param,
     )
     if result == "UPDATE 0":
-        raise HTTPException(404)
+        scoped_where = where.replace("$1", "$2")
+        current = await db.fetchrow(
+            f"SELECT status FROM audit_visits WHERE id=$1 AND {scoped_where}",
+            vid,
+            param,
+        )
+        if not current:
+            raise HTTPException(404)
+        if current["status"] in ("report_submitted", "report_accepted") or new_status == "report_submitted":
+            raise HTTPException(409, "Trạng thái báo cáo không còn hợp lệ để cập nhật")
+        raise HTTPException(409, "Trạng thái cuộc kiểm tra đã thay đổi")
 
     # Auto-calc compliance score when completing
     if new_status == "completed":
@@ -768,6 +826,55 @@ async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user
             await db.execute("UPDATE audit_visits SET compliance_score=$1 WHERE id=$2", score, vid)
 
     return {"message": f"Đã cập nhật: {new_status}"}
+
+
+@router.post("/{vid}/accept-report")
+async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+    """Only the CB owner may accept a report submitted by its assigned auditor."""
+    _validate_uuid(vid)
+    _require_provider(user)
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Chỉ chủ tổ chức mới được chấp nhận báo cáo")
+
+    from auth.submission_router import _resolve_cb_metrics_owner_scope
+    provider_id = await _resolve_cb_metrics_owner_scope(user, db)
+    actor_id = await resolve_canonical_user_id(user, db)
+    if not provider_id:
+        raise HTTPException(403, "Chỉ chủ CB đang hoạt động được chấp nhận báo cáo")
+    if not actor_id:
+        raise HTTPException(404, "User not found")
+
+    async with db.transaction():
+        visit = await db.fetchrow(
+            "SELECT status FROM audit_visits WHERE id=$1 AND provider_id=$2 FOR UPDATE",
+            vid,
+            provider_id,
+        )
+        if not visit:
+            raise HTTPException(404, "Cuộc kiểm tra không tồn tại")
+        if visit["status"] != "report_submitted":
+            raise HTTPException(409, "Chỉ có thể chấp nhận báo cáo đã được gửi")
+
+        accepted = await db.fetchrow(
+            """
+            UPDATE audit_visits
+            SET status='report_accepted', report_accepted_at=now(), report_accepted_by=$3
+            WHERE id=$1 AND provider_id=$2 AND status='report_submitted'
+            RETURNING status, report_accepted_at
+            """,
+            vid,
+            provider_id,
+            actor_id,
+        )
+        if not accepted:
+            raise HTTPException(409, "Báo cáo đã thay đổi; hãy tải lại rồi thử lại")
+
+    accepted_at = accepted["report_accepted_at"]
+    return {
+        "status": "report_accepted",
+        "report_accepted_at": accepted_at.isoformat() if hasattr(accepted_at, "isoformat") else str(accepted_at),
+        "report_accepted_by": str(actor_id),
+    }
 
 
 # ── Populate checklist from template ──
@@ -1345,20 +1452,31 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
 @router.get("/{vid}/report-pdf")
 async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_db)):
     _validate_uuid(vid)
-    from auth.jwt_utils import decode_token
+    user = await _enriched_user_from_header_or_query(request, token)
 
-    auth = request.headers.get("Authorization", "")
-    tk = auth[7:] if auth.startswith("Bearer ") else token
-    if not tk:
-        raise HTTPException(401)
-    try:
-        decode_token(tk)
-    except:
-        raise HTTPException(401)
-
-    row = await db.fetchrow("SELECT report_pdf_path FROM audit_visits WHERE id=$1", vid)
+    row = await db.fetchrow(
+        """
+        SELECT report_pdf_path, provider_id, auditor_id, business_tenant
+        FROM audit_visits
+        WHERE id=$1
+        """,
+        vid,
+    )
     if not row or not row["report_pdf_path"]:
         raise HTTPException(404, "Báo cáo chưa được tạo")
+
+    role = user.get("role")
+    tenant_id = user.get("tenant_id")
+    sub = await resolve_canonical_user_id(user, db)
+    allowed = False
+    if role == "provider":
+        allowed = str(row["provider_id"]) in {str(tenant_id), str(sub)} or str(row["auditor_id"]) == str(sub)
+    elif role == "business":
+        allowed = str(row["business_tenant"]) == str(tenant_id)
+    elif role in {"admin", "platform_admin"} or "platform_admin" in (user.get("realm_roles") or []):
+        allowed = True
+    if not allowed:
+        raise HTTPException(403)
 
     pdf = Path(row["report_pdf_path"])
     if not pdf.exists():
@@ -1388,7 +1506,7 @@ async def visit_history(business_tenant: str, user=Depends(get_current_user), db
         ORDER BY v.scheduled_date DESC
     """,
         business_tenant,
-        user.get("tenant_id") or user["sub"],
+        await resolve_canonical_tenant_id(user, db),
     )
     return {
         "history": [
@@ -1426,7 +1544,7 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
     visit = await db.fetchrow("SELECT business_tenant, provider_id FROM audit_visits WHERE id=$1", vid)
     if not visit:
         raise HTTPException(404)
-    provider_id = user.get("tenant_id") or user["sub"]
+    provider_id = await resolve_canonical_tenant_id(user, db)
     # Cross-check the visit belongs to this CB.
     if str(visit["provider_id"]) != str(provider_id):
         raise HTTPException(403, "Visit không thuộc tổ chức của bạn")
@@ -1441,12 +1559,13 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
             raise HTTPException(400, "Phải nhập lý do khi thu hồi chứng nhận")
         from services.cert_lifecycle import revoke_active_certs_for_business
 
+        revoker_id = await resolve_canonical_user_id(user, db)
         affected = await revoke_active_certs_for_business(
             db,
             business_tenant=str(visit["business_tenant"]),
             issued_by=str(provider_id),
             reason=notes.strip(),
-            revoked_by=user["sub"],
+            revoked_by=str(revoker_id) if revoker_id else None,
         )
         log.info(f"[audit] {affected} cert(s) revoked for {visit['business_tenant']} by {provider_id}")
     else:
@@ -1636,8 +1755,9 @@ async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=
         raise HTTPException(400, "action: close | reject")
 
     if action == "close":
+        closer_id = await resolve_canonical_user_id(user, db)
         await db.execute(
-            "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2", user["sub"], ncr_id
+            "UPDATE audit_ncr SET status='closed', closed_at=NOW(), closed_by=$1 WHERE id=$2", closer_id, ncr_id
         )
     else:
         await db.execute("UPDATE audit_ncr SET status='open' WHERE id=$1", ncr_id)

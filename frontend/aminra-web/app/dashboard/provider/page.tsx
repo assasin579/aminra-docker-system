@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
+import { AccessibleBarChart, DashboardCard, DonutChart } from "@/components/dashboard/DashboardCharts";
+import motion from "@/components/dashboard/DashboardMotion.module.css";
 
 /* ── Interfaces ─────────────────────────────────────────────── */
 
@@ -57,14 +59,28 @@ interface AuditorStats {
   }>;
 }
 
+interface CBPerformanceSummary {
+  completed: { current_90d: number; previous_90d: number };
+  cycle_time_hours: { current_median: number | null; current_p90: number | null; previous_median: number | null; previous_p90: number | null };
+  scheduled_to_acceptance_days: { current_median: number | null; current_p90: number | null; previous_median: number | null; previous_p90: number | null };
+}
+
+interface CBPerformance {
+  window_days: number;
+  attribution: "report_accepted_at";
+  total: CBPerformanceSummary;
+  auditors: Array<CBPerformanceSummary & { auditor_id: string; name: string | null }>;
+  limitations: string[];
+}
+
 /* ── Constants ──────────────────────────────────────────────── */
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> =
   {
-    pending: { label: "Chờ duyệt", bg: "#F3F4F6", color: "#6B7280" },
-    reviewing: { label: "Đang xét", bg: "#DBEAFE", color: "#2563EB" },
-    approved: { label: "Đã duyệt", bg: "#DCE3F0", color: "#102A5C" },
-    returned: { label: "Trả lại", bg: "#FEF3C7", color: "#D97706" },
+    pending: { label: "Chờ duyệt", bg: "var(--cream-100)", color: "var(--ink-500)" },
+    reviewing: { label: "Đang xét", bg: "var(--navy-100)", color: "var(--navy-600)" },
+    approved: { label: "Đã duyệt", bg: "var(--navy-100)", color: "var(--navy-800)" },
+    returned: { label: "Trả lại", bg: "var(--gold-100)", color: "var(--gold-700)" },
   };
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -85,15 +101,15 @@ function timeAgo(iso: string) {
 }
 
 function scoreColor(v: number): string {
-  if (v >= 80) return "#0A1F44";
-  if (v >= 60) return "#D97706";
-  return "#DC2626";
+  if (v >= 75) return "var(--navy-700)";
+  if (v >= 50) return "var(--gold-700)";
+  return "var(--gold-700)";
 }
 
 function daysColor(d: number): { text: string; bg: string } {
-  if (d <= 30) return { text: "#DC2626", bg: "#FEF2F2" };
-  if (d <= 90) return { text: "#D97706", bg: "#FFFBEB" };
-  return { text: "#0A1F44", bg: "#DCE3F0" };
+  if (d <= 30) return { text: "var(--gold-700)", bg: "var(--gold-100)" };
+  if (d <= 90) return { text: "var(--gold-700)", bg: "var(--gold-100)" };
+  return { text: "var(--navy-900)", bg: "var(--navy-100)" };
 }
 
 /* ── SVG icon paths ─────────────────────────────────────────── */
@@ -123,11 +139,9 @@ const ICONS = {
 
 function PulseLoader() {
   return (
-    <div className="grid place-items-center min-h-[60vh]">
+    <div className="grid place-items-center min-h-[60vh]" role="status" aria-label="Đang tải dữ liệu">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
-        <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
+        {[0, 140, 280].map((delay) => <span key={delay} data-dashboard-motion="loading-dot" aria-hidden="true" className={`w-2 h-2 rounded-full bg-[var(--navy-900)] ${motion.loadingDot}`} style={{ "--motion-delay": `${delay}ms` } as React.CSSProperties} />)}
       </div>
     </div>
   );
@@ -178,7 +192,7 @@ function ScoreDial({ value }: { value: number }) {
           cy="50"
           r="40"
           fill="none"
-          stroke="#E2E8F0"
+          stroke="var(--cream-200)"
           strokeWidth="8"
         />
         <circle
@@ -219,12 +233,12 @@ function HBar({
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="w-20 truncate" style={{ color: "#6B7280" }}>
+      <span className="w-20 truncate" style={{ color: "var(--ink-500)" }}>
         {label}
       </span>
       <div
         className="flex-1 h-2 rounded-full overflow-hidden"
-        style={{ background: "#E2E8F0" }}
+        style={{ background: "var(--cream-200)" }}
       >
         <div
           className="h-full rounded-full animate-progress"
@@ -246,9 +260,32 @@ export default function ProviderDashboard() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading, logout } = useUserAuth();
 
-  const [cbStats, setCbStats] = useState<CBStats | null>(null);
-  const [auditorStats, setAuditorStats] = useState<AuditorStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
+  const contextKey = JSON.stringify([
+    isAuthenticated,
+    user?.id ?? null,
+    user?.tenant_id ?? null,
+    user?.role ?? null,
+    user?.is_owner ?? null,
+    user?.permissions ?? null,
+    user?.realm_roles ? [...user.realm_roles].sort() : null,
+  ]);
+  const activeContextRef = useRef(contextKey);
+  const requestGenerationRef = useRef(0);
+
+  const [cbStatsState, setCbStats] = useState<{ contextKey: string; value: CBStats } | null>(null);
+  const [cbPerformanceState, setCBPerformance] = useState<{ contextKey: string; value: CBPerformance } | null>(null);
+  const [auditorStatsState, setAuditorStats] = useState<{ contextKey: string; value: AuditorStats } | null>(null);
+  const [loadingStatsState, setLoadingStats] = useState<{ contextKey: string; value: boolean }>({ contextKey, value: true });
+  const [statsErrorState, setStatsError] = useState<{ contextKey: string; value: string }>({ contextKey, value: "" });
+
+  const cbStats = cbStatsState?.contextKey === contextKey ? cbStatsState.value : null;
+  const cbPerformance = cbPerformanceState?.contextKey === contextKey ? cbPerformanceState.value : null;
+  const auditorStats = auditorStatsState?.contextKey === contextKey ? auditorStatsState.value : null;
+  const loadingStats = loadingStatsState.contextKey !== contextKey || loadingStatsState.value;
+  const statsError = statsErrorState.contextKey === contextKey ? statsErrorState.value : "";
+
+  const isCurrentRequest = useCallback((requestContext: string, generation: number) =>
+    activeContextRef.current === requestContext && requestGenerationRef.current === generation, []);
 
   /* Auth guard */
   useEffect(() => {
@@ -257,39 +294,83 @@ export default function ProviderDashboard() {
     }
   }, [loading, isAuthenticated, user, router]);
 
-  /* Fetch CB stats (owner) */
-  const fetchCBStats = useCallback(async () => {
+  /* Fetch CB stats (owner); every result/error is bound to its auth context. */
+  const fetchCBStats = useCallback(async (requestContext: string, generation: number) => {
     if (!token) return;
     try {
       const res = await fetch("/api/api/submissions/cb-stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setCbStats(await res.json());
-    } catch {
-      /* silent */
+      if (!res.ok) throw new Error(`Không tải được số liệu CB (${res.status}).`);
+      const value = await res.json();
+      if (isCurrentRequest(requestContext, generation)) setCbStats({ contextKey: requestContext, value });
+    } catch (error) {
+      if (isCurrentRequest(requestContext, generation)) {
+        setStatsError({ contextKey: requestContext, value: error instanceof Error ? error.message : "Không thể tải số liệu CB." });
+      }
     }
-  }, [token]);
+  }, [token, isCurrentRequest]);
 
-  /* Fetch auditor stats (both roles — backward compat) */
-  const fetchAuditorStats = useCallback(async () => {
+  /* Performance metrics are restricted to the CB owner in both UI and API. */
+  const fetchCBPerformance = useCallback(async (requestContext: string, generation: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/api/submissions/cb-performance", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Không tải được hiệu suất auditor (${res.status}).`);
+      const value = await res.json();
+      if (isCurrentRequest(requestContext, generation)) setCBPerformance({ contextKey: requestContext, value });
+    } catch (error) {
+      if (isCurrentRequest(requestContext, generation)) {
+        setStatsError({ contextKey: requestContext, value: error instanceof Error ? error.message : "Không thể tải hiệu suất auditor." });
+      }
+    }
+  }, [token, isCurrentRequest]);
+
+  /* Fetch auditor stats (both roles — backward compat), context-bound. */
+  const fetchAuditorStats = useCallback(async (requestContext: string, generation: number) => {
     if (!token) return;
     try {
       const res = await fetch("/api/api/submissions/stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setAuditorStats(await res.json());
-    } catch {
-      /* silent */
+      if (!res.ok) throw new Error(`Không tải được hàng đợi hồ sơ (${res.status}).`);
+      const value = await res.json();
+      if (isCurrentRequest(requestContext, generation)) setAuditorStats({ contextKey: requestContext, value });
+    } catch (error) {
+      if (isCurrentRequest(requestContext, generation)) {
+        setStatsError({ contextKey: requestContext, value: error instanceof Error ? error.message : "Không thể tải hàng đợi." });
+      }
     }
-  }, [token]);
+  }, [token, isCurrentRequest]);
+
+  const refreshDashboardStats = useCallback((requestContext: string, generation: number, owner: boolean) => {
+    setLoadingStats({ contextKey: requestContext, value: true });
+    setStatsError({ contextKey: requestContext, value: "" });
+    const promises: Promise<void>[] = [fetchAuditorStats(requestContext, generation)];
+    if (owner) promises.push(fetchCBStats(requestContext, generation), fetchCBPerformance(requestContext, generation));
+    return Promise.all(promises).finally(() => {
+      if (isCurrentRequest(requestContext, generation)) setLoadingStats({ contextKey: requestContext, value: false });
+    });
+  }, [fetchAuditorStats, fetchCBStats, fetchCBPerformance, isCurrentRequest]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    setLoadingStats(true);
-    const promises: Promise<void>[] = [fetchAuditorStats()];
-    if (user.is_owner) promises.push(fetchCBStats());
-    Promise.all(promises).finally(() => setLoadingStats(false));
-  }, [isAuthenticated, user, fetchCBStats, fetchAuditorStats]);
+    const generation = ++requestGenerationRef.current;
+    activeContextRef.current = contextKey;
+    if (!isAuthenticated || !user || !token) {
+      setLoadingStats({ contextKey, value: false });
+      setStatsError({ contextKey, value: "" });
+      return () => {
+        if (requestGenerationRef.current === generation) requestGenerationRef.current += 1;
+      };
+    }
+
+    void refreshDashboardStats(contextKey, generation, user.is_owner === true);
+    return () => {
+      if (requestGenerationRef.current === generation) requestGenerationRef.current += 1;
+    };
+  }, [contextKey, isAuthenticated, user, token, refreshDashboardStats]);
 
   /* ── Loading state ─────────────────────────────────────────── */
   if (loading || !user) return <PulseLoader />;
@@ -297,23 +378,47 @@ export default function ProviderDashboard() {
   const isOwner = user.is_owner;
   const cb = cbStats;
   const au = auditorStats;
+  const cbCertificateData = cb ? [
+    { label: "Hoạt động", value: cb.certs.active, color: "var(--navy-600)" },
+    { label: "Đình chỉ / thu hồi", value: cb.certs.inactive, color: "var(--gold-700)" },
+    { label: "Khác / chưa phân loại", value: Math.max(0, cb.certs.total - cb.certs.active - cb.certs.inactive), color: "var(--ink-300)" },
+  ] : [];
+  const cbAuditData = cb ? [
+    { label: "CB đã chấp nhận", value: cb.audits.completed, color: "var(--navy-600)" },
+    { label: "Chưa được CB chấp nhận", value: Math.max(0, cb.audits.total - cb.audits.completed), color: "var(--gold-500)" },
+  ] : [];
+  const cbListedSubmissions = cb ? cb.submissions.pending + cb.submissions.reviewing + cb.submissions.approved : 0;
+  const cbSubmissionData = cb ? [
+    { label: "Chờ xử lý", value: cb.submissions.pending, color: "var(--gold-500)" },
+    { label: "Đang đánh giá", value: cb.submissions.reviewing, color: "var(--navy-500)" },
+    { label: "Đã duyệt", value: cb.submissions.approved, color: "var(--navy-600)" },
+    { label: "Trạng thái khác", value: Math.max(0, cb.submissions.total - cbListedSubmissions), color: "var(--ink-300)" },
+  ] : [];
+  const auListedSubmissions = au ? au.pending + au.reviewing + au.approved + au.returned : 0;
+  const auditorSubmissionData = au ? [
+    { label: "Chờ duyệt", value: au.pending, color: "var(--gold-500)" },
+    { label: "Đang xét", value: au.reviewing, color: "var(--navy-500)" },
+    { label: "Đã duyệt", value: au.approved, color: "var(--navy-600)" },
+    { label: "Trả lại", value: au.returned, color: "var(--gold-600)" },
+    { label: "Trạng thái khác", value: Math.max(0, au.total - auListedSubmissions), color: "var(--ink-300)" },
+  ] : [];
 
   /* ══════════════════════════════════════════════════════════════
      OWNER VIEW
      ══════════════════════════════════════════════════════════════ */
   if (isOwner) {
     return (
-      <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
+      <div className={`flex flex-col flex-1 lg:min-h-0 w-full ${motion.page}`} data-page data-dashboard-motion-root="true">
         {/* Header */}
         <div className="mb-6 animate-section">
-          <p className="text-sm mb-1" style={{ color: "#6B7280" }}>
+          <p className="text-sm mb-1" style={{ color: "var(--ink-500)" }}>
             {greeting()},
           </p>
-          <h1 className="text-2xl font-bold" style={{ color: "#0A1F44" }}>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--navy-900)" }}>
             {user.company_name}
           </h1>
           <div className="flex items-center gap-3 mt-2">
-            <p className="text-sm" style={{ color: "#6B7280" }}>
+            <p className="text-sm" style={{ color: "var(--ink-500)" }}>
               {user.email}
             </p>
             <span
@@ -321,36 +426,38 @@ export default function ProviderDashboard() {
               style={{
                 background:
                   user.status === "active"
-                    ? "rgba(10,31,68,0.08)"
-                    : "rgba(245,158,11,0.1)",
-                color: user.status === "active" ? "#0A1F44" : "#D97706",
-                border: `1px solid ${user.status === "active" ? "rgba(10,31,68,0.2)" : "rgba(245,158,11,0.3)"}`,
+                    ? "color-mix(in srgb, var(--navy-900) 8%, transparent)"
+                    : "color-mix(in srgb, var(--gold-500) 10%, transparent)",
+                color: user.status === "active" ? "var(--navy-900)" : "var(--gold-700)",
+                border: `1px solid ${user.status === "active" ? "color-mix(in srgb, var(--navy-900) 20%, transparent)" : "color-mix(in srgb, var(--gold-500) 30%, transparent)"}`,
               }}
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-[#0A1F44]" : "bg-yellow-400"}`}
+                className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-[var(--navy-900)]" : "bg-gold-500"}`}
               />
               {user.status === "active" ? "Quản trị CB" : "Đang chờ duyệt"}
             </span>
           </div>
         </div>
 
+        {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { const generation = ++requestGenerationRef.current; activeContextRef.current = contextKey; void refreshDashboardStats(contextKey, generation, isOwner); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
+
         {/* Pending notice */}
         {user.status === "pending" && (
           <div
             className="mb-6 p-5 rounded-xl animate-section"
             style={{
-              background: "rgba(245,158,11,0.08)",
-              border: "1px solid rgba(245,158,11,0.2)",
+              background: "color-mix(in srgb, var(--gold-500) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--gold-500) 20%, transparent)",
             }}
           >
             <div className="flex items-start gap-3">
-              <Icon d={ICONS.clock} color="#F59E0B" size={5} />
+              <Icon d={ICONS.clock} color="var(--gold-600)" size={5} />
               <div>
-                <p className="text-sm font-medium" style={{ color: "#F59E0B" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--gold-600)" }}>
                   Tài khoản đang chờ xét duyệt
                 </p>
-                <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                <p className="text-xs mt-1" style={{ color: "var(--ink-500)" }}>
                   Đội ngũ AMINRA đang xem xét hồ sơ của tổ chức bạn. Trong thời
                   gian chờ, bạn có thể khám phá tính năng AI.
                 </p>
@@ -367,29 +474,29 @@ export default function ProviderDashboard() {
                 {
                   label: "Doanh nghiệp",
                   value: cb.portfolio_size,
-                  color: "#0A1F44",
-                  bg: "#DCE3F0",
+                  color: "var(--navy-900)",
+                  bg: "var(--navy-100)",
                   icon: ICONS.building,
                 },
                 {
                   label: "Chứng nhận",
                   value: cb.certs.active,
-                  color: "#2563EB",
-                  bg: "#DBEAFE",
+                  color: "var(--navy-600)",
+                  bg: "var(--navy-100)",
                   icon: ICONS.shield,
                 },
                 {
                   label: "Sắp hết hạn",
                   value: cb.certs.expiring_soon,
-                  color: cb.certs.expiring_soon > 0 ? "#DC2626" : "#D97706",
-                  bg: cb.certs.expiring_soon > 0 ? "#FEF2F2" : "#FFFBEB",
+                  color: cb.certs.expiring_soon > 0 ? "var(--gold-700)" : "var(--gold-700)",
+                  bg: cb.certs.expiring_soon > 0 ? "var(--gold-100)" : "var(--gold-100)",
                   icon: ICONS.clock,
                 },
                 {
                   label: "KĐ hoàn thành",
                   value: cb.audits.completed,
-                  color: "#7C3AED",
-                  bg: "#F5F3FF",
+                  color: "var(--navy-700)",
+                  bg: "var(--navy-100)",
                   icon: ICONS.clipboard,
                 },
               ] as const
@@ -397,7 +504,7 @@ export default function ProviderDashboard() {
               <SpotlightCard
                 key={c.label}
                 className={`rounded-xl p-4 animate-list-item stagger-${i + 1}`}
-                style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+                style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span
@@ -412,7 +519,7 @@ export default function ProviderDashboard() {
                 </div>
                 <div
                   className="text-xs font-medium mt-0.5"
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--ink-500)" }}
                 >
                   {c.label}
                 </div>
@@ -427,11 +534,11 @@ export default function ProviderDashboard() {
             {/* Compliance score dial */}
             <div
               className="rounded-xl p-5 text-center"
-              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+              style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
             >
               <p
                 className="text-xs font-medium mb-3"
-                style={{ color: "#94A3B8" }}
+                style={{ color: "var(--ink-300)" }}
               >
                 Điểm tuân thủ TB
               </p>
@@ -441,20 +548,20 @@ export default function ProviderDashboard() {
             {/* Avg response time */}
             <div
               className="rounded-xl p-5 flex flex-col items-center justify-center"
-              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+              style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
             >
               <div
                 className="w-10 h-10 rounded-full grid place-items-center mb-2"
-                style={{ background: "#DBEAFE" }}
+                style={{ background: "var(--navy-100)" }}
               >
-                <Icon d={ICONS.clock} color="#2563EB" size={5} />
+                <Icon d={ICONS.clock} color="var(--navy-600)" size={5} />
               </div>
-              <p className="text-xs font-medium" style={{ color: "#94A3B8" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--ink-300)" }}>
                 Thời gian phản hồi TB
               </p>
               <p
                 className="text-2xl font-bold mt-1 animate-count"
-                style={{ color: "#0A1F44" }}
+                style={{ color: "var(--navy-900)" }}
               >
                 {cb.submissions.avg_hours !== null
                   ? `${cb.submissions.avg_hours}h`
@@ -465,15 +572,15 @@ export default function ProviderDashboard() {
             {/* Pending queue */}
             <div
               className="rounded-xl p-5 flex flex-col items-center justify-center"
-              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+              style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
             >
               <div
                 className="w-10 h-10 rounded-full grid place-items-center mb-2"
-                style={{ background: "#FEF3C7" }}
+                style={{ background: "var(--gold-100)" }}
               >
-                <Icon d={ICONS.inbox} color="#D97706" size={5} />
+                <Icon d={ICONS.inbox} color="var(--gold-700)" size={5} />
               </div>
-              <p className="text-xs font-medium" style={{ color: "#94A3B8" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--ink-300)" }}>
                 Hồ sơ chờ xử lý
               </p>
               <p
@@ -481,8 +588,8 @@ export default function ProviderDashboard() {
                 style={{
                   color:
                     cb.submissions.pending + cb.submissions.reviewing > 0
-                      ? "#D97706"
-                      : "#0A1F44",
+                      ? "var(--gold-700)"
+                      : "var(--navy-900)",
                 }}
               >
                 {cb.submissions.pending + cb.submissions.reviewing}
@@ -491,41 +598,53 @@ export default function ProviderDashboard() {
           </div>
         )}
 
+        {cb && <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <DashboardCard title="Chứng chỉ theo trạng thái" description="Phân bố trạng thái trong registry; mục chưa thuộc hai nhóm chính được tách riêng.">
+            <DonutChart title="Chứng chỉ theo trạng thái" data={cbCertificateData} centerLabel="Chứng chỉ" />
+          </DashboardCard>
+          <DashboardCard title="Tiến độ kiểm định" description="Hoàn thành so với tổng audit visits hiện có.">
+            <DonutChart title="Tiến độ kiểm định" data={cbAuditData} centerLabel="Audit visits" />
+          </DashboardCard>
+          <DashboardCard title="Hồ sơ theo trạng thái" description="Các nhóm còn lại được gộp để tổng biểu đồ khớp phạm vi hồ sơ API.">
+            <DonutChart title="Hồ sơ Certification Body theo trạng thái" data={cbSubmissionData} centerLabel="Hồ sơ" />
+          </DashboardCard>
+        </div>}
+
         {/* Row 3 — Expiring certs + Auditor workload */}
         {cb && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 animate-section">
             {/* Expiring certs */}
             <div
               className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid #E2E8F0" }}
+              style={{ border: "1px solid var(--cream-200)" }}
             >
               <div
                 className="px-4 py-3 flex items-center justify-between"
                 style={{
-                  background: "#FAFBFC",
-                  borderBottom: "1px solid #E2E8F0",
+                  background: "var(--cream-50)",
+                  borderBottom: "1px solid var(--cream-200)",
                 }}
               >
-                <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+                <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
                   Chứng nhận sắp hết hạn
                 </h3>
                 <Link
                   href="/certificates"
                   className="text-xs font-medium"
-                  style={{ color: "#0A1F44" }}
+                  style={{ color: "var(--navy-900)" }}
                 >
                   Xem tất cả &rarr;
                 </Link>
               </div>
               {cb.expiring_certs.length === 0 ? (
                 <div className="p-6 text-center">
-                  <Icon d={ICONS.shield} color="#CBD5E1" size={8} />
-                  <p className="text-sm mt-2" style={{ color: "#94A3B8" }}>
+                  <Icon d={ICONS.shield} color="var(--ink-300)" size={8} />
+                  <p className="text-sm mt-2" style={{ color: "var(--ink-300)" }}>
                     Không có chứng nhận sắp hết hạn
                   </p>
                 </div>
               ) : (
-                <div className="divide-y" style={{ borderColor: "#F0F0F0" }}>
+                <div className="divide-y" style={{ borderColor: "var(--cream-200)" }}>
                   {cb.expiring_certs.map((c, i) => {
                     const dc = daysColor(c.days_remaining);
                     return (
@@ -536,13 +655,13 @@ export default function ProviderDashboard() {
                         <div className="min-w-0">
                           <p
                             className="text-sm font-medium truncate"
-                            style={{ color: "#0A1F44" }}
+                            style={{ color: "var(--navy-900)" }}
                           >
                             {c.company_name}
                           </p>
                           <p
                             className="text-xs mt-0.5"
-                            style={{ color: "#94A3B8" }}
+                            style={{ color: "var(--ink-300)" }}
                           >
                             {c.cert_number}
                           </p>
@@ -563,79 +682,69 @@ export default function ProviderDashboard() {
             {/* Auditor workload */}
             <div
               className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid #E2E8F0" }}
+              style={{ border: "1px solid var(--cream-200)" }}
             >
               <div
                 className="px-4 py-3 flex items-center justify-between"
                 style={{
-                  background: "#FAFBFC",
-                  borderBottom: "1px solid #E2E8F0",
+                  background: "var(--cream-50)",
+                  borderBottom: "1px solid var(--cream-200)",
                 }}
               >
-                <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+                <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
                   Tải công việc Auditor
                 </h3>
                 <Link
                   href="/auditors"
                   className="text-xs font-medium"
-                  style={{ color: "#0A1F44" }}
+                  style={{ color: "var(--navy-900)" }}
                 >
                   Quản lý &rarr;
                 </Link>
               </div>
               {cb.auditor_workload.length === 0 ? (
                 <div className="p-6 text-center">
-                  <Icon d={ICONS.users} color="#CBD5E1" size={8} />
-                  <p className="text-sm mt-2" style={{ color: "#94A3B8" }}>
+                  <Icon d={ICONS.users} color="var(--ink-300)" size={8} />
+                  <p className="text-sm mt-2" style={{ color: "var(--ink-300)" }}>
                     Chưa có auditor nào
                   </p>
                 </div>
               ) : (
-                <div className="p-4 space-y-4">
-                  {cb.auditor_workload.map((a, i) => {
-                    const maxVal = Math.max(
-                      ...cb.auditor_workload.map((w) =>
-                        Math.max(w.active_visits, w.active_submissions),
-                      ),
-                      1,
-                    );
-                    return (
-                      <div
-                        key={a.id}
-                        className={`animate-list-item stagger-${Math.min(i + 1, 12)}`}
-                      >
-                        <p
-                          className="text-sm font-medium mb-1.5"
-                          style={{ color: "#0A1F44" }}
-                        >
-                          {a.name}
-                        </p>
-                        <HBar
-                          value={a.active_visits}
-                          max={maxVal}
-                          color="#2563EB"
-                          label="Kiểm định"
-                        />
-                        <div className="mt-1">
-                          <HBar
-                            value={a.active_submissions}
-                            max={maxVal}
-                            color="#7C3AED"
-                            label="Hồ sơ"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="p-4">
+                  <AccessibleBarChart title="Tải công việc Auditor: kiểm định và hồ sơ đang xử lý" data={cb.auditor_workload.flatMap((auditor) => [
+                    { label: `${auditor.name} · Kiểm định`, value: auditor.active_visits, color: "var(--navy-700)" },
+                    { label: `${auditor.name} · Hồ sơ`, value: auditor.active_submissions, color: "var(--navy-600)" },
+                  ])} />
                 </div>
               )}
             </div>
           </div>
         )}
 
+        {cb && (
+          <section className="mb-6 rounded-xl p-5 animate-section" aria-labelledby="cb-performance-title" style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}>
+            <div className="mb-4">
+              <h2 id="cb-performance-title" className="text-base font-bold" style={{ color: "var(--navy-900)" }}>Hiệu suất kiểm định viên — 90 ngày</h2>
+              <p className="mt-1 text-xs" style={{ color: "var(--ink-500)" }}>Report chỉ được tính khi CB owner chấp nhận; attribution theo thời điểm chấp nhận. So sánh 90 ngày hiện tại với 90 ngày liền trước.</p>
+            </div>
+            {!cbPerformance || cbPerformance.auditors.length === 0 ? (
+              <p className="py-4 text-sm" style={{ color: "var(--ink-500)" }} role="status">{cbPerformance ? "Chưa có report được CB chấp nhận trong kỳ để phân tích theo auditor." : "Đang tải hoặc chưa có dữ liệu hiệu suất."}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm" aria-label="Hiệu suất kiểm định viên trong 90 ngày">
+                  <thead><tr className="border-b" style={{ color: "var(--ink-500)" }}><th scope="col" className="py-2 pr-4">Auditor</th><th scope="col" className="py-2 pr-4">Report được chấp nhận<br />90 ngày / kỳ trước</th><th scope="col" className="py-2 pr-4">Chu kỳ tạo → chấp nhận<br />median / p90 (giờ), hiện tại / kỳ trước</th><th scope="col" className="py-2">Ngày lịch hẹn → chấp nhận<br />median / p90 (ngày), hiện tại / kỳ trước</th></tr></thead>
+                  <tbody>{cbPerformance.auditors.map((auditor) => <tr key={auditor.auditor_id} className="border-b last:border-0" style={{ borderColor: "var(--cream-200)" }}><th scope="row" className="py-3 pr-4 font-semibold" style={{ color: "var(--navy-900)" }}>{auditor.name || "Auditor (tên không khả dụng)"}</th><td className="py-3 pr-4">{auditor.completed.current_90d} / {auditor.completed.previous_90d}</td><td className="py-3 pr-4">{auditor.cycle_time_hours.current_median ?? "—"} / {auditor.cycle_time_hours.current_p90 ?? "—"} · {auditor.cycle_time_hours.previous_median ?? "—"} / {auditor.cycle_time_hours.previous_p90 ?? "—"}</td><td className="py-3">{auditor.scheduled_to_acceptance_days.current_median ?? "—"} / {auditor.scheduled_to_acceptance_days.current_p90 ?? "—"} · {auditor.scheduled_to_acceptance_days.previous_median ?? "—"} / {auditor.scheduled_to_acceptance_days.previous_p90 ?? "—"}</td></tr>)}</tbody>
+                  <tfoot><tr className="border-t-2 font-bold" style={{ borderColor: "var(--cream-300)", color: "var(--navy-900)" }}><th scope="row" className="py-3 pr-4">Tổng auditor được phân công</th><td className="py-3 pr-4">{cbPerformance.total.completed.current_90d} / {cbPerformance.total.completed.previous_90d}</td><td className="py-3 pr-4">{cbPerformance.total.cycle_time_hours.current_median ?? "—"} / {cbPerformance.total.cycle_time_hours.current_p90 ?? "—"} · {cbPerformance.total.cycle_time_hours.previous_median ?? "—"} / {cbPerformance.total.cycle_time_hours.previous_p90 ?? "—"}</td><td className="py-3">{cbPerformance.total.scheduled_to_acceptance_days.current_median ?? "—"} / {cbPerformance.total.scheduled_to_acceptance_days.current_p90 ?? "—"} · {cbPerformance.total.scheduled_to_acceptance_days.previous_median ?? "—"} / {cbPerformance.total.scheduled_to_acceptance_days.previous_p90 ?? "—"}</td></tr></tfoot>
+                </table>
+              </div>
+            )}
+            {cbPerformance?.limitations.map((limitation) => <p key={limitation} className="mt-2 text-xs" style={{ color: "var(--ink-500)" }}>{limitation}</p>)}
+          </section>
+        )}
+
         {/* Row 4 — Quick actions */}
         <div className="animate-section">
-          <h3 className="text-sm font-bold mb-3" style={{ color: "#0A1F44" }}>
+          <h3 className="text-sm font-bold mb-3" style={{ color: "var(--navy-900)" }}>
             Thao tác nhanh
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -644,35 +753,35 @@ export default function ProviderDashboard() {
                 href: "/submissions",
                 label: "Hồ sơ nhận",
                 desc: "Xem & đánh giá hồ sơ",
-                color: "#0A1F44",
+                color: "var(--navy-900)",
                 icon: ICONS.inbox,
               },
               {
                 href: "/portfolio",
                 label: "Portfolio",
                 desc: "Quản lý doanh nghiệp",
-                color: "#2563EB",
+                color: "var(--navy-600)",
                 icon: ICONS.folder,
               },
               {
                 href: "/certificates",
                 label: "Chứng nhận",
                 desc: "Quản lý chứng nhận",
-                color: "#D97706",
+                color: "var(--gold-700)",
                 icon: ICONS.cert,
               },
               {
                 href: "/auditors",
                 label: "Quản lý Auditor",
                 desc: "Thêm & quản lý auditor",
-                color: "#7C3AED",
+                color: "var(--navy-700)",
                 icon: ICONS.users,
               },
               {
                 href: "/chat",
                 label: "Hỏi đáp AI",
                 desc: "Tra cứu tiêu chuẩn Halal",
-                color: "#64748B",
+                color: "var(--ink-500)",
                 icon: ICONS.chat,
               },
             ].map((a, i) => (
@@ -680,7 +789,7 @@ export default function ProviderDashboard() {
                 key={a.href}
                 href={a.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl doc-card-hover animate-list-item stagger-${i + 1}`}
-                style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+                style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
               >
                 <div
                   className="w-9 h-9 rounded-lg grid place-items-center flex-shrink-0"
@@ -694,13 +803,13 @@ export default function ProviderDashboard() {
                 <div className="min-w-0">
                   <div
                     className="text-sm font-semibold truncate"
-                    style={{ color: "#0A1F44" }}
+                    style={{ color: "var(--navy-900)" }}
                   >
                     {a.label}
                   </div>
                   <div
                     className="text-xs truncate"
-                    style={{ color: "#6B7280" }}
+                    style={{ color: "var(--ink-500)" }}
                   >
                     {a.desc}
                   </div>
@@ -712,7 +821,7 @@ export default function ProviderDashboard() {
 
         {/* Loading overlay when still fetching */}
         {loadingStats && !cb && (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-white/60">
+          <div className="fixed inset-0 z-50 grid place-items-center bg-cream-50/60">
             <PulseLoader />
           </div>
         )}
@@ -724,31 +833,33 @@ export default function ProviderDashboard() {
      AUDITOR VIEW (!is_owner)
      ══════════════════════════════════════════════════════════════ */
   return (
-    <div className="flex flex-col flex-1 lg:min-h-0 w-full" data-page>
+    <div className={`flex flex-col flex-1 lg:min-h-0 w-full ${motion.page}`} data-page data-dashboard-motion-root="true">
       {/* Header */}
       <div className="mb-6 animate-section">
-        <p className="text-sm mb-1" style={{ color: "#6B7280" }}>
+        <p className="text-sm mb-1" style={{ color: "var(--ink-500)" }}>
           {greeting()},
         </p>
-        <h1 className="text-2xl font-bold" style={{ color: "#0A1F44" }}>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--navy-900)" }}>
           {user.company_name}
         </h1>
         <div className="flex items-center gap-3 mt-2">
-          <p className="text-sm" style={{ color: "#6B7280" }}>
+          <p className="text-sm" style={{ color: "var(--ink-500)" }}>
             {user.email}
           </p>
           <span
             className="px-2.5 py-1 rounded-full text-xs font-medium"
             style={{
-              background: "#DBEAFE",
-              color: "#2563EB",
-              border: "1px solid #BFDBFE",
+              background: "var(--navy-100)",
+              color: "var(--navy-600)",
+              border: "1px solid var(--navy-100)",
             }}
           >
             Auditor
           </span>
         </div>
       </div>
+
+      {statsError && <div data-dashboard-motion="alert" role="alert" className={`mb-5 flex flex-col gap-3 rounded-xl border border-gold-600 bg-gold-100 p-4 text-sm text-navy-900 sm:flex-row sm:items-center sm:justify-between ${motion.alert}`}><span>{statsError}</span><button type="button" onClick={() => { const generation = ++requestGenerationRef.current; activeContextRef.current = contextKey; void refreshDashboardStats(contextKey, generation, false); }} className="min-h-10 rounded-lg bg-navy-900 px-4 font-semibold text-cream-100">Thử tải lại</button></div>}
 
       {/* Auditor stat cards */}
       {au && (
@@ -758,33 +869,33 @@ export default function ProviderDashboard() {
               {
                 label: "Chờ duyệt",
                 value: au.pending,
-                color: "#6B7280",
-                bg: "#F3F4F6",
+                color: "var(--ink-500)",
+                bg: "var(--cream-100)",
               },
               {
                 label: "Đang xét",
                 value: au.reviewing,
-                color: "#2563EB",
-                bg: "#DBEAFE",
+                color: "var(--navy-600)",
+                bg: "var(--navy-100)",
               },
               {
                 label: "Đã duyệt",
                 value: au.approved,
-                color: "#102A5C",
-                bg: "#DCE3F0",
+                color: "var(--navy-800)",
+                bg: "var(--navy-100)",
               },
               {
                 label: "Trả lại",
                 value: au.returned,
-                color: "#D97706",
-                bg: "#FEF3C7",
+                color: "var(--gold-700)",
+                bg: "var(--gold-100)",
               },
             ] as const
           ).map((st, i) => (
             <div
               key={st.label}
               className={`rounded-xl p-4 doc-card-hover animate-list-item stagger-${i + 1}`}
-              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+              style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
             >
               <div
                 className="text-2xl font-bold animate-count"
@@ -794,7 +905,7 @@ export default function ProviderDashboard() {
               </div>
               <div
                 className="text-xs font-medium mt-0.5"
-                style={{ color: "#6B7280" }}
+                style={{ color: "var(--ink-500)" }}
               >
                 {st.label}
               </div>
@@ -803,33 +914,78 @@ export default function ProviderDashboard() {
         </div>
       )}
 
+      {/* Overdue alert banner */}
+      {au && au.overdue > 0 && (
+        <Link
+          href="/dashboard/provider/overdue"
+          className="block rounded-xl p-4 mb-6 btn-lift animate-section"
+          style={{
+            background: "color-mix(in srgb, var(--gold-700) 6%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--gold-700) 25%, transparent)",
+          }}
+          data-testid="provider-overdue-banner"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--navy-900)" }}
+              >
+                ⚠ {au.overdue} hồ sơ đã quá deadline
+              </p>
+              <p
+                className="text-xs mt-0.5"
+                style={{ color: "var(--navy-900)" }}
+              >
+                Mở queue SLA để xem chi tiết và xử lý
+              </p>
+            </div>
+            <span
+              className="px-3 py-1.5 rounded-lg text-xs font-medium"
+              style={{ background: "var(--navy-900)", color: "white" }}
+            >
+              Xem queue →
+            </span>
+          </div>
+        </Link>
+      )}
+
+      {au && <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_20rem]">
+        <DashboardCard title="Hàng đợi được giao" description="Phân bố hồ sơ theo trạng thái; trạng thái ngoài các nhóm chính được gộp.">
+          <DonutChart title="Hồ sơ auditor theo trạng thái" data={auditorSubmissionData} centerLabel="Hồ sơ" />
+        </DashboardCard>
+        <DashboardCard title="Ưu tiên hôm nay" description="Hồ sơ quá hạn cần xử lý trước.">
+          <p className={`text-4xl font-bold tabular-nums ${au.overdue > 0 ? "text-gold-700" : "text-navy-700"}`}>{au.overdue}</p><p className="mt-2 text-sm text-ink-500">{au.overdue > 0 ? "Hồ sơ đã quá deadline" : "Không có hồ sơ quá hạn"}</p>
+        </DashboardCard>
+      </div>}
+
       {/* Metrics row */}
       {au && (
         <div className="grid grid-cols-2 gap-4 mb-6 animate-section">
           <div
             className="rounded-xl p-4"
-            style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+            style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
           >
-            <p className="text-xs font-medium" style={{ color: "#94A3B8" }}>
+            <p className="text-xs font-medium" style={{ color: "var(--ink-300)" }}>
               Tổng hồ sơ nhận
             </p>
             <p
               className="text-xl font-bold mt-1 animate-count"
-              style={{ color: "#0A1F44" }}
+              style={{ color: "var(--navy-900)" }}
             >
               {au.total}
             </p>
           </div>
           <div
             className="rounded-xl p-4"
-            style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+            style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
           >
-            <p className="text-xs font-medium" style={{ color: "#94A3B8" }}>
+            <p className="text-xs font-medium" style={{ color: "var(--ink-300)" }}>
               Thời gian phản hồi TB
             </p>
             <p
               className="text-xl font-bold mt-1 animate-count"
-              style={{ color: "#0A1F44" }}
+              style={{ color: "var(--navy-900)" }}
             >
               {au.avg_response_hours !== null
                 ? `${au.avg_response_hours}h`
@@ -843,20 +999,20 @@ export default function ProviderDashboard() {
         {/* Recent submissions */}
         <div className="flex flex-col lg:min-h-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+            <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
               Hồ sơ gần đây
             </h3>
             <Link
               href="/submissions"
               className="text-xs font-medium"
-              style={{ color: "#0A1F44" }}
+              style={{ color: "var(--navy-900)" }}
             >
               Xem tất cả &rarr;
             </Link>
           </div>
           <div
             className="rounded-xl overflow-hidden flex-1 lg:min-h-0 lg:overflow-y-auto"
-            style={{ border: "1px solid #E2E8F0" }}
+            style={{ border: "1px solid var(--cream-200)" }}
           >
             {loadingStats ? (
               <div className="p-4 space-y-3">
@@ -871,7 +1027,7 @@ export default function ProviderDashboard() {
               <div className="p-8 text-center">
                 <svg
                   className="w-12 h-12 mx-auto mb-3 animate-empty-icon"
-                  style={{ color: "#CBD5E1" }}
+                  style={{ color: "var(--ink-300)" }}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -883,33 +1039,33 @@ export default function ProviderDashboard() {
                     d={ICONS.inbox}
                   />
                 </svg>
-                <p className="text-sm font-medium" style={{ color: "#0A1F44" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--navy-900)" }}>
                   Chưa có hồ sơ nào
                 </p>
-                <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
+                <p className="text-xs mt-1" style={{ color: "var(--ink-300)" }}>
                   Doanh nghiệp sẽ gửi hồ sơ cho bạn khi sẵn sàng
                 </p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: "#F0F0F0" }}>
+              <div className="divide-y" style={{ borderColor: "var(--cream-200)" }}>
                 {au.recent.map((r, i) => {
                   const st = STATUS_MAP[r.status] || STATUS_MAP.pending;
                   return (
                     <Link
                       key={r.id}
                       href="/submissions"
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors animate-list-item stagger-${Math.min(i + 1, 12)}`}
+                      className={`flex items-center justify-between px-4 py-3 hover:bg-cream-100 transition-colors animate-list-item stagger-${Math.min(i + 1, 12)}`}
                     >
                       <div className="min-w-0">
                         <p
                           className="text-sm font-medium truncate"
-                          style={{ color: "#0A1F44" }}
+                          style={{ color: "var(--navy-900)" }}
                         >
                           {r.company_name}
                         </p>
                         <p
                           className="text-xs mt-0.5"
-                          style={{ color: "#94A3B8" }}
+                          style={{ color: "var(--ink-300)" }}
                         >
                           {r.doc_count} tài liệu &middot;{" "}
                           {timeAgo(r.submitted_at)}
@@ -931,7 +1087,7 @@ export default function ProviderDashboard() {
 
         {/* Quick actions */}
         <div className="space-y-3">
-          <h3 className="text-sm font-bold" style={{ color: "#0A1F44" }}>
+          <h3 className="text-sm font-bold" style={{ color: "var(--navy-900)" }}>
             Thao tác nhanh
           </h3>
           {[
@@ -939,21 +1095,21 @@ export default function ProviderDashboard() {
               href: "/submissions",
               label: "Hồ sơ nhận",
               desc: "Xem & đánh giá hồ sơ",
-              color: "#0A1F44",
+              color: "var(--navy-900)",
               icon: ICONS.inbox,
             },
             {
               href: "/chat",
               label: "Hỏi đáp AI",
               desc: "Tra cứu tiêu chuẩn Halal",
-              color: "#64748B",
+              color: "var(--ink-500)",
               icon: ICONS.chat,
             },
             {
               href: "/upload",
               label: "Đánh giá tài liệu",
               desc: "Upload & kiểm tra compliance",
-              color: "#0EA5E9",
+              color: "var(--navy-500)",
               icon: ICONS.upload,
             },
           ].map((a, i) => (
@@ -961,7 +1117,7 @@ export default function ProviderDashboard() {
               key={a.href}
               href={a.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl doc-card-hover animate-list-item stagger-${i + 1}`}
-              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+              style={{ background: "var(--cream-50)", border: "1px solid var(--cream-200)" }}
             >
               <div
                 className="w-9 h-9 rounded-lg grid place-items-center flex-shrink-0"
@@ -975,11 +1131,11 @@ export default function ProviderDashboard() {
               <div>
                 <div
                   className="text-sm font-semibold"
-                  style={{ color: "#0A1F44" }}
+                  style={{ color: "var(--navy-900)" }}
                 >
                   {a.label}
                 </div>
-                <div className="text-xs" style={{ color: "#6B7280" }}>
+                <div className="text-xs" style={{ color: "var(--ink-500)" }}>
                   {a.desc}
                 </div>
               </div>

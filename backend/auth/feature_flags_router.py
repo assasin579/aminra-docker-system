@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from auth.db import get_db
+from auth.identity import resolve_canonical_user_id
 from auth.jwt_utils import get_current_user
 from services import feature_flags
 
@@ -40,7 +41,18 @@ class OverrideSetRequest(BaseModel):
 
 
 def _require_admin(user: dict) -> None:
-    if user.get("role") != "admin":
+    """Feature-flag admin guard.
+
+    Post-Keycloak cutover, `users.role` only contains app-domain values
+    (`business` / `provider`). Platform admin authority comes from the
+    Keycloak realm role, so checking only `user["role"] == "admin"` locks out
+    the real admin account while still letting tests pass with legacy fixtures.
+    """
+    realm_roles = user.get("realm_roles") or []
+    if "platform_admin" not in realm_roles and user.get("role") not in (
+        "admin",
+        "platform_admin",
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin role required")
 
 
@@ -112,8 +124,9 @@ async def admin_set_override(
     flag = await db.fetchrow("SELECT name FROM feature_flags WHERE name = $1", name)
     if flag is None:
         raise HTTPException(404, f"Flag {name!r} not found")
+    actor_id = await resolve_canonical_user_id(user, db)
     await feature_flags.set_tenant_override(
-        db, tenant_id, name, body.enabled, reason=body.reason, created_by=user.get("sub")
+        db, tenant_id, name, body.enabled, reason=body.reason, created_by=str(actor_id) if actor_id else None
     )
     log.info(f"[feature-flags] Override tenant={tenant_id} flag={name} enabled={body.enabled}")
     return {"tenant_id": tenant_id, "feature_name": name, "enabled": body.enabled}

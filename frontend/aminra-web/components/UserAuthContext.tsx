@@ -8,6 +8,13 @@ import {
   useCallback,
   ReactNode,
 } from "react";
+import {
+  AUTH_SESSION_EVENT,
+  notifyAuthSessionChanged,
+  purgeAuthSessionState,
+  removeLegacyAdminSessionKey,
+  removeStoredAuthSessionKeys,
+} from "@/lib/auth-session-cleanup";
 
 export type UserRole = "business" | "provider";
 
@@ -35,6 +42,12 @@ export interface UserProfile {
   /** IHC role (set on business members designated to Internal Halal Committee).
    *  Auto-grants can_approve_documents per JAKIM MS 1500 §5.4. */
   ihc_role?: string | null;
+  /** TASK #19 — Industry schema assigned during onboarding. Null until
+   *  business owner completes industry-select flow. Locked post-cert issued. */
+  industry_schema_id?: string | null;
+  industry_schema_code?: string | null;
+  keycloak_sub?: string | null;
+  realm_roles?: string[] | null;
 }
 
 interface UserAuthState {
@@ -42,8 +55,22 @@ interface UserAuthState {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  loginBusiness: (email: string, password: string) => Promise<void>;
-  loginProvider: (email: string, password: string) => Promise<void>;
+  loginBusiness: (email: string, password: string, remember?: boolean) => Promise<void>;
+  loginProvider: (email: string, password: string, remember?: boolean) => Promise<void>;
+  /**
+   * ADR-005 Phase 2: install a Keycloak-issued access token as the active
+   * session. The token is verified and enriched by the BE dual-auth path
+   * (`get_current_user` → keycloak_validator). Returns the resolved profile so
+   * the callback can avoid redirecting a provider/admin into business-only pages.
+   */
+  loginViaKeycloak: (
+    accessToken: string,
+    expectedRole?: UserRole,
+  ) => Promise<UserProfile>;
+  /** Re-fetch /auth/me and update local user state. Used after server-side
+   *  profile mutations (e.g. industry-schema assignment) so subsequent
+   *  guard checks see the latest fields. */
+  refreshProfile: () => Promise<void>;
   logout: () => void;
 }
 
@@ -54,6 +81,10 @@ const UserAuthContext = createContext<UserAuthState>({
   loading: true,
   loginBusiness: async () => {},
   loginProvider: async () => {},
+  loginViaKeycloak: async () => {
+    throw new Error("UserAuthProvider not mounted");
+  },
+  refreshProfile: async () => {},
   logout: () => {},
 });
 
@@ -76,6 +107,55 @@ async function apiLogin(email: string, password: string, role?: string) {
   return res.json() as Promise<{ access_token: string; user: UserProfile }>;
 }
 
+type KeycloakClaims = {
+  sub?: string;
+  email?: string;
+  preferred_username?: string;
+  realm_access?: { roles?: string[] };
+};
+
+function decodeJwtPayload(token: string): KeycloakClaims | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded)) as KeycloakClaims;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeIdentity(value: string | null | undefined): string | null {
+  return value?.trim().toLowerCase() || null;
+}
+
+function assertKeycloakIdentityMatchesProfile(
+  accessToken: string,
+  profile: UserProfile,
+): void {
+  const claims = decodeJwtPayload(accessToken);
+  if (!claims) return;
+
+  const claimSub = normalizeIdentity(claims.sub);
+  const profileSub = normalizeIdentity(profile.keycloak_sub);
+  if (claimSub && profileSub && claimSub !== profileSub) {
+    throw new Error("Phiên đăng nhập không nhất quán. Vui lòng đăng nhập lại.");
+  }
+
+  const claimEmail = normalizeIdentity(claims.email);
+  const claimUsername = normalizeIdentity(claims.preferred_username);
+  const profileEmail = normalizeIdentity(profile.email);
+  if (
+    profileEmail &&
+    (claimEmail || claimUsername) &&
+    profileEmail !== claimEmail &&
+    profileEmail !== claimUsername
+  ) {
+    throw new Error("Phiên đăng nhập không nhất quán. Vui lòng đăng nhập lại.");
+  }
+}
+
 export function UserAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -92,30 +172,29 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setToken(storedToken);
-    setUser(JSON.parse(storedProfile));
-
     fetch("/api/auth/me", {
       headers: { Authorization: `Bearer ${storedToken}` },
     })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((profile) => {
-        if (profile) {
+      .then(async (res) => {
+        if (res.ok) {
+          const profile = (await res.json()) as UserProfile;
+          assertKeycloakIdentityMatchesProfile(storedToken, profile);
+          setToken(storedToken);
           setUser(profile);
-          // Update whichever storage has it
           if (localStorage.getItem(TOKEN_KEY))
             localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
           else sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
         } else {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(PROFILE_KEY);
-          sessionStorage.removeItem(TOKEN_KEY);
-          sessionStorage.removeItem(PROFILE_KEY);
+          await purgeAuthSessionState("auth_rejected");
           setToken(null);
           setUser(null);
         }
       })
-      .catch(() => {})
+      .catch(async () => {
+        await purgeAuthSessionState("auth_rejected");
+        setToken(null);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -128,10 +207,12 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       storage.setItem(PROFILE_KEY, JSON.stringify(u));
       // Clear the other storage
       const other = remember ? sessionStorage : localStorage;
-      other.removeItem(TOKEN_KEY);
-      other.removeItem(PROFILE_KEY);
-      // Clear admin session — user and admin sessions must not coexist
-      localStorage.removeItem("aminra_admin_token");
+      removeStoredAuthSessionKeys(other);
+      removeLegacyAdminSessionKey(localStorage);
+      // Notify same-tab consumers. Browser `storage` events only fire in other
+      // tabs, so AdminAuthContext would otherwise keep a stale `isAdmin=false`
+      // after the OIDC callback stores a fresh platform_admin token.
+      notifyAuthSessionChanged();
       // Set cookie for middleware redirect check
       document.cookie =
         "aminra_session=1; path=/; max-age=31536000; SameSite=Lax";
@@ -167,19 +248,82 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     [_saveSession],
   );
 
+  const loginViaKeycloak = useCallback(
+    async (accessToken: string, expectedRole?: UserRole) => {
+      // BE dual-auth path validates the Keycloak JWT and returns the
+      // enriched profile. Use the same /api/auth/me endpoint as the
+      // legacy refresh path — keeps server logic single-source.
+      const res = await fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg =
+          (body && (body.detail || body.message)) ||
+          `Keycloak token rejected (HTTP ${res.status})`;
+        throw new Error(msg);
+      }
+      const profile = (await res.json()) as UserProfile;
+      try {
+        assertKeycloakIdentityMatchesProfile(accessToken, profile);
+      } catch (error) {
+        await purgeAuthSessionState("callback_mismatch");
+        setToken(null);
+        setUser(null);
+        throw error;
+      }
+      if (expectedRole && profile.role !== expectedRole) {
+        throw new Error(
+          `Tài khoản không phù hợp (kỳ vọng ${expectedRole}, nhận được ${profile.role})`,
+        );
+      }
+      _saveSession(accessToken, profile, true);
+      return profile;
+    },
+    [_saveSession],
+  );
+
+  const refreshProfile = useCallback(async () => {
+    if (!token) return;
+    const res = await fetch("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const profile = (await res.json()) as UserProfile;
+    setUser(profile);
+    // Persist into whichever storage has the token
+    if (localStorage.getItem(TOKEN_KEY))
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    else if (sessionStorage.getItem(TOKEN_KEY))
+      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  }, [token]);
+
   const logout = useCallback(() => {
+    // Detect Keycloak session via stored OIDC user. If present, redirect
+    // through Keycloak end-session endpoint so realm cookie is cleared —
+    // otherwise next "Đăng nhập SSO" would auto-relogin same user.
     setToken(null);
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(PROFILE_KEY);
-    // Cross-context cleanup: never leave a stale admin token after user logout
-    localStorage.removeItem("aminra_admin_token");
-    document.cookie = "aminra_session=; path=/; max-age=0";
-    try {
-      sessionStorage.clear();
-    } catch {}
+    void (async () => {
+      try {
+        const { isOidcEnabled, getOidcUser, signoutRedirect } = await import(
+          "@/lib/auth-oidc"
+        );
+        const oidcUser = isOidcEnabled()
+          ? await getOidcUser().catch(() => null)
+          : null;
+        await purgeAuthSessionState("logout");
+        if (oidcUser) {
+          // Only browser-initiated SSO sessions need Keycloak end-session.
+          // Normal business/provider logins use the AMINRA form plus a
+          // server-side token exchange, so redirecting them to Keycloak on
+          // logout would expose the identity-provider UI unnecessarily.
+          await signoutRedirect(oidcUser);
+        }
+      } catch {
+        await purgeAuthSessionState("logout");
+      }
+    })();
   }, []);
 
   return (
@@ -191,6 +335,8 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         loading,
         loginBusiness,
         loginProvider,
+        loginViaKeycloak,
+        refreshProfile,
         logout,
       }}
     >

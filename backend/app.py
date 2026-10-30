@@ -2,9 +2,8 @@ import os
 import sys
 import logging
 import json as _json
-import secrets
-import time
 import uuid
+import re
 import httpx
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -13,7 +12,7 @@ from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response, FileResponse
 from pydantic import BaseModel
@@ -37,7 +36,8 @@ from auth.db import init_pool, close_pool
 from auth.router import router as auth_router
 from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
-from auth.jwt_utils import get_current_user
+from auth.identity import resolve_canonical_user_id
+from auth.jwt_utils import get_current_user, decode_token
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
 
@@ -63,9 +63,27 @@ if SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from services.pdf_renderer import PDFRenderer
+    from services.pdf_data_aggregator import PDFDataAggregator
+    from services.pdf_filter_pipeline import FilterPipeline
+
     await init_pool()
-    yield
-    await close_pool()
+    # 3-stage pipeline: aggregator (Stage 1) → filter pipeline (Stage 2) → renderer (Stage 3)
+    app.state.pdf_aggregator = PDFDataAggregator()
+    app.state.pdf_filter_pipeline = FilterPipeline()
+    app.state.pdf_renderer = PDFRenderer()
+    try:
+        await app.state.pdf_renderer.startup()
+    except Exception:
+        log.exception("[lifespan] PDF renderer startup failed; routes will return 503")
+    try:
+        yield
+    finally:
+        try:
+            await app.state.pdf_renderer.shutdown()
+        except Exception:
+            log.exception("[lifespan] PDF renderer shutdown error (ignored)")
+        await close_pool()
 
 
 _is_prod = os.getenv("ENVIRONMENT", "").lower() == "production"
@@ -76,7 +94,7 @@ app = FastAPI(
     docs_url=None if _is_prod else "/docs",
     redoc_url=None if _is_prod else "/redoc",
 )
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://fe.silvergem.org,https://mukjizat.silvergem.org").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://aminra.org,https://dev-web.silvergem.org,https://fe.silvergem.org").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -104,22 +122,41 @@ from auth.certificate_router import router as certificate_router
 from auth.notification_router import router as notification_router
 from auth.audit_router import router as audit_router
 from auth.audit_log_router import router as audit_log_router
-from auth.password_reset_router import router as password_reset_router
+# Phase 4b (2026-05-14): password_reset_router removed — Keycloak built-in flow
+# handles password reset via /realms/aminra/login-actions/reset-credentials
 from auth.admin_analytics_router import router as admin_analytics_router
 from auth.gdpr_router import router as gdpr_router
 from auth.feature_flags_router import router as feature_flags_router, admin_router as feature_flags_admin_router
+from auth.industry_schema_router import router as industry_schema_router, admin_router as industry_schema_admin_router
+from auth.standard_type_router import router as standard_type_router, admin_router as standard_type_admin_router
+from auth.module_router import router as module_router, admin_router as module_admin_router
+from auth.dossier_router import router as dossier_router
+from auth.pdf_render_router import router as pdf_render_router
+from auth.certification_decision_router import router as certification_decision_router
+from auth.conflict_router import router as conflict_router
+from auth.complaints_router import router as complaints_router
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(admin_auth_router, prefix="/auth", tags=["auth-admin"])
 app.include_router(audit_log_router, prefix="/auth", tags=["audit-logs"])
-app.include_router(password_reset_router, prefix="/auth", tags=["password-reset"])
 app.include_router(admin_analytics_router, prefix="/auth", tags=["admin-analytics"])
 app.include_router(feature_flags_admin_router, prefix="/auth/admin", tags=["admin-feature-flags"])
+app.include_router(industry_schema_admin_router, prefix="/auth/admin/industry-schemas", tags=["admin-industry-schemas"])
 app.include_router(gdpr_router, prefix="/api/users", tags=["data-rights"])
 app.include_router(feature_flags_router, prefix="/api/feature-flags", tags=["feature-flags"])
+app.include_router(industry_schema_router, prefix="/industry-schemas", tags=["industry-schemas"])
+app.include_router(standard_type_router, prefix="/standard-types", tags=["standard-types"])
+app.include_router(module_router, prefix="/api/me", tags=["modules"])
+app.include_router(module_admin_router, prefix="/auth/admin", tags=["admin-modules"])
+app.include_router(standard_type_admin_router, prefix="/auth/admin/standard-types", tags=["admin-standard-types"])
+app.include_router(dossier_router, prefix="/dossiers", tags=["dossiers"])
+app.include_router(pdf_render_router, prefix="/api/templates", tags=["pdf-render"])
 app.include_router(document_router, prefix="/api", tags=["documents"])
 app.include_router(submission_router, prefix="/api/submissions", tags=["submissions"])
 app.include_router(certificate_router, prefix="/api/submissions", tags=["certificates"])
+app.include_router(certification_decision_router, prefix="/api/certification-decisions", tags=["certification-decisions"])
+app.include_router(conflict_router, prefix="/api/conflicts", tags=["conflicts"])
+app.include_router(complaints_router, prefix="/api/complaints", tags=["complaints"])
 app.include_router(notification_router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(audit_router, prefix="/api/audits", tags=["audits"])
 
@@ -146,59 +183,26 @@ TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATE_FILES_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATE_REVISIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── Admin auth ─────────────────────────────────────────────────────────────────
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-if not ADMIN_PASSWORD:
-    log.warning("ADMIN_PASSWORD not set — admin panel login disabled")
-    ADMIN_PASSWORD = secrets.token_hex(32)  # random = effectively disabled
-ADMIN_SECRET = os.getenv("ADMIN_SECRET", secrets.token_hex(32))
-SESSION_TTL = 8 * 3600  # 8 hours
-_SESSIONS_FILE = Path("data/admin_sessions.json")
-
-
-def _load_sessions() -> Dict[str, float]:
-    try:
-        if _SESSIONS_FILE.exists():
-            raw = _json.loads(_SESSIONS_FILE.read_text())
-            # Auto-clean expired sessions
-            now = time.time()
-            cleaned = {k: v for k, v in raw.items() if v > now}
-            if len(cleaned) != len(raw):
-                _SESSIONS_FILE.write_text(_json.dumps(cleaned))
-            return cleaned
-    except Exception:
-        pass
-    return {}
-
-
-def _save_sessions(sessions: Dict[str, float]):
-    _SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _SESSIONS_FILE.write_text(_json.dumps(sessions))
-
-
-def _set_session(token: str, expiry: float):
-    s = _load_sessions()
-    s[token] = expiry
-    _save_sessions(s)
-
-
-def _remove_session(token: str):
-    s = _load_sessions()
-    s.pop(token, None)
-    _save_sessions(s)
+# ── Admin auth (Phase 4c: Keycloak realm role `platform_admin`) ────────────────
+# Legacy opaque-session admin (/admin/login + admin_sessions.json file) removed
+# 2026-05-14 — admin now authenticates via standard Keycloak SSO flow, then
+# `_require_admin` checks JWT for realm role `platform_admin`.
 
 
 def _require_admin(request: Request):
+    """Validate Keycloak JWT + check realm role `platform_admin`.
+
+    Returns claims dict on success (caller can ignore). Raises 401/403 otherwise.
+    """
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(401, "Unauthorized")
     token = auth[7:]
-    sessions = _load_sessions()
-    exp = sessions.get(token)
-    if not exp or time.time() > exp:
-        _remove_session(token)
-        raise HTTPException(401, "Session expired or invalid")
+    claims = decode_token(token)
+    realm_roles = (claims.get("realm_access") or {}).get("roles", [])
+    if "platform_admin" not in realm_roles:
+        raise HTTPException(403, "Admin access required (Keycloak realm role `platform_admin`)")
+    return claims
 
 
 # ── Halal document type registry ───────────────────────────────────────────────
@@ -386,11 +390,6 @@ class AuditorReview(BaseModel):
     reviewed_at: str = ""
 
 
-class AdminLoginRequest(BaseModel):
-    username: str
-    password: str
-
-
 class TemplateCriterion(BaseModel):
     id: str
     name: str
@@ -430,23 +429,6 @@ class TemplateConfig(BaseModel):
 
 
 # ── Admin endpoints ────────────────────────────────────────────────────────────
-
-
-@app.post("/admin/login")
-def admin_login(req: AdminLoginRequest, _: None = Depends(rate_limit_api)):
-    if req.username != ADMIN_USERNAME or req.password != ADMIN_PASSWORD:
-        raise HTTPException(401, "Sai tên đăng nhập hoặc mật khẩu")
-    token = secrets.token_hex(32)
-    _set_session(token, time.time() + SESSION_TTL)
-    return {"token": token, "expires_in": SESSION_TTL}
-
-
-@app.post("/admin/logout")
-def admin_logout(request: Request):
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        _remove_session(auth[7:])
-    return {"message": "Logged out"}
 
 
 @app.get("/admin/verify")
@@ -693,16 +675,21 @@ def list_template_files_lang(doc_type: str, request: Request):
 
 
 def _verify_admin_token_string(token: str) -> bool:
-    """Validate a legacy admin opaque token without going through Bearer header.
-    Used for query-param auth on file preview links opened in new browser tabs.
+    """Validate a Keycloak JWT passed via `?token=` query string + check
+    `platform_admin` realm role.
+
+    Used for file preview links opened in new browser tabs where setting a
+    Bearer header isn't possible. Post-Phase-4c the legacy opaque admin
+    session is gone — only Keycloak tokens are accepted.
     """
     if not token:
         return False
-    sessions = _load_sessions()
-    exp = sessions.get(token)
-    if not exp or time.time() > exp:
+    try:
+        claims = decode_token(token)
+    except HTTPException:
         return False
-    return True
+    realm_roles = (claims.get("realm_access") or {}).get("roles", [])
+    return "platform_admin" in realm_roles
 
 
 def _require_admin_or_token(request: Request, token: Optional[str]):
@@ -753,19 +740,23 @@ def _convert_office_to_pdf_cached(src: Path) -> Optional[Path]:
     if cached.exists() and cached.stat().st_mtime >= src.stat().st_mtime:
         return cached
     try:
-        result = subprocess.run(
-            ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", str(_PDF_PREVIEW_CACHE_DIR), str(src)],
-            capture_output=True,
-            timeout=60,
-        )
-        if result.returncode != 0:
-            log.warning(f"[pdf_preview] libreoffice failed for {src}: {result.stderr.decode(errors='ignore')[:200]}")
-            return None
-        # LibreOffice writes <stem>.pdf — rename to our cache key
-        produced = _PDF_PREVIEW_CACHE_DIR / f"{src.stem}.pdf"
-        if not produced.exists():
-            return None
-        produced.rename(cached)
+        # Isolated tmpdir per conversion: two files with the same stem (e.g.
+        # halal_policy_vi.docx in different subdirs) would otherwise produce
+        # the same intermediate filename in the shared outdir, causing the
+        # second conversion to overwrite the first's output.
+        with _tempfile.TemporaryDirectory(dir=_PDF_PREVIEW_CACHE_DIR) as tmpdir:
+            result = subprocess.run(
+                ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", tmpdir, str(src)],
+                capture_output=True,
+                timeout=60,
+            )
+            if result.returncode != 0:
+                log.warning(f"[pdf_preview] libreoffice failed for {src}: {result.stderr.decode(errors='ignore')[:200]}")
+                return None
+            produced = Path(tmpdir) / f"{src.stem}.pdf"
+            if not produced.exists():
+                return None
+            produced.rename(cached)
         return cached
     except subprocess.TimeoutExpired:
         log.warning(f"[pdf_preview] timeout converting {src}")
@@ -853,25 +844,78 @@ def _find_template_file(doc_type: str, lang: str) -> Optional[Path]:
 
 @app.get("/templates/available")
 def list_available_templates():
-    """List doc_types that have template files, with language availability."""
-    result = []
-    for doc_type, label in HALAL_DOC_TYPES.items():
-        dir_path = TEMPLATE_FILES_DIR / doc_type
-        if not dir_path.exists():
+    """List doc_types với format availability (DOCX và/hoặc PDF).
+
+    Trả về tất cả doc_types trong HALAL_DOC_TYPES, mỗi item có:
+      - has_vi / has_en — file DOCX upload (admin_templates/files/)
+      - has_pdf — PDF template render via Playwright (templates_html/)
+      - format_available: 'docx' | 'pdf' | 'both' | 'none'
+
+    Mục đích: user thấy hết 13 doc_types kể cả khi admin chưa upload DOCX
+    (vẫn có thể generate qua PDF render). FE display badge theo
+    format_available để user chọn đúng mode.
+    """
+    # Pre-load PDF registry để check pdf availability
+    try:
+        from templates_html._registry import list_supported as _pdf_supported
+        _pdf_doc_types = {
+            i["doc_type"]: i.get("implemented", False) for i in _pdf_supported()
+        }
+    except Exception:
+        _pdf_doc_types = {}
+
+    # Merge sources: HALAL_DOC_TYPES (DOCX legacy) + PDF registry (HTML).
+    # Skip internal-only entries (_style_guide) and aliases (halal_manual is
+    # alias of has_manual — show one canonical entry only).
+    merged_doc_types: dict[str, str] = dict(HALAL_DOC_TYPES)
+    for dt, implemented in _pdf_doc_types.items():
+        if not implemented:
             continue
-        vi_file = _find_template_file(doc_type, "vi")
-        en_file = _find_template_file(doc_type, "en")
-        if vi_file or en_file:
-            result.append(
-                {
-                    "doc_type": doc_type,
-                    "label": label,
-                    "has_vi": vi_file is not None,
-                    "has_en": en_file is not None,
-                    "vi_size": vi_file.stat().st_size if vi_file else None,
-                    "en_size": en_file.stat().st_size if en_file else None,
-                }
-            )
+        if dt.startswith("_"):  # internal/_style_guide
+            continue
+        if dt == "halal_manual":  # alias of has_manual — skip duplicate
+            continue
+        if dt not in merged_doc_types:
+            # Add doc_type that exists only in PDF registry (vd `generic`)
+            merged_doc_types[dt] = dt.replace("_", " ").title()
+
+    # Remove halal_manual alias from output even if in HALAL_DOC_TYPES
+    merged_doc_types.pop("halal_manual", None)
+
+    result = []
+    for doc_type, label in merged_doc_types.items():
+        vi_file = None
+        en_file = None
+        dir_path = TEMPLATE_FILES_DIR / doc_type
+        if dir_path.exists():
+            vi_file = _find_template_file(doc_type, "vi")
+            en_file = _find_template_file(doc_type, "en")
+
+        has_docx = vi_file is not None or en_file is not None
+        has_pdf = bool(_pdf_doc_types.get(doc_type, False))
+
+        if has_docx and has_pdf:
+            fmt = "both"
+        elif has_docx:
+            fmt = "docx"
+        elif has_pdf:
+            fmt = "pdf"
+        else:
+            # Neither DOCX nor PDF available — skip (no way to generate)
+            continue
+
+        result.append(
+            {
+                "doc_type": doc_type,
+                "label": label,
+                "has_vi": vi_file is not None,
+                "has_en": en_file is not None,
+                "has_pdf": has_pdf,
+                "format_available": fmt,
+                "vi_size": vi_file.stat().st_size if vi_file else None,
+                "en_size": en_file.stat().st_size if en_file else None,
+            }
+        )
     return {"templates": result}
 
 
@@ -1034,12 +1078,606 @@ class AdminCreateUserRequest(BaseModel):
 
 
 class AdminUpdateUserRequest(BaseModel):
+    # Phase 4c-2: profile fields only. Credentials are handled by the dedicated
+    # reset route below so profile updates cannot silently ignore credential
+    # changes and return false success.
     company_name: Optional[str] = None
     company_code: Optional[str] = None
     status: Optional[str] = None  # active | pending | suspended
     role: Optional[str] = None
     is_owner: Optional[bool] = None
-    password: Optional[str] = None  # if set → rehash and update
+
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+class AdminKeycloakEmailCleanupRequest(BaseModel):
+    email: str
+    # Safe default: audit only. Operators must explicitly confirm before a
+    # stale Keycloak identity is deleted.
+    confirm_delete: bool = False
+
+
+class AdminUserReferenceCleanupRequest(BaseModel):
+    # Explicit operator selection only. Empty means no-op is rejected.
+    selected_references: list[str]
+
+
+KEYCLOAK_ONLY_ACCOUNT_MANAGEMENT_DETAIL = {
+    "detail": "User/account lifecycle is managed in Keycloak only. Use the Keycloak Admin Console for create, delete, disable, password reset, email verification, roles, and identity repair. AMINRA Admin only displays a read-only app profile projection.",
+    "identity_lifecycle_owner": "keycloak",
+    "aminra_scope": "read_only_profile_projection",
+}
+
+
+def _raise_keycloak_only_account_management() -> None:
+    raise HTTPException(status_code=410, detail=KEYCLOAK_ONLY_ACCOUNT_MANAGEMENT_DETAIL)
+
+
+USER_DELETE_IMPACT_SPECS = [
+    ("documents_uploaded", "documents", "user_id", "cascade"),
+    ("documents_approved", "documents", "approver_id", "set_null"),
+    ("documents_reviewed", "documents", "reviewed_by", "blocking"),
+    ("submissions_as_provider", "submissions", "provider_id", "blocking"),
+    ("submissions_as_auditor", "submissions", "auditor_id", "blocking"),
+    ("submission_comments", "submission_comments", "author_id", "blocking"),
+    ("submission_evaluations", "submission_evaluations", "auditor_id", "blocking"),
+    ("submission_revision_requests", "submission_revision_requests", "requester_id", "blocking"),
+    ("certificates_issued", "halal_certificates", "issued_by", "blocking"),
+    ("certificates_revoked", "halal_certificates", "revoked_by", "set_null"),
+    ("audit_logs", "audit_logs", "user_id", "set_null"),
+    ("audit_visits_as_provider", "audit_visits", "provider_id", "blocking"),
+    ("audit_visits_as_auditor", "audit_visits", "auditor_id", "blocking"),
+    ("audit_ncr_closed", "audit_ncr", "closed_by", "blocking"),
+    ("notifications", "notifications", "user_id", "cascade"),
+    ("push_subscriptions", "push_subscriptions", "user_id", "cascade"),
+    ("member_invites_for_tenant", "member_invites", "tenant_id", "cascade"),
+    ("supplier_eligibility_provider_refs", "supplier_eligibilities", "provider_id", "set_null"),
+    ("supplier_eligibility_changed_by_refs", "supplier_eligibilities", "changed_by", "set_null"),
+]
+
+REFERENCE_CLEANUP_ACTIONS = {
+    "uploaded_document_files": {
+        "label": "File vật lý đã upload",
+        "impact_key": "documents_uploaded",
+        "action": "delete_physical_files_keep_document_rows",
+        "warning": "Chỉ xóa file vật lý trong UPLOAD_DIR; giữ documents DB rows để audit/evaluation.",
+    },
+    "notifications": {
+        "label": "Thông báo nội bộ",
+        "impact_key": "notifications",
+        "table": "notifications",
+        "column": "user_id",
+        "action": "delete_rows",
+        "warning": "Xóa notification chỉ thuộc account đã mất Keycloak.",
+    },
+    "push_subscriptions": {
+        "label": "Push subscriptions",
+        "impact_key": "push_subscriptions",
+        "table": "push_subscriptions",
+        "column": "user_id",
+        "action": "delete_rows",
+        "warning": "Xóa endpoint push stale để thiết bị cũ không nhận notification.",
+    },
+}
+
+REFERENCE_LABELS = {
+    "documents_uploaded": "Tài liệu user đã upload",
+    "documents_approved": "Tài liệu user đã approve",
+    "documents_reviewed": "Lịch sử review tài liệu",
+    "submissions_as_provider": "Hồ sơ user là provider",
+    "submissions_as_auditor": "Hồ sơ user là auditor",
+    "submission_comments": "Bình luận hồ sơ",
+    "submission_evaluations": "Đánh giá hồ sơ",
+    "submission_revision_requests": "Yêu cầu chỉnh sửa hồ sơ",
+    "certificates_issued": "Chứng nhận đã cấp",
+    "certificates_revoked": "Chứng nhận đã thu hồi",
+    "audit_logs": "Audit logs",
+    "audit_visits_as_provider": "Audit visits với vai trò provider",
+    "audit_visits_as_auditor": "Audit visits với vai trò auditor",
+    "audit_ncr_closed": "Audit NCR đã đóng",
+    "notifications": "Thông báo nội bộ",
+    "push_subscriptions": "Push subscriptions",
+    "member_invites_for_tenant": "Invite thành viên theo tenant",
+    "supplier_eligibility_provider_refs": "Supplier eligibility provider refs",
+    "supplier_eligibility_changed_by_refs": "Supplier eligibility changed-by refs",
+    "tenant_members": "Thành viên thuộc tenant",
+}
+
+DELETION_CASE_POLICY: dict[str, dict[str, str]] = {
+    "documents_uploaded": {
+        "action": "delete_physical_files_keep_document_rows",
+        "risk_level": "medium",
+        "reason": "Xóa file vật lý fail-closed trong UPLOAD_DIR; giữ documents rows để audit/evaluation.",
+    },
+    "notifications": {
+        "action": "hard_delete",
+        "risk_level": "low",
+        "reason": "Ephemeral notification stale sau khi Keycloak identity đã bị xóa.",
+    },
+    "push_subscriptions": {
+        "action": "hard_delete",
+        "risk_level": "low",
+        "reason": "Push endpoint stale không còn owner identity hợp lệ.",
+    },
+    "documents_approved": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Actor FK nullable/set-null; tách khỏi live projection nhưng giữ document evidence.",
+    },
+    "certificates_revoked": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Revoked-by FK nullable/set-null; giữ certificate evidence.",
+    },
+    "supplier_eligibility_provider_refs": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Provider FK nullable/set-null; giữ eligibility record.",
+    },
+    "supplier_eligibility_changed_by_refs": {
+        "action": "detach_user_reference",
+        "risk_level": "medium",
+        "reason": "Changed-by FK nullable/set-null; giữ eligibility audit state.",
+    },
+    "audit_logs": {
+        "action": "retain_append_only_audit",
+        "risk_level": "high",
+        "reason": "audit_logs có immutable trigger; không update/delete để bảo toàn audit trail.",
+    },
+    "tenant_members": {
+        "action": "blocked",
+        "risk_level": "blocker",
+        "reason": "Tenant còn member projections; cần xử lý member lifecycle trước khi cleanup owner projection.",
+    },
+}
+
+IMPACT_SPEC_BY_KEY = {
+    key: {"table_name": table_name, "column_name": column_name, "delete_rule": delete_rule}
+    for key, table_name, column_name, delete_rule in USER_DELETE_IMPACT_SPECS
+}
+IMPACT_SPEC_BY_KEY["tenant_members"] = {"table_name": "users", "column_name": "tenant_id", "delete_rule": "blocking"}
+
+
+class AdminAccountDeletionRunRequest(BaseModel):
+    confirmation_phrase: str
+
+
+def _admin_actor_from_claims(claims: dict[str, Any]) -> str:
+    return str(claims.get("email") or claims.get("preferred_username") or claims.get("sub") or "unknown_admin")
+
+
+def _case_risk_level(items: list[dict[str, Any]]) -> str:
+    order = {"low": 1, "medium": 2, "high": 3, "blocker": 4}
+    highest = "low"
+    for item in items:
+        if order.get(str(item.get("risk_level")), 1) > order[highest]:
+            highest = str(item.get("risk_level"))
+    return highest
+
+
+def _build_account_deletion_case_items(
+    impact: dict[str, int],
+    *,
+    identity_status: str,
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for reference_key, count_value in impact.items():
+        count = int(count_value or 0)
+        if count <= 0:
+            continue
+        spec = IMPACT_SPEC_BY_KEY.get(reference_key, {})
+        policy = DELETION_CASE_POLICY.get(reference_key)
+        if not policy:
+            policy = {
+                "action": "manual_review_required",
+                "risk_level": "high",
+                "reason": "Không có policy tự động cho reference này; fail-closed để admin review.",
+            }
+        status = "pending"
+        if identity_status != "missing_in_keycloak":
+            status = "blocked"
+        elif policy["action"] in {"retain_append_only_audit", "retain_business_record"}:
+            status = "skipped"
+        elif policy["action"] in {"blocked", "manual_review_required"}:
+            status = "blocked"
+        items.append(
+            {
+                "reference_key": reference_key,
+                "label": REFERENCE_LABELS.get(reference_key, reference_key),
+                "table_name": spec.get("table_name"),
+                "column_name": spec.get("column_name"),
+                "record_count": count,
+                "action": policy["action"],
+                "risk_level": policy["risk_level"],
+                "status": status,
+                "reason": policy["reason"],
+            }
+        )
+    return items
+
+
+def _row_dict(row: Any | None) -> dict[str, Any] | None:
+    return dict(row) if row is not None else None
+
+
+async def _insert_account_deletion_case(
+    conn,
+    *,
+    user: Any,
+    items: list[dict[str, Any]],
+    created_by: str,
+) -> dict[str, Any]:
+    risk_level = _case_risk_level(items)
+    status = "blocked" if any(item["status"] == "blocked" for item in items) else "assessment_ready"
+    confirmation_phrase = f"CONFIRM CLEANUP {user['email']}"
+    case = await conn.fetchrow(
+        """
+        INSERT INTO account_deletion_cases (
+            user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+            created_by, confirmation_phrase
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                  created_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+        """,
+        user["id"],
+        user["email"],
+        user["identity_status"],
+        status,
+        risk_level,
+        created_by,
+        confirmation_phrase,
+    )
+    case_id = case["id"]
+    for item in items:
+        await conn.execute(
+            """
+            INSERT INTO account_deletion_case_items (
+                case_id, reference_key, label, table_name, column_name, record_count,
+                action, risk_level, status, reason, before_snapshot
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+            """,
+            case_id,
+            item["reference_key"],
+            item["label"],
+            item.get("table_name"),
+            item.get("column_name"),
+            item["record_count"],
+            item["action"],
+            item["risk_level"],
+            item["status"],
+            item["reason"],
+            _json.dumps({"record_count": item["record_count"]}),
+        )
+    await conn.execute(
+        """UPDATE users
+              SET account_cleanup_status = $2, account_cleanup_case_id = $3
+            WHERE id = $1""",
+        user["id"],
+        "blocked" if status == "blocked" else "assessment_ready",
+        case_id,
+    )
+    return dict(case)
+
+
+async def _execute_account_deletion_case_items(
+    conn,
+    user_id: str,
+    *,
+    case_id: str,
+    identity_status: str,
+    items: list[dict[str, Any]],
+    upload_root: Path = UPLOAD_DIR,
+) -> dict[str, Any]:
+    if identity_status != "missing_in_keycloak":
+        raise HTTPException(409, "Deletion case cleanup is allowed only after identity_status=missing_in_keycloak")
+
+    completed = 0
+    skipped = 0
+    blocked = 0
+    failed = 0
+    item_results: dict[str, Any] = {}
+    for item in items:
+        reference_key = item["reference_key"]
+        action = item["action"]
+        status = item.get("status", "pending")
+        if status == "completed":
+            skipped += 1
+            continue
+        if action in {"retain_append_only_audit", "retain_business_record"}:
+            skipped += 1
+            item_results[reference_key] = {"status": "skipped", "action": action, "reason": item.get("reason")}
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'skipped', after_result = $3::jsonb, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                _json.dumps(item_results[reference_key]),
+            )
+            continue
+        if action in {"blocked", "manual_review_required"}:
+            blocked += 1
+            item_results[reference_key] = {"status": "blocked", "action": action, "reason": item.get("reason")}
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'blocked', after_result = $3::jsonb, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                _json.dumps(item_results[reference_key]),
+            )
+            continue
+        try:
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'running', updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+            )
+            if action == "delete_physical_files_keep_document_rows":
+                result = await _cleanup_user_uploaded_document_files(conn, user_id, upload_root=upload_root)
+            elif action == "hard_delete":
+                table_name = item["table_name"]
+                column_name = item["column_name"]
+                await conn.execute(f"DELETE FROM {table_name} WHERE {column_name} = $1", user_id)
+                result = {"scope": f"{table_name}.{column_name}", "action": action}
+            elif action == "detach_user_reference":
+                table_name = item["table_name"]
+                column_name = item["column_name"]
+                await conn.execute(f"UPDATE {table_name} SET {column_name} = NULL WHERE {column_name} = $1", user_id)
+                result = {"scope": f"{table_name}.{column_name}", "action": action}
+            else:
+                blocked += 1
+                result = {"status": "blocked", "action": action, "reason": "Unsupported deletion-case action"}
+                await conn.execute(
+                    """UPDATE account_deletion_case_items
+                          SET status = 'blocked', after_result = $3::jsonb, updated_at = NOW()
+                        WHERE case_id = $1 AND reference_key = $2""",
+                    case_id,
+                    reference_key,
+                    _json.dumps(result),
+                )
+                item_results[reference_key] = result
+                continue
+            completed += 1
+            result["status"] = "completed"
+            item_results[reference_key] = result
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'completed', after_result = $3::jsonb, error_message = NULL, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                _json.dumps(result, default=str),
+            )
+        except Exception as exc:  # noqa: BLE001 - per-item failure must be captured for retry
+            failed += 1
+            item_results[reference_key] = {"status": "failed", "error": str(exc)}
+            await conn.execute(
+                """UPDATE account_deletion_case_items
+                      SET status = 'failed', error_message = $3, updated_at = NOW()
+                    WHERE case_id = $1 AND reference_key = $2""",
+                case_id,
+                reference_key,
+                str(exc),
+            )
+
+    if failed:
+        case_status = "partially_completed" if completed or skipped else "failed"
+    elif blocked:
+        case_status = "blocked"
+    else:
+        case_status = "completed"
+    user_cleanup_status = {
+        "completed": "cleaned",
+        "partially_completed": "partially_cleaned",
+        "blocked": "blocked",
+        "failed": "failed",
+    }[case_status]
+    await conn.execute(
+        """UPDATE account_deletion_cases
+              SET status = $2::varchar,
+                  completed_at = CASE WHEN $2::varchar IN ('completed', 'partially_completed', 'blocked') THEN NOW() ELSE completed_at END,
+                  updated_at = NOW(), last_error = $3
+            WHERE id = $1""",
+        case_id,
+        case_status,
+        None if not failed else "One or more cleanup items failed; inspect account_deletion_case_items.",
+    )
+    if user_cleanup_status == "cleaned":
+        await conn.execute(
+            """UPDATE users
+                  SET account_cleanup_status = 'cleaned', account_cleanup_case_id = $2
+                WHERE id = $1""",
+            user_id,
+            case_id,
+        )
+    else:
+        await conn.execute(
+            """UPDATE users
+                  SET account_cleanup_status = $3, account_cleanup_case_id = $2
+                WHERE id = $1""",
+            user_id,
+            case_id,
+            user_cleanup_status,
+        )
+    return {
+        "case_status": case_status,
+        "completed_items": completed,
+        "skipped_items": skipped,
+        "blocked_items": blocked,
+        "failed_items": failed,
+        "item_results": item_results,
+        "users_projection_deleted": False,
+        "documents_db_rows_deleted": False,
+    }
+
+
+def _build_reference_cleanup_options(impact: dict[str, int], identity_status: str) -> list[dict[str, Any]]:
+    options: list[dict[str, Any]] = []
+    cleanup_by_impact_key = {spec["impact_key"]: key for key, spec in REFERENCE_CLEANUP_ACTIONS.items()}
+    for impact_key, count in impact.items():
+        count = int(count or 0)
+        if count <= 0:
+            continue
+        cleanup_key = cleanup_by_impact_key.get(impact_key)
+        if cleanup_key:
+            spec = REFERENCE_CLEANUP_ACTIONS[cleanup_key]
+            enabled = identity_status == "missing_in_keycloak"
+            options.append(
+                {
+                    "key": cleanup_key,
+                    "label": spec["label"],
+                    "count": count,
+                    "action": spec["action"],
+                    "enabled": enabled,
+                    "warning": spec["warning"] if enabled else "Chỉ cho phép cleanup sau khi projection được mark missing_in_keycloak.",
+                }
+            )
+        else:
+            options.append(
+                {
+                    "key": impact_key,
+                    "label": REFERENCE_LABELS.get(impact_key, impact_key),
+                    "count": count,
+                    "action": "keep_audit_record",
+                    "enabled": False,
+                    "warning": "Business/audit reference không được xóa từ cleanup nhanh; cần quy trình riêng nếu muốn purge.",
+                }
+            )
+    return options
+
+
+async def _cleanup_selected_user_references(
+    conn,
+    user_id: str,
+    *,
+    identity_status: str,
+    selected_references: list[str],
+    upload_root: Path = UPLOAD_DIR,
+) -> dict[str, Any]:
+    selected = list(dict.fromkeys(selected_references or []))
+    if not selected:
+        raise HTTPException(400, "selected_references must contain at least one checked reference")
+    if identity_status != "missing_in_keycloak":
+        raise HTTPException(409, "Reference cleanup is allowed only after identity_status=missing_in_keycloak")
+
+    unknown = [key for key in selected if key not in REFERENCE_CLEANUP_ACTIONS]
+    if unknown:
+        raise HTTPException(400, {"unsupported_references": unknown})
+
+    cleanup: dict[str, Any] = {}
+    for key in selected:
+        spec = REFERENCE_CLEANUP_ACTIONS[key]
+        if key == "uploaded_document_files":
+            result = await _cleanup_user_uploaded_document_files(conn, user_id, upload_root=upload_root)
+            result["action"] = spec["action"]
+            cleanup[key] = result
+            continue
+        table_name = spec["table"]
+        column_name = spec["column"]
+        await conn.execute(f"DELETE FROM {table_name} WHERE {column_name} = $1", user_id)
+        cleanup[key] = {"action": spec["action"], "scope": f"{table_name}.{column_name}"}
+
+    return {
+        "selected_references": selected,
+        "cleanup": cleanup,
+        "users_projection_deleted": False,
+        "documents_db_rows_deleted": False,
+    }
+
+
+def _identity_projection_warning(label: str, count: int, delete_rule: str) -> str | None:
+    if count <= 0:
+        return None
+    if delete_rule == "blocking":
+        return f"{label}: {count} reference(s) would block hard DB deletion and must be kept for audit."
+    if delete_rule == "cascade":
+        return f"{label}: {count} reference(s) could be cascade-deleted by a hard DB delete; keep projection unless explicitly purging test data."
+    if delete_rule == "set_null":
+        return f"{label}: {count} reference(s) would lose actor linkage if DB row is hard-deleted."
+    return f"{label}: {count} related record(s)."
+
+
+async def _cleanup_user_uploaded_document_files(
+    conn,
+    user_id: str,
+    *,
+    upload_root: Path = UPLOAD_DIR,
+) -> dict[str, Any]:
+    """Delete physical uploaded-document files owned by a user projection.
+
+    Scope is deliberately narrow: remove binaries referenced by documents.user_id
+    and keep the documents rows as audit/evaluation records. Paths outside the
+    configured upload root are skipped fail-closed to avoid arbitrary-file delete.
+    """
+    rows = await conn.fetch(
+        """SELECT id, file_path
+             FROM documents WHERE user_id = $1 AND file_path IS NOT NULL""",
+        user_id,
+    )
+    upload_root_resolved = upload_root.resolve()
+    deleted_document_ids: list[Any] = []
+    deleted_paths: list[str] = []
+    skipped_paths: list[str] = []
+    missing_paths: list[str] = []
+
+    for row in rows:
+        raw_path = row.get("file_path") if hasattr(row, "get") else row["file_path"]
+        if not raw_path:
+            continue
+        candidate = Path(str(raw_path))
+        try:
+            resolved = candidate.resolve(strict=False)
+            if not resolved.is_relative_to(upload_root_resolved):
+                skipped_paths.append(str(candidate))
+                continue
+            if not resolved.exists():
+                missing_paths.append(str(candidate))
+                continue
+            if not resolved.is_file():
+                skipped_paths.append(str(candidate))
+                continue
+            resolved.unlink()
+            deleted_document_ids.append(row["id"])
+            deleted_paths.append(str(candidate))
+        except OSError:
+            skipped_paths.append(str(candidate))
+
+    if deleted_document_ids:
+        await conn.execute(
+            """UPDATE documents
+                  SET file_path = NULL, file_size = 0
+                WHERE id = ANY($1::uuid[])""",
+            deleted_document_ids,
+        )
+
+    return {
+        "scope": "documents.user_id physical files only; DB rows kept for audit",
+        "deleted_files": len(deleted_paths),
+        "cleared_document_rows": len(deleted_document_ids),
+        "missing_files": len(missing_paths),
+        "skipped_files": len(skipped_paths),
+        "deleted_paths": deleted_paths,
+        "missing_paths": missing_paths,
+        "skipped_paths": skipped_paths,
+    }
+
+
+def _validate_admin_reset_password(new_password: str) -> None:
+    if len(new_password) < 10:
+        raise HTTPException(400, "Mật khẩu tối thiểu 10 ký tự")
+    if not re.search(r"[A-Z]", new_password):
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 1 chữ hoa (A-Z)")
+    if not re.search(r"[a-z]", new_password):
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 1 chữ thường (a-z)")
+    if not re.search(r"[0-9]", new_password):
+        raise HTTPException(400, "Mật khẩu phải có ít nhất 1 chữ số (0-9)")
 
 
 @app.get("/admin/users")
@@ -1071,110 +1709,318 @@ async def admin_list_users(
             idx += 1
         where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
         rows = await conn.fetch(
-            f"""SELECT id, email, role, company_name, company_code,
-                       status, is_owner, tenant_id, created_at
+            f"""SELECT id, email, keycloak_sub, role, company_name, company_code,
+                       status, is_owner, tenant_id, created_at,
+                       COALESCE(identity_status, 'linked') AS identity_status,
+                       keycloak_deleted_at,
+                       'keycloak'::text AS identity_source
                 FROM users {where} ORDER BY created_at DESC""",
             *params,
         )
     return {"users": [dict(r) for r in rows], "total": len(rows)}
 
 
-@app.post("/admin/users")
-async def admin_create_user(request: Request, body: AdminCreateUserRequest):
+@app.get("/admin/users/{user_id}/delete-impact")
+async def admin_user_delete_impact(user_id: str, request: Request):
     _require_admin(request)
     from auth.db import get_pool
-    from auth.password import hash_password
-    import uuid as _uuid2
 
     pool = get_pool()
-    pw_hash = hash_password(body.password)
-    user_id = str(_uuid2.uuid4())
-    tenant_id = user_id if body.role == "business" else None
     async with pool.acquire() as conn:
-        existing = await conn.fetchrow("SELECT id FROM users WHERE email=$1", body.email)
-        if existing:
-            raise HTTPException(400, "Email đã tồn tại")
+        user = await conn.fetchrow(
+            """SELECT id, email, keycloak_sub, role, status, is_owner, tenant_id,
+                      COALESCE(identity_status, 'linked') AS identity_status,
+                      keycloak_deleted_at
+               FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+
+        impact: dict[str, int] = {}
+        by_rule = {"blocking": 0, "cascade": 0, "set_null": 0}
+        deletion_warnings: list[str] = []
+        for label, table_name, column_name, delete_rule in USER_DELETE_IMPACT_SPECS:
+            count = await conn.fetchval(
+                f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = $1",
+                user_id,
+            )
+            count = int(count or 0)
+            impact[label] = count
+            by_rule[delete_rule] = by_rule.get(delete_rule, 0) + count
+            warning = _identity_projection_warning(label, count, delete_rule)
+            if warning:
+                deletion_warnings.append(warning)
+
+        tenant_members = 0
+        if user["tenant_id"]:
+            tenant_members = await conn.fetchval(
+                "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND id <> $2",
+                user["tenant_id"],
+                user_id,
+            )
+        tenant_members = int(tenant_members or 0)
+        impact["tenant_members"] = tenant_members
+        if tenant_members:
+            deletion_warnings.append(
+                f"tenant_members: {tenant_members} member account projection(s) belong to this business tenant."
+            )
+
+    hard_delete_safe = not any(impact.values())
+    risk_level = "none" if hard_delete_safe else ("high" if by_rule["blocking"] or tenant_members else "medium")
+    recommended_action = (
+        "delete_keycloak_identity_and_keep_projection"
+        if not hard_delete_safe
+        else "delete_keycloak_identity_then_optionally_purge_zero-impact_projection"
+    )
+    return {
+        "user": dict(user),
+        "keycloak": {
+            "source_of_truth": "keycloak",
+            "keycloak_sub": user["keycloak_sub"],
+            "identity_status": user["identity_status"],
+            "keycloak_deleted_at": user["keycloak_deleted_at"],
+        },
+        "impact": impact,
+        "cleanup_options": _build_reference_cleanup_options(impact, user["identity_status"]),
+        "risk_level": risk_level,
+        "hard_delete_safe": hard_delete_safe,
+        "deletion_warnings": deletion_warnings,
+        "recommended_action": recommended_action,
+    }
+
+
+@app.post("/admin/users/{user_id}/related-files/cleanup")
+async def admin_cleanup_user_related_files(user_id: str, request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email
+                 FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+
+        cleanup = await _cleanup_user_uploaded_document_files(conn, user_id)
+
+    return {
+        "user": dict(user),
+        "cleanup": cleanup,
+        "safe_next_step": "Delete/disable the Keycloak account only after reviewing skipped_files and missing_files.",
+    }
+
+
+@app.post("/admin/users/{user_id}/related-references/cleanup")
+async def admin_cleanup_user_related_references(
+    user_id: str,
+    request: Request,
+    body: AdminUserReferenceCleanupRequest,
+):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email,
+                      COALESCE(identity_status, 'linked') AS identity_status,
+                      keycloak_deleted_at
+                 FROM users WHERE id = $1""",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+
+        result = await _cleanup_selected_user_references(
+            conn,
+            user_id,
+            identity_status=user["identity_status"],
+            selected_references=body.selected_references,
+        )
+
+    return {
+        "user": dict(user),
+        **result,
+        "safe_next_step": "Review cleanup results. Keep users projection for audit unless a separate zero-impact purge is approved.",
+    }
+
+
+@app.post("/admin/account-deletion-cases/{case_id}/run")
+async def admin_run_account_deletion_case(
+    case_id: str,
+    request: Request,
+    body: AdminAccountDeletionRunRequest,
+):
+    claims = _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        case = await conn.fetchrow(
+            """SELECT id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                      created_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+                 FROM account_deletion_cases WHERE id = $1""",
+            case_id,
+        )
+        if not case:
+            raise HTTPException(404, "Account deletion case not found")
+        if body.confirmation_phrase != case["confirmation_phrase"]:
+            raise HTTPException(409, "Confirmation phrase does not match this deletion case")
+        user = await conn.fetchrow(
+            """SELECT id, email, COALESCE(identity_status, 'linked') AS identity_status
+                 FROM users WHERE id = $1""",
+            case["user_id"],
+        )
+        if not user:
+            raise HTTPException(404, "User projection not found")
+        items = [dict(row) for row in await conn.fetch(
+            """SELECT reference_key, label, table_name, column_name, record_count,
+                      action, risk_level, status, reason
+                 FROM account_deletion_case_items
+                WHERE case_id = $1
+                ORDER BY created_at, reference_key""",
+            case_id,
+        )]
         await conn.execute(
-            """INSERT INTO users
-               (id, email, password_hash, role, company_name, company_code,
-                status, is_owner, tenant_id)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)""",
-            user_id,
-            body.email,
-            pw_hash,
-            body.role,
-            body.company_name,
-            body.company_code,
-            body.status,
-            True,
-            tenant_id,
+            """UPDATE account_deletion_cases
+                  SET status = 'running', approved_by = $2, updated_at = NOW()
+                WHERE id = $1""",
+            case_id,
+            _admin_actor_from_claims(claims),
         )
-        row = await conn.fetchrow(
-            "SELECT id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at FROM users WHERE id=$1",
+        result = await _execute_account_deletion_case_items(
+            conn,
+            str(user["id"]),
+            case_id=case_id,
+            identity_status=user["identity_status"],
+            items=items,
+        )
+        updated_case = await conn.fetchrow(
+            """SELECT id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                      created_by, approved_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+                 FROM account_deletion_cases WHERE id = $1""",
+            case_id,
+        )
+        updated_items = [dict(row) for row in await conn.fetch(
+            """SELECT id, reference_key, label, table_name, column_name, record_count,
+                      action, risk_level, status, reason, before_snapshot, after_result, error_message,
+                      created_at, updated_at
+                 FROM account_deletion_case_items
+                WHERE case_id = $1
+                ORDER BY created_at, reference_key""",
+            case_id,
+        )]
+    return {"case": dict(updated_case), "items": updated_items, "result": result}
+
+
+@app.get("/admin/account-deletion-cases/{case_id}")
+async def admin_get_account_deletion_case(case_id: str, request: Request):
+    _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        case = await conn.fetchrow(
+            """SELECT id, user_id, email_snapshot, identity_status_snapshot, status, risk_level,
+                      created_by, approved_by, confirmation_phrase, created_at, updated_at, completed_at, last_error
+                 FROM account_deletion_cases WHERE id = $1""",
+            case_id,
+        )
+        if not case:
+            raise HTTPException(404, "Account deletion case not found")
+        items = [dict(row) for row in await conn.fetch(
+            """SELECT id, reference_key, label, table_name, column_name, record_count,
+                      action, risk_level, status, reason, before_snapshot, after_result, error_message,
+                      created_at, updated_at
+                 FROM account_deletion_case_items
+                WHERE case_id = $1
+                ORDER BY created_at, reference_key""",
+            case_id,
+        )]
+    return {"case": dict(case), "items": items}
+
+
+@app.post("/admin/users/{user_id}/deletion-case")
+async def admin_create_account_deletion_case(user_id: str, request: Request):
+    claims = _require_admin(request)
+    from auth.db import get_pool
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            """SELECT id, email, keycloak_sub, role, status, is_owner, tenant_id,
+                      COALESCE(identity_status, 'linked') AS identity_status,
+                      keycloak_deleted_at
+                 FROM users WHERE id = $1""",
             user_id,
         )
-    return dict(row)
+        if not user:
+            raise HTTPException(404, "User projection not found")
+        impact: dict[str, int] = {}
+        for label, table_name, column_name, _delete_rule in USER_DELETE_IMPACT_SPECS:
+            impact[label] = int(
+                await conn.fetchval(f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = $1", user_id) or 0
+            )
+        tenant_members = 0
+        if user["tenant_id"]:
+            tenant_members = int(
+                await conn.fetchval(
+                    "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND id <> $2",
+                    user["tenant_id"],
+                    user_id,
+                ) or 0
+            )
+        impact["tenant_members"] = tenant_members
+        items = _build_account_deletion_case_items(impact, identity_status=user["identity_status"])
+        case = await _insert_account_deletion_case(
+            conn,
+            user=user,
+            items=items,
+            created_by=_admin_actor_from_claims(claims),
+        )
+    return {"case": case, "items": items, "impact": impact}
+
+
+@app.post("/admin/users")
+async def admin_create_user(request: Request, body: dict | None = Body(default=None)):
+    _require_admin(request)
+    _raise_keycloak_only_account_management()
+
+
+@app.post("/admin/users/{user_id}/reset-password")
+async def admin_reset_user_password(
+    user_id: str,
+    request: Request,
+    body: dict | None = Body(default=None),
+):
+    _require_admin(request)
+    _raise_keycloak_only_account_management()
 
 
 @app.put("/admin/users/{user_id}")
-async def admin_update_user(user_id: str, request: Request, body: AdminUpdateUserRequest):
+async def admin_update_user(user_id: str, request: Request, body: dict | None = Body(default=None)):
     _require_admin(request)
-    from auth.db import get_pool
+    _raise_keycloak_only_account_management()
 
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM users WHERE id=$1", user_id)
-        if not row:
-            raise HTTPException(404, "User không tồn tại")
-        updates: list[str] = []
-        params: list = []
-        idx = 1
-        for field, val in [
-            ("company_name", body.company_name),
-            ("company_code", body.company_code),
-            ("status", body.status),
-            ("role", body.role),
-            ("is_owner", body.is_owner),
-        ]:
-            if val is not None:
-                updates.append(f"{field} = ${idx}")
-                params.append(val)
-                idx += 1
-        if body.password:
-            from auth.password import hash_password
 
-            updates.append(f"password_hash = ${idx}")
-            params.append(hash_password(body.password))
-            idx += 1
-        if not updates:
-            return dict(row)
-        params.append(user_id)
-        await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
-        row = await conn.fetchrow(
-            "SELECT id,email,role,company_name,company_code,status,is_owner,tenant_id,created_at FROM users WHERE id=$1",
-            user_id,
-        )
-    return dict(row)
+
+@app.post("/admin/keycloak-identities/cleanup-email")
+async def admin_cleanup_keycloak_identity_by_email(
+    request: Request,
+    body: dict | None = Body(default=None),
+):
+    _require_admin(request)
+    _raise_keycloak_only_account_management()
 
 
 @app.delete("/admin/users/{user_id}")
 async def admin_delete_user(user_id: str, request: Request):
     _require_admin(request)
-    if user_id == "54182089-3a6d-458a-994d-93ac4e0c504f":  # guard: never delete seeded admin
-        raise HTTPException(403, "Không thể xoá tài khoản admin gốc")
-    from auth.db import get_pool
-
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT id, role, tenant_id FROM users WHERE id=$1", user_id)
-        if not row:
-            raise HTTPException(404, "User không tồn tại")
-        # Delete tenant members first (cascade doesn't cover cross-tenant)
-        if row["role"] == "business" and row["tenant_id"] == user_id:
-            await conn.execute("DELETE FROM documents WHERE tenant_id=$1", user_id)
-            await conn.execute("DELETE FROM users WHERE tenant_id=$1 AND id != $1", user_id, user_id)
-        await conn.execute("DELETE FROM users WHERE id=$1", user_id)
-    return {"message": "Đã xoá user", "id": user_id}
+    _raise_keycloak_only_account_management()
 
 
 @app.get("/health")
@@ -1333,8 +2179,8 @@ async def ingest_document(
 
 
 @app.get("/jobs/{job_id}")
-async def get_job(job_id: str):
-    """Poll a background job by ID. Used by clients after /ingest."""
+async def get_job(job_id: str, user: dict = Depends(get_current_user)):
+    """Poll a background job by ID. Auth required to avoid anonymous job-result IDOR."""
     from services.jobs import get_job_status
 
     view = await get_job_status(job_id)
@@ -1468,7 +2314,8 @@ async def evaluate_doc(
                     str(save_path),
                     file_size,
                     mime,
-                    jwt_user["sub"],
+                    # documents.user_id is FK → users.id; resolve from JWT.
+                    await resolve_canonical_user_id(jwt_user, conn),
                     jwt_user["tenant_id"],
                     result.get("doc_type"),
                     result.get("compliance_score"),
@@ -1678,7 +2525,11 @@ class ExportDocxRequest(BaseModel):
 
 
 @app.post("/generate-document/export-docx")
-async def export_docx(req: ExportDocxRequest):
+async def export_docx(
+    req: ExportDocxRequest,
+    _rate_limit: None = Depends(rate_limit_upload),
+    user: dict = Depends(get_current_user),
+):
     from templates_docx._registry import build_docx
     import io as _io
 
@@ -1706,7 +2557,7 @@ async def export_docx(req: ExportDocxRequest):
 
 
 @app.post("/reviews/{filename}")
-async def save_review(filename: str, review: AuditorReview):
+async def save_review(filename: str, review: AuditorReview, user: dict = Depends(get_current_user)):
     import json as _json
 
     review.filename = filename
@@ -1719,7 +2570,7 @@ async def save_review(filename: str, review: AuditorReview):
 
 
 @app.get("/reviews/{filename}")
-async def get_review(filename: str):
+async def get_review(filename: str, user: dict = Depends(get_current_user)):
     import json as _json
 
     safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)

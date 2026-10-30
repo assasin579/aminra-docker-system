@@ -32,7 +32,8 @@ test.describe("11. Submission revisions cycle", () => {
     const revRes = await api.get(`/api/submissions/${sub.id}/revisions`, {
       headers: { Authorization: `Bearer ${biz.token}` },
     });
-    expect([200, 307, 401, 403]).toContain(revRes.status());
+    // An authenticated owner reading its own history must succeed.
+    expect(revRes.status()).toBe(200);
   });
 
   test("Provider rejects request-revision for unauthorized submission with 403/404", async ({

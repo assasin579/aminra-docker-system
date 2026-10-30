@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import {
@@ -20,6 +20,9 @@ import {
   Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import Modal from "@/components/Modal";
+import ModuleAccessGate from "@/components/ModuleAccessGate";
+import { ApiClientError, apiFetch, apiJson } from "@/lib/apiClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,13 +62,49 @@ interface FlowEdge {
   type: "sequential" | "parallel";
 }
 
+type ProcessNodeData = Record<string, unknown> & {
+  label?: string;
+  nodeType?: "main" | "sub";
+  order?: number;
+  description?: string;
+  standard?: string;
+  responsible?: string;
+  duration?: string;
+  equipment?: string;
+  conditions?: string;
+  checklist?: string[];
+  notes?: string;
+  children?: string[];
+  parent?: string;
+};
+
+type ProcessReactNode = Node<ProcessNodeData, "stepNode">;
+
+function asNodeType(value: unknown): "main" | "sub" {
+  return value === "sub" ? "sub" : "main";
+}
+
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? value
+    : [];
+}
+
 // ── Custom Node ──────────────────────────────────────────────────────────────
 
 function StepNode({
   data,
   selected,
 }: {
-  data: { label: string; nodeType: string; order?: number };
+  data: ProcessNodeData;
   selected: boolean;
 }) {
   const isMain = data.nodeType === "main";
@@ -119,12 +158,12 @@ const nodeTypes: NodeTypes = { stepNode: StepNode };
 function flowToReact(
   nodes: FlowNode[],
   edges: FlowEdge[],
-): { rfNodes: Node[]; rfEdges: Edge[] } {
-  const rfNodes: Node[] = nodes.map((n, i) => ({
+): { rfNodes: ProcessReactNode[]; rfEdges: Edge[] } {
+  const rfNodes: ProcessReactNode[] = nodes.map((n, i) => ({
     id: n.id,
     type: "stepNode",
     position: { x: n.x || 100, y: n.y || i * 120 },
-    data: { label: n.label, nodeType: n.type, order: n.order ?? i + 1, ...n },
+    data: { ...n, label: n.label, nodeType: n.type, order: n.order ?? i + 1 },
   }));
   const rfEdges: Edge[] = edges.map((e, i) => ({
     id: `e-${i}`,
@@ -142,26 +181,26 @@ function flowToReact(
 }
 
 function reactToFlow(
-  rfNodes: Node[],
+  rfNodes: ProcessReactNode[],
   rfEdges: Edge[],
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const nodes: FlowNode[] = rfNodes.map((n, i) => ({
     id: n.id,
-    type: n.data?.nodeType || "main",
-    order: n.data?.order ?? i + 1,
-    label: n.data?.label || "Bước mới",
-    description: n.data?.description || "",
-    standard: n.data?.standard || "",
-    responsible: n.data?.responsible || "",
-    duration: n.data?.duration || "",
-    equipment: n.data?.equipment || "",
-    conditions: n.data?.conditions || "",
-    checklist: n.data?.checklist || [],
-    notes: n.data?.notes || "",
+    type: asNodeType(n.data?.nodeType),
+    order: asNumber(n.data?.order, i + 1),
+    label: asString(n.data?.label, "Bước mới"),
+    description: asString(n.data?.description),
+    standard: asString(n.data?.standard),
+    responsible: asString(n.data?.responsible),
+    duration: asString(n.data?.duration),
+    equipment: asString(n.data?.equipment),
+    conditions: asString(n.data?.conditions),
+    checklist: asStringArray(n.data?.checklist),
+    notes: asString(n.data?.notes),
     x: Math.round(n.position.x),
     y: Math.round(n.position.y),
-    children: n.data?.children || [],
-    parent: n.data?.parent || undefined,
+    children: asStringArray(n.data?.children),
+    parent: asString(n.data?.parent) || undefined,
   }));
   const edges: FlowEdge[] = rfEdges.map((e) => ({
     from: e.source,
@@ -173,7 +212,7 @@ function reactToFlow(
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-export default function ProcessPage() {
+function ProcessWorkspacePage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading } = useUserAuth();
   const headers = useMemo(
@@ -187,9 +226,9 @@ export default function ProcessPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Editor
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ProcessReactNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selectedNode, setSelectedNode] = useState<ProcessReactNode | null>(null);
   const [processName, setProcessName] = useState("");
   const [processDesc, setProcessDesc] = useState("");
   const [saving, setSaving] = useState(false);
@@ -243,21 +282,22 @@ export default function ProcessPage() {
   // ── Create process ─────────────────────────────────────────────────────────
 
   const createProcess = async () => {
-    if (!newName.trim()) return;
-    const res = await fetch("/api/api/supply-chain/processes", {
-      method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName }),
-    });
-    if (res.ok) {
-      const d = await res.json();
+    const name = newName.trim();
+    if (!name) return;
+    try {
+      const d = await apiJson<{ id: string; message?: string }>("/api/api/supply-chain/processes", {
+        method: "POST",
+        token,
+        json: { name },
+        fallbackError: "Tạo quy trình thất bại",
+      });
       setShowCreate(false);
       setNewName("");
       await fetchProcesses();
-      // Auto-load the new one
+      // Auto-load the new one immediately; do not depend on async list refresh.
       const newP = {
         id: d.id,
-        name: newName,
+        name,
         description: null,
         flowchart: { nodes: [], edges: [] },
         version: 1,
@@ -266,28 +306,35 @@ export default function ProcessPage() {
         updated_at: "",
       };
       loadProcess(newP);
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Không thể tạo quy trình");
     }
   };
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
-  const saveProcess = async () => {
-    if (!activeId) return;
+  const saveProcess = async (): Promise<boolean> => {
+    if (!activeId) return false;
     setSaving(true);
     const { nodes: flowNodes, edges: flowEdges } = reactToFlow(nodes, edges);
     try {
-      await fetch(`/api/api/supply-chain/processes/${activeId}`, {
+      await apiFetch(`/api/api/supply-chain/processes/${activeId}`, {
         method: "PUT",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
+        token,
+        json: {
           name: processName,
           description: processDesc,
           flowchart: { nodes: flowNodes, edges: flowEdges },
-        }),
+        },
+        fallbackError: "Lưu quy trình thất bại",
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      fetchProcesses();
+      await fetchProcesses();
+      return true;
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Không thể lưu quy trình");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -297,10 +344,21 @@ export default function ProcessPage() {
 
   const deleteProcess = async (id: string) => {
     if (!confirm("Xác nhận xoá quy trình này?")) return;
-    await fetch(`/api/api/supply-chain/processes/${id}`, {
-      method: "DELETE",
-      headers,
-    });
+    try {
+      await apiFetch(`/api/api/supply-chain/processes/${id}`, {
+        method: "DELETE",
+        token,
+        fallbackError: "Xoá quy trình thất bại",
+      });
+    } catch (err) {
+      const message = err instanceof ApiClientError ? err.message : "Xoá quy trình thất bại";
+      alert(
+        err instanceof ApiClientError && (err.status === 500 || /foreign key|violates|reference/i.test(message))
+          ? "Không thể xoá quy trình vì đang được tham chiếu bởi 1 lô hàng. Hãy xoá / hoàn tất lô hàng đó trước."
+          : message,
+      );
+      return;
+    }
     if (activeId === id) {
       setActiveId(null);
       setNodes([]);
@@ -314,13 +372,16 @@ export default function ProcessPage() {
   const exportDocx = async () => {
     if (!activeId) return;
     // Save first
-    await saveProcess();
-    const res = await fetch(
-      `/api/api/supply-chain/processes/${activeId}/export-docx`,
-      { method: "POST", headers },
-    );
-    if (!res.ok) {
-      alert("Xuất file thất bại");
+    const savedOk = await saveProcess();
+    if (!savedOk) return;
+    let res: Response;
+    try {
+      res = await apiFetch(
+        `/api/api/supply-chain/processes/${activeId}/export-docx`,
+        { method: "POST", token, fallbackError: "Xuất file thất bại" },
+      );
+    } catch (err) {
+      alert(err instanceof ApiClientError ? err.message : "Xuất file thất bại");
       return;
     }
     const blob = await res.blob();
@@ -337,7 +398,7 @@ export default function ProcessPage() {
 
   const addNode = (type: "main" | "sub") => {
     const id = `n_${Date.now()}`;
-    const newNode: Node = {
+    const newNode: ProcessReactNode = {
       id,
       type: "stepNode",
       position: { x: 250, y: (nodes.length + 1) * 120 },
@@ -370,7 +431,8 @@ export default function ProcessPage() {
 
   // ── Node click → select ────────────────────────────────────────────────────
 
-  const onNodeClick = (_: any, node: Node) => setSelectedNode(node);
+  const onNodeClick = (_: MouseEvent, node: ProcessReactNode) =>
+    setSelectedNode(node);
 
   // ── Update selected node data ──────────────────────────────────────────────
 
@@ -462,7 +524,7 @@ export default function ProcessPage() {
               <>
                 <button
                   onClick={exportDocx}
-                  className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all btn-lift"
                   style={{
                     background: "#FFFBEB",
                     color: "#B45309",
@@ -474,7 +536,7 @@ export default function ProcessPage() {
                 <button
                   onClick={saveProcess}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift disabled:opacity-50"
                   style={{ background: saving ? "#E2E8F0" : "#0A1F44" }}
                 >
                   {saving ? "Đang lưu..." : saved ? "Đã lưu" : "Lưu quy trình"}
@@ -483,7 +545,7 @@ export default function ProcessPage() {
             )}
             <button
               onClick={() => setShowCreate(true)}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-white"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{ background: "#0A1F44" }}
             >
               + Tạo mới
@@ -519,7 +581,7 @@ export default function ProcessPage() {
             processes.map((p, idx) => (
               <div
                 key={p.id}
-                className={`rounded-lg p-3 cursor-pointer transition-all animate-list-item stagger-${Math.min(idx + 1, 12)}`}
+                className={`group rounded-lg p-3 cursor-pointer transition-all animate-list-item stagger-${Math.min(idx + 1, 12)}`}
                 style={{
                   background: activeId === p.id ? "#0A1F44" : "#FFFFFF",
                   color: activeId === p.id ? "#FFFFFF" : "#0A1F44",
@@ -543,10 +605,12 @@ export default function ProcessPage() {
                       e.stopPropagation();
                       deleteProcess(p.id);
                     }}
-                    className="text-xs opacity-0 group-hover:opacity-100 hover:text-red-400"
+                    aria-label="Xoá quy trình"
+                    title="Xoá quy trình"
+                    className="text-xs opacity-60 group-hover:opacity-100 hover:text-red-400 transition-opacity"
                     style={{
                       color:
-                        activeId === p.id ? "rgba(255,255,255,0.5)" : "#9CA3AF",
+                        activeId === p.id ? "rgba(255,255,255,0.7)" : "#9CA3AF",
                     }}
                   >
                     ✕
@@ -609,7 +673,7 @@ export default function ProcessPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => addNode("main")}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow btn-lift"
                     style={{ background: "#0A1F44" }}
                   >
                     + Bước chính
@@ -685,7 +749,7 @@ export default function ProcessPage() {
                 </label>
                 {f.type === "textarea" ? (
                   <textarea
-                    value={selectedNode.data?.[f.key] || ""}
+                    value={asString(selectedNode.data?.[f.key])}
                     onChange={(e) => updateNodeData(f.key, e.target.value)}
                     rows={2}
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-none"
@@ -693,7 +757,7 @@ export default function ProcessPage() {
                   />
                 ) : (
                   <input
-                    value={selectedNode.data?.[f.key] || ""}
+                    value={asString(selectedNode.data?.[f.key])}
                     onChange={(e) => updateNodeData(f.key, e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                     style={inputStyle}
@@ -709,7 +773,7 @@ export default function ProcessPage() {
               >
                 Checklist Halal
               </label>
-              {(selectedNode.data?.checklist || []).map(
+              {asStringArray(selectedNode.data?.checklist).map(
                 (item: string, i: number) => (
                   <div key={i} className="flex items-center gap-1 mb-1">
                     <span className="text-xs" style={{ color: "#9CA3AF" }}>
@@ -718,7 +782,7 @@ export default function ProcessPage() {
                     <input
                       value={item}
                       onChange={(e) => {
-                        const list = [...(selectedNode.data?.checklist || [])];
+                        const list = asStringArray(selectedNode.data?.checklist);
                         list[i] = e.target.value;
                         updateNodeData("checklist", list);
                       }}
@@ -727,9 +791,9 @@ export default function ProcessPage() {
                     />
                     <button
                       onClick={() => {
-                        const list = (
-                          selectedNode.data?.checklist || []
-                        ).filter((_: any, j: number) => j !== i);
+                        const list = asStringArray(
+                          selectedNode.data?.checklist,
+                        ).filter((_, j) => j !== i);
                         updateNodeData("checklist", list);
                       }}
                       className="text-xs"
@@ -743,7 +807,7 @@ export default function ProcessPage() {
               <button
                 onClick={() =>
                   updateNodeData("checklist", [
-                    ...(selectedNode.data?.checklist || []),
+                    ...asStringArray(selectedNode.data?.checklist),
                     "",
                   ])
                 }
@@ -759,11 +823,7 @@ export default function ProcessPage() {
 
       {/* Create dialog */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center p-4 animate-modal-overlay"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-          onClick={() => setShowCreate(false)}
-        >
+        <Modal onClose={() => setShowCreate(false)}>
           <div
             className="w-full max-w-sm rounded-2xl p-6 animate-modal-content"
             style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
@@ -795,8 +855,16 @@ export default function ProcessPage() {
               Tạo
             </button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
+  );
+}
+
+export default function ProcessPage() {
+  return (
+    <ModuleAccessGate moduleCode="process_digitization" routePath="/supply-chain/process">
+      <ProcessWorkspacePage />
+    </ModuleAccessGate>
   );
 }

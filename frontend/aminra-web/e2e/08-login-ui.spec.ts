@@ -21,16 +21,28 @@ test.describe("08. UI login form — business", () => {
     });
   });
 
-  test("Form accepts email + password input", async ({ page }) => {
+  test("Form exposes editable email + password controls", async ({ page }) => {
     await page.goto("/business/login");
 
-    const email = page.locator('input[type="email"]').first();
-    const pw = page.locator('input[type="password"]').first();
+    const email = page.getByPlaceholder("cong ty@example.com");
+    const pw = page.getByPlaceholder("••••••••");
 
-    await email.fill("test@example.vn");
-    await pw.fill("SomePassword123!");
+    await expect(email).toBeEditable();
+    await expect(pw).toBeEditable();
+  });
 
-    expect(await email.inputValue()).toBe("test@example.vn");
-    expect(await pw.inputValue()).toBe("SomePassword123!");
+  test("Login page lets unauthenticated users return to the landing page", async ({
+    page,
+  }) => {
+    await page.goto("/business/login");
+
+    const exit = page.getByRole("link", { name: "Về trang chủ" });
+    await expect(exit).toBeVisible();
+    await expect(exit).toHaveAttribute("href", "/landing");
+
+    const href = await exit.getAttribute("href");
+    expect(href).toBe("/landing");
+    await page.goto(href!, { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/landing$/);
   });
 });

@@ -172,10 +172,6 @@ async def resubmit(
     )
     if sub is None:
         raise SubmissionNotFound(submission_id)
-    if sub["status"] not in ALLOWED_FROM_STATUSES_FOR_RESUBMIT:
-        raise InvalidStateTransition(
-            f"can't resubmit from status={sub['status']!r} (allowed: {ALLOWED_FROM_STATUSES_FOR_RESUBMIT})"
-        )
 
     pending = await db.fetchrow(
         """
@@ -185,6 +181,32 @@ async def resubmit(
         """,
         submission_id,
     )
+
+    # Idempotency for the W3-M6 path: /replace-document already flips
+    # revision_required → reviewing AND resolves the pending request when the
+    # business uploads a fresh doc. A subsequent explicit /resubmit click then
+    # hits status=reviewing with no pending revision — treat as no-op success
+    # so the user does not see a confusing error after a workflow that already
+    # succeeded server-side. Guarded by revision_round > 0 so a fresh
+    # submission that never had a revision cycle still errors out.
+    if sub["status"] == "reviewing" and pending is None and sub["revision_round"] > 0:
+        log.info(
+            "[revisions] resubmit no-op submission=%s — already auto-resubmitted via replace-document",
+            submission_id,
+        )
+        return {
+            "submission_id": submission_id,
+            "round_resolved": sub["revision_round"],
+            "resubmitted_at": datetime.now(timezone.utc).isoformat(),
+            "provider_id": str(sub["provider_id"]),
+            "noop": True,
+        }
+
+    if sub["status"] not in ALLOWED_FROM_STATUSES_FOR_RESUBMIT:
+        raise InvalidStateTransition(
+            f"can't resubmit from status={sub['status']!r} (allowed: {ALLOWED_FROM_STATUSES_FOR_RESUBMIT})"
+        )
+
     if pending is None:
         raise NoRevisionPending(submission_id)
 
@@ -220,8 +242,14 @@ async def resubmit(
                 submission_id,
             )
         await db.execute(
-            "UPDATE submission_revision_requests SET resolved_at = NOW() WHERE id = $1",
+            """
+            UPDATE submission_revision_requests
+               SET resolved_at = NOW(),
+                   business_response = NULLIF($2, '')
+             WHERE id = $1
+            """,
             pending["id"],
+            business_notes,
         )
 
     log.info("[revisions] resubmit submission=%s round=%d", submission_id, sub["revision_round"])
@@ -245,7 +273,7 @@ async def list_revision_history(
     rows = await db.fetch(
         """
         SELECT id, round, requester_id, requester_name, feedback,
-               document_feedback, requested_at, resolved_at
+               document_feedback, requested_at, resolved_at, business_response
         FROM submission_revision_requests
         WHERE submission_id = $1
         ORDER BY round DESC
@@ -267,6 +295,7 @@ async def list_revision_history(
                 "document_feedback": df or [],
                 "requested_at": r["requested_at"].isoformat(),
                 "resolved_at": r["resolved_at"].isoformat() if r["resolved_at"] else None,
+                "business_response": r["business_response"],
             }
         )
     return out

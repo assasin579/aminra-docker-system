@@ -33,7 +33,7 @@ test.describe("revision panel visibility logic", () => {
 
     // Early return when nothing to show
     expect(src, "must hide entire panel on dead states").toMatch(
-      /if \(!loading && !hasAction && !hasHistory\) \{[\s\S]*?return null;[\s\S]*?\}/,
+      /if \(!loading && (?:!error && )?!hasAction && !hasHistory\) \{[\s\S]*?return null;[\s\S]*?\}/,
     );
 
     // Contextual hint for provider on pending/assigned status (rare but informative)

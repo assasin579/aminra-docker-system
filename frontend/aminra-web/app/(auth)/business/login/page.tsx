@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BackToLandingLink } from "@/components/auth/BackToLandingLink";
 import { useUserAuth } from "@/components/UserAuthContext";
 
 export default function BusinessLoginPage() {
@@ -30,6 +31,10 @@ export default function BusinessLoginPage() {
 
   return (
     <div className="w-full max-w-md" data-page>
+      <div className="mb-4" data-auth-exit-slot="landing">
+        <BackToLandingLink />
+      </div>
+
       {/* Logo */}
       <div className="text-center mb-8 animate-section">
         <div
@@ -40,14 +45,14 @@ export default function BusinessLoginPage() {
             boxShadow: "0 8px 24px rgba(10,31,68,0.12)",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img
             src="/aminra-mark.png"
             alt=""
             className="w-11 h-11 object-contain"
           />
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img
           src="/aminra-wordmark-navy.png"
           alt="AMINRA"

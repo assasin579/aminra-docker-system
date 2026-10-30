@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-log = logging.getLogger("mukjizat.evaluate")
+log = logging.getLogger("aminra.evaluate")
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -339,8 +339,8 @@ def _post_llm(url: str, headers: dict, payload: dict, timeout: int = 110) -> str
 def call_llm_json(prompt: str) -> str:
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "HTTP-Referer": "https://mukjizat.silvergem.org",
-        "X-Title": "Mukjizat Halal Evaluator",
+        "HTTP-Referer": "https://aminra.org",
+        "X-Title": "AMINRA Halal Evaluator",
         "Content-Type": "application/json",
     }
     payload = {

@@ -25,11 +25,13 @@ test.describe("03. Business user workflow", () => {
     expect([200, 204]).toContain(r.status());
   });
 
-  test("Business can list assessment templates", async ({ api, biz }) => {
+  test("Business self-assessment templates stay removed after feature retirement", async ({ api, biz }) => {
     const r = await api.get("/api/assessments/templates", {
       headers: { Authorization: `Bearer ${biz.token}` },
     });
-    expect([200, 307]).toContain(r.status());
+    // Migration 015 intentionally dropped the legacy self-assessments feature.
+    // Keep the stale route fail-closed rather than forcing CI to expect a removed API.
+    expect(r.status()).toBe(404);
   });
 
   test("Business can list documents", async ({ api, biz }) => {

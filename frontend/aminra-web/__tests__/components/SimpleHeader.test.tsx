@@ -7,9 +7,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("SimpleHeader", () => {
-  test("renders brand name Aminra", () => {
+  test("renders accessible AMINRA wordmark", () => {
     render(<SimpleHeader />);
-    expect(screen.getByText("Aminra")).toBeInTheDocument();
+    expect(screen.getByAltText("AMINRA")).toBeInTheDocument();
   });
 
   test("renders Chat and Upload nav links", () => {
@@ -30,6 +30,6 @@ describe("SimpleHeader", () => {
 
     render(<SimpleHeader />);
     const uploadLink = screen.getByRole("link", { name: "Upload" });
-    expect(uploadLink.className).toContain("text-emerald-600");
+    expect(uploadLink.className).toContain("text-[#0A1F44]");
   });
 });

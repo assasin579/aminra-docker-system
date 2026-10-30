@@ -1,9 +1,21 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v4";
+const CACHE_NAME = "aminra-v9";
 const OFFLINE_URL = "/audits";
 // URLs the SW must NEVER serve from cache (always go to network).
-// Admin rotates template content; serving stale = wrong file delivered.
+// Auth/admin identity paths are account-switch critical: cached responses/pages
+// can resurrect a prior browser profile after logout/login as another account.
 const NEVER_CACHE_PATTERNS = [
+  /\/auth(?:\/|$)/,
+  /\/admin(?:\/|$)/,
+  /\/dashboard(?:\/|$)/,
+  /\/business\/login(?:\/|$)/,
+  /\/provider\/login(?:\/|$)/,
+  /\/api\/auth(?:\/|$)/,
+  /\/api\/api\/auth(?:\/|$)/,
+  /\/api\/admin(?:\/|$)/,
+  /\/api\/api\/admin(?:\/|$)/,
+  /\/api\/me(?:\/|$)/,
+  /\/api\/users\/me(?:\/|$)/,
   /\/api\/templates\//,
   /\/api\/admin\/templates\/.*\/template-file\/view/,
   /\/api\/admin\/templates\/.*\/files\/.*\/view/,
@@ -33,6 +45,12 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 // Network-first strategy for API calls, cache-first for pages
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -41,11 +59,25 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests (POST/PUT for checklist updates go to IndexedDB queue)
   if (request.method !== "GET") return;
 
+  // Skip cross-origin requests entirely. Keycloak SSO + Sentry tunnel
+  // + any 3rd-party fetch must NOT route through our offline cache —
+  // when fetch fails, we'd serve our OFFLINE_URL HTML which breaks
+  // JSON-expecting clients (oidc-client-ts metadata fetch).
+  if (url.origin !== self.location.origin) return;
+
+  // Auth/admin pages must never be served from the offline page cache.
+  // Stale cached Next.js routes or chunks can resurrect old auth guards and
+  // look like an "immediate logout" after the Keycloak callback.
+  const skipCache = NEVER_CACHE_PATTERNS.some((re) => re.test(url.pathname));
+  if (skipCache) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // API calls: network-first, fallback to cache
   if (url.pathname.startsWith("/api/")) {
     // Some endpoints (template downloads) MUST never be served from cache —
     // admin rotates content, stale = wrong template delivered to business.
-    const skipCache = NEVER_CACHE_PATTERNS.some((re) => re.test(url.pathname));
     event.respondWith(
       fetch(request)
         .then((response) => {

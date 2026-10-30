@@ -31,7 +31,7 @@ requests>=2.31.0
 asyncpg>=0.29.0
 passlib[bcrypt]>=1.7.4
 bcrypt>=4.0.0,<5.0.0
-python-jose[cryptography]>=3.3.0
+PyJWT>=2.10.1,<3.0.0
 pydantic[email]>=2.0.0
 
 # Database migrations
@@ -60,6 +60,10 @@ starlette-prometheus>=0.10.0 # ASGI middleware: HTTP histogram + counter per rou
 structlog>=24.1.0            # structured JSON logging with bound context
 qrcode[pil]
 reportlab
+
+# PDF render via HTML+CSS (Playwright Chromium)
+playwright==1.56.0           # async browser automation for HTML→PDF; 1.63 bundled Node segfaults in Qubes dev runtime
+pikepdf>=8.0.0               # PDF metadata strip → deterministic output bytes
 
 # ── Testing ──────────────────────────────────────────────────────────
 pytest>=8.0.0
