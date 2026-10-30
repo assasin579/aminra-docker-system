@@ -140,7 +140,7 @@ export default function BusinessRegisterPage() {
             boxShadow: "0 8px 24px rgba(10,31,68,0.12)",
           }}
         >
-          { }
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/aminra-mark.png"
             alt="AMINRA"

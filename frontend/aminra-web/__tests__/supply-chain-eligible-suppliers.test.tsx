@@ -48,6 +48,21 @@ describe("MaterialsPage eligible suppliers", () => {
       "fetch",
       vi.fn((input: RequestInfo | URL) => {
         const url = String(input);
+        if (url === "/api/api/me/modules") {
+          return Promise.resolve(
+            ok({
+              modules: [
+                {
+                  code: "supplier_management",
+                  name_vi: "Quản lý nhà cung cấp",
+                  status: "enabled",
+                  access_state: "active",
+                  route_path: "/supply-chain/materials",
+                },
+              ],
+            }),
+          );
+        }
         if (url.startsWith("/api/api/supply-chain/materials")) {
           return Promise.resolve(ok({ materials: [] }));
         }
@@ -102,7 +117,7 @@ describe("MaterialsPage eligible suppliers", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /thêm nguyên liệu/i }));
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(5));
+    await screen.findByRole("option", { name: "NCC đạt CB" });
 
     expect(
       screen.getByText(/Chỉ NCC có chứng nhận CB đang hiệu lực/i),
@@ -115,6 +130,7 @@ describe("MaterialsPage eligible suppliers", () => {
     render(<MaterialsPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: /thêm nguyên liệu/i }));
+    await screen.findByRole("option", { name: "NCC đạt CB" });
 
     const categorySelect = screen.getAllByRole("combobox").find((select) => {
       const options = Array.from((select as HTMLSelectElement).options);

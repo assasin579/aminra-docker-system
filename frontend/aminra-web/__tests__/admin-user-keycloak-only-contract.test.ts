@@ -28,7 +28,11 @@ describe("Admin user management is Keycloak-only", () => {
     const postTargets = Array.from(src.matchAll(/fetch\(`\$\{API\}([^`]+)`,\s*\{\s*method: "POST"/g)).map(
       (match) => match[1],
     );
-    expect(postTargets).toEqual(["/admin/users/${deleteImpact.user.id}/related-references/cleanup"]);
+    expect(postTargets).toEqual([
+      "/admin/users/${deleteImpact.user.id}/related-references/cleanup",
+      "/admin/users/${deleteImpact.user.id}/deletion-case",
+      "/admin/account-deletion-cases/${deletionCase.case.id}/run",
+    ]);
     expect(src).not.toContain('method: "PUT"');
     expect(src).not.toContain('method: "DELETE"');
     expect(src).not.toContain("reset-password");

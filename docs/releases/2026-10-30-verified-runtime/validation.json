@@ -1,0 +1,13 @@
+{
+  "backend_source_regression_passed": 149,
+  "frontend_focused_passed": 26,
+  "previous_serving_regression_passed": 143,
+  "new_failures_discovered": 5,
+  "fix": "Restore production exp/iat/sub requirement and nonblank string sub check; pin PyJWT below 3",
+  "frontend_post_runtime_deltas": [
+    "e2e/11-revision-cycle.spec.ts: owner history must return 200",
+    "components/dashboard/BusinessReadinessProfiles.tsx: trailing whitespace only"
+  ],
+  "deployment": "BE-only token validation patch required after commit; exact image receipt in AMINRA session handoff",
+  "pilot": "NO-GO"
+}

@@ -19,7 +19,9 @@ async def build_dashboard(db: Any, tenant_id: str, page: int = 1, page_size: int
         )
         rows = await db.fetch(
             """SELECT id, tenant_id, standard_type_id, requirements_version_id,
-                      requirements_binding_status, title, status, updated_at
+                      requirements_binding_status, title, status, updated_at,
+                      (SELECT version_number FROM standard_requirement_versions rv
+                        WHERE rv.id=dossiers.requirements_version_id) AS requirements_version_number
                  FROM dossiers WHERE tenant_id = $1 AND status != 'cancelled'
                 ORDER BY updated_at DESC, id ASC OFFSET $2 LIMIT $3""",
             tenant_id, (page - 1) * page_size, page_size,
@@ -46,6 +48,7 @@ async def build_dashboard(db: Any, tenant_id: str, page: int = 1, page_size: int
                 "id": str(row["id"]), "title": row["title"], "status": row["status"],
                 "requirements_version_id": str(row["requirements_version_id"]) if row.get("requirements_version_id") else None,
                 "requirements_binding_status": row.get("requirements_binding_status") or "unknown",
+                "requirements_version_number": row.get("requirements_version_number"),
                 "updated_at": row["updated_at"].isoformat(), "readiness": readiness,
             })
         if as_of is None:

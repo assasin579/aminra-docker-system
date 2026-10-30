@@ -166,6 +166,18 @@ def downgrade() -> None:
             END IF;
         END $$
     """)
+    op.execute("DROP TRIGGER trg_revision_context_immutable ON submission_revision_requests")
+    op.execute("DROP FUNCTION protect_revision_context()")
+    op.execute("ALTER TABLE submission_revision_requests DROP CONSTRAINT ck_revision_requirement_round")
+    op.execute("ALTER TABLE submission_revision_requests DROP COLUMN submitted_round")
+    op.execute("ALTER TABLE submission_revision_requests DROP COLUMN submitted_document_ids")
+    op.execute("ALTER TABLE submission_revision_requests DROP COLUMN requirements_version_id")
+    op.execute("ALTER TABLE certification_decisions DROP CONSTRAINT ck_decision_requirement_round")
+    op.execute("ALTER TABLE certification_decisions DROP COLUMN submitted_round")
+    op.execute("ALTER TABLE certification_decisions DROP COLUMN requirements_version_id")
+    op.execute("DROP TRIGGER trg_dossier_requirements_immutable ON dossiers")
+    op.execute("DROP TRIGGER trg_submission_requirements_immutable ON submissions")
+    op.execute("DROP FUNCTION prevent_submission_requirements_rebinding()")
     op.execute("ALTER TABLE submissions DROP CONSTRAINT ck_submissions_requirements_binding")
     op.execute("ALTER TABLE submissions DROP CONSTRAINT fk_submissions_requirements_version")
     op.execute("ALTER TABLE submissions DROP COLUMN requirements_binding_status")

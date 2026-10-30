@@ -56,10 +56,8 @@ def _dict(row: Any) -> dict[str, Any]:
 
 
 def _document_is_approved(row: dict[str, Any]) -> bool:
-    approval_status = _as_str(row.get("approval_status"))
-    if approval_status is not None:
-        return approval_status in _APPROVED_DOCUMENT_STATUSES
-    return _as_str(row.get("status")) in _APPROVED_DOCUMENT_STATUSES
+    # Internal business approval and AI evaluation cannot stand in for CB review.
+    return row.get("cb_review_approved") is True and row.get("approval_status") != "obsolete" and not row.get("superseded_by_id")
 
 
 def _document_is_rejected(row: dict[str, Any]) -> bool:
@@ -164,12 +162,7 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
            AND EXISTS (
                SELECT 1 FROM documents d
                 WHERE d.id = ANY(submissions.document_ids)
-                  AND d.tenant_id = $1
-                  AND (d.dossier_id = $2 OR EXISTS (
-                      SELECT 1 FROM dossier_document_attachments a
-                       WHERE a.dossier_id=$2 AND a.document_id=d.id
-                         AND a.requirements_version_id=$3 AND a.doc_type=d.doc_type
-                  ))
+                  AND d.dossier_id = $2 AND d.tenant_id = $1
            )
          ORDER BY updated_at DESC NULLS LAST, submitted_at DESC NULLS LAST, id DESC
          LIMIT 1
@@ -180,28 +173,25 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
 
     document_rows = await db.fetch(
         """
-        SELECT d.id, d.doc_type, d.status, d.approval_status, d.compliance_score, d.evaluation_result,
-               COALESCE(a.document_version_number, d.version_number) AS version_number
-          FROM documents d
-          LEFT JOIN dossier_document_attachments a
-            ON a.dossier_id=$1 AND a.document_id=d.id
-           AND a.requirements_version_id=(SELECT requirements_version_id FROM dossiers WHERE id=$1)
-           AND a.doc_type=d.doc_type
-         WHERE d.tenant_id = $2
-           AND d.id = ANY(COALESCE(
-               $3::uuid[],
-               ARRAY(SELECT a.document_id FROM dossier_document_attachments a
-                      WHERE a.dossier_id=$1
-                        AND a.requirements_version_id=(SELECT requirements_version_id FROM dossiers WHERE id=$1))
-           ))
-           AND (d.dossier_id=$1 OR a.document_id IS NOT NULL)
-         ORDER BY d.uploaded_at DESC, d.id ASC
+        SELECT id, doc_type, status, approval_status, compliance_score, evaluation_result, version_number, superseded_by_id
+          FROM documents
+         WHERE dossier_id = $1 AND tenant_id = $2
+           AND id = ANY(COALESCE($3::uuid[], '{}'::uuid[]))
+         ORDER BY uploaded_at DESC, id ASC
         """,
         str(dossier_id),
         str(tenant_id),
         submitted_document_ids,
     )
     documents = [_dict(row) for row in document_rows]
+    from services.dossier_reviews import reviewed_document_versions
+    reviewed_versions = await reviewed_document_versions(
+        db, submission=submission, requirements_version_id=dossier["requirements_version_id"],
+    )
+    for document in documents:
+        version = document.get("version_number") or 1
+        document["cb_review_approved"] = reviewed_versions.get(str(document["id"])) == version
+
 
     latest_by_type: dict[str, dict[str, Any]] = {}
     for row in documents:

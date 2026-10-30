@@ -1,0 +1,1 @@
+{"tests_passed": 143, "regression_cases": 14, "pre_fix_failed": 3, "network": "none", "database": "unreachable loopback", "base_image": "3e7bcea65f25482e7487a822ef1966e1432de9081381d034a8a990bff48434b9"}

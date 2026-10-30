@@ -87,7 +87,7 @@ const readinessFixture = {
   due_date: "2026-10-12",
   required_documents: ["company_profile", "halal_policy", "has_manual"],
   missing_required_documents: [
-    { id: null, code: null, title: null, label: "Chính sách Halal", doc_type: "halal_policy", filename: null, reason: null, description: null, severity: null, deadline: null },
+    { doc_type: "halal_policy", label: "Chính sách Halal" },
   ],
   unreviewed_documents: [
     { id: "doc-2", filename: "policy.pdf", doc_type: "halal_policy" },
@@ -245,5 +245,18 @@ describe("Dossier detail certification readiness command panel", () => {
     await screen.findByText("Hồ sơ nhà máy A");
     expect(screen.getByText(/1 NCR mức nhẹ đang mở; hiện không chặn quyết định/)).toBeInTheDocument();
     expect(screen.queryByText("NCR/CAPA đang chặn quyết định")).not.toBeInTheDocument();
+  });
+  it("accepts real API nullable optional fields and keeps the bound upload form available", async () => {
+    const actualShape = { ...readinessFixture, state: "requirements_pending", readiness_percent: 25,
+      unreviewed_documents: [], rejected_documents: [], open_ncrs: [], blocking_ncrs: [],
+      blocking_reasons: [{ id: null, code: "missing_required_document", title: null, label: null,
+        doc_type: "has_manual", filename: null, reason: null, description: null, severity: null, deadline: null }],
+    };
+    vi.mocked(fetch).mockImplementation((url) => jsonResponse(200, String(url).endsWith("/readiness")
+      ? actualShape : { ...dossierFixture, requirements_binding_status: "bound" }));
+    renderPage();
+    expect(await screen.findByRole("form", { name: "Bổ sung tài liệu hồ sơ" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Sẵn sàng 25 phần trăm")).toBeInTheDocument();
+    expect(screen.queryByText("Không tải được trạng thái sẵn sàng")).not.toBeInTheDocument();
   });
 });

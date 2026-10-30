@@ -45,14 +45,14 @@ export default function BusinessLoginPage() {
             boxShadow: "0 8px 24px rgba(10,31,68,0.12)",
           }}
         >
-          { }
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/aminra-mark.png"
             alt=""
             className="w-11 h-11 object-contain"
           />
         </div>
-        { }
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/aminra-wordmark-navy.png"
           alt="AMINRA"

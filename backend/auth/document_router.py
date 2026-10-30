@@ -531,61 +531,6 @@ async def get_document(
     )
 
 
-async def _load_submission_document_read_access(doc_id: str, user: dict, db):
-    """Load a document under the caller's current tenant/submission authority."""
-    if user.get("role") == "business":
-        tenant_id = await resolve_canonical_tenant_id(user, db)
-        if not tenant_id:
-            return None
-        return await db.fetchrow(
-            """SELECT d.id, d.file_path, d.original_filename, d.mime_type,
-                      d.version_number, d.dossier_id, d.tenant_id,
-                      NULL::uuid AS submission_id, NULL::integer AS access_round
-                 FROM documents d WHERE d.id=$1 AND d.tenant_id=$2""",
-            doc_id, tenant_id,
-        )
-    if user.get("role") != "provider":
-        return None
-    actor_id = await resolve_canonical_user_id(user, db)
-    if not actor_id:
-        return None
-    actor = await db.fetchrow(
-        "SELECT id, role, status, is_owner, tenant_id FROM users WHERE id=$1",
-        actor_id,
-    )
-    if not actor or actor["role"] != "provider" or actor["status"] != "active":
-        return None
-    if actor["is_owner"] is True:
-        access_column = "s.provider_id"
-        access_id = actor["tenant_id"] or actor["id"]
-    else:
-        access_column = "s.auditor_id"
-        access_id = actor["id"]
-    return await db.fetchrow(
-        f"""SELECT d.id, d.file_path, d.original_filename, d.mime_type,
-                  d.version_number, d.dossier_id, s.business_tenant AS tenant_id,
-                  s.id AS submission_id,
-                  NULLIF(GREATEST(
-                    COALESCE((SELECT MAX(rr.round) FROM submission_revision_requests rr
-                               WHERE rr.submission_id=s.id
-                                 AND $1=ANY(rr.submitted_document_ids)), 0),
-                    CASE WHEN $1=ANY(s.document_ids)
-                         THEN COALESCE(s.revision_round, 0) ELSE 0 END
-                  ), 0) AS access_round
-             FROM documents d
-             JOIN submissions s ON {access_column}=$2
-            WHERE d.id=$1
-              AND ($1=ANY(s.document_ids) OR EXISTS (
-                    SELECT 1 FROM submission_revision_requests rr
-                     WHERE rr.submission_id=s.id
-                       AND $1=ANY(rr.submitted_document_ids)
-              ))
-            ORDER BY access_round DESC NULLS LAST
-            LIMIT 1""",
-        doc_id, access_id,
-    )
-
-
 @router.get("/documents/{doc_id}/preview")
 async def preview_document(
     doc_id: str,
@@ -596,7 +541,28 @@ async def preview_document(
     """Convert document to PDF for inline viewing. Caches the result."""
     user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
-    row = await _load_submission_document_read_access(doc_id, user, db)
+    row = None
+    if user["role"] == "business":
+        row = await db.fetchrow(
+            "SELECT file_path, original_filename, mime_type FROM documents WHERE id = $1 AND tenant_id = $2",
+            doc_id,
+            user.get("tenant_id"),
+        )
+    elif user["role"] == "provider":
+        # C6 fix — provider can ONLY view docs explicitly in their submissions.
+        # Old `OR d.tenant_id = s.business_tenant` granted whole-tenant access
+        # which leaked unrelated docs across submissions. Revisions are in the
+        # documents table but only `submission.document_ids` are CB's scope.
+        row = await db.fetchrow(
+            """SELECT d.file_path, d.original_filename, d.mime_type FROM documents d
+               WHERE d.id = $1 AND EXISTS (
+                   SELECT 1 FROM submissions s
+                   WHERE (s.provider_id = $2 OR s.auditor_id = $2)
+                     AND $1 = ANY(s.document_ids)
+               )""",
+            doc_id,
+            await resolve_canonical_user_id(user, db),
+        )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
@@ -692,7 +658,25 @@ async def get_document_file(
     """Serve the original uploaded file for viewing."""
     user = await _get_user_from_header_or_query(request, token)
     _validate_uuid(doc_id)
-    row = await _load_submission_document_read_access(doc_id, user, db)
+    row = None
+    if user["role"] == "business":
+        row = await db.fetchrow(
+            "SELECT file_path, original_filename, mime_type FROM documents WHERE id = $1 AND tenant_id = $2",
+            doc_id,
+            user.get("tenant_id"),
+        )
+    elif user["role"] == "provider":
+        # C6 fix — same scoping as /preview: only docs explicitly in the submission.
+        row = await db.fetchrow(
+            """SELECT d.file_path, d.original_filename, d.mime_type FROM documents d
+               WHERE d.id = $1 AND EXISTS (
+                   SELECT 1 FROM submissions s
+                   WHERE (s.provider_id = $2 OR s.auditor_id = $2)
+                     AND $1 = ANY(s.document_ids)
+               )""",
+            doc_id,
+            await resolve_canonical_user_id(user, db),
+        )
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
@@ -700,31 +684,7 @@ async def get_document_file(
     if not file_path or not file_path.exists():
         raise HTTPException(404, "File không tồn tại trên hệ thống")
 
-    # This event means current authorization succeeded and the server is about
-    # to construct a response; it deliberately does not claim body completion.
-    audit_user = {**user, "tenant_id": str(row["tenant_id"])}
-    audit_context = {
-        "submission_id": str(row["submission_id"]) if row["submission_id"] else None,
-        "round": row["access_round"],
-        "document_version_id": str(row["id"]),
-        "version_number": row["version_number"],
-        "delivery_mode": "direct_get_no_issued_url",
-        "url_issued": False,
-    }
-    await _audit_strict(
-        db,
-        action="document.download_authorized",
-        user=audit_user,
-        entity_id=doc_id,
-        request=request,
-        metadata={**audit_context, "lifecycle": "authorized_before_response"},
-    )
-    return _AuditedDownloadResponse(
-        db=db,
-        user=audit_user,
-        request=request,
-        document_id=doc_id,
-        metadata=audit_context,
+    return _FileResponse(
         path=str(file_path),
         filename=row["original_filename"],
         media_type=row["mime_type"] or "application/octet-stream",
@@ -738,6 +698,7 @@ async def get_document_file(
 async def upload_document(
     file: UploadFile = File(...),
     doc_type: Optional[str] = Form(None),
+    dossier_id: Optional[_UUID] = Form(None),
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
@@ -749,6 +710,22 @@ async def upload_document(
     tenant_id = await resolve_canonical_tenant_id(user, db)
     if not tenant_id:
         raise HTTPException(400, "Tenant không xác định")
+
+    if dossier_id is not None:
+        dossier = await db.fetchrow(
+            "SELECT requirements_version_id, requirements_binding_status FROM dossiers "
+            "WHERE id=$1 AND tenant_id=$2 AND status NOT IN ('cancelled','cert_issued')",
+            dossier_id, tenant_id,
+        )
+        if not dossier:
+            raise HTTPException(404, "Hồ sơ không tồn tại")
+        if dossier['requirements_binding_status'] != 'bound':
+            raise HTTPException(409, "Hồ sơ chưa có bộ yêu cầu được chốt")
+        if not doc_type or not await db.fetchval(
+            "SELECT 1 FROM standard_requirement_version_slots WHERE requirements_version_id=$1 AND doc_type=$2",
+            dossier['requirements_version_id'],doc_type,
+        ):
+            raise HTTPException(422, "Loại tài liệu không thuộc bộ yêu cầu của hồ sơ")
 
     content = await validate_upload(file)
     file_size = len(content)
@@ -768,8 +745,8 @@ async def upload_document(
         row = await db.fetchrow(
             """INSERT INTO documents
                   (filename, original_filename, file_path, file_size, mime_type,
-                   user_id, tenant_id, doc_type)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, uploaded_at""",
+                   user_id, tenant_id, doc_type, dossier_id)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, uploaded_at""",
             save_path.name,
             file.filename,
             str(save_path),
@@ -778,6 +755,7 @@ async def upload_document(
             canonical_user_id,
             tenant_id,
             doc_type,
+            dossier_id,
         )
     except Exception:
         try:
@@ -1045,7 +1023,6 @@ async def dashboard_stats(
     )
 
     doc_type_progress = []
-    compliant_count = 0
     total_score = 0
     scored_count = 0
 
@@ -1059,8 +1036,6 @@ async def dashboard_stats(
         if score is not None:
             total_score += score
             scored_count += 1
-        if status in ("compliant", "cb_approved"):
-            compliant_count += 1
         doc_type_progress.append(
             {
                 "doc_type": dt,
@@ -1072,20 +1047,6 @@ async def dashboard_stats(
             }
         )
 
-    # Add missing doc types
-    for dt, label in _ALL_DOC_TYPES.items():
-        if dt not in submitted_types:
-            doc_type_progress.append(
-                {
-                    "doc_type": dt,
-                    "label": label,
-                    "score": None,
-                    "status": None,
-                    "filename": None,
-                    "uploaded_at": None,
-                }
-            )
-
     # Sort: submitted first (by label), then missing (by label)
     doc_type_progress.sort(key=lambda x: (x["score"] is None, x["label"]))
 
@@ -1095,8 +1056,6 @@ async def dashboard_stats(
         "SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND is_owner = false", tenant_id
     )
 
-    total_types = len(_ALL_DOC_TYPES)
-    readiness = round((compliant_count / total_types) * 100) if total_types > 0 else 0
 
     # 3. Recent activity (last 5 documents)
     recent_rows = await db.fetch(
@@ -1129,10 +1088,6 @@ async def dashboard_stats(
         )
 
     return {
-        "readiness": readiness,
-        "compliant_count": compliant_count,
-        "total_types": total_types,
-        "submitted_count": len(submitted_types),
         "total_documents": total_docs_row["count"],
         "avg_score": round(total_score / scored_count) if scored_count > 0 else None,
         "member_count": member_count_row["count"],
@@ -1242,97 +1197,6 @@ async def _audit_strict(
         entity_id,
         _json.dumps(enriched),
     )
-
-
-async def _audit_download_lifecycle(db, *, action: str, user: dict, entity_id: str, request: Request, metadata: dict) -> None:
-    """Record post-authorization delivery facts without interrupting a file stream."""
-    try:
-        await _audit_strict(
-            db, action=action, user=user, entity_id=entity_id, request=request, metadata=metadata,
-        )
-    except Exception:
-        log.exception("Failed to persist document download lifecycle event", extra={"document_id": entity_id, "action": action})
-
-
-class _AuditedDownloadResponse(_FileResponse):
-    """FileResponse that records what ASGI actually accepted, not just authorization."""
-
-    def __init__(self, *, db, user: dict, request: Request, document_id: str, metadata: dict, **kwargs):
-        super().__init__(**kwargs)
-        self._audit_db = db
-        self._audit_user = user
-        self._audit_request = request
-        self._audit_document_id = document_id
-        self._audit_metadata = metadata
-
-    async def __call__(self, scope, receive, send):
-        response_started = False
-        response_status = None
-        bytes_sent = 0
-        body_complete = False
-        pathsend_delegated = False
-
-        async def tracked_send(message):
-            nonlocal response_started, response_status, bytes_sent, body_complete, pathsend_delegated
-            await send(message)
-            message_type = message.get("type")
-            if message_type == "http.response.start":
-                response_started = True
-                response_status = message.get("status")
-                await _audit_download_lifecycle(
-                    self._audit_db,
-                    action="document.download_response_started",
-                    user=self._audit_user,
-                    entity_id=self._audit_document_id,
-                    request=self._audit_request,
-                    metadata={**self._audit_metadata, "lifecycle": "response_started", "response_status": response_status,
-                              "delivery_mode": "direct_get_no_issued_url"},
-                )
-            elif message_type == "http.response.body":
-                bytes_sent += len(message.get("body", b""))
-                if not message.get("more_body", False):
-                    body_complete = True
-            elif message_type == "http.response.pathsend":
-                pathsend_delegated = True
-
-        try:
-            await super().__call__(scope, receive, tracked_send)
-        except BaseException:
-            if response_started and not body_complete and not pathsend_delegated:
-                await _audit_download_lifecycle(
-                    self._audit_db,
-                    action="document.download_interrupted",
-                    user=self._audit_user,
-                    entity_id=self._audit_document_id,
-                    request=self._audit_request,
-                    metadata={**self._audit_metadata, "lifecycle": "interrupted_before_body_complete",
-                              "response_status": response_status, "bytes_sent": bytes_sent,
-                              "delivery_mode": "asgi_body"},
-                )
-            raise
-
-        if pathsend_delegated:
-            await _audit_download_lifecycle(
-                self._audit_db,
-                action="document.download_transfer_delegated",
-                user=self._audit_user,
-                entity_id=self._audit_document_id,
-                request=self._audit_request,
-                metadata={**self._audit_metadata, "lifecycle": "server_sendfile_delegated",
-                          "response_status": response_status, "bytes_sent": None,
-                          "delivery_mode": "asgi_pathsend"},
-            )
-        elif body_complete:
-            await _audit_download_lifecycle(
-                self._audit_db,
-                action="document.download_bytes_served",
-                user=self._audit_user,
-                entity_id=self._audit_document_id,
-                request=self._audit_request,
-                metadata={**self._audit_metadata, "lifecycle": "body_complete",
-                          "response_status": response_status, "bytes_sent": bytes_sent,
-                          "delivery_mode": "asgi_body"},
-            )
 
 
 # ── 1. POST /documents/{id}/submit-for-approval ─────────────────────────────

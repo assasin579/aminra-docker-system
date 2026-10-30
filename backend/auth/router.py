@@ -658,24 +658,14 @@ async def remove_member(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(member_id)
-    row = await db.fetchrow(
-        "SELECT keycloak_sub FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
-        member_id,
-        await resolve_canonical_tenant_id(owner, db),
-    )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
+    from auth.team_account_removal import remove_team_account
 
-    if row.get("keycloak_sub"):
-        keycloak_admin.delete_user(str(row["keycloak_sub"]))
-
-    result = await db.execute(
-        "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false",
-        member_id,
-        await resolve_canonical_tenant_id(owner, db),
+    await remove_team_account(
+        db,
+        user_id=_UUID(member_id),
+        tenant_id=await resolve_canonical_tenant_id(owner, db),
+        provider_only=False,
     )
-    if result == "DELETE 0":
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
 
 
 # ── Provider Auditor Management ────────────────────────────────────────────────
@@ -832,24 +822,14 @@ async def remove_auditor(
     db: Connection = Depends(get_db),
 ):
     _validate_uuid(auditor_id)
-    row = await db.fetchrow(
-        "SELECT keycloak_sub FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
-        auditor_id,
-        await resolve_canonical_tenant_id(owner, db),
-    )
-    if not row:
-        raise HTTPException(404, "Auditor not found")
+    from auth.team_account_removal import remove_team_account
 
-    if row.get("keycloak_sub"):
-        keycloak_admin.delete_user(str(row["keycloak_sub"]))
-
-    result = await db.execute(
-        "DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND is_owner = false AND role = 'provider'",
-        auditor_id,
-        await resolve_canonical_tenant_id(owner, db),
+    await remove_team_account(
+        db,
+        user_id=_UUID(auditor_id),
+        tenant_id=await resolve_canonical_tenant_id(owner, db),
+        provider_only=True,
     )
-    if result == "DELETE 0":
-        raise HTTPException(404, "Auditor not found")
 
 
 # ── Auditor Certificates ──────────────────────────────────────────────────────

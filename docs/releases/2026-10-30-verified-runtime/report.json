@@ -1,0 +1,18 @@
+{
+  "status": "SCOPED_PASS",
+  "defect": "UAT-R01-001",
+  "backend": "sha256:fca42a5cdacd5f667add499f97ef9fdf873b3effdb60107d5f8aa2aa01ad698a",
+  "tests": {
+    "candidate_regression_pass": 143,
+    "serving_regression_pass": 143,
+    "api_assertions_pass": 80,
+    "browser_successful_assertions": 24,
+    "intermediate_harness_reload_timeout": 1,
+    "legacy_e2e_discovered_only": 24
+  },
+  "qa_disabled": 8,
+  "review_plan_decisions": 17,
+  "independent_acceptance": "pending",
+  "pilot": "NO-GO",
+  "commit_push": false
+}

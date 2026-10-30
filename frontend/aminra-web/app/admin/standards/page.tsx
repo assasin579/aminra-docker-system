@@ -67,6 +67,23 @@ export default function AdminStandardsPage() {
   const [docTypesEditor, setDocTypesEditor] = useState<DocTypeAssoc[] | null>(null);
   const [activeStandardId, setActiveStandardId] = useState<string | null>(null);
 
+  const [publishing, setPublishing] = useState<string | null>(null);
+  const [publicationMessage, setPublicationMessage] = useState("");
+
+  const publishRequirements = async (standard: Standard) => {
+    if (!confirm(`Công bố bộ yêu cầu của ${standard.name_vi}? Chỉ hồ sơ mới sử dụng phiên bản này; hồ sơ đã chốt giữ nguyên.`)) return;
+    setPublishing(standard.id); setError(null); setPublicationMessage("");
+    try {
+      const response = await fetch(`/api/auth/admin/standard-types/${standard.id}/publish-requirements`, {
+        method: "POST", headers: { Authorization: `Bearer ${token ?? ""}` },
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : "Không công bố được bộ yêu cầu.");
+      setPublicationMessage(`Đã công bố bộ yêu cầu phiên bản ${body.version_number} cho ${standard.name_vi}. Hồ sơ đã chốt được giữ nguyên.`);
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Công bố thất bại"); }
+    finally { setPublishing(null); }
+  };
+
   const headers = { Authorization: `Bearer ${token ?? ""}` };
 
   const fetchAll = async (t: string) => {
@@ -222,6 +239,8 @@ export default function AdminStandardsPage() {
           </button>
         </div>
 
+        {publicationMessage && <p role="status" className="mb-4 rounded-lg bg-cream-100 p-3 text-sm text-navy-900">{publicationMessage}</p>}
+
         {error && (
           <div
             className="rounded-lg px-4 py-3 text-xs mb-4"
@@ -292,6 +311,7 @@ export default function AdminStandardsPage() {
                   >
                     Doc-types ({s.doc_types.length})
                   </button>
+                  {s.enabled && <button type="button" aria-label={`Công bố yêu cầu cho ${s.name_vi}`} disabled={publishing !== null} onClick={() => void publishRequirements(s)} className="rounded-lg bg-navy-900 px-3 py-2 text-xs text-white disabled:opacity-50">{publishing === s.id ? "Đang công bố…" : "Công bố bộ yêu cầu"}</button>}
                   {s.enabled && (
                     <button
                       onClick={() => handleDisable(s.id)}

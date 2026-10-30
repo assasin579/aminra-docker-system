@@ -482,7 +482,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
             style={{ background: "#FFFFFF" }}
           >
-            { }
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/aminra-mark.png"
               alt=""
@@ -490,7 +490,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             />
           </div>
           <div className="flex flex-col gap-0.5">
-            { }
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/aminra-wordmark-navy.png"
               alt="AMINRA"

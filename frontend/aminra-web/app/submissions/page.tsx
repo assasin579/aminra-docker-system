@@ -236,7 +236,11 @@ function SubmissionsContent() {
     if (isAuthenticated) fetchSubs();
   }, [isAuthenticated, fetchSubs]);
 
-  const loadSubmissionDetails = async (id: string) => {
+  const toggleExpand = async (id: string) => {
+    if (expanded === id) {
+      setExpanded(null);
+      return;
+    }
     setExpanded(id);
     setLoadingDocs(true);
     try {
@@ -300,14 +304,6 @@ function SubmissionsContent() {
     }
   };
 
-  const toggleExpand = async (id: string) => {
-    if (expanded === id) {
-      setExpanded(null);
-      return;
-    }
-    await loadSubmissionDetails(id);
-  };
-
   // Business: open revision history for a doc
   const openRevisions = async (subId: string, docType: string) => {
     if (!token || !docType) return;
@@ -350,7 +346,12 @@ function SubmissionsContent() {
       );
       if (res.ok) {
         setRevisionDocType(null);
-        await loadSubmissionDetails(subId);
+        // Reload expanded submission
+        const eid = expanded;
+        setExpanded(null);
+        setTimeout(() => {
+          if (eid) toggleExpand(eid);
+        }, 100);
       }
     } catch {}
   };
@@ -399,9 +400,9 @@ function SubmissionsContent() {
         return;
       }
 
-      // Reload the expanded submission without toggling it closed.
-      await loadSubmissionDetails(subId);
-      setRevisionDocType(null);
+      // 3. Refresh docs
+      toggleExpand(subId); // re-expand to reload
+      setTimeout(() => toggleExpand(subId), 100);
     } finally {
       setUploading(false);
     }
@@ -569,7 +570,6 @@ function SubmissionsContent() {
           provider_id: selectedProvider,
           document_ids: Array.from(selectedDocs),
           notes: submitNotes,
-          ...(searchParams?.get("dossier_id") ? { dossier_id: searchParams.get("dossier_id") } : {}),
         }),
       });
       if (!res.ok) {
@@ -1539,7 +1539,6 @@ function SubmissionsContent() {
                           documents={subDocs.map((d) => ({
                             id: d.id,
                             filename: d.original_filename,
-                            doc_type: d.doc_type,
                           }))}
                           onChanged={() => fetchSubs()}
                         />

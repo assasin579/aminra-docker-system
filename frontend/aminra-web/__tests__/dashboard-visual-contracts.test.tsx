@@ -230,7 +230,7 @@ describe("dashboard data visual contracts", () => {
     const { container } = render(<BusinessDashboard />);
     expect(await screen.findByText("Phân bố chứng chỉ")).toBeInTheDocument();
     expect(container.querySelector('[data-dashboard-experience="business-v2"]')).toBeInTheDocument();
-    expect(container.querySelector('[aria-label="Profile readiness"]')).toBeInTheDocument();
+    expect(container.querySelector('[aria-label="Mức sẵn sàng hồ sơ"]')).toBeInTheDocument();
     expect(container.querySelector('[data-dashboard-section="readiness-hero"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-dashboard-section="overview-charts"]')).toBeInTheDocument();
     const sectionOrder = Array.from(container.querySelectorAll("[data-dashboard-section]"), (section) => section.getAttribute("data-dashboard-section"));
@@ -249,7 +249,7 @@ describe("dashboard data visual contracts", () => {
     vi.stubGlobal("fetch", failedFetch);
     const business = render(<BusinessDashboard />);
     expect(await screen.findByText("Không tải được số liệu hồ sơ (503).")).toBeInTheDocument();
-    expect(screen.getByText("Could not load Profile readiness. Please try again.")).toBeInTheDocument();
+    expect(screen.getByText("Không tải được hồ sơ. Vui lòng thử lại.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thử tải lại" }));
     await waitFor(() => expect(failedFetch).toHaveBeenCalledTimes(5));
     business.unmount();
@@ -269,6 +269,6 @@ describe("dashboard data visual contracts", () => {
     vi.stubGlobal("fetch", partialFetch);
     render(<BusinessDashboard />);
     expect(await screen.findByText("Không tải được dòng thời gian chứng chỉ (503).")).toBeInTheDocument();
-    expect(screen.getByText("Could not load Profile readiness. Please try again.")).toBeInTheDocument();
+    expect(screen.getByText("Không tải được hồ sơ. Vui lòng thử lại.")).toBeInTheDocument();
   });
 });

@@ -74,7 +74,7 @@ export default function PWAInstallPrompt() {
           className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0"
           style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
         >
-          { }
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/aminra-mark.png" alt="AMINRA" className="w-7 h-7" />
         </div>
         <div className="flex-1 min-w-0">

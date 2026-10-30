@@ -3,29 +3,19 @@
 import logging
 import io
 import json as _json
-from collections.abc import Awaitable, Callable, Mapping
-from hashlib import sha256
 from uuid import UUID as _UUID, uuid4
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 from datetime import date, datetime
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form, Request
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from auth.audit_scope import assert_audit_visit_mutation_scope
 from auth.db import get_db
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from auth.jwt_utils import get_current_user, decode_token
 from auth.notification_router import notify
-from auth.offline_replay_idempotency import (
-    ExistingReplayRecord,
-    build_operation_scope,
-    classify_duplicate_replay,
-    extract_required_idempotency_key,
-    stable_request_hash,
-)
 from services.conflict_interest import assert_no_unresolved_conflict
 
 log = logging.getLogger("aminra.audits")
@@ -72,120 +62,6 @@ async def _audit_filter(user: dict, db):
 def _require_provider(user: dict):
     if user.get("role") != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
-
-
-def _row_value(row: Any, key: str) -> Any:
-    if isinstance(row, Mapping):
-        return row.get(key)
-    try:
-        return row[key]
-    except (KeyError, TypeError):
-        return getattr(row, key, None)
-
-
-def _response_body_from_record(value: Any) -> dict[str, Any]:
-    if isinstance(value, dict):
-        return value
-    if isinstance(value, str):
-        parsed = _json.loads(value)
-        return parsed if isinstance(parsed, dict) else {"value": parsed}
-    return {"value": value}
-
-
-def _safe_upload_filename(filename: str | None, fallback: str) -> str:
-    basename = Path(filename or fallback).name
-    safe = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in basename).strip("._")
-    return (safe or fallback)[:120]
-
-
-async def _execute_mobile_replay_operation(
-    *,
-    db: Any,
-    scope: dict[str, str | None],
-    request_hash: str,
-    mutate: Callable[[], Awaitable[dict[str, Any]]],
-) -> dict[str, Any]:
-    """Reserve a replay idempotency key before creating/appending side effects.
-
-    The reservation and DB mutation run in one transaction so a concurrent replay
-    on the same unique scope waits and then receives either the stored stable
-    response or a 409 hash-conflict instead of duplicating photos/NCR rows.
-    """
-
-    in_progress_body = {
-        "error": "mobile_replay_in_progress",
-        "message": "Mobile offline replay operation is already being processed.",
-    }
-
-    async with db.transaction():
-        inserted = await db.fetchrow(
-            """
-            INSERT INTO mobile_offline_replay_operations (
-                tenant_id, user_id, visit_id, operation_type, route_key,
-                resource_key, idempotency_key, request_hash, response_status,
-                response_body
-            )
-            VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10::jsonb)
-            ON CONFLICT (tenant_id, operation_type, route_key, resource_key, idempotency_key)
-            DO NOTHING
-            RETURNING id
-            """,
-            scope["tenant_id"],
-            scope["user_id"],
-            scope["visit_id"],
-            scope["operation_type"],
-            scope["route_key"],
-            scope["resource_key"],
-            scope["idempotency_key"],
-            request_hash,
-            409,
-            _json.dumps(in_progress_body),
-        )
-
-        if not inserted:
-            existing = await db.fetchrow(
-                """
-                SELECT request_hash, response_status, response_body
-                FROM mobile_offline_replay_operations
-                WHERE tenant_id=$1::uuid
-                  AND operation_type=$2
-                  AND route_key=$3
-                  AND resource_key=$4
-                  AND idempotency_key=$5
-                """,
-                scope["tenant_id"],
-                scope["operation_type"],
-                scope["route_key"],
-                scope["resource_key"],
-                scope["idempotency_key"],
-            )
-            if not existing:
-                raise HTTPException(409, "Replay reservation conflict")
-
-            classification = classify_duplicate_replay(
-                existing=ExistingReplayRecord(
-                    request_hash=existing["request_hash"],
-                    response_status=existing["response_status"],
-                    response_body=_response_body_from_record(existing["response_body"]),
-                ),
-                incoming_request_hash=request_hash,
-            )
-            if classification.outcome == "conflict_409":
-                raise HTTPException(409, classification.response_body)
-            return classification.response_body
-
-        response_body = await mutate()
-        await db.execute(
-            """
-            UPDATE mobile_offline_replay_operations
-            SET response_status=$1, response_body=$2::jsonb, updated_at=now()
-            WHERE id=$3
-            """,
-            200,
-            _json.dumps(response_body),
-            inserted["id"],
-        )
-        return response_body
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -455,13 +331,13 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
         """
         SELECT
           COUNT(*) FILTER (WHERE compliance_score IS NOT NULL
-                            AND status = 'report_accepted') AS scored_visits,
-          COUNT(*) FILTER (WHERE status = 'report_accepted') AS completed_visits,
+                            AND status IN ('completed', 'report_submitted')) AS scored_visits,
+          COUNT(*) FILTER (WHERE status IN ('completed', 'report_submitted')) AS completed_visits,
           ROUND(AVG(compliance_score) FILTER (
-                  WHERE status = 'report_accepted'
+                  WHERE status IN ('completed', 'report_submitted')
                 )::numeric)                                                    AS audit_score,
-          MIN(compliance_score) FILTER (WHERE status = 'report_accepted') AS audit_min,
-          MAX(compliance_score) FILTER (WHERE status = 'report_accepted') AS audit_max
+          MIN(compliance_score) FILTER (WHERE status IN ('completed', 'report_submitted')) AS audit_min,
+          MAX(compliance_score) FILTER (WHERE status IN ('completed', 'report_submitted')) AS audit_max
         FROM audit_visits
         WHERE business_tenant=$1 AND provider_id=$2
     """,
@@ -528,7 +404,7 @@ async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
         SELECT
             COUNT(*) FILTER (WHERE status = 'scheduled')        AS scheduled,
             COUNT(*) FILTER (WHERE status = 'in_progress')      AS in_progress,
-            COUNT(*) FILTER (WHERE status = 'report_accepted') AS completed,
+            COUNT(*) FILTER (WHERE status = 'completed')        AS completed,
             COUNT(*) FILTER (WHERE status = 'report_submitted') AS report_submitted,
             COUNT(*)                                             AS total
         FROM audit_visits WHERE {where}
@@ -960,9 +836,12 @@ async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được chấp nhận báo cáo")
 
-    provider_id = await resolve_canonical_tenant_id(user, db)
+    from auth.submission_router import _resolve_cb_metrics_owner_scope
+    provider_id = await _resolve_cb_metrics_owner_scope(user, db)
     actor_id = await resolve_canonical_user_id(user, db)
-    if not provider_id or not actor_id:
+    if not provider_id:
+        raise HTTPException(403, "Chỉ chủ CB đang hoạt động được chấp nhận báo cáo")
+    if not actor_id:
         raise HTTPException(404, "User not found")
 
     async with db.transaction():
@@ -1104,7 +983,6 @@ async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_curren
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
-    await assert_audit_visit_mutation_scope(vid, user, db)
     updates, params, idx = [], [], 1
     if "result" in req:
         if req["result"] not in ("conform", "minor_nc", "major_nc", "na", "observation", None):
@@ -1128,87 +1006,35 @@ async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_curren
 
 @router.post("/{vid}/items/{item_id}/photo")
 async def upload_item_photo(
-    vid: str,
-    item_id: str,
-    request: Request,
-    file: UploadFile = File(...),
-    idempotency_key: str | None = Form(None),
-    client_operation_id: str | None = Form(None),
-    user=Depends(get_current_user),
-    db=Depends(get_db),
+    vid: str, item_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
 ):
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
-    audit_scope = await assert_audit_visit_mutation_scope(vid, user, db)
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(413, "Ảnh tối đa 5MB")
 
-    try:
-        replay_key = extract_required_idempotency_key(
-            headers=request.headers,
-            body={"idempotency_key": idempotency_key, "client_operation_id": client_operation_id},
-            payload={},
-        )
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
+    save_dir = Path("docs") / "audit_photos" / vid
+    save_dir.mkdir(parents=True, exist_ok=True)
+    fname = f"{item_id}_{uuid4().hex[:8]}_{file.filename or 'photo.jpg'}"
+    save_path = save_dir / fname
+    save_path.write_bytes(content)
+    photo_url = str(save_path)
 
-    operation_scope = build_operation_scope(
-        tenant_id=_row_value(audit_scope.visit, "provider_id"),
-        user_id=audit_scope.canonical_user_id,
-        visit_id=vid,
-        operation_type="evidence_photo_upload:item_photo",
-        route_key="POST /audits/{vid}/items/{item_id}/photo",
-        resource_key=f"item:{item_id}",
-        idempotency_key=replay_key,
-    )
-    request_hash = stable_request_hash(
-        payload={
-            "filename": file.filename or "photo.jpg",
-            "content_type": file.content_type,
-            "content_sha256": sha256(content).hexdigest(),
-            "content_size": len(content),
-        },
-        resource_identity=operation_scope,
+    # Append to photo_paths JSONB array
+    await db.execute(
+        """
+        UPDATE audit_visit_items SET photo_paths = photo_paths || $1::jsonb
+        WHERE id=$2 AND visit_id=$3
+    """,
+        _json.dumps([photo_url]),
+        item_id,
+        vid,
     )
 
-    async def mutate() -> dict[str, Any]:
-        item_exists = await db.fetchrow(
-            "SELECT id FROM audit_visit_items WHERE id=$1 AND visit_id=$2",
-            item_id,
-            vid,
-        )
-        if not item_exists:
-            raise HTTPException(404, "Checklist item not found for audit visit")
-
-        save_dir = Path("docs") / "audit_photos" / vid
-        save_dir.mkdir(parents=True, exist_ok=True)
-        safe_filename = _safe_upload_filename(file.filename, "photo.jpg")
-        fname = f"{item_id}_{uuid4().hex[:8]}_{safe_filename}"
-        save_path = save_dir / fname
-        save_path.write_bytes(content)
-        photo_url = str(save_path)
-
-        # Append to photo_paths JSONB array
-        await db.execute(
-            """
-            UPDATE audit_visit_items SET photo_paths = photo_paths || $1::jsonb
-            WHERE id=$2 AND visit_id=$3
-        """,
-            _json.dumps([photo_url]),
-            item_id,
-            vid,
-        )
-        return {"message": "Đã upload ảnh", "path": photo_url}
-
-    return await _execute_mobile_replay_operation(
-        db=db,
-        scope=operation_scope,
-        request_hash=request_hash,
-        mutate=mutate,
-    )
+    return {"message": "Đã upload ảnh", "path": photo_url}
 
 
 # ── NCR CRUD ──
@@ -1240,47 +1066,22 @@ async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_db))
 
 
 @router.post("/{vid}/ncr")
-async def create_ncr(vid: str, req: dict, request: Request, user=Depends(get_current_user), db=Depends(get_db)):
+async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(vid)
     _require_provider(user)
-    audit_scope = await assert_audit_visit_mutation_scope(vid, user, db)
-    try:
-        idempotency_key = extract_required_idempotency_key(headers=request.headers, body=req, payload={})
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
-
-    operation_scope = build_operation_scope(
-        tenant_id=_row_value(audit_scope.visit, "provider_id"),
-        user_id=audit_scope.canonical_user_id,
-        visit_id=vid,
-        operation_type="ncr_create",
-        route_key="POST /audits/{vid}/ncr",
-        resource_key=f"visit:{vid}:ncr",
-        idempotency_key=idempotency_key,
+    row = await db.fetchrow(
+        """
+        INSERT INTO audit_ncr (visit_id, item_id, description, severity, corrective_action, deadline)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+    """,
+        vid,
+        req.get("item_id"),
+        req.get("description", ""),
+        req.get("severity", "minor"),
+        req.get("corrective_action"),
+        date.fromisoformat(req["deadline"]) if req.get("deadline") else None,
     )
-    request_hash = stable_request_hash(payload=req, resource_identity=operation_scope)
-
-    async def mutate() -> dict[str, Any]:
-        row = await db.fetchrow(
-            """
-            INSERT INTO audit_ncr (visit_id, item_id, description, severity, corrective_action, deadline)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
-        """,
-            vid,
-            req.get("item_id"),
-            req.get("description", ""),
-            req.get("severity", "minor"),
-            req.get("corrective_action"),
-            date.fromisoformat(req["deadline"]) if req.get("deadline") else None,
-        )
-        return {"id": str(row["id"]), "message": "Đã tạo NCR"}
-
-    return await _execute_mobile_replay_operation(
-        db=db,
-        scope=operation_scope,
-        request_hash=request_hash,
-        mutate=mutate,
-    )
+    return {"id": str(row["id"]), "message": "Đã tạo NCR"}
 
 
 @router.put("/{vid}/ncr/{ncr_id}")
@@ -1288,7 +1089,6 @@ async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_
     _validate_uuid(vid)
     _validate_uuid(ncr_id)
     _require_provider(user)
-    await assert_audit_visit_mutation_scope(vid, user, db)
     updates, params, idx = [], [], 1
     for field in ["description", "severity", "corrective_action", "status"]:
         if field in req:
@@ -1308,84 +1108,31 @@ async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_
 
 @router.post("/{vid}/ncr/{ncr_id}/photo")
 async def upload_ncr_photo(
-    vid: str,
-    ncr_id: str,
-    request: Request,
-    file: UploadFile = File(...),
-    idempotency_key: str | None = Form(None),
-    client_operation_id: str | None = Form(None),
-    user=Depends(get_current_user),
-    db=Depends(get_db),
+    vid: str, ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
 ):
     _validate_uuid(vid)
     _validate_uuid(ncr_id)
     _require_provider(user)
-    audit_scope = await assert_audit_visit_mutation_scope(vid, user, db)
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(413, "Ảnh tối đa 5MB")
 
-    try:
-        replay_key = extract_required_idempotency_key(
-            headers=request.headers,
-            body={"idempotency_key": idempotency_key, "client_operation_id": client_operation_id},
-            payload={},
-        )
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
+    save_dir = Path("docs") / "audit_photos" / vid / "ncr"
+    save_dir.mkdir(parents=True, exist_ok=True)
+    fname = f"{ncr_id}_{uuid4().hex[:8]}_{file.filename or 'photo.jpg'}"
+    save_path = save_dir / fname
+    save_path.write_bytes(content)
 
-    operation_scope = build_operation_scope(
-        tenant_id=_row_value(audit_scope.visit, "provider_id"),
-        user_id=audit_scope.canonical_user_id,
-        visit_id=vid,
-        operation_type="evidence_photo_upload:ncr_photo",
-        route_key="POST /audits/{vid}/ncr/{ncr_id}/photo",
-        resource_key=f"ncr:{ncr_id}",
-        idempotency_key=replay_key,
+    await db.execute(
+        """
+        UPDATE audit_ncr SET photo_paths = photo_paths || $1::jsonb WHERE id=$2 AND visit_id=$3
+    """,
+        _json.dumps([str(save_path)]),
+        ncr_id,
+        vid,
     )
-    request_hash = stable_request_hash(
-        payload={
-            "filename": file.filename or "photo.jpg",
-            "content_type": file.content_type,
-            "content_sha256": sha256(content).hexdigest(),
-            "content_size": len(content),
-        },
-        resource_identity=operation_scope,
-    )
-
-    async def mutate() -> dict[str, Any]:
-        ncr_exists = await db.fetchrow(
-            "SELECT id FROM audit_ncr WHERE id=$1 AND visit_id=$2",
-            ncr_id,
-            vid,
-        )
-        if not ncr_exists:
-            raise HTTPException(404, "NCR not found for audit visit")
-
-        save_dir = Path("docs") / "audit_photos" / vid / "ncr"
-        save_dir.mkdir(parents=True, exist_ok=True)
-        safe_filename = _safe_upload_filename(file.filename, "photo.jpg")
-        fname = f"{ncr_id}_{uuid4().hex[:8]}_{safe_filename}"
-        save_path = save_dir / fname
-        save_path.write_bytes(content)
-
-        await db.execute(
-            """
-            UPDATE audit_ncr SET photo_paths = photo_paths || $1::jsonb WHERE id=$2 AND visit_id=$3
-        """,
-            _json.dumps([str(save_path)]),
-            ncr_id,
-            vid,
-        )
-        return {"message": "Đã upload ảnh NCR", "path": str(save_path)}
-
-    return await _execute_mobile_replay_operation(
-        db=db,
-        scope=operation_scope,
-        request_hash=request_hash,
-        mutate=mutate,
-    )
+    return {"message": "Đã upload ảnh NCR", "path": str(save_path)}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1397,15 +1144,10 @@ async def upload_ncr_photo(
 async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
     _validate_uuid(vid)
     _require_provider(user)
-    if user.get("is_owner"):
-        raise HTTPException(403, "Chỉ kiểm tra viên được phân công mới được gửi báo cáo")
-    await assert_audit_visit_mutation_scope(vid, user, db)
 
     visit = await db.fetchrow("SELECT * FROM audit_visits WHERE id=$1", vid)
     if not visit:
         raise HTTPException(404)
-    if visit["status"] != "completed":
-        raise HTTPException(409, "Chỉ cuộc kiểm tra đã hoàn thành mới có thể tạo báo cáo")
 
     items = await db.fetch("SELECT * FROM audit_visit_items WHERE visit_id=$1 ORDER BY category, created_at", vid)
     ncrs = await db.fetch("SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY severity, created_at", vid)
@@ -1693,35 +1435,15 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
 
     save_dir = Path("docs") / "audit_reports"
     save_dir.mkdir(parents=True, exist_ok=True)
-    # Use a unique path so a concurrent/stale submission cannot overwrite a report
-    # already referenced by another audit state.
-    pdf_file = save_dir / f"{vid}_{uuid4().hex}.pdf"
+    pdf_file = save_dir / f"{vid}.pdf"
     pdf_file.write_bytes(buf.getvalue())
 
-    actor_id = await resolve_canonical_user_id(user, db)
-    if not actor_id:
-        pdf_file.unlink(missing_ok=True)
-        raise HTTPException(404, "User not found")
-    try:
-        updated = await db.fetchrow(
-            """
-            UPDATE audit_visits
-            SET report_pdf_path=$1, status='report_submitted', compliance_score=$2
-            WHERE id=$3 AND provider_id=$4 AND auditor_id=$5 AND status='completed'
-            RETURNING id
-            """,
-            str(pdf_file),
-            score,
-            vid,
-            visit["provider_id"],
-            actor_id,
-        )
-    except Exception:
-        pdf_file.unlink(missing_ok=True)
-        raise
-    if not updated:
-        pdf_file.unlink(missing_ok=True)
-        raise HTTPException(409, "Cuộc kiểm tra đã thay đổi; hãy tải lại rồi thử lại")
+    await db.execute(
+        "UPDATE audit_visits SET report_pdf_path=$1, status='report_submitted', compliance_score=$2 WHERE id=$3",
+        str(pdf_file),
+        score,
+        vid,
+    )
 
     log.info(f"[audit] Report generated for {vid}, score={score}")
     return {"message": "Đã tạo báo cáo", "score": score, "pdf_url": f"/api/api/audits/{vid}/report-pdf"}
@@ -1897,7 +1619,6 @@ async def upload_signature(
 ):
     _validate_uuid(vid)
     _require_provider(user)
-    await assert_audit_visit_mutation_scope(vid, user, db)
     if type not in ("auditor", "business"):
         raise HTTPException(400)
 

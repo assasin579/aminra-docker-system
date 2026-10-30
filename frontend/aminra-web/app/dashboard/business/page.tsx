@@ -43,7 +43,7 @@ interface DashboardStats {
 
 const STATUS_STYLE = {
   cb_approved: { label: "Duyệt bởi CB", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy800 },
-  compliant: { label: "Đạt", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy900 },
+  compliant: { label: "AI: phù hợp", bg: AMINRA_DASHBOARD_PALETTE.navy100, color: AMINRA_DASHBOARD_PALETTE.navy900 },
   needs_review: { label: "Cần sửa", bg: AMINRA_DASHBOARD_PALETTE.gold100, color: AMINRA_DASHBOARD_PALETTE.gold700 },
   non_compliant: { label: "Chưa đạt", bg: AMINRA_DASHBOARD_PALETTE.gold100, color: AMINRA_DASHBOARD_PALETTE.gold700 },
 };
@@ -149,7 +149,7 @@ export default function BusinessDashboard() {
     label,
     value,
     color: ({
-      "Đạt": AMINRA_DASHBOARD_PALETTE.navy900,
+      "AI: phù hợp": AMINRA_DASHBOARD_PALETTE.navy900,
       "Duyệt bởi CB": AMINRA_DASHBOARD_PALETTE.navy700,
       "Cần sửa": AMINRA_DASHBOARD_PALETTE.gold500,
       "Chưa đạt": AMINRA_DASHBOARD_PALETTE.gold700,
