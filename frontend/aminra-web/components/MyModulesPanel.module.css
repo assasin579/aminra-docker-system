@@ -58,3 +58,7 @@
   }
   .card:hover, .action:hover, .action:active { transform: none; }
 }
+
+/* Keep long module identifiers within their metadata column on mobile. */
+.card dl > div { min-width: 0; }
+.card code { overflow-wrap: anywhere; }
