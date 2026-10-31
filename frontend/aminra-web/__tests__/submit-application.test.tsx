@@ -8,7 +8,7 @@
  * - Empty state khi không có docs → hiện link "/documents"
  * - handleSubmit gửi đúng payload (provider_id, document_ids[], notes)
  * - handleSubmit gọi fetchSubs và đóng modal khi thành công
- * - handleSubmit hiện alert khi API lỗi, không đóng modal
+ * - handleSubmit hiện lỗi inline khi API lỗi, không đóng modal
  * - Button submit disabled khi chưa chọn provider hoặc không có doc nào được tick
  */
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
@@ -324,7 +324,7 @@ describe("handleSubmit", () => {
     fetchMock.mockRejectedValueOnce(new TypeError("connection lost after commit"));
     fireEvent.click(screen.getByText("HALCERT Vietnam"));
     fireEvent.click(screen.getByRole("button", { name: /Gửi 1 tài liệu/i }));
-    await waitFor(() => expect(vi.mocked(alert)).toHaveBeenCalled());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Giữ nguyên nội dung và thử lại");
     fetchMock.mockResolvedValueOnce(respond(200, { submission_id: "same-receipt" })).mockResolvedValueOnce(emptySubs());
     fireEvent.click(screen.getByRole("button", { name: /Gửi 1 tài liệu/i }));
     await waitFor(() => expect(screen.queryByTestId("modal")).not.toBeInTheDocument());
@@ -357,7 +357,7 @@ describe("handleSubmit", () => {
     expect(subsCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  test("hiện alert và giữ modal khi API trả lỗi", async () => {
+  test("hiện lỗi inline và giữ modal khi API trả lỗi", async () => {
     mockBizAuth();
     const fetchMock = await openModalWithData();
     fetchMock.mockResolvedValueOnce(
@@ -368,7 +368,8 @@ describe("handleSubmit", () => {
     fireEvent.click(screen.getByRole("button", { name: /Gửi 1 tài liệu/i }));
 
     await waitFor(() => {
-      expect(vi.mocked(alert)).toHaveBeenCalledWith("Provider không tồn tại");
+      expect(screen.getByRole("alert")).toHaveTextContent("Provider không tồn tại");
+      expect(vi.mocked(alert)).not.toHaveBeenCalled();
     });
 
     // Modal vẫn còn
@@ -405,4 +406,20 @@ describe("handleSubmit", () => {
       screen.getByRole("button", { name: /Gửi 1 tài liệu/i }),
     ).toBeInTheDocument();
   });
+});
+
+
+test.each(["revision_required", "future_unrecognized_state"])("renders honest workflow badge for %s", async status => {
+  mockBizAuth();
+  vi.mocked(fetch).mockResolvedValue(respond(200,{submissions:[{id:"sub-ux",status,company_name:"Doanh nghiệp QA",provider_name:"CB QA",submitted_at:"2026-10-30T00:00:00Z",doc_count:1,document_ids:["doc-1"]}]}));
+  render(<SubmissionsPage />);
+  expect(await screen.findByText(status==="revision_required" ? "Cần sửa hồ sơ" : "Chưa xác định trạng thái")).toBeInTheDocument();
+  expect(screen.queryByText("Chờ đơn vị chứng nhận tiếp nhận")).not.toBeInTheDocument();
+});
+
+test("business member cannot start an owner-only submission", async () => {
+  mockBizAuth();mockUseUserAuth.mockReturnValue({user:{...BIZ_USER,is_owner:false},token:"member",isAuthenticated:true,loading:false});
+  vi.mocked(fetch).mockResolvedValue(emptySubs());render(<SubmissionsPage />);
+  await screen.findByText("Chưa có hồ sơ nào");
+  expect(screen.queryByRole("button",{name:"Gửi hồ sơ mới"})).not.toBeInTheDocument();
 });

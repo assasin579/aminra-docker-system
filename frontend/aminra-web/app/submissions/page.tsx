@@ -64,16 +64,17 @@ const HALAL_CHECKLIST = [
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   {
     pending: {
-      label: "Chờ được audit",
+      label: "Chờ đơn vị chứng nhận tiếp nhận",
       color: "#F59E0B",
       bg: "rgba(245,158,11,0.12)",
     },
-    assigned: { label: "Đã gán auditor", color: "#0EA5E9", bg: "#E0F2FE" },
+    assigned: { label: "Đã phân công chuyên gia đánh giá", color: "#0EA5E9", bg: "#E0F2FE" },
     reviewing: {
       label: "Đang đánh giá",
       color: "#0EA5E9",
       bg: "rgba(14,165,233,0.12)",
     },
+    revision_required: { label: "Cần sửa hồ sơ", color: "#DC2626", bg: "#FEF2F2" },
     returned: {
       label: "Cần bổ sung",
       color: "#f87171",
@@ -166,6 +167,8 @@ function SubmissionsContent() {
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [submitNotes, setSubmitNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [actionError, setActionError] = useState("");
   const submitAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
 
   // Deadline state
@@ -174,6 +177,7 @@ function SubmissionsContent() {
 
   const isBusiness = user?.role === "business";
   const isProvider = user?.role === "provider";
+  const isBusinessOwner = isBusiness && user?.is_owner === true;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/business/login");
@@ -364,7 +368,9 @@ function SubmissionsContent() {
     docType: string | null,
   ) => {
     if (!token || !file) return;
+    if (!isBusinessOwner) return;
     setUploading(true);
+    setActionError("");
     try {
       // 1. Upload new revision
       const form = new FormData();
@@ -377,7 +383,7 @@ function SubmissionsContent() {
       });
       if (!uploadRes.ok) {
         const e = await uploadRes.json().catch(() => ({}));
-        alert(e.detail || "Upload thất bại");
+        setActionError(typeof e.detail === "string" ? e.detail : "Không tải được phiên bản mới. Tệp hiện tại vẫn được giữ; hãy thử lại.");
         return;
       }
       const { id: newDocId } = await uploadRes.json();
@@ -396,13 +402,15 @@ function SubmissionsContent() {
       );
       if (!replaceRes.ok) {
         const e = await replaceRes.json().catch(() => ({}));
-        alert(e.detail || "Cập nhật thất bại");
+        setActionError(typeof e.detail === "string" ? e.detail : "Chưa thay được tài liệu. Phiên bản đang dùng vẫn được giữ; hãy thử lại.");
         return;
       }
 
       // Reload the expanded submission without toggling it closed.
       await loadSubmissionDetails(subId);
       setRevisionDocType(null);
+    } catch {
+      setActionError("Chưa xác nhận được việc thay tài liệu. Hãy tải lại hồ sơ để kiểm tra trước khi thử lại.");
     } finally {
       setUploading(false);
     }
@@ -427,7 +435,7 @@ function SubmissionsContent() {
       );
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Thất bại");
+        setActionError(typeof e.detail === "string" ? e.detail : "Chưa hoàn tất được hồ sơ. Hãy thử lại.");
         return;
       }
       fetchSubs(); // refresh list — this submission will be gone
@@ -459,7 +467,7 @@ function SubmissionsContent() {
         setCertResult(d);
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(parseApiError(err, "Cấp chứng nhận thất bại"));
+        setActionError(parseApiError(err, "Cấp chứng nhận thất bại"));
       }
     } finally {
       setIssuingCert(false);
@@ -525,7 +533,7 @@ function SubmissionsContent() {
         setEvalOpen(null);
       } else {
         const e = await res.json().catch(() => ({}));
-        alert(e.detail || "Phê duyệt thất bại");
+        setActionError(typeof e.detail === "string" ? e.detail : "Chưa phê duyệt được hồ sơ. Hãy thử lại.");
       }
     } finally {
       setApprovingFinal(false);
@@ -533,6 +541,12 @@ function SubmissionsContent() {
   };
 
   const openSubmitModal = async () => {
+    if (!isBusinessOwner) return;
+    setSubmitError("");
+    setProviders([]);
+    setSelectedProvider("");
+    setSubmitDocs([]);
+    setSelectedDocs(new Set());
     try {
       const [provRes, docRes] = await Promise.all([
         fetch("/api/api/submissions/providers", {
@@ -544,6 +558,7 @@ function SubmissionsContent() {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
+      if (!provRes.ok || !docRes.ok) throw new Error("Không tải được danh sách đơn vị chứng nhận hoặc tài liệu. Đóng và mở lại hộp gửi hồ sơ để thử lại.");
       if (provRes.ok) {
         const d = await provRes.json();
         setProviders(d.providers || []);
@@ -554,12 +569,13 @@ function SubmissionsContent() {
         setSubmitDocs(docs);
         setSelectedDocs(new Set(docs.map((doc: any) => doc.id)));
       }
-    } catch {}
+    } catch (error) { setSubmitError(error instanceof Error ? error.message : "Không tải được dữ liệu gửi hồ sơ"); }
     setShowSubmit(true);
   };
 
   const handleSubmit = async () => {
-    if (!selectedProvider || selectedDocs.size === 0) return;
+    if (!isBusinessOwner || !selectedProvider || selectedDocs.size === 0) return;
+    setSubmitError("");
     setSubmitting(true);
     const payload = {
       provider_id: selectedProvider,
@@ -595,8 +611,8 @@ function SubmissionsContent() {
       setSubmitNotes("");
       setSelectedProvider("");
       fetchSubs();
-    } catch (e: any) {
-      alert(e.message);
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error && !(e instanceof TypeError) ? e.message : "Chưa nhận được xác nhận gửi. Giữ nguyên nội dung và thử lại để kiểm tra kết quả.");
     } finally {
       setSubmitting(false);
     }
@@ -712,7 +728,7 @@ function SubmissionsContent() {
               </p>
             </div>
           </div>
-          {isBusiness && (
+          {isBusinessOwner && (
             <button
               onClick={openSubmitModal}
               className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
@@ -740,6 +756,8 @@ function SubmissionsContent() {
           )}
         </div>
       </div>
+
+      {actionError && !expanded && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
 
       {/* Provider: Folder view grouped by company */}
       {isProvider &&
@@ -955,7 +973,7 @@ function SubmissionsContent() {
             ? subs.filter((s) => s.company_name === selectedCompany)
             : subs
           ).map((sub, idx) => {
-            const st = STATUS_MAP[sub.status] || STATUS_MAP.pending;
+            const st = STATUS_MAP[sub.status] || { label: "Chưa xác định trạng thái", color: "#64748B", bg: "#F1F5F9" };
             const isOpen = expanded === sub.id;
             return (
               <div
@@ -1113,6 +1131,7 @@ function SubmissionsContent() {
                     className="px-5 pb-5"
                     style={{ borderTop: "1px solid #E2E8F0" }}
                   >
+                    {actionError && <p role="alert" className="my-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
                     {/* Status actions — provider only */}
                     {isProvider && (
                       <div className="flex flex-wrap items-center gap-2 py-3">
@@ -1331,7 +1350,7 @@ function SubmissionsContent() {
                             )}
                             <div className="flex items-center gap-1.5">
                               {/* Business: reupload button */}
-                              {isBusiness && sub.status !== "approved" && (
+                              {isBusinessOwner && ["pending", "assigned", "reviewing", "returned", "revision_required"].includes(sub.status) && (
                                 <button
                                   onClick={() => {
                                     setReuploadDocId(doc.id);
@@ -1341,7 +1360,7 @@ function SubmissionsContent() {
                                     );
                                   }}
                                   disabled={uploading}
-                                  title="Upload phiên bản mới"
+                                  title="Thay bằng phiên bản mới"
                                   className="w-7 h-7 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                                   style={{
                                     background: "rgba(245,158,11,0.1)",
@@ -1489,7 +1508,7 @@ function SubmissionsContent() {
                     {/* Certificate button removed — cert issued at company level from folder view */}
 
                     {/* Business: Save & Finalize when approved */}
-                    {isBusiness && sub.status === "approved" && (
+                    {isBusinessOwner && sub.status === "approved" && (
                       <div className="pt-3 pb-1">
                         <div
                           className="flex items-center gap-3 p-4 rounded-xl"
@@ -1551,6 +1570,7 @@ function SubmissionsContent() {
                           status={sub.status}
                           role={user?.role as "business" | "provider"}
                           token={token}
+                          canResubmit={isBusinessOwner}
                           documents={subDocs.map((d) => ({
                             id: d.id,
                             filename: d.original_filename,
@@ -1928,7 +1948,7 @@ function SubmissionsContent() {
         </Modal>
       )}
       {/* Submit new application modal (business only) */}
-      {showSubmit && (
+      {showSubmit && isBusinessOwner && (
         <Modal onClose={() => setShowSubmit(false)}>
           <div
             className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
@@ -1940,6 +1960,7 @@ function SubmissionsContent() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {submitError && <p role="alert" className="m-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{submitError}</p>}
             <div
               className="px-6 py-5 flex-shrink-0"
               style={{ borderBottom: "1px solid #E2E8F0" }}
@@ -2301,7 +2322,7 @@ function SubmissionsContent() {
                             />
                           </svg>
                         </button>
-                        {isBusiness && !isCurrent && expanded && (
+                        {isBusinessOwner && !isCurrent && expanded && (
                           <button
                             onClick={() => {
                               const currentDoc = subDocs.find(

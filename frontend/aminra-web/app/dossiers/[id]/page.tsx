@@ -8,7 +8,7 @@ import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
-import DossierDocumentUpload from "@/components/dossiers/DossierDocumentUpload";
+import { DOC_TYPE_LABEL_VI, canEditDossierDocuments } from "@/lib/dossierWorkflow";
 
 interface DocTypeReq {
   doc_type: string;
@@ -66,6 +66,7 @@ interface DossierReadiness {
   readiness_percent: number | null;
   certificate_issue_blocked: boolean;
   safe_public_trace_available: boolean;
+  requirement_slots?: Array<{ submission_id?: string | null }>;
   next_action: string | null;
   next_actor_role: string | null;
   next_action_owner_role?: string | null;
@@ -85,25 +86,11 @@ const STATUS_LABEL: Record<string, { vi: string; color: string }> = {
   draft: { vi: "Bản nháp", color: "#6B7280" },
   in_progress: { vi: "Đang chuẩn bị", color: "#0A1F44" },
   submitted: { vi: "Đã nộp", color: "#0891B2" },
-  cert_issued: { vi: "Đã cấp cert", color: "#16A34A" },
+  cert_issued: { vi: "Đã cấp chứng nhận", color: "#16A34A" },
   cancelled: { vi: "Đã hủy", color: "#DC2626" },
 };
 
-const DOC_TYPE_LABEL_VI: Record<string, string> = {
-  company_profile: "Hồ sơ năng lực công ty",
-  halal_policy: "Chính sách Halal",
-  has_manual: "Sổ tay HAS / Halal Manual",
-  internal_halal_committee: "Quyết định thành lập IHC",
-  ingredient_raw_material: "Danh mục nguyên vật liệu",
-  process_flow_chart: "Lưu đồ quy trình sản xuất",
-  sop_personal_hygiene: "SOP — Vệ sinh cá nhân",
-  sop_cleaning_sanitation: "SOP — Vệ sinh cơ sở",
-  sop_pest_control: "SOP — Kiểm soát côn trùng",
-  sop_supplier_evaluation: "SOP — Đánh giá nhà cung cấp",
-  sop_traceability: "SOP — Truy xuất nguồn gốc",
-  sop_complaint_handling: "SOP — Xử lý khiếu nại",
-  generic: "Tài liệu khác",
-};
+
 
 function readinessItemLabel(item: string | ReadinessItem): string {
   if (typeof item === "string") return DOC_TYPE_LABEL_VI[item] ?? item;
@@ -119,6 +106,7 @@ const NEXT_ACTION_LABEL: Record<string, string> = {
   configure_required_documents: "Cấu hình danh mục tài liệu bắt buộc",
   upload_required_documents: "Tải lên tài liệu bắt buộc",
   replace_rejected_documents: "Thay thế tài liệu bị từ chối",
+  submit_dossier_to_cb: "Gửi hồ sơ cho đơn vị chứng nhận",
   review_uploaded_documents: "Chờ đơn vị chứng nhận xem xét tài liệu",
   submit_capa_evidence: "Gửi bằng chứng khắc phục (CAPA)",
   verify_capa_evidence: "Chờ xác minh bằng chứng CAPA",
@@ -142,6 +130,7 @@ const DOSSIER_STATE_LABEL: Record<string, string> = {
   requirements_unconfigured: "Chưa cấu hình checklist",
   requirements_pending: "Còn thiếu hồ sơ",
   documents_rejected: "Cần sửa tài liệu bị từ chối",
+  documents_ready_to_submit: "Đã chuẩn bị tài liệu — chưa gửi đơn vị chứng nhận",
   documents_in_review: "Tài liệu đang được thẩm định",
   ncr_open: "Còn điểm không phù hợp cần khắc phục",
   capa_in_review: "CAPA đang được xác minh",
@@ -230,6 +219,10 @@ export default function DossierDetailPage({
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const idempotencyBySlot = useRef<Record<string, { signature: string; key: string }>>({});
 
+  const canEditDocuments = canEditDossierDocuments(user, dossier);
+  const hasSubmission = Array.isArray(readiness?.requirement_slots) && readiness.requirement_slots.some((slot) => Boolean(slot.submission_id));
+  const isClosed = dossier ? ["cancelled", "cert_issued"].includes(dossier.status) : false;
+
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !token) {
@@ -254,7 +247,7 @@ export default function DossierDetailPage({
         const dossierPayload: DossierDetail = await res.json();
         setDossier(dossierPayload);
         setReadiness(readinessPayload);
-        if (dossierPayload.requirements_binding_status === "bound") {
+        if (canEditDossierDocuments(user, dossierPayload)) {
           const availableRes = await fetch(`/api/dossiers/${id}/attachable-documents`, { headers: authHeaders });
           if (availableRes.ok) {
             const availablePayload = await availableRes.json();
@@ -274,10 +267,10 @@ export default function DossierDetailPage({
         setLoading(false);
       }
     })();
-  }, [authLoading, isAuthenticated, token, id, router]);
+  }, [authLoading, isAuthenticated, token, id, router, user?.role, user?.is_owner]);
 
   const attachForSlot = async (docType: string) => {
-    if (!token || attachmentBusyType) return;
+    if (!token || attachmentBusyType || !canEditDocuments) return;
     const selectedFile = selectedFileByType[docType] ?? null;
     const selectedDocumentId = selectedDocumentByType[docType] ?? "";
     if (Number(Boolean(selectedFile)) + Number(Boolean(selectedDocumentId)) !== 1) {
@@ -329,7 +322,7 @@ export default function DossierDetailPage({
       setSelectedDocumentByType((previous) => ({ ...previous, [docType]: "" }));
       setSelectedFileByType((previous) => ({ ...previous, [docType]: null }));
       delete idempotencyBySlot.current[docType];
-      setAttachmentMessage("Tài liệu đã được đính kèm vào slot và checklist đã cập nhật.");
+      setAttachmentMessage("Tài liệu đã được đính kèm vào hồ sơ và checklist đã cập nhật.");
     } catch (cause) {
       setAttachmentError(cause instanceof Error ? cause.message : "Không thể đính kèm tài liệu");
     } finally {
@@ -415,7 +408,6 @@ export default function DossierDetailPage({
           </span>
         </div>
 
-        {dossier.requirements_binding_status === "bound" && token && dossier.status !== "cert_issued" && <DossierDocumentUpload dossierId={id} token={token} slots={dossier.doc_types} />}
 
         {/* Progress */}
         <div
@@ -460,7 +452,7 @@ export default function DossierDetailPage({
                 </h2>
                 {readiness.state && (
                   <p className="mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold" data-testid="dossier-readiness-state" role="status">
-                    {DOSSIER_STATE_LABEL[readiness.state] ?? "Đang cập nhật trạng thái hồ sơ"}
+                    {isClosed ? st.vi : DOSSIER_STATE_LABEL[readiness.state] ?? "Đang cập nhật trạng thái hồ sơ"}
                   </p>
                 )}
                 <p className="text-xs mt-1" style={{ color: "#92400E" }}>
@@ -478,7 +470,7 @@ export default function DossierDetailPage({
                   Hành động tiếp theo
                 </div>
                 <div className="text-sm mt-1" style={{ color: "#0A1F44" }}>
-                  {readiness.next_action ? NEXT_ACTION_LABEL[readiness.next_action] ?? "Đang cập nhật bước tiếp theo" : "Chưa có hành động tiếp theo"}
+                  {isClosed ? "Hồ sơ đã đóng; bạn có thể xem lại lịch sử" : readiness.next_action ? NEXT_ACTION_LABEL[readiness.next_action] ?? "Đang cập nhật bước tiếp theo" : "Chưa có hành động tiếp theo"}
                 </div>
               </div>
               <div className="rounded-xl p-3" style={{ background: "#FFFFFF", border: "1px solid #FDE68A" }}>
@@ -486,7 +478,7 @@ export default function DossierDetailPage({
                   Vai trò phụ trách
                 </div>
                 <div className="text-sm mt-1" style={{ color: "#0A1F44" }}>
-                  {(readiness.next_action_owner_role || readiness.next_actor_role) ? ACTOR_ROLE_LABEL[readiness.next_action_owner_role || readiness.next_actor_role || ""] ?? "Đang xác định vai trò" : "Chưa chỉ định"}
+                  {isClosed ? "Không còn thao tác chỉnh sửa" : (readiness.next_action_owner_role || readiness.next_actor_role) ? ACTOR_ROLE_LABEL[readiness.next_action_owner_role || readiness.next_actor_role || ""] ?? "Đang xác định vai trò" : "Chưa chỉ định"}
                 </div>
               </div>
               <div className="rounded-xl p-3" style={{ background: "#FFFFFF", border: "1px solid #FDE68A" }}>
@@ -642,12 +634,12 @@ export default function DossierDetailPage({
                         Chưa có tài liệu
                       </div>
                     )}
-                    {user?.role === "business" && dossier.requirements_binding_status === "bound" && (
+                    {canEditDocuments && (
                       <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
                         <label className="block text-xs font-medium text-slate-700">
                           Dùng tài liệu đã có
                           <select
-                            aria-label={`Tài liệu có sẵn cho ${dt.doc_type}`}
+                            aria-label={`Tài liệu có sẵn cho ${DOC_TYPE_LABEL_VI[dt.doc_type] ?? dt.doc_type}`}
                             value={selectedDocumentByType[dt.doc_type] ?? ""}
                             onChange={(event) => {
                               setSelectedDocumentByType((previous) => ({ ...previous, [dt.doc_type]: event.target.value }));
@@ -667,7 +659,7 @@ export default function DossierDetailPage({
                         <label className="block text-xs font-medium text-slate-700">
                           Hoặc tải tệp mới
                           <input
-                            aria-label={`Tệp mới cho ${dt.doc_type}`}
+                            aria-label={`Tệp mới cho ${DOC_TYPE_LABEL_VI[dt.doc_type] ?? dt.doc_type}`}
                             type="file"
                             accept=".pdf,.txt,.md,.docx,.odt,.ppt,.pptx"
                             onChange={(event) => {
@@ -685,7 +677,7 @@ export default function DossierDetailPage({
                           className="min-h-10 rounded-lg px-3 text-sm font-semibold text-white disabled:opacity-50"
                           style={{ background: "#0A1F44" }}
                         >
-                          {attachmentBusyType === dt.doc_type ? "Đang đính kèm…" : "Đính kèm slot"}
+                          {attachmentBusyType === dt.doc_type ? "Đang đính kèm…" : "Đính kèm tài liệu"}
                         </button>
                       </div>
                     )}
@@ -698,9 +690,7 @@ export default function DossierDetailPage({
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3 sm:flex-row">
-          {user?.role === "business" && user.is_owner === true
-            && dossier.requirements_binding_status === "bound" && dossier.documents.length > 0
-            && !["cancelled", "cert_issued"].includes(dossier.status) && (
+          {canEditDocuments && !hasSubmission && dossier.documents.length > 0 && (
               <Link
                 href={`/submissions?dossier_id=${dossier.id}`}
                 data-testid="dossier-submit-cta"
@@ -710,6 +700,7 @@ export default function DossierDetailPage({
                 Gửi hồ sơ cho CB
               </Link>
             )}
+          {canEditDocuments && <>
           <Link
             href={`/create-document?dossier=${dossier.id}`}
             className="flex-1 text-center px-5 py-2.5 rounded-xl font-semibold text-sm"
@@ -728,8 +719,10 @@ export default function DossierDetailPage({
             style={{ background: "#0A1F44" }}
             data-testid="dossier-upload-doc-cta"
           >
-            ↑ Đính kèm tài liệu theo slot
+            ↑ Bổ sung tài liệu vào hồ sơ
           </a>
+          </>}
+          {hasSubmission && <Link href="/submissions" className="rounded-xl border border-slate-300 px-5 py-2.5 text-center text-sm font-semibold">Xem hồ sơ đã gửi</Link>}
         </div>
 
         {dossier.notes && (
