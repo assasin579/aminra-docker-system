@@ -687,7 +687,7 @@ export default function DocumentsPage() {
             {pendingTypes.map(doc => (
               <div key={doc.doc_type || doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-3 py-3 text-sm">
                 <span className="min-w-0 break-words font-medium text-navy-900">{doc.doc_type ? DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type_label || doc.doc_type : `Chưa phân loại: ${doc.original_filename}`}</span>
-                {doc.doc_type ? <button type="button" aria-label={`Chọn bản chính cho ${DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}`} onClick={() => void openHistory(doc.doc_type!)} disabled={loadingHistory !== null} className="rounded-lg bg-navy-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Chọn bản chính</button>
+                {doc.doc_type ? <button type="button" aria-label={`Chọn bản chính cho ${DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}`} onClick={() => void openHistory(doc.doc_type!)} disabled={loadingHistory !== null} className="rounded-lg bg-[#0a1f44] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Chọn bản chính</button>
                   : <Link href="/upload" className="text-xs font-semibold text-teal-700 underline">Phân loại tài liệu trước</Link>}
               </div>
             ))}
@@ -929,8 +929,7 @@ export default function DocumentsPage() {
               >
                 {/* Row 1: score + doc type + status + actions */}
                 <div
-                  className="grid items-center gap-4"
-                  style={{ gridTemplateColumns: "auto 1fr auto" }}
+                  className="grid grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4"
                 >
                   <div aria-label="Kết quả đánh giá"><span className="text-xs text-slate-500">AI</span><MiniScore score={doc.ai_score ?? null} />{doc.cb_score != null && <span className="text-xs">CB: {doc.cb_score}/100</span>}</div>
 
@@ -985,7 +984,7 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Actions — compact icon buttons */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="col-span-2 lg:col-span-1 flex flex-wrap items-center gap-1.5">
                     {/* AI Evaluate button */}
                     <button
                       onClick={() => setEvalLangModal(doc.id)}
