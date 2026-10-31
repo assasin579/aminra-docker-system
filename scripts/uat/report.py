@@ -2,7 +2,7 @@
 import base64, csv, html, json, re
 from collections import Counter
 from pathlib import Path
-ID=re.compile(r'@(AUTH|ORG|CB|STD|PRD|SUP|TRC|DOC|DOS|SUB|REV|AUD|MOB|DEC|CERT|VER|SUR|APL|AI|DASH|NOT|ADM|DATA|UX|E2E)-\d{2}\b')
+ID=re.compile(r'@([A-Z][A-Z0-9]*-\d{2})\b')
 def generate(baseline:Path,output:Path,state:dict):
  with baseline.open(encoding='utf-8-sig') as source:
   rows=[r for r in csv.DictReader(source) if not r.get('case_id')]
@@ -34,7 +34,7 @@ def generate(baseline:Path,output:Path,state:dict):
      elif t.get('status')=='flaky' or (len(results)>1 and any(s!='passed' for s in statuses)):status='FLAKY'
      elif all(s=='passed' for s in statuses):status='PASS'
      else:status='FAIL'
-     ids=re.findall(r'@([A-Z]+-\d{2})\b',spec['title'])
+     ids=ID.findall(spec['title'])
      cases.append({'surface':'api' if spec['title'].startswith('[API]') else 'browser','name':spec['title'],'project':t.get('projectName'),'status':status,
        'controls':ids,'file':spec.get('file'),'line':spec.get('line'),
        'evidence':evidence(results,len(cases)),

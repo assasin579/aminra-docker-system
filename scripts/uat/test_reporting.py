@@ -47,4 +47,13 @@ class ReportingTests(unittest.TestCase):
  def test_invalid_inline_evidence_is_not_silently_accepted(self):
   (self.out/'playwright.json').write_text(json.dumps({'suites':[{'specs':[{'title':'case @DOC-05','tests':[{'results':[{'status':'passed','attachments':[{'body':'not base64!'}]}]}]}]}]}))
   with self.assertRaises(ValueError):generate(self.baseline,self.out,self.state)
+ def test_registered_and_numeric_prefixes_link_without_promoting_controls(self):
+  ids=['CMP-01','DAT-01','OPS-06','RPT-06','E2E-02']
+  with self.baseline.open('w',newline='') as f:
+   writer=csv.DictWriter(f,fieldnames=['id','type','name','case_id']);writer.writeheader();writer.writerows({'id':i,'type':'Control','name':i} for i in ids)
+  result=self.result(title='verified case '+' '.join('@'+i for i in ids))
+  self.assertEqual(set(result['cases'][0]['controls']),set(ids))
+  self.assertTrue(all(c['automation_coverage']=='Partial' and c['status']=='Blocked' for c in result['controls']))
+ def test_unknown_numeric_prefix_is_rejected_not_silently_dropped(self):
+  with self.assertRaises(ValueError):self.result(title='case @FUTURE2-99')
 if __name__=='__main__':unittest.main()
