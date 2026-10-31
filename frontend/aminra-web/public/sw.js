@@ -1,6 +1,6 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v9";
-const OFFLINE_URL = "/audits";
+const CACHE_NAME = "aminra-v10";
+const OFFLINE_URL = "/offline.html";
 // URLs the SW must NEVER serve from cache (always go to network).
 // Auth/admin identity paths are account-switch critical: cached responses/pages
 // can resurrect a prior browser profile after logout/login as another account.
@@ -25,7 +25,7 @@ const NEVER_CACHE_PATTERNS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([OFFLINE_URL, "/audits/templates"]);
+      return cache.addAll([OFFLINE_URL]);
     }),
   );
   self.skipWaiting();
@@ -74,44 +74,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // API calls: network-first, fallback to cache
-  if (url.pathname.startsWith("/api/")) {
-    // Some endpoints (template downloads) MUST never be served from cache —
-    // admin rotates content, stale = wrong template delivered to business.
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (
-            !skipCache &&
-            response.ok &&
-            request.url.includes("/api/api/audits/")
-          ) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => (skipCache ? Response.error() : caches.match(request))),
-    );
+  // Authorization headers do not partition Cache Storage. Keep all API and
+  // private navigation/RSC responses network-only, including offline failures.
+  const staticAsset = url.pathname.startsWith("/_next/static/") ||
+    /^\/aminra-[a-z0-9-]+\.png$/.test(url.pathname) ||
+    url.pathname === OFFLINE_URL;
+  if (!staticAsset || request.headers.has("Authorization")) {
+    event.respondWith(fetch(request));
     return;
   }
+  event.respondWith(fetch(request).then((response) => {
+    if (response.ok) {
+      const clone = response.clone();
+      event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, clone)));
+    }
+    return response;
+  }).catch(() => caches.match(request).then(cached => cached || Response.error())));
 
-  // Pages: network-first, fallback to cache, then offline page
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(request).then((cached) => {
-          return cached || caches.match(OFFLINE_URL);
-        });
-      }),
-  );
 });
 
 // Web push: show notification when server pushes via VAPID

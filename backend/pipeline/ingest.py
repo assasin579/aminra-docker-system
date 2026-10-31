@@ -369,7 +369,7 @@ def ensure_collection(client, reset=False):
         log.info(f"  Collection '{COLLECTION_NAME}' da ton tai ({count} vectors).")
 
 
-def upsert_chunks(client, chunks, vectors):
+def upsert_chunks(client, chunks, vectors, *, public_reference=False):
     from qdrant_client.models import PointStruct
 
     BATCH = 128
@@ -381,7 +381,7 @@ def upsert_chunks(client, chunks, vectors):
             PointStruct(
                 id=abs(int(c.id[:8], 16)),
                 vector=v,
-                payload=asdict(c),
+                payload={**asdict(c), "public_reference": public_reference is True},
             )
             for c, v in zip(batch_chunks, batch_vectors)
         ]
@@ -391,7 +391,7 @@ def upsert_chunks(client, chunks, vectors):
     return total
 
 
-def ingest_file(path: Path, client, reset_done=False):
+def ingest_file(path: Path, client, reset_done=False, *, public_reference=False):
     log.info(f"\n{'=' * 60}")
     log.info(f"Dang xu ly: {path.name}")
     source_type, slides = extract(path)
@@ -403,10 +403,10 @@ def ingest_file(path: Path, client, reset_done=False):
         log.warning(f"  Khong tao duoc chunk tu {path.name}")
         return 0
     vectors = embed_chunks(chunks)
-    return upsert_chunks(client, chunks, vectors)
+    return upsert_chunks(client, chunks, vectors, public_reference=public_reference)
 
 
-def ingest_dir(dir_path: Path, client, reset=False):
+def ingest_dir(dir_path: Path, client, reset=False, *, public_reference=False):
     supported = {".pptx", ".ppt", ".pdf", ".txt", ".md"}
     files = [f for f in sorted(dir_path.iterdir()) if f.suffix.lower() in supported]
     if not files:
@@ -415,7 +415,7 @@ def ingest_dir(dir_path: Path, client, reset=False):
     ensure_collection(client, reset=reset)
     summary = {}
     for i, f in enumerate(files):
-        count = ingest_file(f, client, reset_done=(i > 0 or not reset))
+        count = ingest_file(f, client, reset_done=(i > 0 or not reset), public_reference=public_reference)
         summary[f.name] = count
     total = sum(summary.values())
     log.info(f"\n{'=' * 60}")
@@ -431,14 +431,15 @@ def main():
     group.add_argument("--file", type=Path, help="Ingest 1 file (PPTX/PDF/TXT)")
     group.add_argument("--dir", type=Path, help="Ingest tat ca files trong thu muc")
     parser.add_argument("--reset", action="store_true", help="Xoa collection cu va ingest lai")
+    parser.add_argument("--public-reference", action="store_true", help="Publish reviewed non-private reference material to shared knowledge")
     args = parser.parse_args()
     client = get_qdrant_client()
     if args.file:
         ensure_collection(client, reset=args.reset)
-        count = ingest_file(args.file, client)
+        count = ingest_file(args.file, client, public_reference=args.public_reference)
         log.info(f"\nKet qua: {count} chunks tu {args.file.name}")
     else:
-        ingest_dir(args.dir, client, reset=args.reset)
+        ingest_dir(args.dir, client, reset=args.reset, public_reference=args.public_reference)
 
 
 if __name__ == "__main__":

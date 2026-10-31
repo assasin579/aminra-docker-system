@@ -95,6 +95,18 @@ app = FastAPI(
     docs_url=None if _is_prod else "/docs",
     redoc_url=None if _is_prod else "/redoc",
 )
+@app.middleware("http")
+async def private_response_cache_boundary(request: Request, call_next):
+    response = await call_next(request)
+    if request.headers.get("authorization") or request.query_params.get("token"):
+        response.headers["Cache-Control"] = "private, no-store, max-age=0"
+        response.headers["CDN-Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Vary"] = ", ".join(filter(None, [response.headers.get("Vary"), "Authorization", "Cookie"]))
+    return response
+
+
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://aminra.org,https://dev-web.silvergem.org,https://fe.silvergem.org").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -2146,6 +2158,14 @@ async def ingest_document(
     user: dict = Depends(get_current_user),  # C12 fix — require auth
 ):
     """Upload + queue RAG ingest. Returns job_id; poll /jobs/{job_id} for progress."""
+    # This endpoint publishes shared reference knowledge. Private documents
+    # must use /evaluate/library upload and never enter the shared corpus.
+    from auth.jwt_utils import require_admin
+    await require_admin(user)
+    from services.private_resources import resolve_private_scope
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
     content = await validate_upload(file)
 
     # C7 fix — sanitize filename + UUID prefix to prevent traversal & cross-tenant overwrites.
@@ -2158,10 +2178,10 @@ async def ingest_document(
         raise HTTPException(400, "Invalid file path")
     save_path.write_bytes(content)
 
-    from services.jobs import enqueue
+    from services.jobs import enqueue_scoped
 
     try:
-        job = await enqueue("ingest_document", path=str(save_path))
+        job = await enqueue_scoped("ingest_document", scope, path=str(save_path), public_reference=True)
     except Exception as e:
         log.exception("[ingest] enqueue failed")
         raise HTTPException(503, f"Job queue unavailable: {e}")
@@ -2172,9 +2192,12 @@ async def ingest_document(
 @app.get("/jobs/{job_id}")
 async def get_job(job_id: str, user: dict = Depends(get_current_user)):
     """Poll a background job by ID. Auth required to avoid anonymous job-result IDOR."""
-    from services.jobs import get_job_status
-
-    view = await get_job_status(job_id)
+    from services.jobs import get_scoped_job_status
+    from services.private_resources import resolve_private_scope
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
+    view = await get_scoped_job_status(job_id, scope)
     return {
         "job_id": view.job_id,
         "status": view.status,
@@ -2532,9 +2555,18 @@ async def save_review(filename: str, review: AuditorReview, user: dict = Depends
     review.filename = filename
     if not review.reviewed_at:
         review.reviewed_at = datetime.utcnow().isoformat()
-    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)
-    path = REVIEWS_DIR / f"{safe_name}.json"
-    path.write_text(_json.dumps(review.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
+    from services.private_resources import resolve_private_scope, review_path
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
+    path = review_path(REVIEWS_DIR, scope, filename)
+    import tempfile
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # Readers see the complete old or new review, never a partially written file.
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, encoding="utf-8", delete=False) as draft:
+        draft.write(_json.dumps(review.model_dump(), ensure_ascii=False, indent=2))
+        temporary_path = Path(draft.name)
+    os.replace(temporary_path, path)
     return {"message": "Review saved", "filename": filename}
 
 
@@ -2542,8 +2574,11 @@ async def save_review(filename: str, review: AuditorReview, user: dict = Depends
 async def get_review(filename: str, user: dict = Depends(get_current_user)):
     import json as _json
 
-    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)
-    path = REVIEWS_DIR / f"{safe_name}.json"
+    from services.private_resources import resolve_private_scope, review_path
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
+    path = review_path(REVIEWS_DIR, scope, filename)
     if not path.exists():
         return {"exists": False, "review": None}
     data = _json.loads(path.read_text(encoding="utf-8"))

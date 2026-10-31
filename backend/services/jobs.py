@@ -36,7 +36,7 @@ def _redis_settings_from_env() -> RedisSettings:
 # ── Worker tasks ───────────────────────────────────────────────────────────
 
 
-async def ingest_document(ctx: dict, path: str) -> dict:
+async def ingest_document(ctx: dict, path: str, public_reference: bool = False) -> dict:
     """Run RAG ingest in worker process. Returns {filename, chunks, status}."""
     from pipeline.ingest import ingest_file, ensure_collection, get_qdrant_client
 
@@ -45,7 +45,7 @@ async def ingest_document(ctx: dict, path: str) -> dict:
     try:
         client = get_qdrant_client()
         ensure_collection(client, reset=False)
-        chunks = ingest_file(p, client)
+        chunks = ingest_file(p, client, public_reference=public_reference is True)
         log.info("[job:ingest_document] done path=%s chunks=%d", p.name, chunks)
         return {"filename": p.name, "chunks": chunks, "status": "completed"}
     except Exception as e:
@@ -288,3 +288,35 @@ async def get_job_status(job_id: str) -> JobView:
         except Exception as e:
             return JobView(job_id=job_id, status="failed", result=None, error=str(e))
     return JobView(job_id=job_id, status=status.value, result=None, error=None)
+
+
+async def enqueue_scoped(function: str, scope, **kwargs: Any) -> EnqueueResult:
+    """Bind a public job handle before enqueue; legacy jobs have no public access."""
+    import json
+    from uuid import uuid4
+    pool = await get_pool()
+    job_id = str(uuid4())
+    await pool.set("aminra:job-owner:" + job_id,
+                   json.dumps([str(scope.actor_id), str(scope.tenant_id)]), ex=90600)
+    job = await pool.enqueue_job(function, _job_id=job_id, **kwargs)
+    if job is None:
+        raise RuntimeError("Failed to enqueue scoped job")
+    return EnqueueResult(job_id=job.job_id, function=function)
+
+
+async def get_scoped_job_status(job_id: str, scope) -> JobView:
+    """Check actor AND tenant before reading job result/error payloads."""
+    import json
+    from fastapi import HTTPException
+    pool = await get_pool()
+    raw = await pool.get("aminra:job-owner:" + job_id)
+    try:
+        permitted = json.loads(raw) == [str(scope.actor_id), str(scope.tenant_id)] if raw else False
+    except (ValueError, TypeError):
+        permitted = False
+    if not permitted:
+        raise HTTPException(404, "Job not found")
+    view = await get_job_status(job_id)
+    if view.status == "not_found":
+        raise HTTPException(404, "Job not found")
+    return view

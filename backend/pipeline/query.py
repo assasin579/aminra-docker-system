@@ -219,6 +219,8 @@ def hybrid_search(query_data, top_k=TOP_K, topic_filter=None):
     original_query = enhanced["original"]
     strategy = enhanced["strategy"]
 
+    # Unclassified legacy and private chunks are never shared knowledge.
+    public_reference = FieldCondition(key="public_reference", match=MatchValue(value=True))
     all_points = []
     seen_ids = set()
 
@@ -226,7 +228,7 @@ def hybrid_search(query_data, top_k=TOP_K, topic_filter=None):
     for expanded_query in enhanced["expanded"]:
         try:
             # Tìm exact match trong slide_title
-            title_filter = Filter(must=[FieldCondition(key="slide_title", match=MatchText(text=expanded_query))])
+            title_filter = Filter(must=[public_reference, FieldCondition(key="slide_title", match=MatchText(text=expanded_query))])
 
             title_results = client.query_points(
                 collection_name=COLLECTION_NAME,
@@ -244,7 +246,7 @@ def hybrid_search(query_data, top_k=TOP_K, topic_filter=None):
                     seen_ids.add(point.id)
 
             # Tìm exact match trong text
-            text_filter = Filter(must=[FieldCondition(key="text", match=MatchText(text=expanded_query))])
+            text_filter = Filter(must=[public_reference, FieldCondition(key="text", match=MatchText(text=expanded_query))])
 
             text_results = client.query_points(
                 collection_name=COLLECTION_NAME,
@@ -264,9 +266,10 @@ def hybrid_search(query_data, top_k=TOP_K, topic_filter=None):
             log.debug(f"Keyword search failed for '{expanded_query}': {e}")
 
     # PHASE 2: Vector similarity search
-    query_filter = None
+    conditions = [public_reference]
     if topic_filter:
-        query_filter = Filter(must=[FieldCondition(key="topics", match=MatchValue(value=topic_filter))])
+        conditions.append(FieldCondition(key="topics", match=MatchValue(value=topic_filter)))
+    query_filter = Filter(must=conditions)
 
     vector_results = client.query_points(
         collection_name=COLLECTION_NAME,

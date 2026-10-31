@@ -180,75 +180,22 @@ def _normalize_role_to_pg(kc_role: Optional[str]) -> Optional[str]:
     return _KC_TO_PG_ROLE.get(kc_role, kc_role)
 
 
-_FAST_PATH_REQUIRED = ("email", "tenant_id", "is_owner", "status")
-
-
-def _has_full_mapper_claims(claims: dict) -> bool:
-    """True when Keycloak token mappers populated all app-domain claims AND
-    the values are AMINRA-canonical (UUID for tenant_id, not a slug).
-
-    Phase 3b enabled this for /auth/me perf; but the realm currently stores
-    `tenant_id` user-attributes as slugs (e.g. "demo-biz") and the fast
-    path silently fed those slugs into `WHERE tenant_id = $1` downstream,
-    breaking the whole stack. Until KC attributes are migrated to UUIDs,
-    only trust the fast path when tenant_id parses as a UUID.
-    """
-    import uuid as _uuid
-
-    if not all(claims.get(k) is not None for k in _FAST_PATH_REQUIRED):
-        return False
-    try:
-        _uuid.UUID(str(claims["tenant_id"]))
-        return True
-    except (ValueError, TypeError):
-        return False
-
-
-def _claims_to_user_via_jwt(claims: dict) -> dict:
-    """Build app user dict from JWT claims alone (mapper fast path).
-
-    `tenant_id` is normalised to string; `is_owner` to bool. Mapper jsonType
-    `boolean` may serialise the value as a string in some Keycloak versions
-    so coerce defensively.
-    """
-    is_owner_raw = claims["is_owner"]
-    is_owner = is_owner_raw is True or str(is_owner_raw).lower() == "true"
-
-    realm_roles = (claims.get("realm_access") or {}).get("roles") or []
-    return {
-        "sub": claims.get("sub"),
-        "keycloak_sub": claims.get("sub"),
-        "email": claims["email"],
-        "role": _normalize_role_to_pg(_pick_app_role(realm_roles)),
-        "is_owner": is_owner,
-        "status": claims["status"],
-        "tenant_id": str(claims["tenant_id"]),
-        "realm_roles": realm_roles,
-        "_keycloak": True,
-        "_from_jwt_claims": True,
-    }
-
-
 async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
     """Map Keycloak JWT claims → existing app user dict shape.
 
-    Fast path (Phase 3b): when realm has the user-attribute mappers, the
-    JWT carries `tenant_id`/`is_owner`/`status` directly and we return
-    without touching the DB.
-
-    Fallback path (Phase 3a): DB lookup by email is authoritative. Used
-    for users created before mappers were configured, or when mappers
-    aren't yet active in the realm.
+    The database projection is authoritative for current tenant, owner, role
+    and account status on every request. Token mapper snapshots cannot
+    restore revoked application authority. Missing rows stay unscoped until
+    the explicit registration/profile reconciliation gate provisions them.
     """
     email = claims.get("email")
     if not email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing email claim")
 
-    if _has_full_mapper_claims(claims):
-        return _claims_to_user_via_jwt(claims)
-
     realm_roles = (claims.get("realm_access") or {}).get("roles") or []
     keycloak_role = _pick_app_role(realm_roles)
+    if not keycloak_role:
+        raise HTTPException(status_code=401, detail="Application role required")
 
     async with db_pool.acquire() as db:
         row = await db.fetchrow(
@@ -272,6 +219,13 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
             "company_name": claims.get("company_name"),
             "_keycloak": True,
         }
+
+    # A verified email never transfers an already-bound application identity.
+    # Mapper claims are snapshots, so mutable authority always comes from DB.
+    if row["keycloak_sub"] and str(row["keycloak_sub"]) != str(claims.get("sub")):
+        raise HTTPException(status_code=401, detail="Identity binding mismatch")
+    if row["status"] not in ("active", "pending"):
+        raise HTTPException(status_code=403, detail="Account not active")
 
     db_role = row["role"]
     kc_role_normalized = _normalize_role_to_pg(keycloak_role)

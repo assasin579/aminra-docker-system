@@ -8,7 +8,7 @@ describe("service worker auth/admin cache recovery", () => {
   it("keeps auth and admin routes network-only and supports immediate activation", () => {
     const sw = readFileSync(join(root, "public/sw.js"), "utf8");
 
-    expect(sw).toContain('CACHE_NAME = "aminra-v9"');
+    expect(sw).toContain('CACHE_NAME = "aminra-v10"');
     expect(sw).toContain("/\\/auth(?:\\/|$)/");
     expect(sw).toContain("/\\/admin(?:\\/|$)/");
     expect(sw).toContain("/\\/dashboard(?:\\/|$)/");
@@ -25,7 +25,7 @@ describe("service worker auth/admin cache recovery", () => {
     expect(layout).toContain("registration.update()");
     expect(layout).toContain("registration.waiting.postMessage");
     expect(layout).toContain("key.startsWith('aminra-')");
-    expect(layout).toContain("key !== 'aminra-v9'");
+    expect(layout).toContain("key !== 'aminra-v10'");
     expect(layout).toContain("new RegExp('^/(auth|admin|dashboard)(/|$)|^/(business|provider)/login(/|$)')");
     expect(layout).toContain("window.location.pathname.startsWith('/auth/callback')");
   });

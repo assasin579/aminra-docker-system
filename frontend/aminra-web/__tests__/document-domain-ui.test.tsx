@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import Documents from "@/app/documents/page";
+import { privateCacheKey } from "@/lib/private-client-cache";
 import Upload from "@/app/upload/page";
 import Dossiers from "@/app/dossiers/page";
-const auth = vi.hoisted(() => ({ user: { id: "actor", role: "business", is_owner: true, industry_schema_id: "industry" }, token: "token", isAuthenticated: true, loading: false }));
+const auth = vi.hoisted(() => ({ user: { id: "actor", tenant_id: "tenant", role: "business", is_owner: true, industry_schema_id: "industry" }, token: "token", isAuthenticated: true, loading: false }));
 const replace = vi.hoisted(() => vi.fn());
 vi.mock("@/components/UserAuthContext", () => ({ useUserAuth: () => auth }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }), useSearchParams: () => new URLSearchParams() }));
@@ -33,7 +34,7 @@ it("redirects a CB out of the business dossier list before fetching it", async (
   expect(fetch).not.toHaveBeenCalled();
 });
 it.each(["saved", "failed", undefined])("restored AI report shows its actual persistence outcome: %s", async status => {
-  sessionStorage.setItem("aminra_eval_actor", JSON.stringify({ report: {
+  sessionStorage.setItem(privateCacheKey("actor", "tenant", "evaluation")!, JSON.stringify({ report: {
     document_save_status: status, document_save_error: status === "failed" ? "Phân tích AI đã hoàn tất nhưng chưa lưu được vào kho tài liệu." : null,
     word_count: 100, standards_found: 2, filename: "policy.pdf", doc_type: "halal_policy", doc_type_label: "Policy", compliance_score: 80, overall_status: "compliant",
     summary: "Synthetic report", issues: [], strengths: [], recommendations: [], standards_checked: [], gap_analysis: null, risk_flags: [], citations: [],

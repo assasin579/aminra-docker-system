@@ -9,16 +9,9 @@
  * return-to of `/admin`; `logout()` ends the Keycloak SSO session entirely.
  */
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-import { getOidcUser, signinRedirect, signoutRedirect } from "@/lib/auth-oidc";
-import { purgeAuthSessionState, AUTH_SESSION_EVENT } from "@/lib/auth-session-cleanup";
+import { createContext, useCallback, useContext, type ReactNode } from "react";
+import { signinRedirect } from "@/lib/auth-oidc";
+import { useUserAuth } from "./UserAuthContext";
 
 interface AdminAuthState {
   isAdmin: boolean;
@@ -33,8 +26,6 @@ const AdminAuthContext = createContext<AdminAuthState>({
   login: async () => {},
   logout: () => {},
 });
-
-const USER_TOKEN_KEY = "aminra_user_token";
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -57,49 +48,15 @@ function hasPlatformAdminRole(token: string | null): boolean {
   return Array.isArray(realm?.roles) && realm!.roles!.includes("platform_admin");
 }
 
-function readUserToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return (
-    localStorage.getItem(USER_TOKEN_KEY) ||
-    sessionStorage.getItem(USER_TOKEN_KEY) ||
-    null
-  );
-}
-
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const refreshToken = () => setToken(readUserToken());
-    refreshToken();
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === USER_TOKEN_KEY || e.key === null) refreshToken();
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener(AUTH_SESSION_EVENT, refreshToken);
-    window.addEventListener("focus", refreshToken);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(AUTH_SESSION_EVENT, refreshToken);
-      window.removeEventListener("focus", refreshToken);
-    };
-  }, []);
-
+  // A storage token is only a candidate credential. Admin UI follows the same
+  // verified principal and logout generation as every other application view.
+  const { token, isAuthenticated, loading, logout } = useUserAuth();
   const login = useCallback(async (returnTo?: string) => {
     await signinRedirect(returnTo ?? "/admin");
   }, []);
 
-  const logout = useCallback(() => {
-    setToken(null);
-    void (async () => {
-      const oidcUser = await getOidcUser().catch(() => null);
-      await purgeAuthSessionState("logout");
-      await signoutRedirect(oidcUser);
-    })();
-  }, []);
-
-  const isAdmin = hasPlatformAdminRole(token);
+  const isAdmin = !loading && isAuthenticated && hasPlatformAdminRole(token);
 
   return (
     <AdminAuthContext.Provider value={{ isAdmin, token, login, logout }}>
