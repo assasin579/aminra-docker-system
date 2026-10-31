@@ -98,6 +98,30 @@ describe("RevisionPanel — provider request-revision", () => {
     ).toBeInTheDocument();
   });
 
+  test("CB transport retry preserves key; edited feedback creates a new request", async () => {
+    const mock = fetch as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValueOnce(respond(200, { history: [] }))
+      .mockRejectedValueOnce(new TypeError("connection lost"))
+      .mockRejectedValueOnce(new TypeError("connection lost again"))
+      .mockResolvedValueOnce(respond(200, { round: 1 }))
+      .mockResolvedValueOnce(respond(200, { history: [] }));
+    render(<RevisionPanel {...baseProps} role="provider" status="reviewing" />);
+    const text = await screen.findByPlaceholderText(/Mô tả những vấn đề/i);
+    const button = screen.getByRole("button", { name: /Gửi yêu cầu sửa/i });
+    fireEvent.change(text, { target: { value: "First feedback" } });
+    fireEvent.click(button);
+    await screen.findByText("connection lost");
+    fireEvent.click(button);
+    await screen.findByText("connection lost again");
+    fireEvent.change(text, { target: { value: "Changed feedback" } });
+    fireEvent.click(button);
+    await waitFor(() => expect(mock.mock.calls.filter(c => String(c[0]).endsWith("/request-revision"))).toHaveLength(3));
+    const calls = mock.mock.calls.filter(c => String(c[0]).endsWith("/request-revision"));
+    expect(calls[0][1].headers["Idempotency-Key"]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(calls[1][1].headers["Idempotency-Key"]).toBe(calls[0][1].headers["Idempotency-Key"]);
+    expect(calls[2][1].headers["Idempotency-Key"]).not.toBe(calls[0][1].headers["Idempotency-Key"]);
+  });
+
   test("does NOT show form when status=approved", async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       respond(200, { history: [] }),

@@ -197,6 +197,7 @@ function RequestRevisionForm({
   const [feedback, setFeedback] = useState("");
   const [docFeedback, setDocFeedback] = useState<DocumentFeedbackItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const [error, setError] = useState("");
 
   const addDocIssue = () => {
@@ -229,6 +230,14 @@ function RequestRevisionForm({
       return;
     }
     setSubmitting(true);
+    const payload = {
+      feedback: feedback.trim(),
+      document_feedback: docFeedback.filter((d) => d.issue.trim() && d.document_id),
+    };
+    const fingerprint = JSON.stringify({ submissionId, payload });
+    if (attempt.current?.fingerprint !== fingerprint) {
+      attempt.current = { fingerprint, key: crypto.randomUUID() };
+    }
     try {
       const res = await fetch(
         `/api/api/submissions/received/${submissionId}/request-revision`,
@@ -237,17 +246,14 @@ function RequestRevisionForm({
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            "Idempotency-Key": attempt.current.key,
           },
-          body: JSON.stringify({
-            feedback: feedback.trim(),
-            document_feedback: docFeedback.filter(
-              (d) => d.issue.trim() && d.document_id,
-            ),
-          }),
+          body: JSON.stringify(payload),
         },
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
+      attempt.current = null;
       setFeedback("");
       setDocFeedback([]);
       onRequested();
