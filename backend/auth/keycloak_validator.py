@@ -191,12 +191,18 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
     if not keycloak_role:
         raise HTTPException(status_code=401, detail="Application role required")
 
+    from uuid import UUID
+    try:
+        subject = UUID(str(claims.get("sub")))
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid application identity subject") from None
+    fields = "SELECT id, email, keycloak_sub, role, status, tenant_id, is_owner, company_name FROM users "
     async with db_pool.acquire() as db:
-        row = await db.fetchrow(
-            "SELECT id, email, keycloak_sub, role, status, tenant_id, is_owner, company_name "
-            "FROM users WHERE lower(email) = $1",
-            email.lower(),
-        )
+        by_subject = await db.fetchrow(fields + "WHERE keycloak_sub = $1", subject)
+        by_email = await db.fetchrow(fields + "WHERE lower(email) = $1", email.lower())
+    if by_subject and by_email and by_subject["id"] != by_email["id"]:
+        raise HTTPException(status_code=401, detail="Identity binding conflict")
+    row = by_subject or by_email
 
     if not row:
         is_owner_raw = claims.get("is_owner")

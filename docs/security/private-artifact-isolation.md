@@ -79,3 +79,10 @@ ownership. Their background replay is removed and session changes request deleti
 of the legacy private IndexedDB database. Blocked deletion is reported as blocked,
 not falsely declared successful. A new offline workflow must obtain fresh,
 actor-and-tenant scoped authorization and must not silently reuse the old queue.
+
+
+Verified profiles are refreshed when the tab becomes visible, on `pageshow` and
+at10-second intervals while visible. Verification has a5-second deadline and
+never authorizes an old identity after a newer session wins. Current DB lookup
+uses the Keycloak subject first and rejects conflicting subject/email mappings;
+a changed email cannot bypass a suspension or restore stale owner claims.

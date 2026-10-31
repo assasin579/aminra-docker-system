@@ -208,6 +208,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       const current = ++generation.current;
       pendingRead.current?.abort();
       const controller = new AbortController(); pendingRead.current = controller;
+      const deadline = window.setTimeout(() => controller.abort(), 5000);
       activeSession.current = { token: storedToken, user: sameIdentity ? previous : null };
       if (!sameIdentity) { setToken(null); setUser(null); setLoading(true); }
       try {
@@ -228,6 +229,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         setToken(null); setUser(null); setLoading(false);
         await purgeAuthSessionState("auth_rejected");
       } finally {
+        window.clearTimeout(deadline);
         if (mounted && current === generation.current) setLoading(false);
       }
     };
@@ -236,9 +238,15 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     };
     const onSession = () => { void synchronize(); };
     const onFocus = () => { void synchronize(true); };
+    const onVisibility = () => { if (document.visibilityState === "visible") void synchronize(true); };
+    const interval = window.setInterval(() => {
+      if (activeSession.current.token && document.visibilityState === "visible") void synchronize(true);
+    }, 10000);
     window.addEventListener("storage", onStorage);
     window.addEventListener(AUTH_SESSION_EVENT, onSession);
     window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
     void synchronize();
     return () => {
       mounted = false; generation.current += 1; pendingRead.current?.abort();
@@ -247,6 +255,9 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener(AUTH_SESSION_EVENT, onSession);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(interval);
     };
   }, []);
 

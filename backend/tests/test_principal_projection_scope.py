@@ -42,3 +42,21 @@ async def test_identity_without_an_application_realm_role_cannot_bootstrap_busin
  c=claims();c['realm_access']={'roles':['default-roles-aminra']}
  with pytest.raises(HTTPException) as exc:await enrich_keycloak_claims(c,Pool(None))
  assert exc.value.status_code==401
+
+@pytest.mark.asyncio
+async def test_email_change_cannot_hide_current_subject_suspension_or_recover_stale_owner_claims():
+ class SubjectPool(Pool):
+  async def fetchrow(self,sql,*args):
+   self.reads+=1
+   if 'keycloak_sub = $1' in sql:return row(email='renamed@example.invalid',status='suspended')
+   return None
+ with pytest.raises(HTTPException) as exc:await enrich_keycloak_claims(claims(),SubjectPool(None))
+ assert exc.value.status_code==403
+
+@pytest.mark.asyncio
+async def test_subject_and_email_mapping_to_different_accounts_is_rejected():
+ class ConflictPool(Pool):
+  async def fetchrow(self,sql,*args):
+   return row() if 'keycloak_sub = $1' in sql else row(id=B,keycloak_sub=B)
+ with pytest.raises(HTTPException) as exc:await enrich_keycloak_claims(claims(),ConflictPool(None))
+ assert exc.value.status_code==401

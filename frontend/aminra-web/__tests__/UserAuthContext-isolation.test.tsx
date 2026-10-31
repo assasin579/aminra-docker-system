@@ -115,3 +115,15 @@ it("server-confirmed admin downgrade clears cached admin data even while the JWT
   await screen.findByText("privileged-admin-records");fireEvent.click(screen.getByText("Refresh authority"));
   await screen.findByText("provider-records");expect(screen.queryByText("privileged-admin-records")).toBeNull();
 });
+
+it("a returning visible tab revalidates authority and discards cached owner records", async () => {
+  store("a");fetchMock.mockResolvedValueOnce(Response.json(profile("a"))).mockResolvedValueOnce(Response.json(profile("a",false)));
+  const visible=vi.spyOn(document,"visibilityState","get").mockReturnValue("visible");
+  function Cached({owner}:{owner:boolean}) {const [value]=useState(owner?"previous-owner-records":"member-records");return <p>{value}</p>;}
+  function View(){const {user}=useUserAuth();return user&&<Cached owner={user.is_owner}/>;}
+  try {
+    render(<UserAuthProvider><View/></UserAuthProvider>);await screen.findByText("previous-owner-records");
+    act(()=>document.dispatchEvent(new Event("visibilitychange")));
+    await screen.findByText("member-records");expect(screen.queryByText("previous-owner-records")).toBeNull();
+  } finally {visible.mockRestore();}
+});
