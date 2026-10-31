@@ -34,6 +34,11 @@ test('JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08
  await p.getByRole('button',{name:'Gửi 1 tài liệu',exact:true}).click();await expect(p.getByRole('dialog',{name:'Gửi hồ sơ đến tổ chức chứng nhận',exact:true})).toHaveCount(0);await p.unroute('**/api/api/submissions/submit');
  expect(requests).toHaveLength(2);expect(requests[0].key).toBeTruthy();expect(requests[0]).toEqual(requests[1]);expect(receipts[1].submission_id).toBe(receipts[0].submission_id);
  expect(requests[0].body.dossier_id).toBe(dossier);expect(requests[0].body.document_ids).toEqual([oldId]);const sub=receipts[0].submission_id;
+ expect(requests[0].body.provider_id).toBe(config.actors.cbX.id);
+ const sentCard=p.locator('[data-submission-id="'+sub+'"]');
+ await expect(sentCard.getByText('Tổ chức tiếp nhận',{exact:true})).toBeVisible();
+ await expect(sentCard.getByText(config.actors.cbX.email.split('@')[0],{exact:true})).toBeVisible();
+ await expect(sentCard.getByText('Email liên hệ: '+config.actors.cbX.email,{exact:true})).toBeVisible();
  fs.writeFileSync(config.output+'/recovery-fixture.json',JSON.stringify({dossier,title:fixture.name,submission:sub,document:oldId,sha256:crypto.createHash('sha256').update(bytes).digest('hex')}));
  await login(q,'cbX');await expand(q,'cbX',sub);
  const[review]=await Promise.all([q.waitForResponse(r=>r.url().endsWith('/'+sub+'/status')&&r.request().method()==='PUT'),q.getByRole('button',{name:'Đang đánh giá',exact:true}).click()]);expect(review.status()).toBe(200);
