@@ -91,6 +91,8 @@ describe("business sidebar module navigation", () => {
       expect(screen.queryByRole("link", { name: /Lô hàng/i })).not.toBeInTheDocument();
     });
 
+    expect(screen.queryByRole("link", { name: /Chat với Aminra/i })).not.toBeInTheDocument();
+    expect(document.querySelector('a[href="/chat"]')).toBeNull();
     expect(mockedApiJson).toHaveBeenCalledWith("/api/api/me/modules", {
       token: "business-token",
       fallbackError: "Không tải được cấu hình module.",
