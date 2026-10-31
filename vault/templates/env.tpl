@@ -7,9 +7,8 @@ export OPENROUTER_API_KEY="{{ .Data.data.openrouter_api_key }}"
 export DEEPSEEK_API_KEY="{{ .Data.data.deepseek_api_key }}"
 {{- end }}
 
-{{- with secret "secret/data/aminra/database" }}
-export POSTGRES_PASSWORD="{{ .Data.data.postgres_password }}"
-export DATABASE_URL="postgresql://aminra_user:{{ .Data.data.postgres_password }}@postgres-db:5432/aminra"
+{{- with secret "secret/data/aminra/app-database" }}
+export DATABASE_URL="{{ .Data.data.database_url }}"
 {{- end }}
 
 {{- with secret "secret/data/aminra/auth" }}

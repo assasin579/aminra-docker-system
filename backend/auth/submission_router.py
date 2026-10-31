@@ -39,6 +39,7 @@ class SubmitRequest(BaseModel):
     provider_id: str
     document_ids: List[str]
     notes: str = ""
+    dossier_id: Optional[str] = None
 
 
 class UpdateStatusRequest(BaseModel):
@@ -109,7 +110,7 @@ def _validate_transition(from_status: str, to_status: str) -> None:
         )
 
 
-# ── CB Dashboard: comprehensive stats ────────────────────────────────────────
+# ── CB Dashboard: canonical owner entitlement ────────────────────────────────
 
 
 async def _resolve_cb_provider_actor(user: dict, db) -> Optional[dict]:
@@ -599,94 +600,147 @@ async def submit_documents(
     _validate_uuid(req.provider_id)
     for document_id in req.document_ids:
         _validate_uuid(document_id)
+    actor_id = await resolve_canonical_user_id(owner, db)
+    if not actor_id:
+        raise HTTPException(403, "Không xác định được danh tính doanh nghiệp")
 
-    # Verify provider is an organization owner (not an auditor)
-    provider = await db.fetchrow(
-        "SELECT id, company_name FROM users WHERE id = $1 AND role = 'provider' AND status = 'active' AND is_owner = true",
+    async def perform_submit() -> dict:
+        # Validate recipient and exact evidence within the same transaction as
+        # submission, audit, and notification writes.
+        provider = await db.fetchrow(
+            "SELECT id, COALESCE(tenant_id, id) AS organization_id, company_name FROM users WHERE id = $1 AND role = 'provider' AND status = 'active' AND is_owner = true",
+            req.provider_id,
+        )
+        if not provider:
+            raise HTTPException(404, "Tổ chức chứng nhận không tồn tại hoặc chưa được duyệt")
+
+        doc_uuids = [d for d in req.document_ids]
+        if doc_uuids:
+            count = await db.fetchval(
+                "SELECT COUNT(*) FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
+                doc_uuids, tenant_id,
+            )
+            if count != len(doc_uuids):
+                raise HTTPException(400, "Một số tài liệu không hợp lệ")
+
+        requirements_version_id = None
+        requirements_binding_status = "unknown"
+        dossier_id = None
+        if req.dossier_id is not None:
+            dossier_id = _validate_uuid(req.dossier_id)
+            dossier = await db.fetchrow(
+                "SELECT id, requirements_version_id, requirements_binding_status FROM dossiers WHERE id=$1 AND tenant_id=$2 AND status <> 'cancelled'",
+                dossier_id, tenant_id,
+            )
+            if not dossier or dossier.get("requirements_binding_status") != "bound" or not dossier.get("requirements_version_id"):
+                raise HTTPException(409, "Dossier requirements binding is unavailable")
+            requirements_version_id = dossier["requirements_version_id"]
+            requirements_binding_status = "bound"
+            if len(set(doc_uuids)) != len(doc_uuids):
+                raise HTTPException(400, "Duplicate document IDs are not allowed in a submission round")
+            attached_count = await db.fetchval(
+                """SELECT COUNT(DISTINCT a.document_id)
+                     FROM dossier_document_attachments a
+                     JOIN documents d ON d.id=a.document_id AND d.tenant_id=$2 AND d.doc_type=a.doc_type
+                    WHERE a.dossier_id=$1 AND a.requirements_version_id=$3
+                      AND a.document_id = ANY($4::uuid[])""",
+                dossier_id, tenant_id, requirements_version_id, doc_uuids,
+            ) if doc_uuids else 0
+            if attached_count != len(doc_uuids):
+                raise HTTPException(400, "Submission contains a document not attached to this pinned Dossier")
+        elif doc_uuids:
+            dossier_rows = await db.fetch(
+                "SELECT DISTINCT dossier_id FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
+                doc_uuids, tenant_id,
+            )
+            if len(dossier_rows) > 1:
+                raise HTTPException(400, "A submission round must contain documents from one Dossier")
+            dossier_id = dossier_rows[0]["dossier_id"] if dossier_rows else None
+            if dossier_id:
+                dossier = await db.fetchrow(
+                    "SELECT requirements_version_id, requirements_binding_status FROM dossiers WHERE id=$1 AND tenant_id=$2 AND status <> 'cancelled'",
+                    dossier_id, tenant_id,
+                )
+                if not dossier:
+                    raise HTTPException(400, "Dossier for submitted documents is unavailable")
+                requirements_binding_status = dossier.get("requirements_binding_status") or "unknown"
+                if requirements_binding_status == "bound":
+                    requirements_version_id = dossier.get("requirements_version_id")
+
+        biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", actor_id)
+        company_name = biz["company_name"] if biz else ""
+        row = await db.fetchrow(
+            """INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name,
+                                        requirements_version_id, requirements_binding_status, dossier_id)
+               VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7, $8) RETURNING id, submitted_at""",
+            tenant_id, provider["organization_id"], doc_uuids, req.notes, company_name,
+            requirements_version_id, requirements_binding_status, dossier_id,
+        )
+
+        log.info(f"[submission] {company_name} → {provider['company_name']}: {len(doc_uuids)} docs")
+        await log_audit(
+            db, user=owner, action="submission.submit", entity_type="submission",
+            entity_id=str(row["id"]),
+            metadata={
+                "provider_id": str(provider["organization_id"]),
+                "provider_actor_id": str(provider["id"]),
+                "provider_name": provider["company_name"],
+                "document_count": len(doc_uuids),
+            },
+            request=request,
+        )
+        await notify(
+            db, req.provider_id, "new_submission",
+            f"Hồ sơ mới từ {company_name}",
+            f"{len(doc_uuids)} tài liệu cần đánh giá", "/submissions",
+        )
+        return {
+            "submission_id": str(row["id"]),
+            "submitted_at": row["submitted_at"].isoformat(),
+            "message": f"Đã gửi {len(doc_uuids)} tài liệu đến {provider['company_name']}",
+        }
+
+    idempotency_key = (request.headers.get("Idempotency-Key") or "").strip()
+    if not idempotency_key:
+        async with db.transaction():
+            return await perform_submit()
+    if len(idempotency_key) > 200:
+        raise HTTPException(400, "Idempotency-Key quá dài")
+
+    # Replays must still satisfy current recipient eligibility; a stored receipt
+    # is not permission to submit to a provider that has since been suspended.
+    eligible_provider = await db.fetchrow(
+        "SELECT id FROM users WHERE id=$1 AND role='provider' AND status='active' AND is_owner=true",
         req.provider_id,
     )
-    if not provider:
+    if not eligible_provider:
         raise HTTPException(404, "Tổ chức chứng nhận không tồn tại hoặc chưa được duyệt")
 
-    # Verify documents belong to tenant
-    doc_uuids = [d for d in req.document_ids]
-    if doc_uuids:
-        count = await db.fetchval(
-            "SELECT COUNT(*) FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
-            doc_uuids,
-            tenant_id,
-        )
-        if count != len(doc_uuids):
-            raise HTTPException(400, "Một số tài liệu không hợp lệ")
+    from auth.audit_router import _execute_mobile_replay_operation
+    from auth.offline_replay_idempotency import build_operation_scope, stable_request_hash
 
-    requirements_version_id = None
-    binding_status = "unknown"
-    if doc_uuids:
-        dossier_rows = await db.fetch(
-            "SELECT DISTINCT dossier_id FROM documents WHERE id=ANY($1::uuid[]) AND tenant_id=$2",
-            doc_uuids,tenant_id,
-        )
-        linked_ids = [r['dossier_id'] for r in dossier_rows if r['dossier_id'] is not None]
-        if linked_ids:
-            if len(dossier_rows) != 1:
-                raise HTTPException(409, "Chỉ nộp tài liệu của một hồ sơ trong mỗi lần gửi")
-            dossier = await db.fetchrow(
-                "SELECT requirements_version_id, requirements_binding_status FROM dossiers "
-                "WHERE id=$1 AND tenant_id=$2 AND status != 'cancelled'",
-                linked_ids[0],tenant_id,
-            )
-            if not dossier or dossier['requirements_binding_status'] != 'bound':
-                raise HTTPException(409, "Hồ sơ chưa có bộ yêu cầu được chốt")
-            requirements_version_id = dossier['requirements_version_id']
-            binding_status = 'bound'
-
-    # Get business company name
-    biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", await resolve_canonical_user_id(owner, db))
-    company_name = biz["company_name"] if biz else ""
-
-    row = await db.fetchrow(
-        """INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name, requirements_version_id, requirements_binding_status)
-           VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7) RETURNING id, submitted_at""",
-        tenant_id,
-        req.provider_id,
-        doc_uuids,
-        req.notes,
-        company_name,
-        requirements_version_id,
-        binding_status,
+    scope = build_operation_scope(
+        tenant_id=tenant_id, user_id=actor_id, visit_id=None,
+        operation_type="submission.submit",
+        route_key="POST:/submissions/submit",
+        resource_key=f"provider:{req.provider_id}:actor:{actor_id}",
+        idempotency_key=idempotency_key,
     )
-
-    log.info(f"[submission] {company_name} → {provider['company_name']}: {len(doc_uuids)} docs")
-
-    await log_audit(
-        db,
-        user=owner,
-        action="submission.submit",
-        entity_type="submission",
-        entity_id=str(row["id"]),
-        metadata={
-            "provider_id": req.provider_id,
-            "provider_name": provider["company_name"],
-            "document_count": len(doc_uuids),
+    request_hash = stable_request_hash(
+        payload={
+            "provider_id": str(req.provider_id),
+            "dossier_id": str(req.dossier_id) if req.dossier_id else None,
+            "document_ids": [str(document_id) for document_id in req.document_ids],
+            "notes": req.notes,
         },
-        request=request,
+        resource_identity={
+            "tenant_id": str(tenant_id), "actor_id": str(actor_id),
+            "provider_id": str(req.provider_id), "action": "submit",
+        },
     )
-
-    # Notify provider owner
-    await notify(
-        db,
-        req.provider_id,
-        "new_submission",
-        f"Hồ sơ mới từ {company_name}",
-        f"{len(doc_uuids)} tài liệu cần đánh giá",
-        "/submissions",
+    return await _execute_mobile_replay_operation(
+        db=db, scope=scope, request_hash=request_hash, mutate=perform_submit,
     )
-
-    return {
-        "submission_id": str(row["id"]),
-        "submitted_at": row["submitted_at"].isoformat(),
-        "message": f"Đã gửi {len(doc_uuids)} tài liệu đến {provider['company_name']}",
-    }
 
 
 # ── Business: list my submissions ─────────────────────────────────────────────
@@ -763,7 +817,7 @@ async def request_renewal(
 
     # Get original submission's doc_ids and provider
     orig_sub = (
-        await db.fetchrow("SELECT provider_id, document_ids FROM submissions WHERE id=$1", cert["submission_id"])
+        await db.fetchrow("SELECT provider_id, document_ids, requirements_version_id, requirements_binding_status FROM submissions WHERE id=$1", cert["submission_id"])
         if cert["submission_id"]
         else None
     )
@@ -792,8 +846,9 @@ async def request_renewal(
 
     row = await db.fetchrow(
         """
-        INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name)
-        VALUES ($1, $2, $3::uuid[], $4, $5) RETURNING id
+        INSERT INTO submissions (business_tenant, provider_id, document_ids, notes, company_name,
+                                 requirements_version_id, requirements_binding_status)
+        VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7) RETURNING id
     """,
         tenant_id,
         provider_id,
@@ -1101,56 +1156,102 @@ async def provider_request_revision(
     ]
 
     requester_id = await resolve_canonical_user_id(user, db)
-    try:
-        result = await request_revision(
-            db,
-            submission_id=submission_id,
-            requester_id=str(requester_id) if requester_id else None,
-            requester_name=requester_name,
-            feedback=req.feedback,
-            document_feedback=doc_feedback,
-        )
-    except SubmissionNotFound:
-        raise HTTPException(404, "Hồ sơ không tồn tại")
-    except InvalidStateTransition as e:
-        raise HTTPException(400, str(e))
-    except ValueError as e:
-        raise HTTPException(400, str(e))
+    if not requester_id:
+        raise HTTPException(403, "Không xác định được danh tính người đánh giá")
 
-    await log_audit(
-        db,
-        user=user,
-        action="submission.revision_requested",
-        entity_type="submission",
-        entity_id=submission_id,
-        metadata={
+    async def perform_revision_request() -> dict:
+        try:
+            result = await request_revision(
+                db,
+                submission_id=submission_id,
+                requester_id=str(requester_id) if requester_id else None,
+                requester_name=requester_name,
+                feedback=req.feedback,
+                document_feedback=doc_feedback,
+            )
+        except SubmissionNotFound:
+            raise HTTPException(404, "Hồ sơ không tồn tại")
+        except InvalidStateTransition as e:
+            raise HTTPException(400, str(e))
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+
+        await log_audit(
+            db,
+            user=user,
+            action="submission.revision_requested",
+            entity_type="submission",
+            entity_id=submission_id,
+            metadata={
+                "round": result["round"],
+                "feedback_length": len(req.feedback),
+                "document_feedback_count": len(req.document_feedback),
+            },
+            request=request,
+        )
+
+        biz_owner = await db.fetchrow(
+            "SELECT id FROM users WHERE id=$1 OR (tenant_id=$1 AND is_owner=true) LIMIT 1",
+            result["tenant_id"],
+        )
+        if biz_owner:
+            await notify(
+                db,
+                str(biz_owner["id"]),
+                "revision_required",
+                f"Cần sửa hồ sơ (vòng {result['round']})",
+                req.feedback[:200],
+                "/documents",
+            )
+        return {
+            "message": "Đã gửi yêu cầu sửa cho doanh nghiệp",
             "round": result["round"],
-            "feedback_length": len(req.feedback),
-            "document_feedback_count": len(req.document_feedback),
+            "request_id": result["request_id"],
+        }
+
+    idempotency_key = (request.headers.get("Idempotency-Key") or "").strip()
+    if not idempotency_key:
+        return await perform_revision_request()
+    if len(idempotency_key) > 200:
+        raise HTTPException(400, "Idempotency-Key quá dài")
+
+    from auth.audit_router import _execute_mobile_replay_operation
+    from auth.offline_replay_idempotency import build_operation_scope, stable_request_hash
+
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    if not requester_id or not tenant_id:
+        raise HTTPException(403, "Không xác định được danh tính tổ chức/người đánh giá")
+    scope = build_operation_scope(
+        tenant_id=tenant_id,
+        user_id=requester_id,
+        visit_id=None,
+        operation_type="submission.request_revision",
+        route_key="POST:/submissions/received/{submission_id}/request-revision",
+        resource_key=f"{submission_id}:actor:{requester_id}",
+        idempotency_key=idempotency_key,
+    )
+    request_hash = stable_request_hash(
+        payload={
+            "feedback": req.feedback,
+            "document_feedback": [
+                {"document_id": item.document_id, "issue": item.issue,
+                 "severity": item.severity, "suggestion": item.suggestion}
+                for item in req.document_feedback
+            ],
         },
-        request=request,
+        resource_identity={
+            "tenant_id": str(tenant_id),
+            "actor_id": str(requester_id),
+            "submission_id": str(submission_id),
+            "action": "request_revision",
+        },
     )
-
-    # Notify business owner — in-app + (optional) email queue
-    biz_owner = await db.fetchrow(
-        "SELECT id FROM users WHERE id=$1 OR (tenant_id=$1 AND is_owner=true) LIMIT 1",
-        result["tenant_id"],
+    return await _execute_mobile_replay_operation(
+        db=db,
+        scope=scope,
+        request_hash=request_hash,
+        mutate=perform_revision_request,
     )
-    if biz_owner:
-        await notify(
-            db,
-            str(biz_owner["id"]),
-            "revision_required",
-            f"Cần sửa hồ sơ (vòng {result['round']})",
-            req.feedback[:200],
-            "/documents",
-        )
-
-    return {
-        "message": "Đã gửi yêu cầu sửa cho doanh nghiệp",
-        "round": result["round"],
-        "request_id": result["request_id"],
-    }
 
 
 # ── Business: resubmit after fixing ──────────────────────────────────────────
@@ -1183,7 +1284,7 @@ async def business_resubmit(
     )
     if sub is None:
         raise HTTPException(404, "Hồ sơ không tồn tại")
-    if str(sub["business_tenant"]) != owner["tenant_id"]:
+    if str(sub["business_tenant"]) != str(owner["tenant_id"]):
         raise HTTPException(403, "Hồ sơ không thuộc doanh nghiệp của bạn")
 
     # If new document_ids provided, verify they belong to the same tenant
@@ -1196,48 +1297,92 @@ async def business_resubmit(
         if count != len(req.new_document_ids):
             raise HTTPException(400, "Một số document không hợp lệ")
 
-    try:
-        result = await resubmit(
-            db,
-            submission_id=submission_id,
-            new_document_ids=req.new_document_ids,
-            business_notes=req.business_notes,
-        )
-    except SubmissionNotFound:
-        raise HTTPException(404, "Hồ sơ không tồn tại")
-    except InvalidStateTransition as e:
-        raise HTTPException(400, str(e))
-    except NoRevisionPending:
-        raise HTTPException(400, "Không có yêu cầu sửa đang chờ")
+    async def perform_resubmit() -> dict:
+        try:
+            result = await resubmit(
+                db,
+                submission_id=submission_id,
+                new_document_ids=req.new_document_ids,
+                business_notes=req.business_notes,
+            )
+        except SubmissionNotFound:
+            raise HTTPException(404, "Hồ sơ không tồn tại")
+        except InvalidStateTransition as e:
+            raise HTTPException(400, str(e))
+        except NoRevisionPending:
+            raise HTTPException(400, "Không có yêu cầu sửa đang chờ")
 
-    await log_audit(
-        db,
-        user=owner,
-        action="submission.resubmitted",
-        entity_type="submission",
-        entity_id=submission_id,
-        metadata={
+        if not result.get("noop"):
+            await log_audit(
+                db,
+                user=owner,
+                action="submission.resubmitted",
+                entity_type="submission",
+                entity_id=submission_id,
+                metadata={
+                    "round_resolved": result["round_resolved"],
+                    "new_doc_count": len(req.new_document_ids or []),
+                },
+                request=request,
+            )
+            await notify(
+                db,
+                result["provider_id"],
+                "revision_resubmitted",
+                "Hồ sơ đã được sửa và gửi lại",
+                req.business_notes[:200] if req.business_notes else "",
+                "/submissions",
+            )
+        return {
+            "message": "Đã gửi lại hồ sơ cho tổ chức cấp",
             "round_resolved": result["round_resolved"],
-            "new_doc_count": len(req.new_document_ids or []),
+            "resubmitted_at": result["resubmitted_at"],
+        }
+
+    idempotency_key = (request.headers.get("Idempotency-Key") or "").strip()
+    if not idempotency_key:
+        return await perform_resubmit()
+    if len(idempotency_key) > 200:
+        raise HTTPException(400, "Idempotency-Key quá dài")
+
+    # Reuse the established transactional replay receipt. Actor is part of the
+    # resource key because the existing unique index omits user_id; this keeps
+    # receipts isolated by tenant + canonical actor + submission + action.
+    from auth.audit_router import _execute_mobile_replay_operation
+    from auth.offline_replay_idempotency import build_operation_scope, stable_request_hash
+
+    actor_id = await resolve_canonical_user_id(owner, db)
+    if not actor_id:
+        raise HTTPException(403, "Không xác định được danh tính người gửi")
+    tenant_id = owner["tenant_id"]
+    scope = build_operation_scope(
+        tenant_id=tenant_id,
+        user_id=actor_id,
+        visit_id=None,
+        operation_type="submission.resubmit",
+        route_key="POST:/submissions/{submission_id}/resubmit",
+        resource_key=f"{submission_id}:actor:{actor_id}",
+        idempotency_key=idempotency_key,
+    )
+    request_hash = stable_request_hash(
+        payload={
+            "new_document_ids": [str(document_id) for document_id in req.new_document_ids]
+            if req.new_document_ids is not None else None,
+            "business_notes": req.business_notes,
         },
-        request=request,
+        resource_identity={
+            "tenant_id": str(tenant_id),
+            "actor_id": str(actor_id),
+            "submission_id": str(submission_id),
+            "action": "resubmit",
+        },
     )
-
-    # Notify provider that resubmission is ready for review
-    await notify(
-        db,
-        result["provider_id"],
-        "revision_resubmitted",
-        "Hồ sơ đã được sửa và gửi lại",
-        req.business_notes[:200] if req.business_notes else "",
-        "/submissions",
+    return await _execute_mobile_replay_operation(
+        db=db,
+        scope=scope,
+        request_hash=request_hash,
+        mutate=perform_resubmit,
     )
-
-    return {
-        "message": "Đã gửi lại hồ sơ cho tổ chức cấp",
-        "round_resolved": result["round_resolved"],
-        "resubmitted_at": result["resubmitted_at"],
-    }
 
 
 # ── List revision history for a submission ──────────────────────────────────
@@ -1706,23 +1851,14 @@ async def replace_submission_document(
         raise HTTPException(400, "Tài liệu cũ không thuộc hồ sơ này")
     doc_ids[doc_ids.index(old_doc_id)] = new_doc_id
 
-    # W3-M6 fix — replace from `revision_required` must flip back to reviewing
-    # AND resolve any pending revision request, otherwise CB never knows the
-    # ball is back in their court.
-    if sub["status"] == "revision_required":
-        await db.execute(
-            "UPDATE submissions SET document_ids = $1::uuid[], status = 'reviewing', updated_at = NOW() WHERE id = $2",
-            doc_ids,
-            submission_id,
-        )
-        await db.execute(
-            "UPDATE submission_revision_requests SET resolved_at = NOW() WHERE submission_id = $1 AND resolved_at IS NULL",
-            submission_id,
-        )
-    else:
-        await db.execute(
-            "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2", doc_ids, submission_id
-        )
+    # Replacement uploads update only the current document pointer. The
+    # revision request remains open until the Business explicitly resubmits;
+    # that explicit resubmit is the transaction that resolves the request.
+    await db.execute(
+        "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2",
+        doc_ids,
+        submission_id,
+    )
 
     # Notify provider + auditor
     sub_info = await db.fetchrow(

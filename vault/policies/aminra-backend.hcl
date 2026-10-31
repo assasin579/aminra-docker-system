@@ -5,7 +5,7 @@ path "secret/data/aminra/api-keys" {
   capabilities = ["read"]
 }
 
-path "secret/data/aminra/database" {
+path "secret/data/aminra/app-database" {
   capabilities = ["read"]
 }
 
