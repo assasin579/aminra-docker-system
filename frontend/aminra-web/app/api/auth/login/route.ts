@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -29,10 +30,6 @@ type TokenResponse = {
   error_description?: string;
 };
 
-function jsonError(message: string, status: number): NextResponse {
-  return NextResponse.json({ detail: message }, { status });
-}
-
 function normalizeRole(role: unknown): "business" | "provider" | undefined {
   if (role === "business" || role === "provider") return role;
   return undefined;
@@ -53,10 +50,33 @@ function userMessageForKeycloakError(tokenBody: TokenResponse): string {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Generate locally: never trust a caller-supplied correlation ID or log input.
+  const requestId = randomUUID();
+  const started = performance.now();
+  const headers = { "X-Request-ID": requestId, "Cache-Control": "no-store" };
+  function record(
+    stage: "token" | "profile" | "complete",
+    stageStarted: number,
+    outcome: "response" | "transport_error" | "invalid_response",
+    status: number | null,
+  ) {
+    console.info(JSON.stringify({
+      event: "auth_login", request_id: requestId, stage, outcome, status,
+      elapsed_ms: Math.round(performance.now() - stageStarted),
+    }));
+  }
+  function jsonError(message: string, status: number): NextResponse {
+    record("complete", started, "response", status);
+    return NextResponse.json({ detail: message }, { status, headers });
+  }
   let body: LoginBody;
   try {
     body = (await req.json()) as LoginBody;
   } catch {
+    return jsonError("Payload đăng nhập không hợp lệ.", 400);
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return jsonError("Payload đăng nhập không hợp lệ.", 400);
   }
 
@@ -82,6 +102,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     KEYCLOAK_REALM,
   )}/protocol/openid-connect/token`;
 
+  const tokenStarted = performance.now();
   let tokenRes: Response;
   try {
     tokenRes = await fetch(tokenUrl, {
@@ -91,14 +112,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       cache: "no-store",
     });
   } catch {
+    record("token", tokenStarted, "transport_error", null);
     return jsonError("Không kết nối được dịch vụ xác thực AMINRA.", 502);
   }
 
-  const tokenBody = (await tokenRes.json().catch(() => ({}))) as TokenResponse;
-  if (!tokenRes.ok || !tokenBody.access_token) {
-    return jsonError(userMessageForKeycloakError(tokenBody), tokenRes.status === 401 ? 401 : 502);
+  const tokenBody = (await tokenRes.json().catch(() => null)) as TokenResponse | null;
+  record("token", tokenStarted, tokenBody && typeof tokenBody === "object" && !Array.isArray(tokenBody) ? "response" : "invalid_response", tokenRes.status);
+  if (!tokenRes.ok || typeof tokenBody?.access_token !== "string" || !tokenBody.access_token) {
+    return jsonError(userMessageForKeycloakError(tokenBody || {}), tokenRes.status === 401 ? 401 : 502);
   }
 
+  const profileStarted = performance.now();
   let profileRes: Response;
   try {
     profileRes = await fetch(`${BACKEND.replace(/\/$/, "")}/auth/me`, {
@@ -106,12 +130,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       cache: "no-store",
     });
   } catch {
+    record("profile", profileStarted, "transport_error", null);
     return jsonError("Không kết nối được backend AMINRA sau khi xác thực.", 502);
   }
 
   const profile = await profileRes.json().catch(() => null);
-  if (!profileRes.ok || !profile) {
-    return jsonError("Không tải được hồ sơ ứng dụng sau khi xác thực.", profileRes.status || 502);
+  const validProfile = profile !== null && typeof profile === "object" && !Array.isArray(profile);
+  record("profile", profileStarted, validProfile ? "response" : "invalid_response", profileRes.status);
+  if (!profileRes.ok || !validProfile) {
+    return jsonError("Không tải được hồ sơ ứng dụng sau khi xác thực.", profileRes.ok ? 502 : profileRes.status);
   }
 
   if (expectedRole && profile.role !== expectedRole) {
@@ -123,5 +150,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  return NextResponse.json({ access_token: tokenBody.access_token, user: profile });
+  record("complete", started, "response", 200);
+  return NextResponse.json({ access_token: tokenBody.access_token, user: profile }, { headers });
 }

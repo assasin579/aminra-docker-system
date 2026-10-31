@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BackToLandingLink } from "@/components/auth/BackToLandingLink";
 import { useUserAuth } from "@/components/UserAuthContext";
+import { useHydrationReady } from "@/lib/useHydrationReady";
 
 export default function BusinessLoginPage() {
   const router = useRouter();
-  const { loginBusiness } = useUserAuth();
+  const hydrated = useHydrationReady();
+  const { loginBusiness, loading: restoringSession } = useUserAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -73,6 +75,8 @@ export default function BusinessLoginPage() {
         }}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
+          <fieldset disabled={!hydrated || restoringSession || loading} className="min-w-0 space-y-5">
+          {(!hydrated || restoringSession) && <p role="status" className="text-sm text-slate-600">Đang chuẩn bị đăng nhập…</p>}
           <div>
             <label
               className="block text-xs font-medium mb-1.5"
@@ -170,6 +174,7 @@ export default function BusinessLoginPage() {
           >
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
+          </fieldset>
         </form>
 
         <div

@@ -187,7 +187,9 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
   // Storage is a notification channel, never an authority for another account's profile.
   useEffect(() => {
     let mounted = true;
+    let pageActive = true;
     const synchronize = async (force = false) => {
+      if (!mounted || !pageActive) return;
       const storedToken = readApplicationToken();
       if (!storedToken) {
         if (activeSession.current.token) void clearAuthDerivedState();
@@ -240,6 +242,16 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       if (event.key === TOKEN_KEY || event.key === PROFILE_KEY || event.key === null) void synchronize(event.key === PROFILE_KEY);
     };
     const onSession = () => { void synchronize(); };
+    // A navigation abort is not an authentication refusal. Invalidate work
+    // before the browser cancels fetch/body reads in the departing document.
+    const onPageHide = () => {
+      pageActive = false;
+      generation.current += 1; loginSequence.current += 1;
+      pendingRead.current?.abort();
+      activeSession.current = { token: null, user: null };
+      setToken(null); setUser(null); setLoading(true);
+    };
+    const onPageShow = () => { pageActive = true; void synchronize(true); };
     const onFocus = () => { void synchronize(true); };
     const onVisibility = () => { if (document.visibilityState === "visible") void synchronize(true); };
     const interval = window.setInterval(() => {
@@ -248,7 +260,8 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("storage", onStorage);
     window.addEventListener(AUTH_SESSION_EVENT, onSession);
     window.addEventListener("focus", onFocus);
-    window.addEventListener("pageshow", onFocus);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVisibility);
     void synchronize();
     return () => {
@@ -258,7 +271,8 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener(AUTH_SESSION_EVENT, onSession);
       window.removeEventListener("focus", onFocus);
-      window.removeEventListener("pageshow", onFocus);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(interval);
     };
