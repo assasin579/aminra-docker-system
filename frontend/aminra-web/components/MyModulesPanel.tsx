@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import motion from "./MyModulesPanel.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { apiJson } from "@/lib/apiClient";
 import { useUserAuth } from "./UserAuthContext";
@@ -110,7 +111,7 @@ export default function MyModulesPanel() {
 
   if (error) {
     return (
-      <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
+      <section className={`${motion.state} rounded-2xl p-6`} style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
         <div role="alert" className="rounded-xl p-4 text-sm" style={{ background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA" }}>
           {error}
         </div>
@@ -120,7 +121,7 @@ export default function MyModulesPanel() {
 
   return (
     <section data-my-modules-panel="true" className="space-y-6">
-      <div className="rounded-3xl p-6" style={{ background: "linear-gradient(135deg, #0A1F44 0%, #0F766E 100%)", color: "white" }}>
+      <div className={`${motion.hero} rounded-3xl p-6`} style={{ background: "linear-gradient(135deg, #0A1F44 0%, #0F766E 100%)", color: "white" }}>
         <p className="text-sm uppercase tracking-[0.2em] opacity-80">AMINRA modules</p>
         <h1 className="text-3xl font-bold mt-2">Gói module của tôi</h1>
         <p className="mt-2 opacity-90">
@@ -131,10 +132,17 @@ export default function MyModulesPanel() {
         </p>
       </div>
 
-      {loading && <p className="text-sm" style={{ color: "#64748B" }}>Đang tải gói module...</p>}
+      {loading && (
+        <div role="status" aria-live="polite" className={motion.state}>
+          <p className="text-sm" style={{ color: "#64748B" }}>Đang tải gói module...</p>
+          <div aria-hidden="true" className="grid gap-4 md:grid-cols-2 mt-4">
+            {[0, 1].map((index) => <div key={index} className={`${motion.skeleton} h-48 rounded-2xl`} />)}
+          </div>
+        </div>
+      )}
 
       {!loading && modules.length === 0 && (
-        <div className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#475569" }}>
+        <div className={`${motion.state} rounded-2xl p-6`} style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#475569" }}>
           Chưa có module nào được provision cho tenant này. Vui lòng liên hệ AMINRA operator.
         </div>
       )}
@@ -146,7 +154,7 @@ export default function MyModulesPanel() {
           const label = moduleLabel(module);
           const active = ["enabled", "trial"].includes(module.status);
           return (
-            <article key={module.code} className="rounded-2xl p-5 space-y-4" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
+            <article key={module.code} className={`${motion.card} rounded-2xl p-5 space-y-4`} style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-bold text-lg" style={{ color: "#0A1F44" }}>{label}</h2>
                 <span className="text-xs px-2 py-1 rounded-full" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
@@ -175,7 +183,7 @@ export default function MyModulesPanel() {
 
               <div>
                 {active && module.route_path ? (
-                  <Link href={module.route_path} className="inline-flex px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "#0F766E", color: "white" }}>
+                  <Link href={module.route_path} className={`${motion.action} inline-flex px-4 py-2 rounded-xl text-sm font-semibold`} style={{ background: "#0F766E", color: "white" }}>
                     Mở {label}
                   </Link>
                 ) : (

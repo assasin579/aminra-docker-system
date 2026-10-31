@@ -94,7 +94,7 @@ describe("admin sidebar navigation contract", () => {
     expect(screen.getByText("admin@aminra.com")).toBeInTheDocument();
     expect(screen.getByTestId("notification-bell")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Dashboard/i })).toHaveAttribute("href", "/dashboard/provider");
-    expect(screen.getByRole("link", { name: /Chat với Aminra/i })).toHaveAttribute("href", "/chat");
+    expect(screen.queryByRole("link", { name: /Chat với Aminra/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Doanh nghiệp/i })).toHaveAttribute("href", "/portfolio");
     expect(screen.getByRole("link", { name: /Chứng nhận/i })).toHaveAttribute("href", "/certificates");
     expect(screen.getByRole("link", { name: /Quản lý Auditor/i })).toHaveAttribute("href", "/auditors");
