@@ -18,8 +18,9 @@ import SubmissionsPage from "@/app/submissions/page";
 
 // ── Next.js stubs ──────────────────────────────────────────────────────────
 
+const routeReplace = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: routeReplace }),
   useSearchParams: () => ({ get: (key: string) => new URLSearchParams(window.location.search).get(key) }),
 }));
 
@@ -420,6 +421,7 @@ test.each(["revision_required", "future_unrecognized_state"])("renders honest wo
 test("business member cannot start an owner-only submission", async () => {
   mockBizAuth();mockUseUserAuth.mockReturnValue({user:{...BIZ_USER,is_owner:false},token:"member",isAuthenticated:true,loading:false});
   vi.mocked(fetch).mockResolvedValue(emptySubs());render(<SubmissionsPage />);
-  await screen.findByText("Chưa có hồ sơ nào");
+  await waitFor(()=>expect(routeReplace).toHaveBeenCalledWith("/dossiers"));
+  expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).includes("my-submissions"))).toBe(false);
   expect(screen.queryByRole("button",{name:"Gửi hồ sơ mới"})).not.toBeInTheDocument();
 });

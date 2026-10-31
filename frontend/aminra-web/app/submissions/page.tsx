@@ -182,9 +182,10 @@ function SubmissionsContent() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/business/login");
+    if (!loading && isAuthenticated && isBusiness && !isBusinessOwner) router.replace("/dossiers");
     if (!loading && isAuthenticated && !isBusiness && !isProvider)
       router.replace("/landing");
-  }, [loading, isAuthenticated, user, router, isBusiness, isProvider]);
+  }, [loading, isAuthenticated, user, router, isBusiness, isProvider, isBusinessOwner]);
 
   const [auditors, setAuditors] = useState<
     Array<{ id: string; display_name: string; specialty: string | null }>
@@ -220,7 +221,7 @@ function SubmissionsContent() {
   };
 
   const fetchSubs = useCallback(async () => {
-    if (!token) return;
+    if (!token || (isBusiness && !isBusinessOwner)) return;
     setFetching(true);
     try {
       const endpoint = isBusiness
@@ -236,7 +237,7 @@ function SubmissionsContent() {
     } finally {
       setFetching(false);
     }
-  }, [token, isBusiness]);
+  }, [token, isBusiness, isBusinessOwner]);
 
   useEffect(() => {
     if (isAuthenticated) fetchSubs();
@@ -658,7 +659,7 @@ function SubmissionsContent() {
     openAuthed(`/api/api/documents/${docId}/preview`, token || "");
   };
 
-  if (loading || !user)
+  if (loading || !user || (isBusiness && !isBusinessOwner))
     return (
       <div className="grid place-items-center min-h-[60vh]">
         <div className="flex items-center gap-1.5">

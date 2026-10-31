@@ -212,8 +212,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             ),
           },
           {
-            label: "Hồ sơ đã gửi",
-            href: "/submissions",
+            label: user?.is_owner === true ? "Hồ sơ đã gửi" : "Hồ sơ và lịch sử",
+            href: user?.is_owner === true ? "/submissions" : "/dossiers",
             icon: (
               <svg
                 className="w-5 h-5"
