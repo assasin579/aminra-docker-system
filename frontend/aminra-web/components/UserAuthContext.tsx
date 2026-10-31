@@ -167,7 +167,7 @@ function readApplicationToken(): string | null {
 function authorizationScope(user: UserProfile | null, token: string | null): string {
   if (!user) return "anonymous";
   const permissions = user.permissions;
-  const roles = decodeJwtPayload(token || "")?.realm_access?.roles || user.realm_roles || [];
+  const roles = user.realm_roles ?? decodeJwtPayload(token || "")?.realm_access?.roles ?? [];
   return JSON.stringify([user.id, user.tenant_id, user.role, user.status, user.is_owner,
     [...roles].filter(role => ["business", "cb_admin", "auditor", "platform_admin"].includes(role)).sort(), user.is_owner ? [] : [
       !!permissions?.can_edit, !!permissions?.can_delete, !!permissions?.can_upload,
@@ -200,8 +200,9 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       const previous = activeSession.current.user;
       const claims = decodeJwtPayload(storedToken);
       const sameIdentity = !!previous && !!claims &&
-        authorizationScope(previous, activeSession.current.token) === authorizationScope(previous, storedToken) && (
-        !!claims.sub && normalizeIdentity(claims.sub) === normalizeIdentity(previous.keycloak_sub)
+        authorizationScope(previous, activeSession.current.token) === authorizationScope(previous, storedToken) &&
+        JSON.stringify([...(decodeJwtPayload(activeSession.current.token || "")?.realm_access?.roles || [])].sort()) === JSON.stringify([...(claims.realm_access?.roles || [])].sort()) && (
+        !!claims.sub && normalizeIdentity(claims.sub) === normalizeIdentity(previous.keycloak_sub || decodeJwtPayload(activeSession.current.token || "")?.sub)
       );
       if (storedToken !== activeSession.current.token) loginSequence.current += 1;
       const current = ++generation.current;

@@ -51,12 +51,13 @@ function hasPlatformAdminRole(token: string | null): boolean {
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // A storage token is only a candidate credential. Admin UI follows the same
   // verified principal and logout generation as every other application view.
-  const { token, isAuthenticated, loading, logout } = useUserAuth();
+  const { user, token, isAuthenticated, loading, logout } = useUserAuth();
   const login = useCallback(async (returnTo?: string) => {
     await signinRedirect(returnTo ?? "/admin");
   }, []);
 
-  const isAdmin = !loading && isAuthenticated && hasPlatformAdminRole(token);
+  const isAdmin = !loading && isAuthenticated && (Array.isArray(user?.realm_roles)
+    ? user.realm_roles.includes("platform_admin") : hasPlatformAdminRole(token));
 
   return (
     <AdminAuthContext.Provider value={{ isAdmin, token, login, logout }}>

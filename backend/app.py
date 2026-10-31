@@ -38,7 +38,7 @@ from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
 from auth.identity import resolve_canonical_user_id, resolve_canonical_tenant_id
 from auth.permissions import check_permission_db
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
 

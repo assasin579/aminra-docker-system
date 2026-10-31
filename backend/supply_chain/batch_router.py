@@ -1217,8 +1217,6 @@ async def upload_step_photo(
 @router.get("/batches/{bid}/steps/{step_id}/photo/view")
 async def view_step_photo(bid: str, step_id: str, request: Request, token: Optional[str] = Query(None)):
     """View step photo. Supports ?token= for window.open."""
-    from auth.jwt_utils import decode_token
-
     _validate_uuid(bid)
     _validate_uuid(step_id)
     auth = request.headers.get("Authorization", "")

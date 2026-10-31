@@ -1,10 +1,11 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { useState, type ReactNode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { AdminAuthProvider, useAdminAuth } from "@/components/AdminAuthContext";
 import { UserAuthProvider, useUserAuth, type UserProfile } from "@/components/UserAuthContext";
 
 const { oidcGetUser } = vi.hoisted(() => ({ oidcGetUser: vi.fn() }));
-vi.mock("@/lib/auth-oidc", () => ({ isOidcEnabled: () => true, getOidcUser: oidcGetUser, signoutRedirect: vi.fn() }));
+vi.mock("@/lib/auth-oidc", () => ({ isOidcEnabled: () => true, getOidcUser: oidcGetUser, signoutRedirect: vi.fn(), signinRedirect: vi.fn() }));
 const fetchMock = vi.fn();
 function profile(id: string, owner = true): UserProfile {
   return { id, email: id + "@example.invalid", keycloak_sub: id, role: "business", status: "active", company_name: id, company_code: null, tenant_id: id, is_owner: owner };
@@ -101,4 +102,16 @@ it("StrictMode effect replay still verifies and restores the active identity", a
   const { result } = renderHook(() => useUserAuth(), { wrapper, reactStrictMode: true });
   await waitFor(() => expect(result.current.user?.id).toBe("a"));
   expect(result.current.loading).toBe(false);
+});
+
+it("server-confirmed admin downgrade clears cached admin data even while the JWT still lists admin", async () => {
+  const t = "header." + btoa(JSON.stringify({sub:"a",email:"a@example.invalid",realm_access:{roles:["platform_admin","cb_admin"]}})).replace(/=/g,"") + ".signature";
+  localStorage.setItem("aminra_user_token",t);
+  const base = {...profile("a"),role:"provider"};
+  fetchMock.mockResolvedValueOnce(Response.json({...base,realm_roles:["platform_admin","cb_admin"]})).mockResolvedValueOnce(Response.json({...base,realm_roles:["cb_admin"]}));
+  function Cached({admin}:{admin:boolean}) { const [saved] = useState(admin ? "privileged-admin-records" : "provider-records"); return <p>{saved}</p>; }
+  function View() { const {user,refreshProfile}=useUserAuth();const {isAdmin}=useAdminAuth();return user && <><Cached admin={isAdmin}/><button onClick={()=>void refreshProfile()}>Refresh authority</button></>; }
+  render(<UserAuthProvider><AdminAuthProvider><View/></AdminAuthProvider></UserAuthProvider>);
+  await screen.findByText("privileged-admin-records");fireEvent.click(screen.getByText("Refresh authority"));
+  await screen.findByText("provider-records");expect(screen.queryByText("privileged-admin-records")).toBeNull();
 });

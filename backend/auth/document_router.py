@@ -24,7 +24,7 @@ from uuid import uuid4 as _uuid4
 
 from auth.db import get_db
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
 from services.feature_flags import is_feature_enabled

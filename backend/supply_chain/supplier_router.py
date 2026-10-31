@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, 
 from fastapi.responses import FileResponse
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.permissions import check_permission_db
 from auth.identity import resolve_canonical_tenant_id
 from auth.module_guard import require_module

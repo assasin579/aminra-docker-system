@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from auth.db import get_db
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.notification_router import notify
 from services.conflict_interest import assert_no_unresolved_conflict
 
