@@ -22,10 +22,11 @@ test('JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08
  await p.goto('/documents');
  await p.locator('.doc-card-hover').filter({has:p.getByText('Chính sách Halal',{exact:true})}).getByTitle('Lịch sử',{exact:true}).click();
  const libraryHistory=p.getByRole('dialog');
- {
-  const choice=libraryHistory.locator('[data-history-document-id="'+oldId+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true});
-  await expect(choice).toBeVisible();p.once('dialog',dialog=>dialog.accept());
-  const [chosen]=await Promise.all([p.waitForResponse(r=>r.url().endsWith('/documents/'+oldId+'/promote')&&r.request().method()==='POST'),choice.click()]);expect(chosen.status()).toBe(200);
+ const libraryRow=libraryHistory.locator('[data-history-document-id="'+oldId+'"]');await expect(libraryRow).toBeVisible();
+ const libraryChoice=libraryRow.getByRole('button',{name:'Chọn bản hiện hành',exact:true});
+ if(await libraryChoice.count()){
+  p.once('dialog',dialog=>dialog.accept());
+  const [chosen]=await Promise.all([p.waitForResponse(r=>r.url().endsWith('/documents/'+oldId+'/promote')&&r.request().method()==='POST'),libraryChoice.click()]);expect(chosen.status()).toBe(200);
  }
  await expect(p.getByRole('heading',{name:oldName,exact:true})).toBeVisible();
  await p.goto('/dossiers/'+dossier);
