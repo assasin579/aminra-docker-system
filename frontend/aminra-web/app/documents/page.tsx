@@ -276,7 +276,7 @@ export default function DocumentsPage() {
         });
         if (filterType) params.set("doc_type", filterType);
         if (filterStatus) params.set("status", filterStatus);
-        const res = await fetch(documentApiPath(`?view=all&${params}`), {
+        const res = await fetch(documentApiPath(`?view=latest_by_type&${params}`), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
@@ -1738,6 +1738,7 @@ export default function DocumentsPage() {
                 return (
                   <div
                     key={rev.id}
+                    data-history-document-id={rev.id}
                     className="px-6 py-4 transition-all hover:bg-black/[0.02]"
                     style={{ borderBottom: "1px solid #E2E8F0" }}
                   >
