@@ -1217,15 +1217,17 @@ async def upload_step_photo(
 @router.get("/batches/{bid}/steps/{step_id}/photo/view")
 async def view_step_photo(bid: str, step_id: str, request: Request, token: Optional[str] = Query(None)):
     """View step photo. Supports ?token= for window.open."""
-    from auth.jwt_utils import decode_token
-
     _validate_uuid(bid)
     _validate_uuid(step_id)
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        user = decode_token(auth[7:])
+        from auth.keycloak_validator import authenticate_keycloak_token
+        from auth.db import get_pool
+        user = await authenticate_keycloak_token(auth[7:], get_pool())
     elif token:
-        user = decode_token(token)
+        from auth.keycloak_validator import authenticate_keycloak_token
+        from auth.db import get_pool
+        user = await authenticate_keycloak_token(token, get_pool())
     else:
         raise HTTPException(401)
     tenant_id = _require_business(user)

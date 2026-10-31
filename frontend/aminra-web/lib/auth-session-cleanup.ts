@@ -1,3 +1,5 @@
+import { clearPrivateClientData } from "./private-client-cache";
+
 export type AuthPurgeReason =
   | "login_start"
   | "logout"
@@ -23,6 +25,7 @@ const AUTH_TRANSACTION_KEYS = [
 
 function removeKeys(storage: Storage | undefined): void {
   if (!storage) return;
+  clearPrivateClientData(storage);
   for (const key of [...AUTH_KEYS, ...AUTH_TRANSACTION_KEYS]) storage.removeItem(key);
 
   const oidcKeys: string[] = [];
@@ -31,6 +34,29 @@ function removeKeys(storage: Storage | undefined): void {
     if (key?.startsWith("oidc.")) oidcKeys.push(key);
   }
   for (const key of oidcKeys) storage.removeItem(key);
+}
+
+/** Synchronous local logout without removing the OIDC session needed for end-session. */
+export function clearApplicationCredentials(): void {
+  if (typeof window === "undefined") return;
+  void clearPrivateOfflineState();
+  for (const storage of [window.localStorage, window.sessionStorage]) {
+    for (const key of AUTH_KEYS) storage.removeItem(key);
+    clearPrivateClientData(storage);
+  }
+}
+
+/** Legacy offline payloads and bearer credentials must not survive account changes. */
+export function clearPrivateOfflineState(): Promise<boolean> {
+  if (typeof indexedDB === "undefined") return Promise.resolve(true);
+  return new Promise(resolve => {
+    try {
+      const request = indexedDB.deleteDatabase("aminra-offline");
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+      request.onblocked = () => resolve(false);
+    } catch { resolve(false); }
+  });
 }
 
 async function deleteAminraCaches(): Promise<void> {
@@ -78,6 +104,6 @@ export async function purgeAuthSessionState(
     removeKeys(globalThis.localStorage);
     removeKeys(globalThis.sessionStorage);
   }
-  await deleteAminraCaches();
+  await Promise.all([deleteAminraCaches(), clearPrivateOfflineState()]);
   notifyAuthSessionChanged(reason);
 }

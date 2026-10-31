@@ -2,6 +2,8 @@
 
 import {
   createContext,
+  Fragment,
+  useRef,
   useContext,
   useState,
   useEffect,
@@ -10,6 +12,8 @@ import {
 } from "react";
 import {
   AUTH_SESSION_EVENT,
+  clearApplicationCredentials,
+  clearPrivateOfflineState,
   notifyAuthSessionChanged,
   purgeAuthSessionState,
   removeLegacyAdminSessionKey,
@@ -156,50 +160,118 @@ function assertKeycloakIdentityMatchesProfile(
   }
 }
 
+function readApplicationToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+
+function authorizationScope(user: UserProfile | null, token: string | null): string {
+  if (!user) return "anonymous";
+  const permissions = user.permissions;
+  const roles = user.realm_roles ?? decodeJwtPayload(token || "")?.realm_access?.roles ?? [];
+  return JSON.stringify([user.id, user.tenant_id, user.role, user.status, user.is_owner,
+    [...roles].filter(role => ["business", "cb_admin", "auditor", "platform_admin"].includes(role)).sort(), user.is_owner ? [] : [
+      !!permissions?.can_edit, !!permissions?.can_delete, !!permissions?.can_upload,
+      !!permissions?.can_approve, !!permissions?.can_approve_documents,
+    ]]);
+}
+
 export function UserAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const generation = useRef(0);
+  const loginSequence = useRef(0);
+  const activeSession = useRef<{ token: string | null; user: UserProfile | null }>({ token: null, user: null });
+  const pendingRead = useRef<AbortController | null>(null);
 
-  // Restore from localStorage OR sessionStorage and verify
+  // Storage is a notification channel, never an authority for another account's profile.
   useEffect(() => {
-    const storedToken =
-      localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-    const storedProfile =
-      localStorage.getItem(PROFILE_KEY) || sessionStorage.getItem(PROFILE_KEY);
-    if (!storedToken || !storedProfile) {
-      setLoading(false);
-      return;
-    }
-
-    fetch("/api/auth/me", {
-      headers: { Authorization: `Bearer ${storedToken}` },
-    })
-      .then(async (res) => {
-        if (res.ok) {
-          const profile = (await res.json()) as UserProfile;
-          assertKeycloakIdentityMatchesProfile(storedToken, profile);
-          setToken(storedToken);
-          setUser(profile);
-          if (localStorage.getItem(TOKEN_KEY))
-            localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-          else sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-        } else {
-          await purgeAuthSessionState("auth_rejected");
-          setToken(null);
-          setUser(null);
-        }
-      })
-      .catch(async () => {
+    let mounted = true;
+    const synchronize = async (force = false) => {
+      const storedToken = readApplicationToken();
+      if (!storedToken) {
+        if (activeSession.current.token) loginSequence.current += 1;
+        generation.current += 1; pendingRead.current?.abort();
+        activeSession.current = { token: null, user: null };
+        setToken(null); setUser(null); setLoading(false);
+        return;
+      }
+      if (!force && storedToken === activeSession.current.token) return;
+      const previous = activeSession.current.user;
+      const claims = decodeJwtPayload(storedToken);
+      const sameIdentity = !!previous && !!claims &&
+        authorizationScope(previous, activeSession.current.token) === authorizationScope(previous, storedToken) &&
+        JSON.stringify([...(decodeJwtPayload(activeSession.current.token || "")?.realm_access?.roles || [])].sort()) === JSON.stringify([...(claims.realm_access?.roles || [])].sort()) && (
+        !!claims.sub && normalizeIdentity(claims.sub) === normalizeIdentity(previous.keycloak_sub || decodeJwtPayload(activeSession.current.token || "")?.sub)
+      );
+      if (storedToken !== activeSession.current.token) loginSequence.current += 1;
+      const current = ++generation.current;
+      pendingRead.current?.abort();
+      const controller = new AbortController(); pendingRead.current = controller;
+      const deadline = window.setTimeout(() => controller.abort(), 5000);
+      activeSession.current = { token: storedToken, user: sameIdentity ? previous : null };
+      if (!sameIdentity) { setToken(null); setUser(null); setLoading(true); }
+      try {
+        const response = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${storedToken}` }, signal: controller.signal });
+        if (!mounted || current !== generation.current || readApplicationToken() !== storedToken) return;
+        if (!response.ok) throw new Error("Session rejected");
+        const profile = (await response.json()) as UserProfile;
+        if (!mounted || current !== generation.current || readApplicationToken() !== storedToken) return;
+        assertKeycloakIdentityMatchesProfile(storedToken, profile);
+        activeSession.current = { token: storedToken, user: profile };
+        setToken(storedToken); setUser(profile);
+        const storage = localStorage.getItem(TOKEN_KEY) === storedToken ? localStorage : sessionStorage;
+        const serialized = JSON.stringify(profile);
+        if (storage.getItem(PROFILE_KEY) !== serialized) storage.setItem(PROFILE_KEY, serialized);
+      } catch {
+        if (!mounted || current !== generation.current || readApplicationToken() !== storedToken) return;
+        activeSession.current = { token: null, user: null };
+        setToken(null); setUser(null); setLoading(false);
         await purgeAuthSessionState("auth_rejected");
-        setToken(null);
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        window.clearTimeout(deadline);
+        if (mounted && current === generation.current) setLoading(false);
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === TOKEN_KEY || event.key === PROFILE_KEY || event.key === null) void synchronize(event.key === PROFILE_KEY);
+    };
+    const onSession = () => { void synchronize(); };
+    const onFocus = () => { void synchronize(true); };
+    const onVisibility = () => { if (document.visibilityState === "visible") void synchronize(true); };
+    const interval = window.setInterval(() => {
+      if (activeSession.current.token && document.visibilityState === "visible") void synchronize(true);
+    }, 10000);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(AUTH_SESSION_EVENT, onSession);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    void synchronize();
+    return () => {
+      mounted = false; generation.current += 1; pendingRead.current?.abort();
+      // Effect replay must not mistake an aborted verification for a restored session.
+      activeSession.current = { token: null, user: null };
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(AUTH_SESSION_EVENT, onSession);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const _saveSession = useCallback(
-    (t: string, u: UserProfile, remember = true) => {
+    (t: string, u: UserProfile, remember = true, preserveOidc = false) => {
+      assertKeycloakIdentityMatchesProfile(t, u);
+      generation.current += 1; pendingRead.current?.abort();
+      activeSession.current = { token: t, user: u };
+      void clearPrivateOfflineState();
+      if (!preserveOidc) {
+        removeStoredAuthSessionKeys(localStorage);
+        removeStoredAuthSessionKeys(sessionStorage);
+      }
+      setLoading(false);
       setToken(t);
       setUser(u);
       const storage = remember ? localStorage : sessionStorage;
@@ -222,11 +294,13 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
 
   const loginBusiness = useCallback(
     async (email: string, password: string, remember = true) => {
+      const attempt = ++loginSequence.current; generation.current += 1;
       const { access_token, user: u } = await apiLogin(
         email,
         password,
         "business",
       );
+      if (attempt !== loginSequence.current) throw new Error("Yêu cầu đăng nhập đã được thay thế bởi một phiên mới.");
       if (u.role !== "business")
         throw new Error("Tài khoản không phải doanh nghiệp");
       _saveSession(access_token, u, remember);
@@ -236,11 +310,13 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
 
   const loginProvider = useCallback(
     async (email: string, password: string, remember = true) => {
+      const attempt = ++loginSequence.current; generation.current += 1;
       const { access_token, user: u } = await apiLogin(
         email,
         password,
         "provider",
       );
+      if (attempt !== loginSequence.current) throw new Error("Yêu cầu đăng nhập đã được thay thế bởi một phiên mới.");
       if (u.role !== "provider")
         throw new Error("Tài khoản không phải tổ chức");
       _saveSession(access_token, u, remember);
@@ -250,6 +326,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
 
   const loginViaKeycloak = useCallback(
     async (accessToken: string, expectedRole?: UserRole) => {
+      const attempt = ++loginSequence.current; generation.current += 1;
       // BE dual-auth path validates the Keycloak JWT and returns the
       // enriched profile. Use the same /api/auth/me endpoint as the
       // legacy refresh path — keeps server logic single-source.
@@ -264,12 +341,16 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         throw new Error(msg);
       }
       const profile = (await res.json()) as UserProfile;
+      if (attempt !== loginSequence.current) throw new Error("Yêu cầu đăng nhập đã được thay thế bởi một phiên mới.");
       try {
         assertKeycloakIdentityMatchesProfile(accessToken, profile);
       } catch (error) {
-        await purgeAuthSessionState("callback_mismatch");
-        setToken(null);
-        setUser(null);
+        if (attempt === loginSequence.current) {
+          generation.current += 1; pendingRead.current?.abort();
+          activeSession.current = { token: null, user: null };
+          setToken(null); setUser(null);
+          await purgeAuthSessionState("callback_mismatch");
+        }
         throw error;
       }
       if (expectedRole && profile.role !== expectedRole) {
@@ -277,28 +358,34 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
           `Tài khoản không phù hợp (kỳ vọng ${expectedRole}, nhận được ${profile.role})`,
         );
       }
-      _saveSession(accessToken, profile, true);
+      _saveSession(accessToken, profile, true, true);
       return profile;
     },
     [_saveSession],
   );
 
   const refreshProfile = useCallback(async () => {
-    if (!token) return;
-    const res = await fetch("/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!token || activeSession.current.token !== token) return;
+    const current = ++generation.current;
+    const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+    if (current !== generation.current || activeSession.current.token !== token || readApplicationToken() !== token) return;
     if (!res.ok) return;
     const profile = (await res.json()) as UserProfile;
+    if (current !== generation.current || readApplicationToken() !== token) return;
+    assertKeycloakIdentityMatchesProfile(token, profile);
+    activeSession.current = { token, user: profile };
     setUser(profile);
-    // Persist into whichever storage has the token
-    if (localStorage.getItem(TOKEN_KEY))
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-    else if (sessionStorage.getItem(TOKEN_KEY))
-      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    const storage = localStorage.getItem(TOKEN_KEY) === token ? localStorage : sessionStorage;
+    storage.setItem(PROFILE_KEY, JSON.stringify(profile));
   }, [token]);
 
   const logout = useCallback(() => {
+    const attempt = ++loginSequence.current;
+    generation.current += 1; pendingRead.current?.abort();
+    activeSession.current = { token: null, user: null };
+    clearApplicationCredentials();
+    setLoading(false);
+    notifyAuthSessionChanged("logout");
     // Detect Keycloak session via stored OIDC user. If present, redirect
     // through Keycloak end-session endpoint so realm cookie is cleared —
     // otherwise next "Đăng nhập SSO" would auto-relogin same user.
@@ -312,7 +399,9 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         const oidcUser = isOidcEnabled()
           ? await getOidcUser().catch(() => null)
           : null;
+        if (attempt !== loginSequence.current || readApplicationToken()) return;
         await purgeAuthSessionState("logout");
+        if (attempt !== loginSequence.current || readApplicationToken()) return;
         if (oidcUser) {
           // Only browser-initiated SSO sessions need Keycloak end-session.
           // Normal business/provider logins use the AMINRA form plus a
@@ -321,7 +410,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
           await signoutRedirect(oidcUser);
         }
       } catch {
-        await purgeAuthSessionState("logout");
+        if (attempt === loginSequence.current && !readApplicationToken()) await purgeAuthSessionState("logout");
       }
     })();
   }, []);
@@ -340,7 +429,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         logout,
       }}
     >
-      {children}
+      <Fragment key={authorizationScope(user, token)}>{children}</Fragment>
     </UserAuthContext.Provider>
   );
 }

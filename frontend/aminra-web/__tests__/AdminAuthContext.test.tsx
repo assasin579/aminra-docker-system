@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { UserAuthProvider } from "@/components/UserAuthContext";
 import { getOidcUser, signoutRedirect } from "@/lib/auth-oidc";
 import { AdminAuthProvider, useAdminAuth } from "@/components/AdminAuthContext";
 
 vi.mock("@/lib/auth-oidc", () => ({
+  isOidcEnabled: () => true,
   getOidcUser: vi.fn(),
   signinRedirect: vi.fn(),
   signoutRedirect: vi.fn(),
@@ -11,7 +13,7 @@ vi.mock("@/lib/auth-oidc", () => ({
 
 function jwtWithRoles(roles: string[]): string {
   const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({ realm_access: { roles } }));
+  const payload = btoa(JSON.stringify({ sub: "admin-sub", email: "admin@example.invalid", realm_access: { roles } }));
   return `${header}.${payload}.signature`;
 }
 
@@ -27,9 +29,9 @@ function Probe() {
 
 function renderProbe() {
   return render(
-    <AdminAuthProvider>
+    <UserAuthProvider><AdminAuthProvider>
       <Probe />
-    </AdminAuthProvider>,
+    </AdminAuthProvider></UserAuthProvider>,
   );
 }
 
@@ -38,17 +40,17 @@ describe("AdminAuthProvider token synchronization", () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({id:"admin-app",keycloak_sub:"admin-sub",email:"admin@example.invalid",role:"provider",status:"active",tenant_id:"admin-app",is_owner:true})));
   });
 
-  it("loads an existing platform_admin user token on mount", async () => {
+  it("loads an existing platform_admin token only after principal verification", async () => {
     localStorage.setItem(
       "aminra_user_token",
       jwtWithRoles(["business", "platform_admin"]),
     );
     renderProbe();
-    await expect(screen.findByTestId("admin-state")).resolves.toHaveTextContent(
-      "admin",
-    );
+    expect(screen.getByTestId("admin-state")).toHaveTextContent("not-admin");
+    await waitFor(() => expect(screen.getByTestId("admin-state")).toHaveTextContent("admin"));
   });
 
   it("refreshes in the same tab after UserAuthContext saves a Keycloak token", async () => {

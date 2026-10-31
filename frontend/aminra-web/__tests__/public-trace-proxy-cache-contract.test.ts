@@ -68,8 +68,9 @@ describe("public trace Next proxy cache contract", () => {
 
     const response = await route.GET(adminRequest(), adminParams);
 
-    expect(response.headers.get("cdn-cache-control")).toBeNull();
-    expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+    expect(response.headers.get("cdn-cache-control")).toBe("no-store");
+    expect(response.headers.get("cache-control")).toContain("private, no-store");
+    expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("no-store");
     expect(response.headers.get("x-aminra-proxy-cache")).toBeNull();
   });
 

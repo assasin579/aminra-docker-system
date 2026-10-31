@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from asyncpg import Connection
 
 from auth.db import get_db
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.notification_router import notify
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
 from services.audit_log import log_audit
@@ -40,10 +40,9 @@ async def _enriched_user_from_header_or_query(request: Request, token: Optional[
     if not tk:
         raise HTTPException(401, "Unauthorized")
     try:
-        claims = decode_token(tk)
         from auth import keycloak_validator
         from auth.db import get_pool
-        return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+        return await keycloak_validator.authenticate_keycloak_token(tk, get_pool())
     except HTTPException:
         raise
     except Exception:

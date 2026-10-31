@@ -24,7 +24,7 @@ from uuid import uuid4 as _uuid4
 
 from auth.db import get_db
 from auth.identity import resolve_canonical_tenant_id, resolve_canonical_user_id
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
 from services.feature_flags import is_feature_enabled
@@ -62,10 +62,9 @@ async def _get_user_from_header_or_query(request: Request, token: str | None) ->
     if not raw_token:
         raise HTTPException(401, "Not authenticated")
 
-    claims = decode_token(raw_token)
     from auth import keycloak_validator
     from auth.db import get_pool
-    return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+    return await keycloak_validator.authenticate_keycloak_token(raw_token, get_pool())
 
 
 def _validate_uuid(value: str) -> str:

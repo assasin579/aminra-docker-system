@@ -358,7 +358,7 @@ describe("profile shape edge cases", () => {
 
 
 describe("concurrent loginViaKeycloak calls", () => {
-  it("two simultaneous calls — both fetches happen, last write wins", async () => {
+  it("two simultaneous calls reject the superseded identity and keep the latest intent", async () => {
     let resolves: Array<(v: unknown) => void> = [];
     fetchMock.mockImplementation(
       () => new Promise((r) => resolves.push(r)),
@@ -380,10 +380,13 @@ describe("concurrent loginViaKeycloak calls", () => {
         company_name: "Second", company_code: null,
         is_owner: true, tenant_id: "t2",
       }));
-      await Promise.all([p1, p2]);
+      const settled = await Promise.allSettled([p1, p2]);
+      expect(settled[0].status).toBe("rejected");
+      expect(settled[1].status).toBe("fulfilled");
     });
-    // Last successful save wins
-    expect(["first@x", "second@x"]).toContain(result.current.user?.email);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.current.user?.email).toBe("second@x");
+    expect(localStorage.getItem("aminra_user_token")).toBe("tok-2");
   });
 });
 

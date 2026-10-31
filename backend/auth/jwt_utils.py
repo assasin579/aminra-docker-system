@@ -84,8 +84,7 @@ async def get_current_user(
     if not keycloak_validator.looks_like_keycloak_token(token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
 
-    claims = keycloak_validator.validate_keycloak_token(token)
-    return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+    return await keycloak_validator.authenticate_keycloak_token(token, get_pool())
 
 
 def require_business_owner(user: dict = Depends(get_current_user)) -> dict:

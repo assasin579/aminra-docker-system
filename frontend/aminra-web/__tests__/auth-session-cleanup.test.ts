@@ -44,7 +44,8 @@ describe("purgeAuthSessionState", () => {
     expect(sessionStorage.getItem("aminra_user_profile")).toBeNull();
     expect(sessionStorage.getItem("oidc.user:https://auth.silvergem.org/realms/aminra:aminra-frontend")).toBeNull();
     expect(localStorage.getItem("aminra_lang")).toBe("vi");
-    expect(localStorage.getItem("aminra_file_versions_demo")).toBe("draft-data");
+    // Filename-only history contains private analysis and must not survive account changes.
+    expect(localStorage.getItem("aminra_file_versions_demo")).toBeNull();
     expect(deletedCaches).toEqual(["aminra-v5", "aminra-v6"]);
   });
 
@@ -75,4 +76,14 @@ describe("purgeAuthSessionState", () => {
     expect(sessionStorage.getItem("aminra_auth_nonce")).toBeNull();
     expect(localStorage.getItem("aminra_lang")).toBe("vi");
   });
+});
+
+it("requests legacy offline private database deletion and reports blocked deletion without hanging logout", async () => {
+  const { clearPrivateOfflineState } = await import("@/lib/auth-session-cleanup");
+  let request: { onsuccess?: () => void; onerror?: () => void; onblocked?: () => void } = {};
+  const deleteDatabase = vi.fn(() => { request = {}; return request; });
+  vi.stubGlobal("indexedDB", { deleteDatabase });
+  const success = clearPrivateOfflineState(); request.onsuccess?.(); await expect(success).resolves.toBe(true);
+  const blocked = clearPrivateOfflineState(); request.onblocked?.(); await expect(blocked).resolves.toBe(false);
+  expect(deleteDatabase).toHaveBeenCalledWith("aminra-offline");
 });
