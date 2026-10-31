@@ -8,6 +8,7 @@ import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
+import RevisionPanel from "@/components/submissions/RevisionPanel";
 import { DOC_TYPE_LABEL_VI, canEditDossierDocuments } from "@/lib/dossierWorkflow";
 
 interface DocTypeReq {
@@ -220,7 +221,9 @@ export default function DossierDetailPage({
   const idempotencyBySlot = useRef<Record<string, { signature: string; key: string }>>({});
 
   const canEditDocuments = canEditDossierDocuments(user, dossier);
-  const hasSubmission = Array.isArray(readiness?.requirement_slots) && readiness.requirement_slots.some((slot) => Boolean(slot.submission_id));
+  const linkedSubmissionId = Array.isArray(readiness?.requirement_slots)
+    ? readiness.requirement_slots.find((slot) => Boolean(slot.submission_id))?.submission_id ?? null : null;
+  const hasSubmission = Boolean(linkedSubmissionId);
   const isClosed = dossier ? ["cancelled", "cert_issued"].includes(dossier.status) : false;
 
   useEffect(() => {
@@ -734,8 +737,17 @@ export default function DossierDetailPage({
             ↑ Bổ sung tài liệu vào hồ sơ
           </a>
           </>}
-          {hasSubmission && <Link href="/submissions" className="rounded-xl border border-slate-300 px-5 py-2.5 text-center text-sm font-semibold">Xem hồ sơ đã gửi</Link>}
+          {hasSubmission && user?.is_owner === true && <Link href="/submissions" className="rounded-xl border border-slate-300 px-5 py-2.5 text-center text-sm font-semibold">Xem hồ sơ đã gửi</Link>}
         </div>
+
+        {linkedSubmissionId && token && user?.role === "business" && user.is_owner !== true && (
+          <section id="dossier-submission-history" aria-label="Lịch sử hồ sơ đã gửi" className="mt-6">
+            <p className="mb-3 text-sm text-slate-600">Bạn có thể xem lịch sử; chủ tài khoản doanh nghiệp phụ trách gửi và gửi lại hồ sơ.</p>
+            <RevisionPanel submissionId={linkedSubmissionId} status="read_only" role="business"
+              token={token} canResubmit={false}
+              documents={dossier.documents.map((doc) => ({id:doc.id,filename:doc.original_filename,doc_type:doc.doc_type}))} />
+          </section>
+        )}
 
         {dossier.notes && (
           <div className="mt-6">
