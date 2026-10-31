@@ -48,6 +48,7 @@ type Dashboard = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
+  respond_to_revision: "Xem yêu cầu sửa",
   submit_dossier_to_cb: "Gửi hồ sơ cho đơn vị chứng nhận",
   upload_required_documents: "Bổ sung tài liệu",
   replace_rejected_documents: "Sửa tài liệu bị trả lại",
@@ -58,6 +59,7 @@ const BOUND_READINESS_STATES = new Set([
   "requirements_pending",
   "documents_rejected",
   "documents_ready_to_submit",
+  "revision_required",
   "documents_in_review",
   "ncr_open",
   "capa_in_review",
@@ -239,7 +241,7 @@ export default function BusinessReadinessProfiles({ token, contextKey }: { token
               versionId &&
               slots.some((slot) => slot.required),
             );
-            const businessAction = readiness?.next_actor_role === "business";
+            const businessAction = ["business", "business_owner"].includes(readiness?.next_actor_role ?? "");
             const actionLabel = ACTION_LABELS[readiness?.next_action ?? ""] ?? "Xem hồ sơ";
             const dossierHref = `/dossiers/${encodeURIComponent(dossier.id)}`;
 

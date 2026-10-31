@@ -604,3 +604,16 @@ async def test_prepared_packet_handoff_changes_only_after_submission(submitted):
     assert result["next_action"] == ("review_uploaded_documents" if submitted else "submit_dossier_to_cb")
     assert result["next_actor_role"] == ("reviewer" if submitted else "business")
     assert all(slot["state"] == ("pending_review" if submitted else "ready_to_submit") for slot in result["requirement_slots"])
+
+
+async def test_revision_request_assigns_the_next_action_to_the_business_owner():
+    from services.dossier_readiness import compute_dossier_readiness
+    dossier_id,tenant_id,standard_id=uuid4(),uuid4(),uuid4()
+    docs=[FakeRecord(id=uuid4(),doc_type=kind,status="compliant",approval_status=None,compliance_score=99,evaluation_result={},version_number=1) for kind in ["halal_policy","has_manual"]]
+    db=_base_db(dossier_id=dossier_id,tenant_id=tenant_id,standard_id=standard_id,docs=docs)
+    db.fetchrow_responses[1][1]["status"]="revision_required"
+    result=await compute_dossier_readiness(db,dossier_id=str(dossier_id),tenant_id=str(tenant_id))
+    assert result["state"]=="revision_required"
+    assert result["next_action"]=="respond_to_revision"
+    assert result["next_actor_role"]==result["next_action_owner_role"]=="business_owner"
+    assert result["readiness_percent"]==0 and result["certificate_issue_blocked"] is True

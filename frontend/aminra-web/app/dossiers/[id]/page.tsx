@@ -108,6 +108,7 @@ const NEXT_ACTION_LABEL: Record<string, string> = {
   upload_required_documents: "Tải lên tài liệu bắt buộc",
   replace_rejected_documents: "Thay thế tài liệu bị từ chối",
   submit_dossier_to_cb: "Gửi hồ sơ cho đơn vị chứng nhận",
+  respond_to_revision: "Sửa theo phản hồi và gửi lại cho đơn vị chứng nhận",
   review_uploaded_documents: "Chờ đơn vị chứng nhận xem xét tài liệu",
   submit_capa_evidence: "Gửi bằng chứng khắc phục (CAPA)",
   verify_capa_evidence: "Chờ xác minh bằng chứng CAPA",
@@ -118,7 +119,7 @@ const NEXT_ACTION_LABEL: Record<string, string> = {
 
 const ACTOR_ROLE_LABEL: Record<string, string> = {
   business: "Doanh nghiệp",
-  business_owner: "Doanh nghiệp",
+  business_owner: "Chủ tài khoản doanh nghiệp",
   reviewer: "Chuyên viên thẩm định",
   provider: "Đơn vị chứng nhận",
   auditor: "Chuyên gia đánh giá",
@@ -132,6 +133,7 @@ const DOSSIER_STATE_LABEL: Record<string, string> = {
   requirements_pending: "Còn thiếu hồ sơ",
   documents_rejected: "Cần sửa tài liệu bị từ chối",
   documents_ready_to_submit: "Đã chuẩn bị tài liệu — chưa gửi đơn vị chứng nhận",
+  revision_required: "Cần sửa và gửi lại",
   documents_in_review: "Tài liệu đang được thẩm định",
   ncr_open: "Còn điểm không phù hợp cần khắc phục",
   capa_in_review: "CAPA đang được xác minh",
@@ -378,7 +380,11 @@ export default function DossierDetailPage({
     );
   }
 
-  const st = STATUS_LABEL[dossier.status] ?? { vi: dossier.status, color: "#6B7280" };
+  const st = !isClosed && hasSubmission
+    ? readiness?.state === "revision_required"
+      ? { vi: "Cần sửa và gửi lại", color: "#B45309" }
+      : { vi: "Đã gửi đơn vị chứng nhận", color: "#0891B2" }
+    : STATUS_LABEL[dossier.status] ?? { vi: dossier.status, color: "#6B7280" };
   const uploadedDocTypes = new Set(
     dossier.documents.filter((d) => d.doc_type).map((d) => d.doc_type),
   );
