@@ -8,6 +8,7 @@ test('[API] SCOPE-01 @CB-05 @DOC-05 @DOC-07 @E2E-12 CB sees exact packet, not an
  const docs=[];for(let i=0;i<2;i++){
   const r=await request.post(config.base_url+'/api/dossiers/'+dossiers[i].id+'/documents',{headers:{Authorization:'Bearer '+f.biz,'Idempotency-Key':randomUUID()},multipart:{doc_type:'halal_policy',file:{name:f.name+'-'+i+'.pdf',mimeType:'application/pdf',buffer:pdf('Scope '+i)}}});expect(r.status(),await r.text()).toBe(200);docs.push((await r.json()).document_id);
  }
+ await api(request,f.biz,'/api/documents/'+docs[0]+'/promote','POST');
  const sub=await api(request,f.biz,'/api/submissions/submit','POST',{provider_id:config.actors.cbX.id,document_ids:[docs[0]],dossier_id:dossiers[0].id});
  const history=await api(request,cb,'/api/submissions/received/'+sub.submission_id+'/doc-revisions/halal_policy');expect(history.revisions.map((r:any)=>r.id)).toEqual([docs[0]]);
  const wrong=await request.get(config.base_url+'/api/api/submissions/received/'+sub.submission_id+'/doc-revisions/halal_policy',{headers:{Authorization:'Bearer '+foreign}});expect(wrong.status()).toBe(404);
@@ -19,6 +20,7 @@ test('[API] VERSION-01 @DOC-05 @DOC-06 owner current selection is idempotent and
  const owner=await token(request,'bizA');const r=await request.post(config.base_url+'/api/api/documents/upload',{headers:{Authorization:'Bearer '+owner},multipart:{doc_type:'halal_policy',file:{name:config.run_id+'-version.pdf',mimeType:'application/pdf',buffer:pdf('Version UAT')}}});expect(r.status()).toBe(200);const doc=(await r.json()).id;
  const before=await api(request,owner,'/api/documents/'+doc);const first=await api(request,owner,'/api/documents/'+doc+'/promote','POST');expect(first.changed).toBe(true);
  const again=await api(request,owner,'/api/documents/'+doc+'/promote','POST');expect(again.changed).toBe(false);
+ for(const actor of ['member','assigned','cbX'] as const){const denied=await request.post(config.base_url+'/api/api/documents/'+doc+'/promote',{headers:{Authorization:'Bearer '+await token(request,actor)}});expect(denied.status()).toBe(403);}
  const after=await api(request,owner,'/api/documents/'+doc);expect(after.uploaded_at).toBe(before.uploaded_at);expect(after.approval_status).toBe(before.approval_status);expect(after.is_current_selection).toBe(true);
 });
 
@@ -44,13 +46,14 @@ test('PINNED-01 @STD-03 @STD-04 @DOS-06 @E2E-05 published v2 does not change old
 test('LIBRARY-01 @DOC-05 @DOS-06 one representative per type preserves history and explicitly selected older files',async({page,request},info)=>{
  const owner=await login(page,'bizB');const names=[config.run_id+'-one.pdf',config.run_id+'-two.pdf'];const ids:string[]=[];
  for(const name of names){const r=await request.post(config.base_url+'/api/api/documents/upload',{headers:{Authorization:'Bearer '+owner},multipart:{doc_type:'halal_policy',file:{name,mimeType:'application/pdf',buffer:pdf(name)}}});expect(r.status()).toBe(200);ids.push((await r.json()).id);}
- await page.goto('/documents');await expect(page.getByRole('heading',{name:names[1],exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:names[0],exact:true})).toHaveCount(0);
+ await page.goto('/documents');await expect(page.getByRole('heading',{name:names[1],exact:true})).toHaveCount(0);await expect(page.getByRole('heading',{name:names[0],exact:true})).toHaveCount(0);
  const latest=await api(request,owner,'/api/documents?view=latest_by_type&doc_type=halal_policy');expect(latest.total).toBe(1);expect(latest.documents[0].id).toBe(ids[1]);
- await page.getByTitle('Lịch sử',{exact:true}).click();const history=page.getByRole('dialog');for(const name of names)await expect(history.getByText(name,{exact:true})).toBeVisible();
+ const initialOfficial=await api(request,owner,'/api/documents?view=official_by_type&doc_type=halal_policy');expect(initialOfficial.total).toBe(0);
+ await page.getByRole('button',{name:'Chọn bản chính cho Chính sách Halal',exact:true}).click();const history=page.getByRole('dialog');for(const name of names)await expect(history.getByText(name,{exact:true})).toBeVisible();
  page.once('dialog',dialog=>dialog.accept());
  const [chosen]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/documents/'+ids[0]+'/promote')&&r.request().method()==='POST'),history.locator('[data-history-document-id="'+ids[0]+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true}).click()]);expect(chosen.status()).toBe(200);
  await expect(page.getByRole('heading',{name:names[0],exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:names[1],exact:true})).toHaveCount(0);for(const name of names)await expect(history.getByText(name,{exact:true})).toBeVisible();
- const selected=await api(request,owner,'/api/documents?view=latest_by_type&doc_type=halal_policy');expect(selected.total).toBe(1);expect(selected.documents[0].id).toBe(ids[0]);
+ const selected=await api(request,owner,'/api/documents?view=official_by_type&doc_type=halal_policy');expect(selected.total).toBe(1);expect(selected.documents[0].id).toBe(ids[0]);
  for(const target of [1,0,1,0]){
   page.once('dialog',dialog=>dialog.accept());
   const [switched]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/documents/'+ids[target]+'/promote')&&r.request().method()==='POST'),history.locator('[data-history-document-id="'+ids[target]+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true}).click()]);expect(switched.status()).toBe(200);

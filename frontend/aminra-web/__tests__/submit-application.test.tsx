@@ -236,10 +236,11 @@ describe("handleSubmit", () => {
     { id: "prov-1", company_name: "HALCERT Vietnam", email: "halcert@vn" },
   ];
   const DOCS = [
-    { id: "doc-1", original_filename: "policy.pdf", doc_type_label: "Halal Policy" },
+    { id: "doc-1", original_filename: "policy.pdf", doc_type: "halal_policy", doc_type_label: "Halal Policy" },
   ];
 
   async function openModalWithData() {
+    if (!window.location.search.includes("dossier_id=")) window.history.replaceState({}, "", "/submissions?dossier_id=dossier-a02");
     const fetchMock = fetch as ReturnType<typeof vi.fn>;
     fetchMock
       .mockResolvedValueOnce(emptySubs())
@@ -248,7 +249,7 @@ describe("handleSubmit", () => {
     if (window.location.search.includes("dossier_id=")) {
       fetchMock.mockResolvedValueOnce(respond(200, {
         documents: DOCS, id: "dossier-a02", title: "Dossier A02", standard_code: "HAS",
-        requirements_binding_status: "bound", requirements_version_id: "pinned-a02",
+        requirements_binding_status: "bound", requirements_version_id: "pinned-a02", doc_types: [{doc_type:"halal_policy",required:true}],
       }));
     }
 
@@ -300,6 +301,7 @@ describe("handleSubmit", () => {
         provider_id: "prov-1",
         document_ids: ["doc-1"],
         notes: "Hồ sơ lần 1",
+        dossier_id: "dossier-a02",
       });
     });
   });

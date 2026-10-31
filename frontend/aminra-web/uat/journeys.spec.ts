@@ -98,7 +98,7 @@ test('AUTH-02 @AUTH-02 wrong password must not create authenticated session',asy
 
 test('NAV-01 @ORG-04 @DOS-01 @CB-05 owner dossier navigation and provider redirect',async({browser},info)=>{
  for(const actor of ['bizA','cbX'] as const){const ctx=await browser.newContext();try{const p=await ctx.newPage();await login(p,actor);
-  if(actor==='bizA'){await expect(p.getByRole('link',{name:'Hồ sơ chứng nhận',exact:true})).toBeVisible();await p.getByRole('link',{name:'Hồ sơ chứng nhận',exact:true}).click();await p.waitForURL('**/dossiers');}
+  if(actor==='bizA'){await expect(p.getByRole('link',{name:'Kho tài liệu',exact:true})).toBeVisible();await p.getByRole('link',{name:'Kho tài liệu',exact:true}).click();await p.locator('[data-document-workspace]').getByRole('link',{name:'Các bộ hồ sơ',exact:true}).click();await p.waitForURL('**/dossiers');}
   else{await p.goto('/dossiers');await p.waitForURL('**/submissions');}
   await info.attach('navigation-'+actor,{body:await p.screenshot(),contentType:'image/png'});
  }finally{await ctx.close();}}

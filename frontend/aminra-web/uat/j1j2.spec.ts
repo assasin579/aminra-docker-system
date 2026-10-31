@@ -204,3 +204,27 @@ test('RECIPIENT-01 @SUB-01 @CB-05 business sent card identifies the actual selec
  await expect(card.getByText('Email liên hệ: '+sent.provider_email,{exact:true})).toBeVisible();
  await info.attach('sent-recipient',{body:await card.screenshot(),contentType:'image/png'});
 });
+
+
+test('STANDARD-REQUIRED-01 @STD-01 @DOS-03 @SUB-01 workspace dossier requires both admin-defined document types before send',async({page,request})=>{
+ const f=await prepare(request,'two-required-types',[{doc_type:'halal_policy',required:true,display_order:0},{doc_type:'has_manual',required:true,display_order:1}]);
+ const dossier=await makeDossier(request,f,'two required');
+ const policy=await attach(request,f.biz,dossier.id,f.name+'-policy.pdf');
+ await api(request,f.biz,'/api/documents/'+policy+'/promote','POST');
+ await login(page,'bizA');await page.goto('/dossiers/'+dossier.id);
+ await expect(page.locator('[data-document-workspace]').getByRole('link',{name:'Các bộ hồ sơ',exact:true})).toHaveAttribute('aria-current','page');
+ await expect(page.getByTestId('dossier-submit-cta')).toHaveCount(0);
+ const before=await api(request,f.biz,'/api/submissions/my-submissions');
+ const denied=await request.post(config.base_url+'/api/api/submissions/submit',{headers:{Authorization:'Bearer '+f.biz},data:{provider_id:config.actors.cbX.id,dossier_id:dossier.id,document_ids:[policy]}});
+ expect(denied.status()).toBe(400);expect((await denied.json()).detail).toContain('has_manual');
+ expect((await api(request,f.biz,'/api/submissions/my-submissions')).submissions.length).toBe(before.submissions.length);
+ const uploaded=await request.post(config.base_url+'/api/dossiers/'+dossier.id+'/documents',{headers:{Authorization:'Bearer '+f.biz,'Idempotency-Key':randomUUID()},multipart:{doc_type:'has_manual',file:{name:f.name+'-manual.pdf',mimeType:'application/pdf',buffer:pdf(f.name+' manual')}}});expect(uploaded.status()).toBe(200);const manual=(await uploaded.json()).document_id;
+ await api(request,f.biz,'/api/documents/'+manual+'/promote','POST');
+ await page.reload();await page.getByTestId('dossier-submit-cta').click();await page.waitForURL('**/submissions?dossier_id='+dossier.id);
+ await page.getByRole('button',{name:'Gửi hồ sơ mới',exact:true}).click();const modal=page.getByRole('dialog');
+ await expect(modal.getByRole('checkbox')).toHaveCount(2);
+ await modal.getByRole('button').filter({hasText:config.actors.cbX.email.split('@')[0]}).click();
+ const manualBox=modal.getByRole('checkbox',{name:new RegExp(f.name+'-manual.pdf')});await manualBox.uncheck();await expect(modal.getByRole('button',{name:'Gửi 1 tài liệu',exact:true})).toBeDisabled();await manualBox.check();
+ const [sent]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/submissions/submit')&&r.request().method()==='POST'),modal.getByRole('button',{name:'Gửi 2 tài liệu',exact:true}).click()]);expect(sent.status()).toBe(200);
+ const body=await sent.json();const rows=await api(request,f.biz,'/api/submissions/my-submissions');const submitted=rows.submissions.find((row:{id:string})=>row.id===body.submission_id);expect([...submitted.document_ids].sort()).toEqual([policy,manual].sort());
+});

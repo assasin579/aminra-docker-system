@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import DocumentWorkspaceTabs from "@/components/documents/DocumentWorkspaceTabs";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 
@@ -111,6 +112,7 @@ export default function CreateDossierPage() {
   return (
     <div className="min-h-screen" style={{ background: "#FFFFFF" }}>
       <div className="max-w-2xl mx-auto px-6 py-8">
+        <DocumentWorkspaceTabs active="dossiers" />
         <div className="mb-6">
           <Link href="/dossiers" className="text-xs" style={{ color: "#6B7280" }}>
             ← Quay lại danh sách

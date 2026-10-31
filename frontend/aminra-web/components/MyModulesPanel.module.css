@@ -17,6 +17,7 @@
     transform: translateY(-3px);
     box-shadow: 0 12px 28px rgb(10 31 68 / 11%);
   }
+  .card:hover .illustration { transform: translateY(-2px) rotate(2deg); }
   .action:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgb(15 118 110 / 22%);
@@ -27,6 +28,7 @@
 .card:focus-within {
   box-shadow: 0 0 0 3px rgb(15 118 110 / 18%);
 }
+.illustration { transition: transform 220ms ease; }
 .action {
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
@@ -51,12 +53,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero, .state, .card, .action, .skeleton {
+  .hero, .state, .card, .action, .skeleton, .illustration {
     animation: none !important;
     transition: none !important;
     translate: none !important;
   }
-  .card:hover, .action:hover, .action:active { transform: none; }
+  .card:hover, .action:hover, .action:active, .card:hover .illustration { transform: none; }
 }
 
 /* Keep long module identifiers within their metadata column on mobile. */

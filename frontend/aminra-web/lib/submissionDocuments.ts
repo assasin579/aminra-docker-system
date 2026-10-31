@@ -3,15 +3,16 @@ export type SubmissionDocument = {
   original_filename: string;
   doc_type?: string | null;
   doc_type_label?: string | null;
+  is_current_selection?: boolean;
 };
 
-/** Reuse the library's server-side selection: explicit selection wins over recency. */
-export async function loadSubmissionDocuments(token: string | null): Promise<SubmissionDocument[]> {
+/** Read one representative per type; pending groups use the legacy upload view. */
+export async function loadDocumentRepresentatives(token: string | null, view: "official_by_type" | "latest_by_type" = "official_by_type"): Promise<SubmissionDocument[]> {
   const documents: SubmissionDocument[] = [];
   const ids = new Set<string>();
   const types = new Set<string>();
   for (let page = 1; ; page++) {
-    const response = await fetch(`/api/api/documents?view=latest_by_type&page=${page}&page_size=100`, {
+    const response = await fetch(`/api/api/documents?view=${view}&page=${page}&page_size=100`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) throw new Error("Không tải được tổ chức chứng nhận hoặc tài liệu. Vui lòng thử lại.");
@@ -35,6 +36,10 @@ export async function loadSubmissionDocuments(token: string | null): Promise<Sub
     }
   }
   return documents;
+}
+
+export async function loadSubmissionDocuments(token: string | null): Promise<SubmissionDocument[]> {
+  return loadDocumentRepresentatives(token, "official_by_type");
 }
 
 /** A pinned dossier can use current representatives only if explicitly attached. */

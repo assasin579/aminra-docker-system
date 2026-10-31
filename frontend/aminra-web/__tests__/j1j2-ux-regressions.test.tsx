@@ -55,7 +55,7 @@ test('submit setup failure is actionable and cannot be submitted', async () => {
     expect(screen.queryByText('Bạn chưa có tài liệu nào')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Gửi 0 tài liệu' })).toBeDisabled();
 });
-const dossier = { id: 'dossier-A', title: 'Factory A dossier', standard_code: 'HAS', requirements_version_id: 'pinned-v1', requirements_binding_status: 'bound', documents: [{ id: 'doc1', original_filename: 'policy.pdf', doc_type: 'policy' }] };
+const dossier = { id: 'dossier-A', title: 'Factory A dossier', standard_code: 'HAS', requirements_version_id: 'pinned-v1', requirements_binding_status: 'bound', doc_types: [{doc_type:'policy',required:true}], documents: [{ id: 'doc1', original_filename: 'policy.pdf', doc_type: 'policy' }] };
 function mockSetup() {
     vi.mocked(fetch).mockImplementation(async (url) => {
         const path = String(url);
@@ -63,7 +63,7 @@ function mockSetup() {
             return response(200, { submissions: [sub] });
         if (path.endsWith('/providers'))
             return response(200, { providers: [{ id: 'cb', company_name: 'CB A', email: 'cb@example.test' }] });
-        if (path.includes('/documents?view=latest_by_type'))
+        if (path.includes('/documents?view=official_by_type'))
             return response(200, { documents: dossier.documents, total: dossier.documents.length });
         if (path.endsWith('/dossier-A'))
             return response(200, dossier);

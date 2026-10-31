@@ -11,7 +11,7 @@ from services.document_versioning import MAX_CHAIN_DEPTH
 TYPE_REPRESENTATIVE_SQL = """
     SELECT d.id, cv.selected_at
     FROM documents d
-    LEFT JOIN document_current_versions cv
+    JOIN document_current_versions cv
       ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
     WHERE d.tenant_id=$1 AND d.doc_type IS NOT DISTINCT FROM $2::text
       AND (d.doc_type IS NOT NULL OR d.id=$3::uuid)
@@ -23,11 +23,18 @@ TYPE_REPRESENTATIVE_SQL = """
 async def select_current_version(db, *, tenant_id, document_id, actor_id):
     tenant_id, document_id, actor_id = UUID(str(tenant_id)), UUID(str(document_id)), UUID(str(actor_id))
     async with db.transaction():
+        actor = await db.fetchrow(
+            "SELECT role,is_owner,status,COALESCE(tenant_id,id) AS tenant_id FROM users WHERE id=$1 FOR SHARE", actor_id,
+        )
+        if not actor or actor['role'] != 'business' or actor['is_owner'] is not True or actor['status'] != 'active' or actor['tenant_id'] != tenant_id:
+            raise HTTPException(403, "Chỉ chủ tài khoản doanh nghiệp được chọn tài liệu đại diện")
         target = await db.fetchrow(
             "SELECT doc_type FROM documents WHERE id=$1 AND tenant_id=$2", document_id, tenant_id,
         )
         if not target:
             raise HTTPException(404, "Tài liệu hoặc chuỗi phiên bản không tồn tại")
+        if not target['doc_type']:
+            raise HTTPException(409, "Cần phân loại tài liệu trước khi chọn bản chính")
         # Independent chains of one type share one representative. Serialize
         # switches across those chains, not just updates to a single chain row.
         await db.execute(

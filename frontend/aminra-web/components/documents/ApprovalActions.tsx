@@ -33,7 +33,7 @@ interface Props {
  * State machine cells:
  *   draft + can_edit            → Trình duyệt
  *   pending + can_approve_docs  → Phê duyệt | Từ chối
- *   approved + owner_or_ihc     → Thay thế bằng phiên bản mới (modal in parent)
+ *   approved + owner     → Thay thế bằng phiên bản mới (modal in parent)
  *   obsolete / no perm          → no buttons rendered
  */
 export default function ApprovalActions({
@@ -113,7 +113,7 @@ export default function ApprovalActions({
 
   if (
     approval.approval_status === "approved" &&
-    (perms.isOwner || perms.isIhcMember || perms.canApproveDocuments)
+    perms.isOwner
   ) {
     buttons.push(
       <button

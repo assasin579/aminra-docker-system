@@ -10,6 +10,8 @@ import { useFeature } from "@/lib/featureFlags";
 import ApprovalStatusBadge from "@/components/documents/ApprovalStatusBadge";
 import ApprovalActions from "@/components/documents/ApprovalActions";
 import Modal from "@/components/Modal";
+import DocumentWorkspaceTabs from "@/components/documents/DocumentWorkspaceTabs";
+import { loadDocumentRepresentatives, type SubmissionDocument } from "@/lib/submissionDocuments";
 import type {
   ApprovalBlock as ApprovalData,
   ApprovalStatus,
@@ -201,16 +203,17 @@ export default function DocumentsPage() {
   // Tier-1 #24 — derived perms for ApprovalActions buttons. Owner has
   // everything; IHC member auto-receives can_approve_documents per
   // JAKIM MS 1500 §5.4 (matches backend auth.permissions logic).
-  const canUpload = user?.is_owner === true || user?.permissions?.can_upload === true;
+  const canSelectCurrent = user?.role === "business" && user?.is_owner === true;
+  const canUpload = user?.role === "business" && (user?.is_owner === true || user?.permissions?.can_upload === true);
   const userPerms = {
-    canEdit: !!(user?.is_owner || user?.permissions?.can_edit),
-    canApproveDocuments: !!(
+    canEdit: user?.role === "business" && !!(user?.is_owner || user?.permissions?.can_edit),
+    canApproveDocuments: user?.role === "business" && !!(
       user?.is_owner ||
       !!user?.ihc_role ||
       user?.permissions?.can_approve_documents
     ),
-    isOwner: !!user?.is_owner,
-    isIhcMember: !!user?.ihc_role,
+    isOwner: canSelectCurrent,
+    isIhcMember: user?.role === "business" && !!user?.ihc_role,
   };
 
   const [docs, setDocs] = useState<DocumentItem[]>([]);
@@ -238,6 +241,9 @@ export default function DocumentsPage() {
   } | null>(null);
   const [loadingHistory, setLoadingHistory] = useState<string | null>(null);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [pendingTypes, setPendingTypes] = useState<SubmissionDocument[]>([]);
+  const [pendingError, setPendingError] = useState("");
+  const [historyError, setHistoryError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
   // Upload modal
@@ -276,7 +282,7 @@ export default function DocumentsPage() {
         });
         if (filterType) params.set("doc_type", filterType);
         if (filterStatus) params.set("status", filterStatus);
-        const res = await fetch(documentApiPath(`?view=latest_by_type&${params}`), {
+        const res = await fetch(documentApiPath(`?view=official_by_type&${params}`), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
@@ -298,6 +304,17 @@ export default function DocumentsPage() {
     [token, filterType, filterStatus],
   );
 
+  const fetchPendingTypes = useCallback(async () => {
+    if (!token || !canSelectCurrent) { setPendingTypes([]); return; }
+    setPendingError("");
+    try {
+      const groups = await loadDocumentRepresentatives(token, "latest_by_type");
+      setPendingTypes(groups.filter(doc => !doc.doc_type || !doc.is_current_selection));
+    } catch {
+      setPendingError("Không tải được nhóm tài liệu chờ chủ DN chọn bản chính. Hãy thử tải lại.");
+    }
+  }, [token, canSelectCurrent]);
+
   const fetchOfficialArtifacts = useCallback(async () => {
     if (!token) return;
     try {
@@ -316,8 +333,9 @@ export default function DocumentsPage() {
     if (isAuthenticated) {
       fetchDocs(1);
       fetchOfficialArtifacts();
+      fetchPendingTypes();
     }
-  }, [isAuthenticated, fetchDocs, fetchOfficialArtifacts]);
+  }, [isAuthenticated, fetchDocs, fetchOfficialArtifacts, fetchPendingTypes]);
 
   const openEval = async (id: string) => {
     setLoadingEval(id);
@@ -357,6 +375,7 @@ export default function DocumentsPage() {
 
   const openHistory = async (docType: string) => {
     setLoadingHistory(docType);
+    setHistoryError("");
     try {
       const res = await fetch(
         documentApiPath(`/revisions/${encodeURIComponent(docType)}`),
@@ -364,7 +383,10 @@ export default function DocumentsPage() {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      if (res.ok) setHistoryData(await res.json());
+      if (!res.ok) throw new Error(await parseDocumentError(res, "Không tải được lịch sử tài liệu"));
+      setHistoryData(await res.json());
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : "Không tải được lịch sử tài liệu");
     } finally {
       setLoadingHistory(null);
     }
@@ -385,9 +407,10 @@ export default function DocumentsPage() {
   };
 
   const handlePromote = async (id: string, docType: string) => {
+    if (!canSelectCurrent) return;
     if (
       !confirm(
-        "Chọn bản hiện hành trong chuỗi tài liệu này? Thao tác này không phê duyệt tài liệu và không thay đổi hồ sơ đã gửi.",
+        "Chọn tài liệu này làm bản chính cho loại tài liệu tương ứng? Thao tác này không phê duyệt tài liệu và không thay đổi hồ sơ đã gửi.",
       )
     )
       return;
@@ -397,11 +420,14 @@ export default function DocumentsPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        // Refresh history and doc list
-        await openHistory(docType);
-        fetchDocs(page);
+      if (!res.ok) {
+        setHistoryError(await parseDocumentError(res, "Chưa chọn được bản chính. Hãy thử lại."));
+        return;
       }
+      await openHistory(docType);
+      await Promise.all([fetchDocs(page), fetchPendingTypes()]);
+    } catch {
+      setHistoryError("Chưa xác nhận được lựa chọn. Hãy tải lại lịch sử để kiểm tra trước khi chọn tiếp.");
     } finally {
       setPromotingId(null);
     }
@@ -452,14 +478,14 @@ export default function DocumentsPage() {
         setUploadDocType(null);
         setSopExpanded(false);
         setUploadError("");
-        fetchDocs(1);
+        await Promise.all([fetchDocs(1), fetchPendingTypes()]);
       } catch (e: any) {
         setUploadError(e.message || "Upload thất bại");
       } finally {
         setUploading(false);
       }
     },
-    [uploadDocType, token, fetchDocs],
+    [uploadDocType, token, fetchDocs, fetchPendingTypes],
   );
 
   const dropzone = useDropzone({
@@ -561,10 +587,7 @@ export default function DocumentsPage() {
           boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         }}
       >
-        <div
-          className="grid items-center"
-          style={{ gridTemplateColumns: "1fr auto" }}
-        >
+        <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="grid grid-flow-col items-center gap-3 justify-start mb-2">
               <div
@@ -593,7 +616,7 @@ export default function DocumentsPage() {
                 <h1 className="text-xl font-bold" style={{ color: "#0A1F44" }}>
                   Kho tài liệu
                 </h1>
-                <p className="text-sm text-slate-500">Lưu và tái sử dụng tệp. Chuẩn bị, kiểm tra yêu cầu và gửi chứng nhận tại <Link href="/dossiers" className="underline">Hồ sơ chứng nhận</Link>.</p>
+                <p className="text-sm text-slate-500">Quản lý tài liệu đại diện theo loại và chuẩn bị các bộ hồ sơ theo tiêu chuẩn.</p>
               </div>
             </div>
           </div>
@@ -653,6 +676,25 @@ export default function DocumentsPage() {
         </div>
       </div>
 
+      <DocumentWorkspaceTabs active="documents" />
+
+      {canSelectCurrent && (pendingTypes.length > 0 || pendingError) && (
+        <section aria-label="Chờ chủ DN chọn bản chính" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+          <h2 className="text-sm font-semibold text-navy-900">Chờ chủ DN chọn bản chính ({pendingTypes.length})</h2>
+          <p className="mt-1 mb-3 text-xs text-slate-600">Các loại này chưa có tài liệu chính thức. Mở lịch sử và chọn một bản để đưa vào danh sách tài liệu DN.</p>
+          {pendingError && <p role="alert" className="mb-3 text-sm text-red-700">{pendingError} <button onClick={() => void fetchPendingTypes()} className="underline">Tải lại nhóm chờ chọn</button></p>}
+          <div className="grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2">
+            {pendingTypes.map(doc => (
+              <div key={doc.doc_type || doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-3 py-3 text-sm">
+                <span className="min-w-0 break-words font-medium text-navy-900">{doc.doc_type ? DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type_label || doc.doc_type : `Chưa phân loại: ${doc.original_filename}`}</span>
+                {doc.doc_type ? <button type="button" aria-label={`Chọn bản chính cho ${DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}`} onClick={() => void openHistory(doc.doc_type!)} disabled={loadingHistory !== null} className="rounded-lg bg-[#0a1f44] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Chọn bản chính</button>
+                  : <Link href="/upload" className="text-xs font-semibold text-teal-700 underline">Phân loại tài liệu trước</Link>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Filter ── */}
       <div className="mb-5">
         <select
@@ -673,11 +715,10 @@ export default function DocumentsPage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="mb-5 flex gap-2" role="tablist" aria-label="Tài liệu">
+      <div className="mb-5 flex gap-2" role="group" aria-label="Nhóm tài liệu DN">
         <button
           type="button"
-          role="tab"
-          aria-selected={activeTab === "documents"}
+          aria-pressed={activeTab === "documents"}
           onClick={() => setActiveTab("documents")}
           className="px-4 py-2 rounded-xl text-sm font-semibold"
           style={{
@@ -685,12 +726,11 @@ export default function DocumentsPage() {
             color: activeTab === "documents" ? "#FFFFFF" : "#374151",
           }}
         >
-          Tài liệu DN
+          Tệp đang sử dụng
         </button>
         <button
           type="button"
-          role="tab"
-          aria-selected={activeTab === "official"}
+          aria-pressed={activeTab === "official"}
           onClick={() => setActiveTab("official")}
           className="px-4 py-2 rounded-xl text-sm font-semibold"
           style={{
@@ -698,7 +738,7 @@ export default function DocumentsPage() {
             color: activeTab === "official" ? "#FFFFFF" : "#374151",
           }}
         >
-          Bản chính thức
+          Bản lưu phê duyệt
         </button>
       </div>
 
@@ -725,10 +765,10 @@ export default function DocumentsPage() {
               style={{ background: "#F5F1E8", border: "1px solid #E2E8F0" }}
             >
               <p className="font-semibold mb-2" style={{ color: "#0A1F44" }}>
-                Chưa có bản chính thức
+                Chưa có bản lưu phê duyệt
               </p>
               <p className="text-sm" style={{ color: "#6B7280" }}>
-                Tài liệu được phê duyệt sẽ được lưu riêng tại đây, chỉ đọc.
+                Bản lưu khi phê duyệt được giữ riêng tại đây để xem và tải xuống; không thay đổi lựa chọn bản chính.
               </p>
             </div>
           ) : (
@@ -745,10 +785,10 @@ export default function DocumentsPage() {
                         className="px-3 py-1.5 rounded-lg text-xs font-bold"
                         style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0" }}
                       >
-                        Bản chính thức
+                        Bản lưu phê duyệt
                       </span>
                       <span className="text-xs" style={{ color: "#64748B" }}>
-                        read-only · SHA-256 {artifact.sha256.slice(0, 12)}…
+                        Chỉ xem · SHA-256 {artifact.sha256.slice(0, 12)}…
                       </span>
                     </div>
                     <h3 className="text-sm font-semibold truncate" style={{ color: "#0A1F44" }} title={artifact.original_filename}>
@@ -825,10 +865,10 @@ export default function DocumentsPage() {
               />
             </svg>
             <p className="font-semibold mb-2" style={{ color: "#0A1F44" }}>
-              Chưa có tài liệu nào
+              {filterStatus ? "Không có bản chính khớp bộ lọc" : "Chưa có bản chính được chọn"}
             </p>
             <p className="text-sm mb-5" style={{ color: "#6B7280" }}>
-              Upload tài liệu đầu tiên để bắt đầu đánh giá Halal
+              {filterStatus ? "Thử thay đổi bộ lọc để xem các tài liệu khác." : "Chủ tài khoản doanh nghiệp cần chọn một bản chính cho từng loại tài liệu."}
             </p>
             <button
               disabled={!canUpload}
@@ -889,8 +929,7 @@ export default function DocumentsPage() {
               >
                 {/* Row 1: score + doc type + status + actions */}
                 <div
-                  className="grid items-center gap-4"
-                  style={{ gridTemplateColumns: "auto 1fr auto" }}
+                  className="grid grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4"
                 >
                   <div aria-label="Kết quả đánh giá"><span className="text-xs text-slate-500">AI</span><MiniScore score={doc.ai_score ?? null} />{doc.cb_score != null && <span className="text-xs">CB: {doc.cb_score}/100</span>}</div>
 
@@ -945,7 +984,7 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Actions — compact icon buttons */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="col-span-2 lg:col-span-1 flex flex-wrap items-center gap-1.5">
                     {/* AI Evaluate button */}
                     <button
                       onClick={() => setEvalLangModal(doc.id)}
@@ -1133,7 +1172,7 @@ export default function DocumentsPage() {
                       <button
                         onClick={() => openHistory(doc.doc_type!)}
                         title="Lịch sử"
-                        disabled={loadingHistory === doc.doc_type}
+                        disabled={loadingHistory !== null}
                         className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                         style={{
                           background: "#FDF4FF",
@@ -1156,7 +1195,7 @@ export default function DocumentsPage() {
                         </svg>
                       </button>
                     )}
-                    {user.is_owner && (
+                    {canSelectCurrent && (
                       <button
                         onClick={() => handleDelete(doc.id)}
                         title="Xoá"
@@ -1688,7 +1727,7 @@ export default function DocumentsPage() {
 
       {/* ── History Modal ── */}
       {historyData && (
-        <Modal>
+        <Modal onClose={() => { if (promotingId === null) setHistoryData(null); }}>
           <div
             className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1722,7 +1761,8 @@ export default function DocumentsPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setHistoryData(null)}
+                  onClick={() => { if (promotingId === null) setHistoryData(null); }}
+                  disabled={promotingId !== null} aria-label="Đóng lịch sử tài liệu"
                   className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                   style={{ background: "rgba(0,0,0,0.05)" }}
                 >
@@ -1732,6 +1772,7 @@ export default function DocumentsPage() {
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto">
+              {historyError && <div role="alert" className="m-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{historyError} <button type="button" onClick={() => void openHistory(historyData.doc_type)} className="underline">Tải lại lịch sử</button></div>}
               {historyData.revisions.map((rev, i) => {
                 const st = STATUS_CONFIG[rev.overall_status || ""];
                 const isLatest = !!rev.is_current_selection;
@@ -1743,8 +1784,7 @@ export default function DocumentsPage() {
                     style={{ borderBottom: "1px solid #E2E8F0" }}
                   >
                     <div
-                      className="grid items-center gap-4"
-                      style={{ gridTemplateColumns: "auto auto 1fr auto auto" }}
+                      className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] sm:items-center"
                     >
                       {/* Version number */}
                       <div
@@ -1819,12 +1859,12 @@ export default function DocumentsPage() {
                         >
                           Xem
                         </button>
-                        {!isLatest && rev.approval_status !== "obsolete" && userPerms.canEdit && (
+                        {!isLatest && rev.approval_status !== "obsolete" && canSelectCurrent && (
                           <button
                             onClick={() =>
                               handlePromote(rev.id, historyData.doc_type)
                             }
-                            disabled={promotingId === rev.id}
+                            disabled={promotingId !== null || !!historyError}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ease-out hover:scale-105"
                             style={{
                               background: "rgba(245,158,11,0.1)",

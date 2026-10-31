@@ -137,17 +137,18 @@ describe("business sidebar module navigation", () => {
       expect(screen.getByRole("link", { name: /Lô hàng/i })).toBeInTheDocument();
     });
   });
-  it("gives owners distinct library, preparation and sent-packet entries", async () => {
+  it("groups preparation under the library and keeps the sent-packet entry separate", async () => {
     mockedApiJson.mockResolvedValue({ modules: [] });
     render(<Sidebar />);
     expect(await screen.findByRole("link", { name: "Kho tài liệu" })).toHaveAttribute("href", "/documents");
-    expect(screen.getByRole("link", { name: "Hồ sơ chứng nhận" })).toHaveAttribute("href", "/dossiers");
+    expect(screen.queryByRole("link", { name: "Hồ sơ chứng nhận" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hồ sơ đã gửi" })).toHaveAttribute("href", "/submissions");
   });
 
-  it("routes a business member to dossier history instead of the owner-only submissions list", async () => {
+  it("gives a business member the shared library without the owner-only sent list", async () => {
     userState.user.is_owner=false;mockedApiJson.mockResolvedValue({modules:[]});render(<Sidebar />);
-    expect(await screen.findByRole("link",{name:"Hồ sơ và lịch sử"})).toHaveAttribute("href","/dossiers");
+    expect(await screen.findByRole("link",{name:"Kho tài liệu"})).toHaveAttribute("href","/documents");
+    expect(screen.queryByRole("link",{name:"Hồ sơ và lịch sử"})).not.toBeInTheDocument();
     expect(screen.queryByRole("link",{name:"Hồ sơ đã gửi"})).not.toBeInTheDocument();
   });
 

@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import DocumentWorkspaceTabs from "@/components/documents/DocumentWorkspaceTabs";
 import { useRouter } from "next/navigation";
 import { dossierApiPath } from "@/lib/documentApi";
 import { useUserAuth } from "@/components/UserAuthContext";
@@ -81,11 +82,10 @@ export default function DossierListPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold" style={{ color: "#0A1F44" }}>
-              Hồ sơ chứng nhận
+              Kho tài liệu
             </h1>
             <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
-              Mỗi hồ sơ thuộc 1 tiêu chuẩn cụ thể. Trong tiêu chuẩn quy định
-              số lượng và loại tài liệu cần có.
+              Các bộ hồ sơ được chuẩn bị theo một tiêu chuẩn cụ thể và bộ yêu cầu do AMINRA công bố. Cung cấp đủ các loại tài liệu bắt buộc trước khi gửi đánh giá.
             </p>
           </div>
           <Link
@@ -97,6 +97,8 @@ export default function DossierListPage() {
             + Tạo hồ sơ mới
           </Link>
         </div>
+
+        <DocumentWorkspaceTabs active="dossiers" />
 
         {error && (
           <div

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import motion from "./MyModulesPanel.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { apiJson } from "@/lib/apiClient";
@@ -32,6 +33,11 @@ type TenantModulesPayload = {
   } | null;
   modules: TenantModule[];
 };
+
+const ILLUSTRATED_MODULES = new Set([
+  "certification_dossier", "document_management", "supplier_management", "traceability", "process_digitization",
+  "workforce", "daily_operations", "audit_compliance", "public_trace", "notifications",
+]);
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
   active: { bg: "#ECFDF5", color: "#047857", border: "#A7F3D0" },
@@ -154,14 +160,21 @@ export default function MyModulesPanel() {
           const label = moduleLabel(module);
           const active = ["enabled", "trial"].includes(module.status);
           return (
-            <article key={module.code} className={`${motion.card} rounded-2xl p-5 space-y-4`} style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-bold text-lg" style={{ color: "#0A1F44" }}>{label}</h2>
+            <article key={module.code} data-module-code={module.code} className={`${motion.card} rounded-2xl p-5 space-y-4`} style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 flex-wrap items-start content-start gap-2">
+                <h2 className="w-full font-bold text-lg" style={{ color: "#0A1F44" }}>{label}</h2>
                 <span className="text-xs px-2 py-1 rounded-full" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
                   {fallbackAccessLabel(module)}
                 </span>
                 {module.required && <span className="text-xs px-2 py-1 rounded-full" style={{ background: "#FEF3C7", color: "#92400E" }}>Bắt buộc</span>}
                 {module.default_enabled && <span className="text-xs px-2 py-1 rounded-full" style={{ background: "#E0F2FE", color: "#075985" }}>Mặc định</span>}
+              </div>
+                <Image
+                  src={`/modules/${ILLUSTRATED_MODULES.has(module.code) ? module.code : "document_management"}.png`}
+                  alt="" aria-hidden="true" width={128} height={128} sizes="(max-width: 640px) 96px, 112px"
+                  className={`${motion.illustration} -mr-2 -mt-3 h-24 w-24 shrink-0 object-contain select-none pointer-events-none sm:h-28 sm:w-28`}
+                />
               </div>
 
               <dl className="grid grid-cols-2 gap-3 text-sm" style={{ color: "#475569" }}>

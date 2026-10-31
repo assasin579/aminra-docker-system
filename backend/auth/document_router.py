@@ -293,7 +293,7 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     doc_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),  # compliant | needs_review | non_compliant
-    view: str = Query("latest_by_type", pattern="^(all|latest_by_type)$"),
+    view: str = Query("latest_by_type", pattern="^(all|latest_by_type|official_by_type)$"),
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
@@ -309,7 +309,8 @@ async def list_documents(
 
     # CTE: pick the latest document per doc_type
     # Documents without doc_type each count as their own group (use id as fallback)
-    cte = """
+    selection_filter = "AND cv.current_document_id IS NOT NULL AND d.doc_type IS NOT NULL AND d.doc_type <> ''" if view == "official_by_type" else ""
+    cte = f"""
         WITH latest AS (
             SELECT DISTINCT ON (COALESCE(doc_type, id::text))
                    d.id, d.original_filename, d.doc_type, d.compliance_score,
@@ -319,7 +320,7 @@ async def list_documents(
                    (cv.current_document_id IS NOT NULL) AS is_current_selection
             FROM documents d
             LEFT JOIN document_current_versions cv ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
-            WHERE d.tenant_id = $1
+            WHERE d.tenant_id = $1 {selection_filter}
             ORDER BY COALESCE(doc_type, id::text), cv.selected_at DESC NULLS LAST, d.uploaded_at DESC, d.id
         )
     """
@@ -474,8 +475,8 @@ async def promote_document(
 ):
     """Select within an existing version chain without modifying upload chronology."""
     _validate_uuid(doc_id)
-    if user["role"] != "business":
-        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    if user["role"] != "business" or user.get("is_owner") is not True:
+        raise HTTPException(403, "Chỉ chủ tài khoản doanh nghiệp được chọn tài liệu đại diện")
     await check_permission_db(user, "can_edit")
 
     tenant_id = await resolve_canonical_tenant_id(user, db)
@@ -1481,13 +1482,9 @@ async def supersede_document(
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    if user.get("role") != "business":
-        raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    if user.get("role") != "business" or user.get("is_owner") is not True:
+        raise HTTPException(403, "Chỉ chủ tài khoản doanh nghiệp được chỉ định phiên bản thay thế")
     await _require_versioning_flag(db, user)
-    # Owner OR IHC member only (per spec §3 + Stage 2 mitigation)
-    perms = get_user_permissions({**user, "permissions": None})
-    if not user.get("is_owner") and not perms.get("can_approve_documents"):
-        raise HTTPException(403, "Chỉ chủ tài khoản hoặc thành viên IHC mới có thể thay thế phiên bản")
 
     try:
         reject_self_supersede(doc_id, body.new_document_id)
