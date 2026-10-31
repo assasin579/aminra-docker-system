@@ -40,10 +40,9 @@ async def _enriched_user_from_header_or_query(request: Request, token: Optional[
     if not tk:
         raise HTTPException(401, "Unauthorized")
     try:
-        claims = decode_token(tk)
         from auth import keycloak_validator
         from auth.db import get_pool
-        return await keycloak_validator.enrich_keycloak_claims(claims, get_pool())
+        return await keycloak_validator.authenticate_keycloak_token(tk, get_pool())
     except HTTPException:
         raise
     except Exception:

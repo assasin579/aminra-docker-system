@@ -56,3 +56,26 @@ Keep manual rollout and disposable UAT execution sequential: a live deployment
 during a runner's protected-runtime snapshot invalidates its isolation proof.
 Preserve configuration and exact image/source provenance, and retain rollback
 containers. Prefer forward correction if rollback would reopen private-data paths.
+
+
+## Current identity-provider authority
+
+Protected HTTP entry points, including admin helpers and query-token file routes,
+verify token introspection, account enabled state and effective realm roles.
+`KEYCLOAK_AUTHZ_TTL_SECONDS` defaults to30 and is capped at30; the cache is bounded
+and keyed by issuer plus a token digest. Database changes apply per request.
+Provider outages or missing reader credentials fail closed after fresh cached
+verification expires; there is no fallback to stale JWT role claims.
+
+Prefer a confidential `KEYCLOAK_AUTHZ_CLIENT_ID` / `KEYCLOAK_AUTHZ_CLIENT_SECRET`
+service account with only realm-management `view-users`. It needs token
+introspection and user/effective-role reads, and must fail user mutations.
+Existing deployments can use the already configured admin service credential as
+an operational fallback; this does not add a permission grant. Dedicated-reader
+provisioning and credential handling remain an explicit operations check.
+
+Legacy service-worker queue entries embed bearer credentials without scoped
+ownership. Their background replay is removed and session changes request deletion
+of the legacy private IndexedDB database. Blocked deletion is reported as blocked,
+not falsely declared successful. A new offline workflow must obtain fresh,
+actor-and-tenant scoped authorization and must not silently reuse the old queue.

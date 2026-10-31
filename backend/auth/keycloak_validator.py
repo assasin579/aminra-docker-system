@@ -1,14 +1,8 @@
-"""Keycloak JWT validation for dual-auth migration (ADR-005 Phase 3a).
+"""Verify Keycloak signatures, live realm authority and current application scope.
 
-When AUTH_KEYCLOAK_ENABLED=true, tokens issued by Keycloak realm `aminra`
-are validated alongside the legacy HS256 tokens. JWKs are fetched once
-per `_JWKS_TTL` and cached in-process.
-
-Claim shape returned by `validate_keycloak_token` is the RAW Keycloak JWT
-payload. Enrichment to the existing app `user` dict shape (with role,
-tenant_id, is_owner, status) is done in `enrich_keycloak_claims` via a
-DB lookup by email — DB stays authoritative for app-domain fields during
-the migration. Phase 4 will add Keycloak custom token mappers.
+Signing keys are cached independently of principals. Mutable application tenant,
+owner, role and status are loaded from the database; mapper snapshots never
+bypass current application authority.
 """
 
 from __future__ import annotations
@@ -249,3 +243,12 @@ async def enrich_keycloak_claims(claims: dict, db_pool) -> dict:
         "company_name": row["company_name"],
         "_keycloak": True,
     }
+
+
+async def authenticate_keycloak_token(token: str, db_pool) -> dict:
+    """Verify token, current identity-provider authority and current DB scope."""
+    from .live_authority import current_realm_roles
+    claims = validate_keycloak_token(token)
+    roles = await current_realm_roles(token, claims)
+    current = {**claims, 'realm_access': {**(claims.get('realm_access') or {}), 'roles': list(roles)}}
+    return await enrich_keycloak_claims(current, db_pool)

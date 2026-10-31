@@ -37,7 +37,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key.startsWith("aminra-") && key !== CACHE_NAME)
           .map((key) => caches.delete(key)),
       );
     }),
@@ -135,61 +135,6 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// Listen for sync events (for queued offline checklist updates)
-self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-audit-data") {
-    event.waitUntil(syncAuditData());
-  }
-});
-
-async function syncAuditData() {
-  // Read queued updates from IndexedDB and POST them
-  try {
-    const db = await openDB();
-    const tx = db.transaction("sync-queue", "readonly");
-    const store = tx.objectStore("sync-queue");
-    const items = await getAllFromStore(store);
-
-    for (const item of items) {
-      try {
-        await fetch(item.url, {
-          method: item.method,
-          headers: item.headers,
-          body: item.body,
-        });
-        // Remove from queue on success
-        const delTx = db.transaction("sync-queue", "readwrite");
-        delTx.objectStore("sync-queue").delete(item.id);
-      } catch (e) {
-        // Keep in queue for next sync
-      }
-    }
-  } catch (e) {
-    // IndexedDB not available
-  }
-}
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open("aminra-offline", 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("sync-queue")) {
-        db.createObjectStore("sync-queue", {
-          keyPath: "id",
-          autoIncrement: true,
-        });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function getAllFromStore(store) {
-  return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+// Legacy offline entries contain bearer credentials without an actor/tenant
+// authorization contract. They must never be replayed in the background.
+// A future offline workflow must obtain current, scoped user authorization.

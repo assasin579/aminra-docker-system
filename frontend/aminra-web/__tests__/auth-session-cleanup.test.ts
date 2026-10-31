@@ -77,3 +77,13 @@ describe("purgeAuthSessionState", () => {
     expect(localStorage.getItem("aminra_lang")).toBe("vi");
   });
 });
+
+it("requests legacy offline private database deletion and reports blocked deletion without hanging logout", async () => {
+  const { clearPrivateOfflineState } = await import("@/lib/auth-session-cleanup");
+  let request: { onsuccess?: () => void; onerror?: () => void; onblocked?: () => void } = {};
+  const deleteDatabase = vi.fn(() => { request = {}; return request; });
+  vi.stubGlobal("indexedDB", { deleteDatabase });
+  const success = clearPrivateOfflineState(); request.onsuccess?.(); await expect(success).resolves.toBe(true);
+  const blocked = clearPrivateOfflineState(); request.onblocked?.(); await expect(blocked).resolves.toBe(false);
+  expect(deleteDatabase).toHaveBeenCalledWith("aminra-offline");
+});

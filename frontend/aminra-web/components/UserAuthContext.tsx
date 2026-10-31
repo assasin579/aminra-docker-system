@@ -13,6 +13,7 @@ import {
 import {
   AUTH_SESSION_EVENT,
   clearApplicationCredentials,
+  clearPrivateOfflineState,
   notifyAuthSessionChanged,
   purgeAuthSessionState,
   removeLegacyAdminSessionKey,
@@ -253,6 +254,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       assertKeycloakIdentityMatchesProfile(t, u);
       generation.current += 1; pendingRead.current?.abort();
       activeSession.current = { token: t, user: u };
+      void clearPrivateOfflineState();
       if (!preserveOidc) {
         removeStoredAuthSessionKeys(localStorage);
         removeStoredAuthSessionKeys(sessionStorage);

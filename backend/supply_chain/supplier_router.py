@@ -569,9 +569,13 @@ async def view_certificate(
     _validate_uuid(cid)
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        user = decode_token(auth[7:])
+        from auth.keycloak_validator import authenticate_keycloak_token
+        from auth.db import get_pool
+        user = await authenticate_keycloak_token(auth[7:], get_pool())
     elif token:
-        user = decode_token(token)
+        from auth.keycloak_validator import authenticate_keycloak_token
+        from auth.db import get_pool
+        user = await authenticate_keycloak_token(token, get_pool())
     else:
         raise HTTPException(401)
     tenant_id = _require_business(user)
