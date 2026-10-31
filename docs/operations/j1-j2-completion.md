@@ -51,3 +51,54 @@ Retain historical synthetic results separately. Each new result must identify
 commit, image IDs, schema revision, actors, run ID and evidence files.
 Real Keycloak tokens, rendered UI and HTTP/storage bytes must be exercised.
 No final PASS based solely on mocked route calls or old-image evidence.
+
+## J1/J2 UX closeout
+
+This patch publishes the frontend UX changes initially deployed from an
+uncommitted snapshot based on main593c3a9. It preserves the owner/delegated
+upload boundaries, explicit login issuer and cancelled-dossier readability.
+
+- Revision-required, rejected and unknown states have explicit labels. CB
+  corrections use the feedback form; the competing returned-status button is
+  removed. Existing returned packets retain contextual guidance.
+- List, packet, history and submit-setup failures have error/retry states.
+  Late responses cannot populate another actor's or packet's view. Correction
+  controls wait for a successfully loaded packet/history.
+- Submission shows the dossier, standard and pinned requirement version.
+  Mutation failures remain in the dialog; unchanged retries retain their key.
+- Historical feedback resolves filenames from each round's snapshot. A
+  resolved revision is described as business resubmission, not CB acceptance.
+- Template creation retains the source dossier's pinned requirement types and
+  links back to its attachment slots. Downloaded drafts still require explicit
+  attachment. Template contents are not immutable certification approvals.
+- Named dialogs trap focus and restore the trigger; forms have accessible
+  names. Token refresh preserves drafts; account changes clear scoped data.
+
+### Validation and deployment provenance
+
+Final source verification:360/360FEtests across57files, scoped ESLint with zero
+warnings, Docker npm-ci/Next16.4.2webpack production build including TypeScript,
+and2source-only Playwright visibility contracts PASS. The static contracts do
+not launch a browser.
+
+The initial serving image3ebbeb5009f8 was built from289frontend input files,
+manifestfe66808cf41fa4327afb4fb51ca82097621f18c679bc59bc14f9deeeac14216c.
+Post-deploy checks passed12local/publicroutes and20image/local/publicasset hashes,
+invalidlogin/API401 and issuer metadata200. Runtime env/network/mount/ports and
+21othercontainers were preserved. No backend/schema/CI/CD changes belong to this
+patch. Evidence: `/home/user/Downloads/aminra-j1j2-ux-20261030/deploy/`.
+
+After the reviewed merge, verify all289Git blobs against that manifest before
+promoting source metadata. A metadata-only image promotion must retain identical
+filesystem layers and runtime configuration; record the resulting main commit,
+image identity and post-recreation checks. Do not label an unverified rebuild as
+the accepted image.
+
+The first deployment rolled back safely when Cloudflare1010 blocked the default
+Python-urllib client. The same denial reproduced on the old baseline. The
+explicit `AMINRA-Deployment-Check/1.0` client passed identical baseline and final
+checks; no Cloudflare policy change was made. Keep baseline-client comparison
+and rollback ready for future manual releases.
+
+Real Business/CB two-round, mobile and keyboard browser acceptance remains a
+separate gate, as does independent QA/CB sign-off and customer-pilot approval.

@@ -176,7 +176,7 @@ describe("RevisionPanel — provider request-revision", () => {
       await screen.findByPlaceholderText(/Mô tả những vấn đề/i),
       { target: { value: "Issues found" } },
     );
-    fireEvent.click(screen.getByText(/\+ Thêm vấn đề cụ thể/i));
+    fireEvent.click(screen.getByText(/\+ Thêm vấn đề theo tài liệu/i));
 
     const issueInput = screen.getByPlaceholderText(/Vấn đề cụ thể/i);
     fireEvent.change(issueInput, { target: { value: "Missing seal" } });
@@ -371,8 +371,8 @@ describe("RevisionPanel — history rendering", () => {
     expect(screen.getByText(/Lần đầu/)).toBeInTheDocument();
 
     // Round 2 unresolved → no resolved badge
-    // Round 1 resolved → has "Đã giải quyết" text
-    expect(screen.getByText(/Đã giải quyết/)).toBeInTheDocument();
+    // Round 1 resolved → has "Doanh nghiệp đã gửi lại" text
+    expect(screen.getByText(/Doanh nghiệp đã gửi lại/)).toBeInTheDocument();
 
     // Severity badge
     expect(screen.getByText("major")).toBeInTheDocument();

@@ -33,7 +33,7 @@ test.describe("revision panel visibility logic", () => {
 
     // Early return when nothing to show
     expect(src, "must hide entire panel on dead states").toMatch(
-      /if \(!loading && (?:!error && )?!hasAction && !hasHistory\) \{[\s\S]*?return null;[\s\S]*?\}/,
+      /if \(!loading && (?:!error && )?!hasAction && !hasHistory && status !== "returned"\) \{[\s\S]*?return null;[\s\S]*?\}/,
     );
 
     // Contextual hint for provider on pending/assigned status (rare but informative)
@@ -55,7 +55,7 @@ test.describe("revision panel visibility logic", () => {
       /role === ['"]provider['"] && \(status === ['"]reviewing['"] \|\| status === ['"]returned['"]\)/,
     );
     expect(src).toMatch(
-      /role === ['"]business['"] && status === ['"]revision_required['"]/,
+      /role === ['"]business['"] && canResubmit && status === ['"]revision_required['"]/,
     );
   });
 });

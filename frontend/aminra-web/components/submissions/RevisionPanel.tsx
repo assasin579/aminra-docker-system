@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+
+import { parseApiError } from "@/lib/apiError";
 
 type Severity = "minor" | "major" | "critical";
 
@@ -56,7 +58,13 @@ export default function RevisionPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchHistory = async () => {
+  const historyRequest = useRef(0);
+  const historyScope = useRef(submissionId);
+  const [historyReady, setHistoryReady] = useState(false);
+  const fetchHistory = useCallback(async () => {
+    const request = ++historyRequest.current;
+    setLoading(true);
+    setError("");
     try {
       const res = await fetch(
         `/api/api/submissions/${submissionId}/revisions`,
@@ -67,20 +75,30 @@ export default function RevisionPanel({
       );
       if (!res.ok) throw new Error(`Lỗi ${res.status}`);
       const data = await res.json();
-      setHistory(data.history ?? []);
+      if (!Array.isArray(data.history)) throw new Error("Dữ liệu lịch sử không hợp lệ");
+      if (request === historyRequest.current) {
+        setHistory(data.history);
+        setHistoryReady(true);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi tải lịch sử");
+      if (request === historyRequest.current) setError(err instanceof Error ? err.message : "Lỗi tải lịch sử");
     } finally {
-      setLoading(false);
+      if (request === historyRequest.current) setLoading(false);
     }
-  };
+  }, [submissionId, token]);
 
   // Re-fetch on status change too — after a resubmit / request_revision the
   // parent refreshes the submission, status flips, and we want the new round
   // (or the new business_response field) to land without a manual reload.
   useEffect(() => {
-    fetchHistory();
-  }, [submissionId, status]);
+    if (historyScope.current !== submissionId) {
+      historyScope.current = submissionId;
+      setHistory([]);
+      setHistoryReady(false);
+    }
+    void fetchHistory();
+    return () => { historyRequest.current++; };
+  }, [fetchHistory, status, submissionId]);
 
   // Determine what the panel can do based on role + status
   const providerCanRequest =
@@ -92,7 +110,7 @@ export default function RevisionPanel({
 
   // Hide panel entirely when nothing actionable + no history (common on
   // freshly-submitted/approved submissions — avoids visually-dead block).
-  if (!loading && !error && !hasAction && !hasHistory) {
+  if (!loading && !error && !hasAction && !hasHistory && status !== "returned") {
     return null;
   }
 
@@ -126,11 +144,13 @@ export default function RevisionPanel({
           style={{ color: "#991b1b" }}
         >
           {error}
+          <button type="button" className="ml-3 underline" onClick={() => void fetchHistory()}>Thử tải lại lịch sử</button>
         </div>
       )}
 
       {/* Provider action — request revision */}
-      {providerCanRequest && (
+      {providerCanRequest && historyReady && (
+        <fieldset disabled={loading || Boolean(error)}>
         <RequestRevisionForm
           submissionId={submissionId}
           documents={documents}
@@ -140,10 +160,12 @@ export default function RevisionPanel({
             onChanged?.();
           }}
         />
+        </fieldset>
       )}
 
       {/* Business action — resubmit */}
-      {businessCanResubmit && (
+      {businessCanResubmit && historyReady && (
+        <fieldset disabled={loading || Boolean(error)}>
         <ResubmitForm
           submissionId={submissionId}
           documents={documents}
@@ -153,8 +175,14 @@ export default function RevisionPanel({
             onChanged?.();
           }}
         />
+        </fieldset>
       )}
 
+      {role === "business" && status === "returned" && (
+        <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          CB đã trả lại hồ sơ. Hãy liên hệ CB để nhận yêu cầu sửa có nội dung cụ thể trước khi gửi lại.
+        </p>
+      )}
       {/* Contextual hint when no form available but workflow could unlock it */}
       {!hasAction &&
         hasHistory &&
@@ -196,6 +224,7 @@ function RequestRevisionForm({
   token: string;
   onRequested: () => void;
 }) {
+  const formId = useId();
   const [feedback, setFeedback] = useState("");
   const [docFeedback, setDocFeedback] = useState<DocumentFeedbackItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -254,7 +283,7 @@ function RequestRevisionForm({
         },
       );
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
+      if (!res.ok) throw new Error(parseApiError(body, `Lỗi ${res.status}`));
       attempt.current = null;
       setFeedback("");
       setDocFeedback([]);
@@ -275,12 +304,14 @@ function RequestRevisionForm({
     >
       <div>
         <label
+          htmlFor={`${formId}-feedback`}
           className="block text-xs font-medium mb-1"
           style={{ color: "#6B7280" }}
         >
-          Nội dung yêu cầu sửa (overall)
+          Nội dung yêu cầu sửa
         </label>
         <textarea
+          id={`${formId}-feedback`}
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
           rows={3}
@@ -296,13 +327,14 @@ function RequestRevisionForm({
           className="rounded-lg p-3"
           style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
         >
-          <div className="flex gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-2">
             <select
+              aria-label={`Tài liệu có vấn đề ${i + 1}`}
               value={d.document_id}
               onChange={(e) =>
                 updateDocIssue(i, { document_id: e.target.value })
               }
-              className="flex-1 px-2 py-1 text-xs rounded border"
+              className="min-w-0 flex-1 px-2 py-1 text-xs rounded border"
               style={{ borderColor: "#E2E8F0" }}
             >
               {documents.map((doc) => (
@@ -312,6 +344,7 @@ function RequestRevisionForm({
               ))}
             </select>
             <select
+              aria-label={`Mức độ vấn đề ${i + 1}`}
               value={d.severity}
               onChange={(e) =>
                 updateDocIssue(i, { severity: e.target.value as Severity })
@@ -319,12 +352,13 @@ function RequestRevisionForm({
               className="px-2 py-1 text-xs rounded border"
               style={{ borderColor: "#E2E8F0" }}
             >
-              <option value="minor">Minor</option>
-              <option value="major">Major</option>
-              <option value="critical">Critical</option>
+              <option value="minor">Nhẹ</option>
+              <option value="major">Nghiêm trọng</option>
+              <option value="critical">Tới hạn</option>
             </select>
             <button
               type="button"
+              aria-label={`Xóa vấn đề ${i + 1}`}
               onClick={() => removeDocIssue(i)}
               className="text-xs px-2 py-1 rounded"
               style={{ color: "#991b1b" }}
@@ -334,6 +368,7 @@ function RequestRevisionForm({
           </div>
           <input
             type="text"
+            aria-label={`Nội dung vấn đề ${i + 1}`}
             value={d.issue}
             onChange={(e) => updateDocIssue(i, { issue: e.target.value })}
             placeholder="Vấn đề cụ thể (vd: Thiếu dấu JAKIM)"
@@ -342,9 +377,10 @@ function RequestRevisionForm({
           />
           <input
             type="text"
+            aria-label={`Gợi ý khắc phục ${i + 1}`}
             value={d.suggestion ?? ""}
             onChange={(e) => updateDocIssue(i, { suggestion: e.target.value })}
-            placeholder="Gợi ý fix (optional)"
+            placeholder="Gợi ý khắc phục (tùy chọn)"
             className="w-full px-2 py-1.5 text-sm rounded"
             style={{ border: "1px solid #E2E8F0" }}
           />
@@ -357,7 +393,7 @@ function RequestRevisionForm({
         className="text-xs font-medium"
         style={{ color: "#0A1F44" }}
       >
-        + Thêm vấn đề cụ thể trên 1 document
+        + Thêm vấn đề theo tài liệu
       </button>
 
       {error && (
@@ -395,6 +431,7 @@ function ResubmitForm({
   token: string;
   onResubmitted: () => void;
 }) {
+  const notesId = useId();
   const [businessNotes, setBusinessNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -417,7 +454,7 @@ function ResubmitForm({
         body: JSON.stringify({ business_notes: businessNotes.trim() }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || `Lỗi ${res.status}`);
+      if (!res.ok) throw new Error(parseApiError(body, `Lỗi ${res.status}`));
       idempotencyKey.current = null;
       setBusinessNotes("");
       onResubmitted();
@@ -442,7 +479,9 @@ function ResubmitForm({
         Hồ sơ đang ở trạng thái <strong>cần sửa</strong>. Hãy upload tài liệu
         mới (nếu cần) và gửi lại để CB tiếp tục đánh giá.
       </div>
+      <label htmlFor={notesId} className="block text-sm font-medium">Phản hồi về nội dung đã sửa (tùy chọn)</label>
       <textarea
+        id={notesId}
         value={businessNotes}
         onChange={(e) => {
           idempotencyKey.current = null;
@@ -485,8 +524,10 @@ function RevisionHistory({
   loading: boolean;
   documents: DocumentInfo[];
 }) {
-  const docName = (id: string) =>
-    documents.find((d) => d.id === id)?.filename ?? id.slice(0, 8) + "…";
+  const docName = (round: RevisionRound, id: string) =>
+    round.submitted_documents?.find((doc) => doc.id === id)?.filename
+    ?? documents.find((doc) => doc.id === id)?.filename
+    ?? `Tài liệu ${id.slice(0, 8)}… (thiếu tên lịch sử)`;
 
   if (loading)
     return (
@@ -598,7 +639,7 @@ function RevisionHistory({
                   >
                     {d.severity}
                   </span>
-                  <strong>{docName(d.document_id)}:</strong> {d.issue}
+                  <strong>{docName(r, d.document_id)}:</strong> {d.issue}
                   {d.suggestion && (
                     <div className="ml-6 mt-0.5" style={{ color: "#6B7280" }}>
                       → {d.suggestion}
@@ -634,7 +675,7 @@ function RevisionHistory({
 
           {r.resolved_at && (
             <p className="text-xs mt-2" style={{ color: "#102A5C" }}>
-              ✓ Đã giải quyết:{" "}
+              ✓ Doanh nghiệp đã gửi lại:{" "}
               {new Date(r.resolved_at).toLocaleString("vi-VN", {
                 hour12: false,
               })}
