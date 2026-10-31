@@ -18,11 +18,12 @@ if config.config_file_name is not None:
 # Override sqlalchemy.url from environment variable
 database_url = os.environ.get("DATABASE_URL", "")
 if database_url:
-    # Alembic needs a sync driver; convert asyncpg URL if present
-    database_url = database_url.replace(
-        "postgresql+asyncpg://", "postgresql://"
-    )
-    config.set_main_option("sqlalchemy.url", database_url)
+    # Use the synchronous driver installed by backend/requirements.txt.
+    database_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    # ConfigParser interpolation must preserve percent-encoded URL credentials.
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 # No MetaData for autogenerate — raw SQL mode
 target_metadata = None
