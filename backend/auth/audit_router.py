@@ -123,21 +123,66 @@ async def _enriched_user_from_header_or_query(request: Request, token: Optional[
 
 
 async def _audit_filter(user: dict, db):
-    """Owner sees all visits for their provider, auditor sees only assigned."""
-    if user.get("is_owner"):
-        provider_id = await resolve_canonical_tenant_id(user, db)
-        if not provider_id:
-            raise HTTPException(404, "User not found")
-        return "provider_id = $1", provider_id
-    auditor_id = await resolve_canonical_user_id(user, db)
-    if not auditor_id:
-        raise HTTPException(404, "User not found")
-    return "auditor_id = $1", auditor_id
+    """Use the canonical active CB principal, never an owner/tenant claim alone."""
+    from auth.submission_router import _resolve_cb_provider_actor
+    scope = await _resolve_cb_provider_actor(user, db)
+    if not scope:
+        raise HTTPException(403, "Active CB principal required")
+    return ("provider_id = $1", scope["tenant_id"]) if scope["is_owner"] else ("auditor_id = $1", scope["actor_id"])
+
+
+async def _require_audit_owner(user: dict, db):
+    from auth.submission_router import _resolve_cb_metrics_owner_scope
+    provider_id = await _resolve_cb_metrics_owner_scope(user, db)
+    if not provider_id:
+        raise HTTPException(403, "Active CB owner required")
+    return provider_id
+
+
+async def _require_business_relationship(business_id: str, provider_id, db):
+    _validate_uuid(business_id)
+    related = await db.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM submissions WHERE business_tenant=$1 AND provider_id=$2) OR EXISTS(SELECT 1 FROM halal_certificates WHERE business_tenant=$1 AND issued_by=$2)",
+        business_id, provider_id,
+    )
+    if not related:
+        raise HTTPException(404, "Business not found in CB scope")
 
 
 def _require_provider(user: dict):
     if user.get("role") != "provider":
         raise HTTPException(403, "Chỉ dành cho tổ chức")
+
+
+async def get_scoped_audit_db(db=Depends(get_db)):
+    # Keep the parent authorization/assignment lock through the child mutation.
+    async with db.transaction():
+        yield db
+
+
+async def _require_visit_access(vid: str, user: dict, db, *, lock: bool = False, mutable: bool = False, assigned_only: bool = False):
+    _validate_uuid(vid)
+    _require_provider(user)
+    where, identity = await _audit_filter(user, db)
+    if assigned_only and where.startswith("provider_id"):
+        raise HTTPException(403, "Only the assigned auditor may submit a report")
+    row = await db.fetchrow(
+        f"SELECT * FROM audit_visits WHERE id=$1 AND {where.replace('$1', '$2')}" + (" FOR UPDATE" if lock else ""),
+        vid, identity,
+    )
+    if not row:
+        raise HTTPException(404, "Audit visit not found")
+    if mutable and row["status"] in ("report_submitted", "report_accepted"):
+        raise HTTPException(409, "Submitted or accepted audit evidence is immutable; use a follow-up visit")
+    return row
+
+
+async def _require_visit_child(vid: str, child_id: str, table: str, db):
+    _validate_uuid(child_id)
+    if table not in {"audit_visit_items", "audit_ncr"}:
+        raise ValueError("Unsupported audit child table")
+    if not await db.fetchval(f"SELECT id FROM {table} WHERE id=$1 AND visit_id=$2", child_id, vid):
+        raise HTTPException(404, "Audit evidence not found")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -163,11 +208,12 @@ class VisitUpdate(BaseModel):
 
 # ── Business Portfolio ──
 @router.get("/businesses")
-async def list_businesses(user=Depends(get_current_user), db=Depends(get_db)):
+async def list_businesses(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """List all businesses this CB serves, with aggregated stats."""
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
     provider_id = await resolve_canonical_tenant_id(user, db)
 
     rows = await db.fetch(
@@ -221,17 +267,18 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_db)):
 
 # ── Business dossier (consolidated docs + revisions) ──
 @router.get("/businesses/{business_id}/dossier")
-async def business_dossier(business_id: str, user=Depends(get_current_user), db=Depends(get_db)):
-    """All submissions + all documents (grouped by doc_type with revision history) +
-    audit visits for one business. Provider-only — `business_id` is the business tenant id.
+async def business_dossier(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+    """A related business's submissions, audits and explicitly shared evidence.
 
-    Doc revisions are pulled from `documents` table for the business tenant. Each doc_type
-    bucket is sorted newest-first so the head is the current revision.
+    Document metadata is limited to this provider's current/historical packets;
+    unsubmitted documents in the same tenant are never part of this projection.
     """
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
     provider_id = await resolve_canonical_tenant_id(user, db)
+    await _require_business_relationship(business_id, provider_id, db)
 
     biz = await db.fetchrow(
         "SELECT id, company_name, email, phone, address FROM users "
@@ -258,10 +305,15 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
         SELECT id, original_filename, doc_type, compliance_score, file_size,
                uploaded_at, evaluation_result, status
         FROM documents
-        WHERE tenant_id=$1
+        WHERE tenant_id=$1 AND id IN (
+            SELECT unnest(document_ids) FROM submissions WHERE business_tenant=$1 AND provider_id=$2
+            UNION
+            SELECT unnest(rr.submitted_document_ids) FROM submission_revision_requests rr
+            JOIN submissions s ON s.id=rr.submission_id WHERE s.business_tenant=$1 AND s.provider_id=$2
+        )
         ORDER BY doc_type, uploaded_at DESC
     """,
-        business_id,
+        business_id, provider_id,
     )
 
     by_doc_type: dict[str, list] = {}
@@ -344,7 +396,7 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
 
 # ── Business composite score ──
 @router.get("/businesses/{business_id}/score")
-async def business_score(business_id: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def business_score(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """Composite score for a business under this provider's relationship.
 
     Components:
@@ -363,7 +415,9 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
     provider_id = await resolve_canonical_tenant_id(user, db)
+    await _require_business_relationship(business_id, provider_id, db)
 
     biz_exists = await db.fetchval(
         "SELECT 1 FROM users WHERE (id=$1 OR tenant_id=$1) AND is_owner=true LIMIT 1", business_id
@@ -472,7 +526,7 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
 
 # ── Stats ──
 @router.get("/stats")
-async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
+async def audit_stats(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _require_provider(user)
     where, param = await _audit_filter(user, db)
     counts = await db.fetchrow(
@@ -515,10 +569,11 @@ async def audit_stats(user=Depends(get_current_user), db=Depends(get_db)):
 
 # ── Templates (Phase E — placed before /{id} routes) ──
 @router.get("/templates")
-async def list_templates(user=Depends(get_current_user), db=Depends(get_db)):
+async def list_templates(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
     tid = await resolve_canonical_tenant_id(user, db)
     rows = await db.fetch("SELECT * FROM audit_checklist_templates WHERE provider_id=$1 ORDER BY created_at DESC", tid)
     return {
@@ -541,10 +596,11 @@ async def list_templates(user=Depends(get_current_user), db=Depends(get_db)):
 
 
 @router.post("/templates")
-async def create_template(req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def create_template(req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
     tid = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
         "INSERT INTO audit_checklist_templates (provider_id, name, standard, items) VALUES ($1,$2,$3,$4::jsonb) RETURNING id",
@@ -557,11 +613,12 @@ async def create_template(req: dict, user=Depends(get_current_user), db=Depends(
 
 
 @router.put("/templates/{tid}")
-async def update_template(tid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def update_template(tid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(tid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
+    await _require_audit_owner(user, db)
     provider = await resolve_canonical_tenant_id(user, db)
     updates, params, idx = [], [], 1
     if "name" in req:
@@ -586,11 +643,12 @@ async def update_template(tid: str, req: dict, user=Depends(get_current_user), d
 
 
 @router.delete("/templates/{tid}")
-async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(tid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
+    await _require_audit_owner(user, db)
     provider = await resolve_canonical_tenant_id(user, db)
     await db.execute("DELETE FROM audit_checklist_templates WHERE id=$1 AND provider_id=$2", tid, provider)
     return {"message": "Đã xóa"}
@@ -598,7 +656,7 @@ async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(g
 
 # ── List visits ──
 @router.get("/")
-async def list_visits(user=Depends(get_current_user), db=Depends(get_db)):
+async def list_visits(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _require_provider(user)
     where, param = await _audit_filter(user, db)
     rows = await db.fetch(
@@ -633,15 +691,17 @@ async def list_visits(user=Depends(get_current_user), db=Depends(get_db)):
 
 # ── Create visit ──
 @router.post("/")
-async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depends(get_db)):
+async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
     _validate_uuid(req.business_tenant)
     if req.visit_type not in ("initial", "renewal", "surprise"):
         raise HTTPException(400, "visit_type không hợp lệ")
 
     provider = await resolve_canonical_tenant_id(user, db)
+    await _require_business_relationship(req.business_tenant, provider, db)
     template_id = req.template_id
     if template_id:
         _validate_uuid(template_id)
@@ -666,9 +726,10 @@ async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depe
 
 # ── Get visit detail ──
 @router.get("/{vid}")
-async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=False, mutable=False)
     where, param = await _audit_filter(user, db)
     row = await db.fetchrow(
         f"""
@@ -750,11 +811,13 @@ async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_db)
 
 # ── Update visit ──
 @router.put("/{vid}")
-async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user), db=Depends(get_db)):
+async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
+    await _require_audit_owner(user, db)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     provider = await resolve_canonical_tenant_id(user, db)
     updates, params, idx = [], [], 1
     if req.visit_type:
@@ -784,11 +847,13 @@ async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user
 
 # ── Delete visit ──
 @router.delete("/{vid}")
-async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
+    await _require_audit_owner(user, db)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     provider = await resolve_canonical_tenant_id(user, db)
     result = await db.execute(
         "DELETE FROM audit_visits WHERE id=$1 AND provider_id=$2 AND status='scheduled'", vid, provider
@@ -800,11 +865,13 @@ async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_
 
 # ── Assign auditor ──
 @router.put("/{vid}/assign")
-async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     provider = await resolve_canonical_tenant_id(user, db)
     auditor_id = req.get("auditor_id")
     if not auditor_id:
@@ -858,9 +925,10 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
 
 # ── Update status ──
 @router.put("/{vid}/status")
-async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=False)
     new_status = req.get("status")
     if new_status not in ("scheduled", "in_progress", "completed", "report_submitted"):
         raise HTTPException(400, "Status không hợp lệ")
@@ -905,12 +973,14 @@ async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user
 
 
 @router.post("/{vid}/accept-report")
-async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """Only the CB owner may accept a report submitted by its assigned auditor."""
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức mới được chấp nhận báo cáo")
+    await _require_audit_owner(user, db)
+    await _require_visit_access(vid, user, db, lock=True, mutable=False)
 
     from auth.submission_router import _resolve_cb_metrics_owner_scope
     provider_id = await _resolve_cb_metrics_owner_scope(user, db)
@@ -955,9 +1025,10 @@ async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get
 
 # ── Populate checklist from template ──
 @router.post("/{vid}/populate-checklist")
-async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     visit = await db.fetchrow("SELECT template_id FROM audit_visits WHERE id=$1", vid)
     if not visit or not visit["template_id"]:
         raise HTTPException(400, "Chuyến chưa gắn template")
@@ -999,9 +1070,10 @@ async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depend
 
 
 @router.get("/{vid}/items")
-async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=False, mutable=False)
     rows = await db.fetch("SELECT * FROM audit_visit_items WHERE visit_id=$1 ORDER BY category, created_at", vid)
     return {
         "items": [
@@ -1022,9 +1094,10 @@ async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_db
 
 
 @router.post("/{vid}/items")
-async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     severity = req.get("severity", "minor")
     if severity not in ("critical", "major", "minor"):
         raise HTTPException(400, "severity không hợp lệ")
@@ -1046,19 +1119,23 @@ async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depen
 
 
 @router.delete("/{vid}/items/{item_id}")
-async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
+    await _require_visit_child(vid, item_id, 'audit_visit_items', db)
     await db.execute("DELETE FROM audit_visit_items WHERE id=$1 AND visit_id=$2", item_id, vid)
     return {"message": "Đã xóa"}
 
 
 @router.put("/{vid}/items/{item_id}")
-async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
+    await _require_visit_child(vid, item_id, 'audit_visit_items', db)
     updates, params, idx = [], [], 1
     if "result" in req:
         if req["result"] not in ("conform", "minor_nc", "major_nc", "na", "observation", None):
@@ -1082,11 +1159,13 @@ async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_curren
 
 @router.post("/{vid}/items/{item_id}/photo")
 async def upload_item_photo(
-    vid: str, item_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
+    vid: str, item_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db)
 ):
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
+    await _require_visit_child(vid, item_id, 'audit_visit_items', db)
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
@@ -1094,7 +1173,7 @@ async def upload_item_photo(
 
     save_dir = Path("docs") / "audit_photos" / vid
     save_dir.mkdir(parents=True, exist_ok=True)
-    fname = f"{item_id}_{uuid4().hex[:8]}_{file.filename or 'photo.jpg'}"
+    fname = f"{item_id}_{uuid4().hex[:8]}_{Path(file.filename or 'photo.jpg').name}"
     save_path = save_dir / fname
     save_path.write_bytes(content)
     photo_url = str(save_path)
@@ -1115,9 +1194,10 @@ async def upload_item_photo(
 
 # ── NCR CRUD ──
 @router.get("/{vid}/ncr")
-async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=False, mutable=False)
     rows = await db.fetch("SELECT * FROM audit_ncr WHERE visit_id=$1 ORDER BY created_at", vid)
     return {
         "ncrs": [
@@ -1142,9 +1222,10 @@ async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_db))
 
 
 @router.post("/{vid}/ncr")
-async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     row = await db.fetchrow(
         """
         INSERT INTO audit_ncr (visit_id, item_id, description, severity, corrective_action, deadline)
@@ -1161,10 +1242,14 @@ async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Dep
 
 
 @router.put("/{vid}/ncr/{ncr_id}")
-async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _validate_uuid(ncr_id)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=False)
+    await _require_visit_child(vid, ncr_id, 'audit_ncr', db)
+    if any(field in req for field in ("description", "severity", "deadline")):
+        await _require_visit_access(vid, user, db, mutable=True)
     updates, params, idx = [], [], 1
     for field in ["description", "severity", "corrective_action", "status"]:
         if field in req:
@@ -1184,11 +1269,13 @@ async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_
 
 @router.post("/{vid}/ncr/{ncr_id}/photo")
 async def upload_ncr_photo(
-    vid: str, ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
+    vid: str, ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db)
 ):
     _validate_uuid(vid)
     _validate_uuid(ncr_id)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=False)
+    await _require_visit_child(vid, ncr_id, 'audit_ncr', db)
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
@@ -1196,7 +1283,7 @@ async def upload_ncr_photo(
 
     save_dir = Path("docs") / "audit_photos" / vid / "ncr"
     save_dir.mkdir(parents=True, exist_ok=True)
-    fname = f"{ncr_id}_{uuid4().hex[:8]}_{file.filename or 'photo.jpg'}"
+    fname = f"{ncr_id}_{uuid4().hex[:8]}_{Path(file.filename or 'photo.jpg').name}"
     save_path = save_dir / fname
     save_path.write_bytes(content)
 
@@ -1217,9 +1304,10 @@ async def upload_ncr_photo(
 
 
 @router.post("/{vid}/generate-report")
-async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True, assigned_only=True)
 
     visit = await db.fetchrow("SELECT * FROM audit_visits WHERE id=$1", vid)
     if not visit:
@@ -1526,9 +1614,11 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
 
 
 @router.get("/{vid}/report-pdf")
-async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_db)):
+async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     user = await _enriched_user_from_header_or_query(request, token)
+    if user.get("role") == "provider":
+        await _require_visit_access(vid, user, db)
 
     row = await db.fetchrow(
         """
@@ -1542,7 +1632,7 @@ async def download_report(vid: str, request: Request, token: Optional[str] = Que
         raise HTTPException(404, "Báo cáo chưa được tạo")
 
     role = user.get("role")
-    tenant_id = user.get("tenant_id")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
     sub = await resolve_canonical_user_id(user, db)
     allowed = False
     if role == "provider":
@@ -1571,18 +1661,19 @@ async def download_report(vid: str, request: Request, token: Optional[str] = Que
 
 
 @router.get("/history/{business_tenant}")
-async def visit_history(business_tenant: str, user=Depends(get_current_user), db=Depends(get_db)):
+async def visit_history(business_tenant: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(business_tenant)
     _require_provider(user)
+    scope, identity = await _audit_filter(user, db)
     rows = await db.fetch(
-        """
+        f"""
         SELECT v.*, a.company_name AS auditor_name
         FROM audit_visits v LEFT JOIN users a ON a.id = v.auditor_id
-        WHERE v.business_tenant=$1 AND v.provider_id=$2
+        WHERE v.business_tenant=$1 AND v.{scope.replace('$1', '$2')}
         ORDER BY v.scheduled_date DESC
     """,
         business_tenant,
-        await resolve_canonical_tenant_id(user, db),
+        identity,
     )
     return {
         "history": [
@@ -1601,7 +1692,7 @@ async def visit_history(business_tenant: str, user=Depends(get_current_user), db
 
 
 @router.post("/{vid}/decision")
-async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """Provider decides on cert state after a visit.
 
     Fixes from bug audit 2026-04-26:
@@ -1612,6 +1703,8 @@ async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
+    await _require_audit_owner(user, db)
+    await _require_visit_access(vid, user, db, lock=True, mutable=False)
 
     decision = req.get("decision")
     if decision not in ("renew", "suspend", "revoke"):
@@ -1691,10 +1784,11 @@ async def upload_signature(
     file: UploadFile = File(...),
     type: str = Query("auditor"),
     user=Depends(get_current_user),
-    db=Depends(get_db),
+    db=Depends(get_scoped_audit_db),
 ):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     if type not in ("auditor", "business"):
         raise HTTPException(400)
 
@@ -1714,9 +1808,10 @@ async def upload_signature(
 
 
 @router.put("/{vid}/gps")
-async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     _validate_uuid(vid)
     _require_provider(user)
+    await _require_visit_access(vid, user, db, lock=True, mutable=True)
     gps_type = req.get("type")  # start | end
     if gps_type not in ("start", "end"):
         raise HTTPException(400)
@@ -1732,7 +1827,7 @@ async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depen
 
 
 @router.get("/ncr/pending")
-async def pending_ncr(user=Depends(get_current_user), db=Depends(get_db)):
+async def pending_ncr(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """Business sees their open NCRs."""
     if user.get("role") != "business":
         raise HTTPException(403)
@@ -1766,7 +1861,7 @@ async def pending_ncr(user=Depends(get_current_user), db=Depends(get_db)):
 
 @router.post("/ncr/{ncr_id}/evidence")
 async def upload_ncr_evidence(
-    ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_db)
+    ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db)
 ):
     """Business uploads corrective action evidence."""
     _validate_uuid(ncr_id)
@@ -1792,7 +1887,7 @@ async def upload_ncr_evidence(
 
     save_dir = Path("docs") / "ncr_evidence" / str(ncr["visit_id"])
     save_dir.mkdir(parents=True, exist_ok=True)
-    fname = f"{ncr_id}_{uuid4().hex[:8]}_{file.filename or 'evidence'}"
+    fname = f"{ncr_id}_{uuid4().hex[:8]}_{Path(file.filename or 'evidence').name}"
     save_path = save_dir / fname
     save_path.write_bytes(content)
 
@@ -1821,10 +1916,15 @@ async def upload_ncr_evidence(
 
 
 @router.put("/ncr/{ncr_id}/verify")
-async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """Auditor verifies NCR evidence and closes it."""
     _validate_uuid(ncr_id)
     _require_provider(user)
+
+    parent = await db.fetchrow("SELECT visit_id FROM audit_ncr WHERE id=$1", ncr_id)
+    if not parent:
+        raise HTTPException(404, "NCR not found")
+    await _require_visit_access(str(parent["visit_id"]), user, db, lock=True)
 
     action = req.get("action")  # close | reject
     if action not in ("close", "reject"):
@@ -1857,12 +1957,14 @@ async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=
 
 
 @router.post("/{vid}/follow-up")
-async def create_follow_up(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_db)):
+async def create_follow_up(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
     """Create a follow-up visit linked to parent."""
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403)
+    await _require_audit_owner(user, db)
+    await _require_visit_access(vid, user, db, lock=True, mutable=False)
 
     parent = await db.fetchrow(
         "SELECT business_tenant, provider_id, auditor_id, template_id FROM audit_visits WHERE id=$1", vid
