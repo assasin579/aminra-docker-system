@@ -76,7 +76,7 @@ upload boundaries, explicit login issuer and cancelled-dossier readability.
 
 ### Validation and deployment provenance
 
-Final source verification:360/360FEtests across57files, scoped ESLint with zero
+Initial source verification:360/360FEtests across57files, scoped ESLint with zero
 warnings, Docker npm-ci/Next16.4.2webpack production build including TypeScript,
 and2source-only Playwright visibility contracts PASS. The static contracts do
 not launch a browser.
@@ -88,8 +88,13 @@ invalidlogin/API401 and issuer metadata200. Runtime env/network/mount/ports and
 21othercontainers were preserved. No backend/schema/CI/CD changes belong to this
 patch. Evidence: `/home/user/Downloads/aminra-j1j2-ux-20261030/deploy/`.
 
-After the reviewed merge, verify all289Git blobs against that manifest before
-promoting source metadata. A metadata-only image promotion must retain identical
+The published source also preserves main's later member-history access without
+owner-list access. Final integrated verification:362/362FEtests across57files,
+scoped lint and production Docker build/TypeScript. Its289-file manifest is
+26b1dd09891023c88de6d8d8bf915ef99128d1a0d60af6de3eb4c9304c821289.
+This final snapshot supersedes the initial manifest for source promotion.
+After the reviewed merge, verify all289Git blobs against the final manifest
+before promoting source metadata. A metadata-only image promotion must retain identical
 filesystem layers and runtime configuration; record the resulting main commit,
 image identity and post-recreation checks. Do not label an unverified rebuild as
 the accepted image.
