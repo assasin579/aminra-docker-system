@@ -478,14 +478,14 @@ export default function DocumentsPage() {
         setUploadDocType(null);
         setSopExpanded(false);
         setUploadError("");
-        fetchDocs(1);
+        await Promise.all([fetchDocs(1), fetchPendingTypes()]);
       } catch (e: any) {
         setUploadError(e.message || "Upload thất bại");
       } finally {
         setUploading(false);
       }
     },
-    [uploadDocType, token, fetchDocs],
+    [uploadDocType, token, fetchDocs, fetchPendingTypes],
   );
 
   const dropzone = useDropzone({
@@ -587,10 +587,7 @@ export default function DocumentsPage() {
           boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         }}
       >
-        <div
-          className="grid items-center"
-          style={{ gridTemplateColumns: "1fr auto" }}
-        >
+        <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="grid grid-flow-col items-center gap-3 justify-start mb-2">
               <div
@@ -1731,7 +1728,7 @@ export default function DocumentsPage() {
 
       {/* ── History Modal ── */}
       {historyData && (
-        <Modal>
+        <Modal onClose={() => { if (promotingId === null) setHistoryData(null); }}>
           <div
             className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1765,7 +1762,8 @@ export default function DocumentsPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setHistoryData(null)}
+                  onClick={() => { if (promotingId === null) setHistoryData(null); }}
+                  disabled={promotingId !== null} aria-label="Đóng lịch sử tài liệu"
                   className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                   style={{ background: "rgba(0,0,0,0.05)" }}
                 >
@@ -1787,8 +1785,7 @@ export default function DocumentsPage() {
                     style={{ borderBottom: "1px solid #E2E8F0" }}
                   >
                     <div
-                      className="grid items-center gap-4"
-                      style={{ gridTemplateColumns: "auto auto 1fr auto auto" }}
+                      className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] sm:items-center"
                     >
                       {/* Version number */}
                       <div

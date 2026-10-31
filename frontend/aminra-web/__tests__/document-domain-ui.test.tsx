@@ -61,7 +61,8 @@ it("replaces the main card with an explicitly selected older upload without hidi
   render(<Documents />);
   expect(await screen.findByRole("heading", { name: "newer-policy.pdf" })).toBeInTheDocument();
   fireEvent.click(screen.getByTitle("Lịch sử"));
-  fireEvent.click(await screen.findByRole("button", { name: "Chọn bản hiện hành" }));
+  await screen.findByText("older-policy.pdf");
+  fireEvent.click(screen.getByRole("button", { name: "Chọn bản hiện hành" }));
   expect(await screen.findByRole("heading", { name: "older-policy.pdf" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "newer-policy.pdf" })).not.toBeInTheDocument();
   expect(screen.getByText("newer-policy.pdf")).toBeInTheDocument();
@@ -146,4 +147,22 @@ it("IHC may review approval but only an owner may designate a replacement", () =
   const view=render(<ApprovalActions {...props}/>);expect(screen.queryByRole("button",{name:"Thay thế"})).not.toBeInTheDocument();
   view.rerender(<ApprovalActions {...props} approval={{...approval,approval_status:"pending_approval"}}/>);
   expect(screen.getByRole("button",{name:"Phê duyệt"})).toBeInTheDocument();
+});
+
+it("a fresh upload appears in the owner pending group without becoming official automatically", async () => {
+ let uploaded=false;
+ vi.mocked(fetch).mockImplementation(async (url,options)=>{
+  const path=String(url);
+  if(path.endsWith("/documents/upload")&&options?.method==="POST"){uploaded=true;return new Response(JSON.stringify({id:"fresh"}),{status:200});}
+  const data=path.includes("official-artifacts")?{artifacts:[]}:path.includes("view=latest_by_type")&&uploaded?{documents:[{id:"fresh",original_filename:"fresh.pdf",doc_type:"halal_policy",is_current_selection:false}],total:1}:{documents:[],total:0};
+  return new Response(JSON.stringify(data),{status:200});
+ });
+ render(<Documents />);
+ fireEvent.click(screen.getAllByRole("button",{name:/Upload tài liệu/})[0]);
+ const modal=screen.getByRole("dialog");fireEvent.click(within(modal).getByRole("button",{name:"Halal Policy"}));
+ const input=modal.querySelector('input[type="file"]')!;
+ fireEvent.change(input,{target:{files:[new File(["%PDF-1.4"],"fresh.pdf",{type:"application/pdf"})]}});
+ expect(await screen.findByRole("button",{name:"Chọn bản chính cho Chính sách Halal"})).toBeVisible();
+ expect(screen.queryByRole("heading",{name:"fresh.pdf"})).not.toBeInTheDocument();
+ expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).endsWith("/promote"))).toBe(false);
 });
