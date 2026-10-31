@@ -669,7 +669,7 @@ export default function DossierDetailPage({
                           <input
                             aria-label={`Tệp mới cho ${dt.doc_type}`}
                             type="file"
-                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                            accept=".pdf,.txt,.md,.docx,.odt,.ppt,.pptx"
                             onChange={(event) => {
                               setSelectedFileByType((previous) => ({ ...previous, [dt.doc_type]: event.target.files?.[0] ?? null }));
                               setSelectedDocumentByType((previous) => ({ ...previous, [dt.doc_type]: "" }));

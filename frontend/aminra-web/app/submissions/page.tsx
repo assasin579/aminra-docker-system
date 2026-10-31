@@ -166,6 +166,7 @@ function SubmissionsContent() {
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [submitNotes, setSubmitNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const submitAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
 
   // Deadline state
   const [deadlineModal, setDeadlineModal] = useState<string | null>(null);
@@ -537,7 +538,9 @@ function SubmissionsContent() {
         fetch("/api/api/submissions/providers", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("/api/api/documents?page=1&page_size=100", {
+        fetch(searchParams?.get("dossier_id")
+          ? `/api/dossiers/${encodeURIComponent(searchParams.get("dossier_id")!)}`
+          : "/api/api/documents?page=1&page_size=100", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -558,24 +561,36 @@ function SubmissionsContent() {
   const handleSubmit = async () => {
     if (!selectedProvider || selectedDocs.size === 0) return;
     setSubmitting(true);
+    const payload = {
+      provider_id: selectedProvider,
+      document_ids: Array.from(selectedDocs).sort(),
+      notes: submitNotes,
+      ...(searchParams?.get("dossier_id") ? { dossier_id: searchParams.get("dossier_id") } : {}),
+    };
+    const fingerprint = JSON.stringify({ actor: user?.id, tenant: user?.tenant_id, payload });
+    if (submitAttempt.current?.fingerprint !== fingerprint) {
+      submitAttempt.current = { fingerprint, key: crypto.randomUUID() };
+    }
     try {
       const res = await fetch("/api/api/submissions/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Idempotency-Key": submitAttempt.current.key,
         },
         body: JSON.stringify({
           provider_id: selectedProvider,
-          document_ids: Array.from(selectedDocs),
-          notes: submitNotes,
-          ...(searchParams?.get("dossier_id") ? { dossier_id: searchParams.get("dossier_id") } : {}),
+          document_ids: payload.document_ids,
+          notes: payload.notes,
+          ...(payload.dossier_id ? { dossier_id: payload.dossier_id } : {}),
         }),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.detail || "Gửi thất bại");
       }
+      submitAttempt.current = null;
       setShowSubmit(false);
       setSubmitNotes("");
       setSelectedProvider("");

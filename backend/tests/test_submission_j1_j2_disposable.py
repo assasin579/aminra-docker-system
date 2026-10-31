@@ -1564,3 +1564,35 @@ async def test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant(db, 
         "SELECT count(*) FROM dossier_document_attachments WHERE dossier_id=$1 AND document_id=$2",
         dossier_a, document,
     ) == 1
+
+
+@pytest.mark.asyncio
+async def test_bound_resubmit_without_document_ids_revalidates_current_packet(db, case, monkeypatch):
+    from services.submission_revisions import resubmit, InvalidStateTransition
+    await _request_revision(monkeypatch, db, case, 'Validate browser current packet')
+    await db.execute('UPDATE submissions SET document_ids=$1 WHERE id=$2', [case['docs']['wrong-v1']['id']], case['ids']['submission'])
+    with pytest.raises(InvalidStateTransition, match='not mapped'):
+        await resubmit(db, submission_id=str(case['ids']['submission']), business_notes='current packet')
+    assert await db.fetchval('SELECT status FROM submissions WHERE id=$1', case['ids']['submission']) == 'revision_required'
+    assert await db.fetchval('SELECT resolved_at FROM submission_revision_requests WHERE submission_id=$1', case['ids']['submission']) is None
+
+
+@pytest.mark.asyncio
+async def test_bound_browser_replacement_attaches_before_pointer_change(db, case, monkeypatch):
+    await db.execute('UPDATE submissions SET dossier_id=$1 WHERE id=$2', case['ids']['dossier'], case['ids']['submission'])
+    await _request_revision(monkeypatch, db, case, 'Pinned browser replacement')
+    old = case['initial_docs'][0]
+    new = case['docs']['permit-v2']['id']
+    user = case['users']['business_a']
+    await submission_router.replace_submission_document(
+        submission_id=str(case['ids']['submission']), request={'old_doc_id':str(old),'new_doc_id':str(new)}, user=user,db=db,
+    )
+    assert await db.fetchval('SELECT document_id FROM dossier_document_attachments WHERE dossier_id=$1 AND document_id=$2',case['ids']['dossier'],new) == new
+    assert await db.fetchval('SELECT status FROM submissions WHERE id=$1',case['ids']['submission']) == 'revision_required'
+    before = await db.fetchval('SELECT document_ids FROM submissions WHERE id=$1',case['ids']['submission'])
+    with pytest.raises(HTTPException) as error:
+        await submission_router.replace_submission_document(
+            submission_id=str(case['ids']['submission']),request={'old_doc_id':str(new),'new_doc_id':str(case['docs']['wrong-v1']['id'])},user=user,db=db,
+        )
+    assert error.value.status_code == 409
+    assert await db.fetchval('SELECT document_ids FROM submissions WHERE id=$1',case['ids']['submission']) == before
