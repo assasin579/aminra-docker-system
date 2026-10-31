@@ -3,6 +3,7 @@
  * Runs server-side so it can resolve the Docker-internal hostname.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { fetchBackendRead } from "@/lib/fetchBackendRead";
 
 // Allow large file uploads (50MB) and longer timeouts
 export const maxDuration = 120;
@@ -86,10 +87,11 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
     }
   });
 
-  const upstream = await fetch(backendUrl, {
+  const upstream = await fetchBackendRead(backendUrl, {
     method: req.method,
     headers,
     body,
+    signal: req.method === "GET" || req.method === "HEAD" ? req.signal : undefined,
     // @ts-ignore — allow streaming duplex
     duplex: "half",
   });
