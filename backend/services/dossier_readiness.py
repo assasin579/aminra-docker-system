@@ -373,6 +373,10 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
         state = "documents_rejected"
         next_action = "replace_rejected_documents"
         next_actor_role = "business"
+    elif submission and submission.get("status") == "revision_required":
+        state = "revision_required"
+        next_action = "respond_to_revision"
+        next_actor_role = "business_owner"
     elif unreviewed_documents and not submission:
         state = "documents_ready_to_submit"
         next_action = "submit_dossier_to_cb"

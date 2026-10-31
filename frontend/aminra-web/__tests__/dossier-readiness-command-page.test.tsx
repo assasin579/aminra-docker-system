@@ -356,3 +356,15 @@ it("member reads permitted correction history in the dossier without owner-only 
   expect(screen.queryByRole("link",{name:"Xem hồ sơ đã gửi"})).not.toBeInTheDocument();
   expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).includes("my-submissions"))).toBe(false);
 });
+
+
+it.each(["documents_in_review","revision_required"])("submitted packet status overrides stale draft display for %s", async state => {
+ authState.user={role:"business",is_owner:true};
+ global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")?jsonResponse(200,{...readinessFixture,state,next_action:state==="revision_required"?"respond_to_revision":"review_uploaded_documents",next_action_owner_role:state==="revision_required"?"business_owner":"reviewer",requirement_slots:[{submission_id:"current-submission"}]})
+  :String(url).endsWith("/attachable-documents")?jsonResponse(200,{items:[]})
+  :jsonResponse(200,{...dossierFixture,status:"draft",requirements_binding_status:"bound"}));
+ renderPage();await screen.findByText("Hồ sơ nhà máy A");expect(screen.queryByText("Bản nháp")).not.toBeInTheDocument();
+ if(state==="revision_required") {expect(screen.getByText("Chủ tài khoản doanh nghiệp")).toBeInTheDocument();expect(screen.getByText("Sửa theo phản hồi và gửi lại cho đơn vị chứng nhận")).toBeInTheDocument();}
+ else expect(screen.getByText("Đã gửi đơn vị chứng nhận")).toBeInTheDocument();
+ expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
+});
