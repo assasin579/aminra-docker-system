@@ -15,40 +15,12 @@ import type {
   ApprovalStatus,
   VersionEntry,
 } from "@/lib/documentVersioning";
+import { documentApiPath } from "@/lib/documentApi";
 import { getVersions } from "@/lib/documentVersioning";
 
 // ── Doc type options (from upload page) ──────────────────────────────────────
 
-const DOC_TYPE_OPTIONS = [
-  { id: "halal_policy", label: "Halal Policy", group: "policy" },
-  { id: "has_manual", label: "HAS Manual", group: "policy" },
-  { id: "halal_manual", label: "Halal Manual", group: "policy" },
-  {
-    id: "internal_halal_committee",
-    label: "Internal Halal Committee",
-    group: "policy",
-  },
-  { id: "company_profile", label: "Company Profile", group: "policy" },
-  {
-    id: "ingredient_raw_material",
-    label: "Ingredient & Raw Material Documentation",
-    group: "tech",
-  },
-  { id: "process_flow_chart", label: "Process Flow Chart", group: "tech" },
-];
-
-const SOP_SUB_OPTIONS = [
-  { id: "sop_raw_material_receiving", label: "Raw Material Receiving" },
-  { id: "sop_storage_segregation", label: "Storage and Segregation" },
-  { id: "sop_production_operation", label: "Production or Service Operation" },
-  { id: "sop_cleaning_sanitation", label: "Cleaning and Sanitation" },
-  { id: "sop_handling_nonconformances", label: "Handling Non-Conformances" },
-  { id: "sop_complaint_recall", label: "Complaint and Recall Management" },
-];
-
-const DOC_TYPE_LABELS: Record<string, string> = Object.fromEntries(
-  [...DOC_TYPE_OPTIONS, ...SOP_SUB_OPTIONS].map((d) => [d.id, d.label]),
-);
+import { DOC_TYPE_OPTIONS, SOP_SUB_OPTIONS, DOC_TYPE_LABEL_VI as DOC_TYPE_LABELS } from "@/lib/documentTypes";
 
 interface DocumentItem {
   id: string;
@@ -56,6 +28,8 @@ interface DocumentItem {
   doc_type: string | null;
   doc_type_label: string | null;
   compliance_score: number | null;
+  ai_score?: number | null;
+  cb_score?: number | null;
   overall_status: string | null;
   file_size: number | null;
   uploaded_by_name: string | null;
@@ -84,9 +58,13 @@ interface OfficialArtifactItem {
 }
 
 interface RevisionItem {
+  is_current_selection?: boolean;
+  approval_status?: string | null;
   id: string;
   original_filename: string;
   compliance_score: number | null;
+  ai_score?: number | null;
+  cb_score?: number | null;
   overall_status: string | null;
   file_size: number | null;
   uploaded_by_name: string | null;
@@ -111,19 +89,19 @@ const STATUS_CONFIG: Record<
     glow: "0 0 8px rgba(10,31,68,0.2)",
   },
   compliant: {
-    label: "Đạt chuẩn",
+    label: "AI: Đạt chuẩn",
     bg: "#DCE3F0",
     color: "#102A5C",
     glow: "none",
   },
   needs_review: {
-    label: "Cần xem xét",
+    label: "AI: Cần xem xét",
     bg: "#FFFBEB",
     color: "#B45309",
     glow: "none",
   },
   non_compliant: {
-    label: "Không đạt",
+    label: "AI: Không đạt",
     bg: "#FEF2F2",
     color: "#DC2626",
     glow: "none",
@@ -223,6 +201,7 @@ export default function DocumentsPage() {
   // Tier-1 #24 — derived perms for ApprovalActions buttons. Owner has
   // everything; IHC member auto-receives can_approve_documents per
   // JAKIM MS 1500 §5.4 (matches backend auth.permissions logic).
+  const canUpload = user?.is_owner === true || user?.permissions?.can_upload === true;
   const userPerms = {
     canEdit: !!(user?.is_owner || user?.permissions?.can_edit),
     canApproveDocuments: !!(
@@ -297,7 +276,7 @@ export default function DocumentsPage() {
         });
         if (filterType) params.set("doc_type", filterType);
         if (filterStatus) params.set("status", filterStatus);
-        const res = await fetch(`/api/api/documents?${params}`, {
+        const res = await fetch(documentApiPath(`?view=all&${params}`), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
@@ -344,7 +323,7 @@ export default function DocumentsPage() {
     setLoadingEval(id);
     setDetailError("");
     try {
-      const res = await fetch(`/api/api/documents/${id}`, {
+      const res = await fetch(documentApiPath(`/${id}`), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -373,14 +352,14 @@ export default function DocumentsPage() {
   };
 
   const openView = (id: string) => {
-    openAuthed(`/api/api/documents/${id}/preview`, token || "");
+    openAuthed(documentApiPath(`/${id}/preview`), token || "");
   };
 
   const openHistory = async (docType: string) => {
     setLoadingHistory(docType);
     try {
       const res = await fetch(
-        `/api/api/documents/revisions/${encodeURIComponent(docType)}`,
+        documentApiPath(`/revisions/${encodeURIComponent(docType)}`),
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -408,13 +387,13 @@ export default function DocumentsPage() {
   const handlePromote = async (id: string, docType: string) => {
     if (
       !confirm(
-        "Chọn phiên bản này làm tài liệu chính thức? Phiên bản này sẽ thay thế version hiện tại.",
+        "Chọn bản hiện hành trong chuỗi tài liệu này? Thao tác này không phê duyệt tài liệu và không thay đổi hồ sơ đã gửi.",
       )
     )
       return;
     setPromotingId(id);
     try {
-      const res = await fetch(`/api/api/documents/${id}/promote`, {
+      const res = await fetch(documentApiPath(`/${id}/promote`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -433,7 +412,7 @@ export default function DocumentsPage() {
     setRemoveId(id);
     setDeleteError("");
     try {
-      const res = await fetch(`/api/api/documents/${id}`, {
+      const res = await fetch(documentApiPath(`/${id}`), {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -460,7 +439,7 @@ export default function DocumentsPage() {
         const form = new FormData();
         form.append("file", file);
         form.append("doc_type", uploadDocType);
-        const res = await fetch("/api/api/documents/upload", {
+        const res = await fetch(documentApiPath("/upload"), {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: form,
@@ -505,7 +484,7 @@ export default function DocumentsPage() {
     setEvaluatingId(docId);
     try {
       const res = await fetch(
-        `/api/api/documents/${docId}/evaluate?lang=${evalLang}`,
+        documentApiPath(`/${docId}/evaluate?lang=${evalLang}`),
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -612,8 +591,9 @@ export default function DocumentsPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold" style={{ color: "#0A1F44" }}>
-                  Tài liệu
+                  Kho tài liệu
                 </h1>
+                <p className="text-sm text-slate-500">Lưu và tái sử dụng tệp. Chuẩn bị, kiểm tra yêu cầu và gửi chứng nhận tại <Link href="/dossiers" className="underline">Hồ sơ chứng nhận</Link>.</p>
               </div>
             </div>
           </div>
@@ -644,6 +624,8 @@ export default function DocumentsPage() {
               Tạo tài liệu chuẩn
             </Link>
             <button
+              disabled={!canUpload}
+              title={!canUpload ? "Bạn cần quyền tải tài liệu" : undefined}
               onClick={() => setShowUpload(true)}
               className="grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{
@@ -849,6 +831,8 @@ export default function DocumentsPage() {
               Upload tài liệu đầu tiên để bắt đầu đánh giá Halal
             </p>
             <button
+              disabled={!canUpload}
+              title={!canUpload ? "Bạn cần quyền tải tài liệu" : undefined}
               onClick={() => setShowUpload(true)}
               className="inline-grid items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white btn-lift"
               style={{ gridTemplateColumns: "auto 1fr", background: "#0A1F44" }}
@@ -908,7 +892,7 @@ export default function DocumentsPage() {
                   className="grid items-center gap-4"
                   style={{ gridTemplateColumns: "auto 1fr auto" }}
                 >
-                  <MiniScore score={doc.compliance_score} />
+                  <div aria-label="Kết quả đánh giá"><span className="text-xs text-slate-500">AI</span><MiniScore score={doc.ai_score ?? null} />{doc.cb_score != null && <span className="text-xs">CB: {doc.cb_score}/100</span>}</div>
 
                   <div className="min-w-0">
                     {/* Doc type + status badges */}
@@ -973,7 +957,7 @@ export default function DocumentsPage() {
                             : "Đánh giá lại"
                       }
                       disabled={
-                        evaluatingId === doc.id || doc.status === "evaluating"
+                        !canUpload || evaluatingId === doc.id || doc.status === "evaluating"
                       }
                       className="w-8 h-8 rounded-lg grid place-items-center transition-all duration-200 ease-out hover:scale-110"
                       style={{
@@ -1102,7 +1086,7 @@ export default function DocumentsPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         openAuthed(
-                          `/api/api/documents/${doc.id}/file`,
+                          documentApiPath(`/${doc.id}/file`),
                           token || "",
                           { download: true, filename: doc.original_filename },
                         );
@@ -1730,11 +1714,11 @@ export default function DocumentsPage() {
                     className="text-base font-bold"
                     style={{ color: "#0A1F44" }}
                   >
-                    Lịch sử —{" "}
+                    Các lần tải lên cùng loại —{" "}
                     {historyData.doc_type_label || historyData.doc_type}
                   </h2>
                   <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
-                    {historyData.total} phiên bản
+                    {historyData.total} tài liệu cùng loại; mỗi tệp có thể thuộc một hồ sơ khác nhau
                   </p>
                 </div>
                 <button
@@ -1750,7 +1734,7 @@ export default function DocumentsPage() {
             <div className="flex-1 min-h-0 overflow-y-auto">
               {historyData.revisions.map((rev, i) => {
                 const st = STATUS_CONFIG[rev.overall_status || ""];
-                const isLatest = i === 0;
+                const isLatest = !!rev.is_current_selection;
                 return (
                   <div
                     key={rev.id}
@@ -1774,9 +1758,9 @@ export default function DocumentsPage() {
                             : "1px solid rgba(100,116,139,0.2)",
                         }}
                       >
-                        v{historyData.total - i}
+                        #{historyData.total - i}
                       </div>
-                      <MiniScore score={rev.compliance_score} />
+                      <div><span className="text-xs text-slate-500">AI</span><MiniScore score={rev.ai_score ?? null} />{rev.cb_score != null && <span className="text-xs">CB: {rev.cb_score}/100</span>}</div>
                       <div>
                         <div className="grid grid-flow-col items-center gap-2 justify-start">
                           <p
@@ -1834,7 +1818,7 @@ export default function DocumentsPage() {
                         >
                           Xem
                         </button>
-                        {!isLatest && (
+                        {!isLatest && rev.approval_status !== "obsolete" && userPerms.canEdit && (
                           <button
                             onClick={() =>
                               handlePromote(rev.id, historyData.doc_type)
@@ -1847,7 +1831,7 @@ export default function DocumentsPage() {
                               border: "1px solid rgba(245,158,11,0.2)",
                             }}
                           >
-                            {promotingId === rev.id ? "..." : "Lựa chọn"}
+                            {promotingId === rev.id ? "..." : "Chọn bản hiện hành"}
                           </button>
                         )}
                       </div>

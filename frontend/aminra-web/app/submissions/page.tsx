@@ -609,7 +609,7 @@ function SubmissionsContent() {
     try {
       const [provRes, docRes] = await Promise.all([
         fetch("/api/api/submissions/providers", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(dossierId ? `/api/dossiers/${encodeURIComponent(dossierId)}` : "/api/api/documents?page=1&page_size=100",
+        fetch(dossierId ? `/api/dossiers/${encodeURIComponent(dossierId)}` : "/api/api/documents?view=all&page=1&page_size=100",
           { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (!provRes.ok || !docRes.ok) throw new Error("Không tải được tổ chức chứng nhận hoặc tài liệu. Vui lòng thử lại.");

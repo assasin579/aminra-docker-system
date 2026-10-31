@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Add language
-    backendFormData.append("lang", "vi");
+    backendFormData.append("lang", String(formData.get("lang") || "vi"));
+    const previousContext = formData.get("previous_context");
+    if (typeof previousContext === "string") {
+      backendFormData.append("previous_context", previousContext);
+    }
 
     // Forward JWT if present so backend can save to DB
     const headers: Record<string, string> = {};

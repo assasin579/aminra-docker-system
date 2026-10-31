@@ -150,7 +150,7 @@ function findFetchCall(path: string): [RequestInfo | URL, RequestInit | undefine
 describe("Dossier detail certification readiness command panel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authState.user = { role: "provider" };
+    authState.user = { role: "business" };
     global.fetch = vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const path = String(url);
       const method = init?.method || "GET";
@@ -295,7 +295,13 @@ describe("Dossier editing capability and lifecycle UX", () => {
       ?jsonResponse(200,{...readinessFixture,state:"documents_ready_to_submit",next_action:"submit_dossier_to_cb",next_actor_role:"business",requirement_slots:[]})
       :String(url).endsWith("/attachable-documents")?jsonResponse(200,{items:[]})
       :jsonResponse(200,{...dossierFixture,status,requirements_binding_status:"bound"}));
-    renderPage();await screen.findByText("Hồ sơ nhà máy A");
+    renderPage();
+    if (role === "provider") {
+      await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/submissions"));
+      expect(global.fetch).not.toHaveBeenCalled();
+      return;
+    }
+    await screen.findByText("Hồ sơ nhà máy A");
     expect(screen.queryAllByRole("button",{name:"Đính kèm tài liệu"})).toHaveLength(editable?3:0);
     expect(screen.queryByTestId("dossier-create-doc-cta")!==null).toBe(editable);
     expect(screen.queryByRole("form",{name:"Bổ sung tài liệu hồ sơ"})).not.toBeInTheDocument();

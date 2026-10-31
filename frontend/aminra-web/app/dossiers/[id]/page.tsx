@@ -234,6 +234,10 @@ export default function DossierDetailPage({
       router.replace("/business/login");
       return;
     }
+    if (user?.role !== "business") {
+      router.replace("/submissions");
+      return;
+    }
     (async () => {
       try {
         const authHeaders = { Authorization: `Bearer ${token}` };

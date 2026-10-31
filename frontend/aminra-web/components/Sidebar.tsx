@@ -193,7 +193,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     ...(!shouldShowAdminNavigation && user?.role === "business"
       ? [
           {
-            label: "Tài liệu",
+            label: "Kho tài liệu",
             href: "/documents",
             icon: (
               <svg
@@ -211,6 +211,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               </svg>
             ),
           },
+          ...(user?.is_owner === true ? [{
+            label: "Hồ sơ chứng nhận",
+            href: "/dossiers",
+            icon: <span aria-hidden="true">▤</span>,
+          }] : []),
           {
             label: user?.is_owner === true ? "Hồ sơ đã gửi" : "Hồ sơ và lịch sử",
             href: user?.is_owner === true ? "/submissions" : "/dossiers",

@@ -1925,19 +1925,34 @@ async def submission_doc_revisions(
     await _check_submission_access(submission_id, user, db)
 
     # Always use the business tenant from the submission, not the current user's tenant
-    sub = await db.fetchrow("SELECT business_tenant FROM submissions WHERE id=$1", submission_id)
+    sub = await db.fetchrow("SELECT business_tenant, document_ids FROM submissions WHERE id=$1", submission_id)
     if not sub:
         raise HTTPException(404)
     biz_tenant = sub["business_tenant"]
 
-    rows = await db.fetch(
-        """SELECT id, original_filename, compliance_score, file_size, uploaded_at,
-                  doc_type, evaluation_result
-           FROM documents WHERE tenant_id=$1 AND doc_type=$2
-           ORDER BY uploaded_at DESC""",
-        biz_tenant,
-        doc_type_id,
-    )
+    # Providers receive only evidence shared through this exact review packet.
+    # Business actors can separately reuse their own tenant library revisions.
+    if user.get("role") == "provider":
+        rows = await db.fetch(
+            """SELECT id, original_filename, compliance_score, file_size, uploaded_at,
+                      doc_type, evaluation_result
+               FROM documents
+               WHERE tenant_id=$1 AND doc_type=$2 AND (
+                   id=ANY($3::uuid[]) OR id IN (
+                       SELECT unnest(submitted_document_ids) FROM submission_revision_requests
+                       WHERE submission_id=$4
+                   )
+               ) ORDER BY uploaded_at DESC, id""",
+            biz_tenant, doc_type_id, sub["document_ids"] or [], submission_id,
+        )
+    else:
+        rows = await db.fetch(
+            """SELECT id, original_filename, compliance_score, file_size, uploaded_at,
+                      doc_type, evaluation_result
+               FROM documents WHERE tenant_id=$1 AND doc_type=$2
+               ORDER BY uploaded_at DESC, id""",
+            biz_tenant, doc_type_id,
+        )
 
     revisions = []
     for r in rows:

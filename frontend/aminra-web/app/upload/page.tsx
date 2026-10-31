@@ -12,32 +12,7 @@ import GenerateDocTab, {
 
 // ─── Document type definitions ────────────────────────────────────────────────
 
-const DOC_TYPE_OPTIONS = [
-  { id: "halal_policy", label: "Halal Policy", group: "policy" },
-  { id: "has_manual", label: "HAS Manual", group: "policy" },
-  { id: "halal_manual", label: "Halal Manual", group: "policy" },
-  {
-    id: "internal_halal_committee",
-    label: "Internal Halal Committee",
-    group: "policy",
-  },
-  { id: "company_profile", label: "Company Profile", group: "policy" },
-  {
-    id: "ingredient_raw_material",
-    label: "Ingredient & Raw Material Documentation",
-    group: "tech",
-  },
-  { id: "process_flow_chart", label: "Process Flow Chart", group: "tech" },
-];
-
-const SOP_SUB_OPTIONS = [
-  { id: "sop_raw_material_receiving", label: "Raw Material Receiving" },
-  { id: "sop_storage_segregation", label: "Storage and Segregation" },
-  { id: "sop_production_operation", label: "Production or Service Operation" },
-  { id: "sop_cleaning_sanitation", label: "Cleaning and Sanitation" },
-  { id: "sop_handling_nonconformances", label: "Handling Non-Conformances" },
-  { id: "sop_complaint_recall", label: "Complaint and Recall Management" },
-];
+import { DOC_TYPE_OPTIONS, SOP_SUB_OPTIONS } from "@/lib/documentTypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,6 +45,9 @@ interface Citation {
 }
 
 interface EvaluationReport {
+  document_id?: string | null;
+  document_save_status?: "saved" | "failed" | "not_applicable";
+  document_save_error?: string | null;
   filename: string;
   doc_type: string;
   doc_type_label: string;
@@ -247,6 +225,7 @@ export default function UploadPage() {
   const isFullAccess = isAuthenticated && !!user;
   const isProvider = user?.role === "provider";
   const isBusiness = user?.role === "business";
+  const canAnalyze = !isBusiness || user?.is_owner === true || user?.permissions?.can_upload === true;
 
   const [phase, setPhase] = useState<
     "idle" | "uploading" | "analyzing" | "done"
@@ -433,6 +412,7 @@ export default function UploadPage() {
     async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (!file) return;
+      if (!canAnalyze) { setError("Bạn cần quyền tải tài liệu để phân tích và lưu vào kho."); return; }
       if (!selectedDocType) {
         setError("Vui lòng chọn loại tài liệu trước khi upload.");
         return;
@@ -534,11 +514,12 @@ export default function UploadPage() {
         setPhase("idle");
       }
     },
-    [API, selectedDocType],
+    [API, selectedDocType, canAnalyze],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    disabled: !canAnalyze,
     maxFiles: 1,
     accept: {
       "application/pdf": [".pdf"],
@@ -1029,15 +1010,22 @@ export default function UploadPage() {
       {/* Saved banner */}
       {isFullAccess && (
         <div
+          role={report.document_save_status === "failed" ? "alert" : "status"}
           className="grid items-center mb-4 px-4 py-2.5 rounded-xl text-sm"
           style={{
             gridTemplateColumns: "1fr auto",
-            background: "rgba(34,197,94,0.07)",
+            background: report.document_save_status === "failed" ? "rgba(239,68,68,0.07)" : "rgba(34,197,94,0.07)",
             border: "1px solid rgba(10,31,68,0.15)",
           }}
         >
           <span style={{ color: "#0A1F44" }}>
-            ✓ Tài liệu đã được lưu và đánh giá thành công
+            {report.document_save_status === "saved"
+              ? "✓ Phân tích AI hoàn tất; tài liệu đã lưu vào kho."
+              : report.document_save_status === "failed"
+                ? report.document_save_error || "Phân tích AI hoàn tất nhưng chưa lưu được tài liệu."
+                : report.document_save_status === "not_applicable"
+                  ? "Phân tích AI hoàn tất. Kết quả này không lưu vào kho tài liệu doanh nghiệp."
+                  : "Phân tích AI hoàn tất. Chưa xác nhận tài liệu đã được lưu vào kho."}
           </span>
           {isBusiness && (
             <Link

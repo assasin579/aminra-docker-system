@@ -36,6 +36,10 @@ export default function CreateDossierPage() {
       router.replace("/business/login");
       return;
     }
+    if (user?.role !== "business") {
+      router.replace("/submissions");
+      return;
+    }
     if (user?.role === "business" && user.is_owner && !user.industry_schema_id) {
       router.replace("/business/onboarding/industry-select");
       return;
