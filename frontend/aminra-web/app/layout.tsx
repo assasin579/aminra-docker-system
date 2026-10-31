@@ -48,6 +48,8 @@ export default function RootLayout({
             window.addEventListener('load', () => {
               const isAuthCriticalRoute = new RegExp('^/(auth|admin|dashboard)(/|$)|^/(business|provider)/login(/|$)').test(window.location.pathname);
 
+              let previouslyControlled = Boolean(navigator.serviceWorker.controller);
+
               navigator.serviceWorker
                 .register('/sw.js', { updateViaCache: 'none' })
                 .then((registration) => {
@@ -76,6 +78,13 @@ export default function RootLayout({
 
               let refreshing = false;
               navigator.serviceWorker.addEventListener('controllerchange', () => {
+                // First activation claims the already-current network page; a
+                // reload here discards credentials typed during installation.
+                if (!previouslyControlled) {
+                  previouslyControlled = Boolean(navigator.serviceWorker.controller);
+                  return;
+                }
+                if (!navigator.serviceWorker.controller) return;
                 if (!isAuthCriticalRoute || refreshing) return;
                 if (window.location.pathname.startsWith('/auth/callback')) return;
                 refreshing = true;
