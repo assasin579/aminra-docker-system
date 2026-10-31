@@ -41,9 +41,19 @@ test('PINNED-01 @STD-03 @STD-04 @DOS-06 @E2E-05 published v2 does not change old
  await info.attach('pinned-requirements',{body:JSON.stringify({old:after,new:fresh}),contentType:'application/json'});
 });
 
-test('LIBRARY-01 @DOC-05 @DOS-06 library renders two independent same-type uploads',async({page,request})=>{
- const owner=await login(page,'bizB');const names=[config.run_id+'-one.pdf',config.run_id+'-two.pdf'];for(const name of names){const r=await request.post(config.base_url+'/api/api/documents/upload',{headers:{Authorization:'Bearer '+owner},multipart:{doc_type:'halal_policy',file:{name,mimeType:'application/pdf',buffer:pdf(name)}}});expect(r.status()).toBe(200);}
- await page.goto('/documents');for(const name of names)await expect(page.getByText(name,{exact:true})).toBeVisible();
+test('LIBRARY-01 @DOC-05 @DOS-06 one representative per type preserves history and explicitly selected older files',async({page,request},info)=>{
+ const owner=await login(page,'bizB');const names=[config.run_id+'-one.pdf',config.run_id+'-two.pdf'];const ids:string[]=[];
+ for(const name of names){const r=await request.post(config.base_url+'/api/api/documents/upload',{headers:{Authorization:'Bearer '+owner},multipart:{doc_type:'halal_policy',file:{name,mimeType:'application/pdf',buffer:pdf(name)}}});expect(r.status()).toBe(200);ids.push((await r.json()).id);}
+ await page.goto('/documents');await expect(page.getByRole('heading',{name:names[1],exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:names[0],exact:true})).toHaveCount(0);
+ const latest=await api(request,owner,'/api/documents?view=latest_by_type&doc_type=halal_policy');expect(latest.total).toBe(1);expect(latest.documents[0].id).toBe(ids[1]);
+ await page.getByTitle('Lịch sử',{exact:true}).click();const history=page.getByRole('dialog');for(const name of names)await expect(history.getByText(name,{exact:true})).toBeVisible();
+ page.once('dialog',dialog=>dialog.accept());
+ const [chosen]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/documents/'+ids[0]+'/promote')&&r.request().method()==='POST'),history.locator('[data-history-document-id="'+ids[0]+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true}).click()]);expect(chosen.status()).toBe(200);
+ await expect(page.getByRole('heading',{name:names[0],exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:names[1],exact:true})).toHaveCount(0);for(const name of names)await expect(history.getByText(name,{exact:true})).toBeVisible();
+ const selected=await api(request,owner,'/api/documents?view=latest_by_type&doc_type=halal_policy');expect(selected.total).toBe(1);expect(selected.documents[0].id).toBe(ids[0]);
+ const all=await api(request,owner,'/api/documents?view=all&doc_type=halal_policy');expect(all.total).toBe(2);expect(all.documents.map((d:{id:string})=>d.id).sort()).toEqual([...ids].sort());
+ for(let i=0;i<ids.length;i++){const response=await request.get(config.base_url+'/api/api/documents/'+ids[i]+'/file',{headers:{Authorization:'Bearer '+owner}});expect(response.status()).toBe(200);expect(await response.body()).toEqual(pdf(names[i]));}
+ await info.attach('library-selection',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
 });
 
 test('SESSION-01 @AUTH-04 @E2E-12 logout and account switch do not render previous business files',async({page,request})=>{
