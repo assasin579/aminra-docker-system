@@ -188,3 +188,23 @@ test('TRUST-REFRESH-FAILURE @CMP-01 saved receipt survives a failed register ref
  await expect(page.getByLabel('Title',{exact:true})).toHaveValue('');
  await page.unroute('**'+complaintPath);await page.reload();await expect(page.getByTestId('case-'+saved.id)).toContainText(label);
 });
+
+test('TRUST-MALFORMED-RECEIPT @CMP-01 a lost record identifier never claims success or repeats the persisted transaction',async({page})=>{
+ await login(page,'bizA');const label=config.run_id+' unconfirmed receipt';await complaintForm(page,label);
+ await expect(page.getByText('Loading register…',{exact:true})).toHaveCount(0);
+ let writes=0;let savedId='';
+ await page.route('**'+complaintPath,async route=>{
+  if(route.request().method()!=='POST')return route.continue();
+  writes++;const response=await route.fetch();expect(response.status()).toBe(200);savedId=(await response.json()).id;
+  await route.fulfill({status:200,contentType:'application/json',body:'{}'});
+ });
+ await page.getByRole('button',{name:'Submit case',exact:true}).click();
+ await expect(page.locator('[role="alert"]:not(#__next-route-announcer__)')).toContainText('did not confirm a saved record');
+ await expect(page.getByRole('button',{name:'Submit case',exact:true})).toBeDisabled();
+ await expect(page.getByRole('status')).toHaveCount(0);
+ await expect(page.getByLabel('Title',{exact:true})).toHaveValue(label);
+ await page.unroute('**'+complaintPath);await page.reload();
+ await expect(page.getByTestId('case-'+savedId)).toContainText(label);
+ await expect(page.getByTestId('complaint-queue').locator('li').filter({hasText:label})).toHaveCount(1);
+ expect(writes).toBe(1);
+});
