@@ -71,6 +71,14 @@ async function deleteAminraCaches(): Promise<void> {
   }
 }
 
+/** Discard private derived data while preserving a newer session's credentials. */
+export async function clearAuthDerivedState(): Promise<void> {
+  if (typeof window === "undefined") return;
+  clearPrivateClientData(window.localStorage);
+  clearPrivateClientData(window.sessionStorage);
+  await Promise.all([deleteAminraCaches(), clearPrivateOfflineState()]);
+}
+
 export function notifyAuthSessionChanged(reason: AuthPurgeReason | "session_saved" = "unknown"): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(

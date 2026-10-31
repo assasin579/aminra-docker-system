@@ -13,7 +13,7 @@ import {
 import {
   AUTH_SESSION_EVENT,
   clearApplicationCredentials,
-  clearPrivateOfflineState,
+  clearAuthDerivedState,
   notifyAuthSessionChanged,
   purgeAuthSessionState,
   removeLegacyAdminSessionKey,
@@ -190,6 +190,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     const synchronize = async (force = false) => {
       const storedToken = readApplicationToken();
       if (!storedToken) {
+        if (activeSession.current.token) void clearAuthDerivedState();
         if (activeSession.current.token) loginSequence.current += 1;
         generation.current += 1; pendingRead.current?.abort();
         activeSession.current = { token: null, user: null };
@@ -205,6 +206,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         !!claims.sub && normalizeIdentity(claims.sub) === normalizeIdentity(previous.keycloak_sub || decodeJwtPayload(activeSession.current.token || "")?.sub)
       );
       if (storedToken !== activeSession.current.token) loginSequence.current += 1;
+      if (!sameIdentity && activeSession.current.token) void clearAuthDerivedState();
       const current = ++generation.current;
       pendingRead.current?.abort();
       const controller = new AbortController(); pendingRead.current = controller;
@@ -218,6 +220,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         const profile = (await response.json()) as UserProfile;
         if (!mounted || current !== generation.current || readApplicationToken() !== storedToken) return;
         assertKeycloakIdentityMatchesProfile(storedToken, profile);
+        if (previous && authorizationScope(previous, storedToken) !== authorizationScope(profile, storedToken)) void clearAuthDerivedState();
         activeSession.current = { token: storedToken, user: profile };
         setToken(storedToken); setUser(profile);
         const storage = localStorage.getItem(TOKEN_KEY) === storedToken ? localStorage : sessionStorage;
@@ -266,7 +269,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       assertKeycloakIdentityMatchesProfile(t, u);
       generation.current += 1; pendingRead.current?.abort();
       activeSession.current = { token: t, user: u };
-      void clearPrivateOfflineState();
+      void clearAuthDerivedState();
       if (!preserveOidc) {
         removeStoredAuthSessionKeys(localStorage);
         removeStoredAuthSessionKeys(sessionStorage);
@@ -373,6 +376,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     const profile = (await res.json()) as UserProfile;
     if (current !== generation.current || readApplicationToken() !== token) return;
     assertKeycloakIdentityMatchesProfile(token, profile);
+    if (activeSession.current.user && authorizationScope(activeSession.current.user, token) !== authorizationScope(profile, token)) void clearAuthDerivedState();
     activeSession.current = { token, user: profile };
     setUser(profile);
     const storage = localStorage.getItem(TOKEN_KEY) === token ? localStorage : sessionStorage;

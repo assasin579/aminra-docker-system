@@ -4,8 +4,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AdminAuthProvider, useAdminAuth } from "@/components/AdminAuthContext";
 import { UserAuthProvider, useUserAuth, type UserProfile } from "@/components/UserAuthContext";
 
-const { oidcGetUser } = vi.hoisted(() => ({ oidcGetUser: vi.fn() }));
-vi.mock("@/lib/auth-oidc", () => ({ isOidcEnabled: () => true, getOidcUser: oidcGetUser, signoutRedirect: vi.fn(), signinRedirect: vi.fn() }));
+const { oidcGetUser, oidcSignout } = vi.hoisted(() => ({ oidcGetUser: vi.fn(), oidcSignout: vi.fn() }));
+vi.mock("@/lib/auth-oidc", () => ({ isOidcEnabled: () => true, getOidcUser: oidcGetUser, signoutRedirect: oidcSignout, signinRedirect: vi.fn() }));
 const fetchMock = vi.fn();
 function profile(id: string, owner = true): UserProfile {
   return { id, email: id + "@example.invalid", keycloak_sub: id, role: "business", status: "active", company_name: id, company_code: null, tenant_id: id, is_owner: owner };
@@ -14,8 +14,64 @@ function jwt(id: string) { return "header." + btoa(JSON.stringify({ sub: id, ema
 function store(id: string) { localStorage.setItem("aminra_user_token", jwt(id)); localStorage.setItem("aminra_user_profile", JSON.stringify(profile(id))); }
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; }
 const wrapper = ({ children }: { children: ReactNode }) => <UserAuthProvider>{children}</UserAuthProvider>;
-beforeEach(() => { localStorage.clear(); sessionStorage.clear(); fetchMock.mockReset(); oidcGetUser.mockReset(); vi.stubGlobal("fetch", fetchMock); });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); fetchMock.mockReset(); oidcGetUser.mockReset(); oidcSignout.mockReset(); vi.stubGlobal("fetch", fetchMock); });
 afterEach(() => vi.unstubAllGlobals());
+
+it("account switch discards derived caches without erasing the incoming credential", async () => {
+  store("a");
+  fetchMock.mockImplementation(async () => Response.json(profile(localStorage.getItem("aminra_user_token") === jwt("b") ? "b" : "a")));
+  const entries = new Set(["aminra-admin-race", "unrelated-app"]);
+  const erase = vi.fn(async (key: string) => entries.delete(key));
+  vi.stubGlobal("caches", { keys: async () => [...entries], delete: erase });
+  const { result } = renderHook(() => useUserAuth(), { wrapper });
+  await waitFor(() => expect(result.current.user?.id).toBe("a"));
+  entries.add("aminra-admin-race");
+  localStorage.setItem("aminra_full_report_old.pdf", "private A report");
+  sessionStorage.setItem("aminra_private:old", "private A tab report");
+  act(() => { store("b"); window.dispatchEvent(new StorageEvent("storage", { key: "aminra_user_token", newValue: jwt("b") })); });
+  await waitFor(() => expect(result.current.user?.id).toBe("b"));
+  await waitFor(() => expect(entries.has("aminra-admin-race")).toBe(false));
+  expect(entries.has("unrelated-app")).toBe(true);
+  expect(localStorage.getItem("aminra_full_report_old.pdf")).toBeNull();
+  expect(sessionStorage.getItem("aminra_private:old")).toBeNull();
+  expect(localStorage.getItem("aminra_user_token")).toBe(jwt("b"));
+});
+
+it("permission refresh discards persistent privileged data and preserves the session", async () => {
+  store("a");
+  fetchMock.mockResolvedValueOnce(Response.json(profile("a"))).mockResolvedValueOnce(Response.json(profile("a", false)));
+  const erase = vi.fn(async () => true);
+  vi.stubGlobal("caches", { keys: async () => ["aminra-privileged"], delete: erase });
+  const { result } = renderHook(() => useUserAuth(), { wrapper });
+  await waitFor(() => expect(result.current.user?.is_owner).toBe(true));
+  localStorage.setItem("aminra_private:owner", "owner-only analysis");
+  await act(async () => { await result.current.refreshProfile(); });
+  expect(result.current.user?.is_owner).toBe(false);
+  await waitFor(() => expect(erase).toHaveBeenCalledWith("aminra-privileged"));
+  expect(localStorage.getItem("aminra_private:owner")).toBeNull();
+  expect(localStorage.getItem("aminra_user_token")).toBe(jwt("a"));
+});
+
+it("late derived-cache deletion cannot erase a third account installed during cleanup", async () => {
+  store("a");const deleted = deferred<boolean>();
+  const erase = vi.fn(() => deleted.promise);
+  vi.stubGlobal("caches", { keys: async () => ["aminra-old"], delete: erase });
+  fetchMock.mockImplementation(async () => {
+    const id=localStorage.getItem("aminra_user_token")===jwt("c")?"c":localStorage.getItem("aminra_user_token")===jwt("b")?"b":"a";
+    return Response.json(profile(id));
+  });
+  const { result } = renderHook(() => useUserAuth(), { wrapper });
+  await waitFor(() => expect(result.current.user?.id).toBe("a"));
+  act(() => { store("b");window.dispatchEvent(new StorageEvent("storage",{key:"aminra_user_token"})); });
+  await waitFor(() => expect(result.current.user?.id).toBe("b"));
+  await waitFor(() => expect(erase).toHaveBeenCalled());
+  act(() => { store("c");window.dispatchEvent(new StorageEvent("storage",{key:"aminra_user_token"})); });
+  await waitFor(() => expect(result.current.user?.id).toBe("c"));
+  await act(async () => { deleted.resolve(true); });
+  expect(result.current.user?.id).toBe("c");
+  expect(localStorage.getItem("aminra_user_token")).toBe(jwt("c"));
+  expect(JSON.parse(localStorage.getItem("aminra_user_profile")!).id).toBe("c");
+});
 
 it("clears an old identity while another tab's token is being verified", async () => {
   store("a"); const b = deferred<Response>();
@@ -58,6 +114,30 @@ it("a delayed logout cannot purge a newer successful login", async () => {
   await act(async () => { await result.current.loginBusiness("b@example.invalid", "synthetic"); oidc.resolve(null); });
   expect(localStorage.getItem("aminra_user_token")).toBe(jwt("b")); expect(result.current.user?.id).toBe("b");
 });
+
+for (const outcome of ["old SSO session", "provider error"] as const) {
+  it(`late logout with ${outcome} preserves the newer login and never redirects it`, async () => {
+    store("a");
+    let settle!: () => void;
+    oidcGetUser.mockReturnValue(new Promise((resolve, reject) => {
+      settle = () => outcome === "provider error"
+        ? reject(new Error("synthetic provider failure"))
+        : resolve({ id_token: "old-session-only" });
+    }));
+    fetchMock.mockResolvedValueOnce(Response.json(profile("a")))
+      .mockResolvedValueOnce(Response.json({ access_token: jwt("b"), user: profile("b") }));
+    const { result } = renderHook(() => useUserAuth(), { wrapper });
+    await waitFor(() => expect(result.current.user?.id).toBe("a"));
+    act(() => result.current.logout());
+    await waitFor(() => expect(oidcGetUser).toHaveBeenCalled());
+    await act(async () => { await result.current.loginBusiness("b@example.invalid", "synthetic"); });
+    await act(async () => { settle(); });
+    expect(result.current.user?.id).toBe("b");
+    expect(localStorage.getItem("aminra_user_token")).toBe(jwt("b"));
+    expect(JSON.parse(localStorage.getItem("aminra_user_profile")!).id).toBe("b");
+    expect(oidcSignout).not.toHaveBeenCalled();
+  });
+}
 
 it("a permission downgrade remounts cached privileged descendants", async () => {
   store("a"); fetchMock.mockResolvedValueOnce(Response.json(profile("a"))).mockResolvedValueOnce(Response.json(profile("a", false)));

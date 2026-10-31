@@ -169,6 +169,7 @@ async def test_enrich_returns_db_user_shape():
     row = {
         "id": "11111111-1111-1111-1111-111111111111",
         "email": "user@example.com",
+        "keycloak_sub": "33333333-3333-3333-3333-333333333333",
         "role": "business",
         "status": "active",
         "tenant_id": "22222222-2222-2222-2222-222222222222",
@@ -177,9 +178,11 @@ async def test_enrich_returns_db_user_shape():
     }
     pool = _mock_pool(row=row)
     out = await kv.enrich_keycloak_claims(
-        {"sub": "kc-1", "email": "user@example.com", "realm_access": {"roles": ["business"]}},
+        {"sub": "33333333-3333-3333-3333-333333333333", "email": "user@example.com", "realm_access": {"roles": ["business"]}},
         pool,
     )
+    assert out["app_user_id"] == row["id"]
+    assert out["keycloak_sub"] == row["keycloak_sub"]
     assert out["email"] == "user@example.com"
     assert out["role"] == "business"
     assert out["is_owner"] is True
@@ -195,7 +198,7 @@ async def test_enrich_handles_missing_db_row():
     re-register flow). Should return minimal pending shape."""
     pool = _mock_pool(row=None)
     out = await kv.enrich_keycloak_claims(
-        {"sub": "kc-1", "email": "newuser@example.com", "realm_access": {"roles": ["auditor"]}},
+        {"sub": "33333333-3333-3333-3333-333333333333", "email": "newuser@example.com", "realm_access": {"roles": ["auditor"]}},
         pool,
     )
     assert out["email"] == "newuser@example.com"
