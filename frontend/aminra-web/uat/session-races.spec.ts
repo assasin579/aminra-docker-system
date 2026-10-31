@@ -278,6 +278,6 @@ test('LOGIN-RESTORE-READINESS @AUTH-02 @AUTH-04 changing account waits until the
   await expect(email).toHaveValue(config.actors.cbX.email);
   const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đăng nhập',exact:true}).click()]);
   expect(response.status()).toBe(200);await page.waitForURL('**/dashboard/provider');
-  await expect(page.getByText(config.actors.cbX.email,{exact:true})).toBeVisible();
+  await expect(page.getByRole('main').getByText(config.actors.cbX.email,{exact:true})).toBeVisible();
  } finally {release.resolve();}
 });
