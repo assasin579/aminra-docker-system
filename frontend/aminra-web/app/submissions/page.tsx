@@ -8,6 +8,7 @@ import SlaBadge from "@/components/submissions/SlaBadge";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
 import Modal from "@/components/Modal";
+import { loadSubmissionDocuments, currentDossierDocuments, type SubmissionDocument } from "@/lib/submissionDocuments";
 
 interface Submission {
   id: string;
@@ -168,13 +169,7 @@ function SubmissionsContent() {
     Array<{ id: string; company_name: string; email: string }>
   >([]);
   const [selectedProvider, setSelectedProvider] = useState("");
-  const [submitDocs, setSubmitDocs] = useState<
-    Array<{
-      id: string;
-      original_filename: string;
-      doc_type_label: string | null;
-    }>
-  >([]);
+  const [submitDocs, setSubmitDocs] = useState<SubmissionDocument[]>([]);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [submitNotes, setSubmitNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -607,13 +602,14 @@ function SubmissionsContent() {
     setSelectedDocs(new Set());
     setSelectedProvider("");
     try {
-      const [provRes, docRes] = await Promise.all([
+      const [provRes, currentDocuments, dossierRes] = await Promise.all([
         fetch("/api/api/submissions/providers", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(dossierId ? `/api/dossiers/${encodeURIComponent(dossierId)}` : "/api/api/documents?view=all&page=1&page_size=100",
-          { headers: { Authorization: `Bearer ${token}` } }),
+        loadSubmissionDocuments(token),
+        dossierId ? fetch(`/api/dossiers/${encodeURIComponent(dossierId)}`,
+          { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
       ]);
-      if (!provRes.ok || !docRes.ok) throw new Error("Không tải được tổ chức chứng nhận hoặc tài liệu. Vui lòng thử lại.");
-      const [providerData, documentData] = await Promise.all([provRes.json(), docRes.json()]);
+      if (!provRes.ok || (dossierRes && !dossierRes.ok)) throw new Error("Không tải được tổ chức chứng nhận hoặc tài liệu. Vui lòng thử lại.");
+      const [providerData, documentData] = await Promise.all([provRes.json(), dossierRes ? dossierRes.json() : { documents: currentDocuments }]);
       if (!Array.isArray(providerData.providers) || !Array.isArray(documentData.documents)) {
         throw new Error("Dữ liệu chuẩn bị gửi hồ sơ không hợp lệ.");
       }
@@ -622,8 +618,9 @@ function SubmissionsContent() {
       }
       if (request !== setupRequest.current) return;
       setProviders(providerData.providers);
-      setSubmitDocs(documentData.documents);
-      setSelectedDocs(new Set(documentData.documents.map((doc: { id: string }) => doc.id)));
+      const documents = dossierId ? currentDossierDocuments(currentDocuments, documentData.documents) : currentDocuments;
+      setSubmitDocs(documents);
+      setSelectedDocs(new Set(documents.map(doc => doc.id)));
       if (dossierId) setSubmitContext(documentData);
     } catch (error) {
       if (request === setupRequest.current) setSubmitError(error instanceof Error ? error.message : "Không tải được dữ liệu gửi hồ sơ.");
@@ -2150,6 +2147,9 @@ function SubmissionsContent() {
                 >
                   Tài liệu gửi ({selectedDocs.size}/{submitDocs.length})
                 </label>
+                <p className="text-xs mb-2" style={{ color: "#6B7280" }}>
+                  Mỗi loại chỉ hiển thị tài liệu đại diện hiện hành trong Kho tài liệu. Các phiên bản lịch sử không được liệt kê.
+                </p>
                 {submitDocs.length === 0 ? (
                   <div
                     className="rounded-xl p-5 text-center"

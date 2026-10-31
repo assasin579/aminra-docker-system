@@ -244,13 +244,13 @@ describe("handleSubmit", () => {
     fetchMock
       .mockResolvedValueOnce(emptySubs())
       .mockResolvedValueOnce(respond(200, { providers: PROVIDERS }))
-      .mockResolvedValueOnce(respond(200, {
-        documents: DOCS,
-        ...(window.location.search.includes("dossier_id=") ? {
-          id: "dossier-a02", title: "Dossier A02", standard_code: "HAS",
-          requirements_binding_status: "bound", requirements_version_id: "pinned-a02",
-        } : {}),
+      .mockResolvedValueOnce(respond(200, { documents: DOCS, total: DOCS.length }));
+    if (window.location.search.includes("dossier_id=")) {
+      fetchMock.mockResolvedValueOnce(respond(200, {
+        documents: DOCS, id: "dossier-a02", title: "Dossier A02", standard_code: "HAS",
+        requirements_binding_status: "bound", requirements_version_id: "pinned-a02",
       }));
+    }
 
     render(<SubmissionsPage />);
     fireEvent.click(
