@@ -93,3 +93,10 @@ status and elapsed time. Login responses forward validated diagnostic headers,
 never upstream error text. Current DB lookup uses the Keycloak subject first and
 rejects conflicting subject/email mappings; a changed email cannot bypass a
 suspension or restore stale owner claims.
+
+Audit transactions use function-scoped dependencies so commit completes before
+success headers are sent. This preserves parent/assignment locks through the
+handler while preventing a successful receipt for a failed commit. ASGI-send
+ordering tests cover success and commit failure; buffered clients alone cannot
+establish that ordering. Login controls remain disabled in server-rendered HTML
+until hydration attaches their handlers, preventing early input from being lost.

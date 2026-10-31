@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BackToLandingLink } from "@/components/auth/BackToLandingLink";
 import { useUserAuth } from "@/components/UserAuthContext";
+import { useHydrationReady } from "@/lib/useHydrationReady";
 
 export default function ProviderLoginPage() {
   const router = useRouter();
+  const hydrated = useHydrationReady();
   const { loginProvider } = useUserAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -100,6 +102,7 @@ export default function ProviderLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <fieldset disabled={!hydrated || loading} className="min-w-0 space-y-5">
           <div>
             <label
               className="block text-xs font-medium mb-1.5"
@@ -197,6 +200,7 @@ export default function ProviderLoginPage() {
           >
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
+          </fieldset>
         </form>
 
         <div

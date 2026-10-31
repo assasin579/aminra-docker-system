@@ -240,3 +240,22 @@ for (const mode of ['within-budget', 'over-budget'] as const) {
   } finally {release.resolve();}
  });
 }
+
+for (const kind of ['business','provider'] as const) {
+ test(`LOGIN-HYDRATION-${kind} @AUTH-02 credential controls stay disabled until their handlers are ready`,async({page})=>{
+  const scripts=/\/_next\/static\/.*\.js(?:\?.*)?$/;const release=deferred();
+  await page.route(scripts,async route=>{await release.promise;await route.continue();});
+  try {
+   await page.goto('/'+kind+'/login',{waitUntil:'commit'});
+   const email=page.locator('input[type=email]'),password=page.locator('input[type=password]');
+   await expect(email).toBeDisabled();await expect(password).toBeDisabled();
+   await expect(page.locator('input[type=checkbox]')).toBeDisabled();
+   release.resolve();await expect(email).toBeEnabled();
+   const actor=config.actors[kind==='business'?'bizA':'cbX'];
+   await email.fill(actor.email);await password.fill(actor.password);
+   await expect(email).toHaveValue(actor.email);
+   const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đăng nhập',exact:true}).click()]);
+   expect(response.status()).toBe(200);await page.waitForURL('**/dashboard/'+kind);
+  } finally {release.resolve();await page.unroute(scripts);}
+ });
+}
