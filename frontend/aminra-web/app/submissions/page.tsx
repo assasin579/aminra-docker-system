@@ -24,8 +24,8 @@ interface Submission {
   updated_at: string;
   deadline: string | null;
   // Business view fields
-  provider_name?: string;
-  provider_email?: string;
+  provider_name?: string | null;
+  provider_email?: string | null;
 }
 
 interface SubDoc {
@@ -1031,6 +1031,7 @@ function SubmissionsContent() {
             return (
               <div
                 key={sub.id}
+                data-submission-id={sub.id}
                 className={`rounded-2xl overflow-hidden animate-list-item stagger-${Math.min(idx + 1, 12)}`}
                 style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
               >
@@ -1041,14 +1042,24 @@ function SubmissionsContent() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
+                      {isBusiness && (
+                        <p className="text-xs mb-0.5" style={{ color: "#6B7280" }}>
+                          Tổ chức tiếp nhận
+                        </p>
+                      )}
                       <p
                         className="text-sm font-semibold"
                         style={{ color: "#0A1F44" }}
                       >
                         {isBusiness
-                          ? sub.provider_name || "Tổ chức chứng nhận"
+                          ? sub.provider_name?.trim() || "Chưa có tên tổ chức tiếp nhận"
                           : sub.company_name || "Doanh nghiệp"}
                       </p>
+                      {isBusiness && sub.provider_email?.trim() && (
+                        <p className="text-xs mt-0.5 break-all" style={{ color: "#6B7280" }}>
+                          Email liên hệ: {sub.provider_email.trim()}
+                        </p>
+                      )}
                       {isBusiness && sub.auditor_name && (
                         <p
                           className="text-xs mt-0.5"

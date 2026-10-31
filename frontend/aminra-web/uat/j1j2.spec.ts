@@ -189,3 +189,18 @@ test.describe('first service-worker claim',()=>{
   });
  }
 });
+
+
+test('RECIPIENT-01 @SUB-01 @CB-05 business sent card identifies the actual selected receiving CB',async({page,request},info)=>{
+ const f=await packet(request,'recipient');
+ const list=await api(request,f.biz,'/api/submissions/my-submissions');
+ const sent=list.submissions.find((s:{id:string})=>s.id===f.submission);
+ expect(sent.provider_name).toBe(config.actors.cbX.email.split('@')[0]);
+ expect(sent.provider_email).toBe(config.actors.cbX.email);
+ await login(page,'bizA');await page.goto('/submissions');
+ const card=page.locator('[data-submission-id="'+f.submission+'"]');
+ await expect(card.getByText('Tổ chức tiếp nhận',{exact:true})).toBeVisible();
+ await expect(card.getByText(sent.provider_name,{exact:true})).toBeVisible();
+ await expect(card.getByText('Email liên hệ: '+sent.provider_email,{exact:true})).toBeVisible();
+ await info.attach('sent-recipient',{body:await card.screenshot(),contentType:'image/png'});
+});
