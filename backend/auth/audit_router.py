@@ -268,11 +268,10 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_scoped_
 # ── Business dossier (consolidated docs + revisions) ──
 @router.get("/businesses/{business_id}/dossier")
 async def business_dossier(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
-    """All submissions + all documents (grouped by doc_type with revision history) +
-    audit visits for one business. Provider-only — `business_id` is the business tenant id.
+    """A related business's submissions, audits and explicitly shared evidence.
 
-    Doc revisions are pulled from `documents` table for the business tenant. Each doc_type
-    bucket is sorted newest-first so the head is the current revision.
+    Document metadata is limited to this provider's current/historical packets;
+    unsubmitted documents in the same tenant are never part of this projection.
     """
     _require_provider(user)
     if not user.get("is_owner"):
