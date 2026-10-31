@@ -95,7 +95,7 @@ async def request_revision(
         raise ValueError("feedback cannot be empty")
 
     sub = await db.fetchrow(
-        "SELECT id, status, revision_round, business_tenant FROM submissions WHERE id = $1",
+        "SELECT id, status, revision_round, business_tenant, requirements_version_id, requirements_binding_status, document_ids FROM submissions WHERE id = $1",
         submission_id,
     )
     if sub is None:
@@ -109,23 +109,28 @@ async def request_revision(
     doc_feedback_json = json.dumps([df.to_dict() for df in (document_feedback or [])])
 
     async with db.transaction():
-        await db.execute(
+        updated = await db.fetchrow(
             """
             UPDATE submissions
                SET status = 'revision_required',
                    revision_round = $1,
                    revision_requested_at = NOW(),
                    updated_at = NOW()
-             WHERE id = $2
+             WHERE id = $2 AND status = $3 AND COALESCE(revision_round, 0) = $4
+            RETURNING id
             """,
             new_round,
             submission_id,
+            sub["status"],
+            sub["revision_round"] or 0,
         )
+        if updated is None:
+            raise InvalidStateTransition("submission state changed before revision request")
         request_row = await db.fetchrow(
             """
             INSERT INTO submission_revision_requests
-                (submission_id, round, requester_id, requester_name, feedback, document_feedback)
-            VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+                (submission_id, round, requester_id, requester_name, feedback, document_feedback, requirements_version_id, submitted_document_ids, submitted_round)
+            VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8::uuid[], $9)
             RETURNING id, requested_at
             """,
             submission_id,
@@ -134,6 +139,9 @@ async def request_revision(
             requester_name,
             feedback,
             doc_feedback_json,
+            sub.get("requirements_version_id"),
+            list(sub.get("document_ids") or []),
+            new_round,
         )
 
     log.info("[revisions] submission=%s round=%d by=%s", submission_id, new_round, requester_id)
@@ -165,7 +173,9 @@ async def resubmit(
     """
     sub = await db.fetchrow(
         """
-        SELECT id, status, revision_round, business_tenant, provider_id, document_ids
+        SELECT id, status, revision_round, revision_resubmitted_at, updated_at,
+               business_tenant, provider_id, document_ids, dossier_id,
+               requirements_version_id, requirements_binding_status
         FROM submissions WHERE id = $1
         """,
         submission_id,
@@ -182,22 +192,21 @@ async def resubmit(
         submission_id,
     )
 
-    # Idempotency for the W3-M6 path: /replace-document already flips
-    # revision_required → reviewing AND resolves the pending request when the
-    # business uploads a fresh doc. A subsequent explicit /resubmit click then
-    # hits status=reviewing with no pending revision — treat as no-op success
-    # so the user does not see a confusing error after a workflow that already
-    # succeeded server-side. Guarded by revision_round > 0 so a fresh
-    # submission that never had a revision cycle still errors out.
+    # Legacy retry path for clients without an Idempotency-Key: after an
+    # explicit resubmit has committed, a repeated request must not create a
+    # second round or repeat notification/audit side effects. Replacement
+    # uploads do not resolve requests or enter this state.
     if sub["status"] == "reviewing" and pending is None and sub["revision_round"] > 0:
         log.info(
-            "[revisions] resubmit no-op submission=%s — already auto-resubmitted via replace-document",
+            "[revisions] resubmit no-op submission=%s — already explicitly resubmitted",
             submission_id,
         )
         return {
             "submission_id": submission_id,
             "round_resolved": sub["revision_round"],
-            "resubmitted_at": datetime.now(timezone.utc).isoformat(),
+            "resubmitted_at": (
+                sub.get("revision_resubmitted_at") or sub.get("updated_at")
+            ).isoformat() if (sub.get("revision_resubmitted_at") or sub.get("updated_at")) else None,
             "provider_id": str(sub["provider_id"]),
             "noop": True,
         }
@@ -211,10 +220,60 @@ async def resubmit(
         raise NoRevisionPending(submission_id)
 
     new_docs_param = [str(d) for d in new_document_ids] if new_document_ids is not None else None
+    if new_docs_param is not None:
+        if not new_docs_param or len(set(new_docs_param)) != len(new_docs_param):
+            raise InvalidStateTransition("resubmission evidence must contain unique document versions")
+        if sub.get("dossier_id"):
+            dossier_id = sub["dossier_id"]
+        else:
+            current_dossiers = await db.fetch(
+                "SELECT DISTINCT dossier_id FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2",
+                list(sub.get("document_ids") or []),
+                sub["business_tenant"],
+            )
+            dossier_ids = {row["dossier_id"] for row in current_dossiers if row["dossier_id"] is not None}
+            if len(dossier_ids) != 1 or len(current_dossiers) != 1:
+                raise InvalidStateTransition("cannot establish one canonical dossier for the submitted evidence")
+            dossier_id = next(iter(dossier_ids))
+        dossier = await db.fetchrow(
+            "SELECT id, requirements_version_id, requirements_binding_status FROM dossiers WHERE id=$1 AND tenant_id=$2",
+            dossier_id,
+            sub["business_tenant"],
+        )
+        if not dossier:
+            raise InvalidStateTransition("resubmission dossier is not owned by the canonical business")
+        binding_status = sub.get("requirements_binding_status") or "unknown"
+        if binding_status == "bound":
+            if not sub.get("requirements_version_id") or dossier.get("requirements_binding_status") != "bound" or dossier.get("requirements_version_id") != sub.get("requirements_version_id"):
+                raise InvalidStateTransition("submission requirements version does not match its bound dossier")
+        if sub.get("dossier_id") and (sub.get("requirements_binding_status") or "unknown") == "bound":
+            selected_docs = await db.fetch(
+                """SELECT d.id, a.dossier_id, d.tenant_id, a.doc_type, a.document_version_number AS version_number
+                     FROM dossier_document_attachments a
+                     JOIN documents d ON d.id=a.document_id AND d.tenant_id=$2 AND d.doc_type=a.doc_type
+                    WHERE a.dossier_id=$3 AND a.requirements_version_id=$4
+                      AND a.document_id = ANY($1::uuid[])""",
+                new_docs_param, sub["business_tenant"], dossier_id, sub["requirements_version_id"],
+            )
+        else:
+            selected_docs = await db.fetch(
+                "SELECT id, dossier_id, tenant_id, doc_type, version_number FROM documents WHERE id = ANY($1::uuid[]) AND tenant_id = $2 AND dossier_id = $3",
+                new_docs_param, sub["business_tenant"], dossier_id,
+            )
+        if len(selected_docs) != len(new_docs_param):
+            raise InvalidStateTransition("each replacement document version must belong to the same business and dossier")
+        if binding_status == "bound":
+            slots = await db.fetch(
+                "SELECT doc_type FROM standard_requirement_version_slots WHERE requirements_version_id = $1",
+                sub["requirements_version_id"],
+            )
+            allowed_doc_types = {str(slot["doc_type"]) for slot in slots}
+            if not allowed_doc_types or any(doc.get("doc_type") not in allowed_doc_types for doc in selected_docs):
+                raise InvalidStateTransition("replacement document type is not mapped by the bound requirements version")
 
     async with db.transaction():
         if new_docs_param is not None:
-            await db.execute(
+            updated = await db.fetchrow(
                 """
                 UPDATE submissions
                    SET status = 'reviewing',
@@ -222,41 +281,52 @@ async def resubmit(
                        notes = COALESCE(NULLIF($2, ''), notes),
                        revision_resubmitted_at = NOW(),
                        updated_at = NOW()
-                 WHERE id = $3
+                 WHERE id = $3 AND status = $4 AND COALESCE(revision_round, 0) = $5
+                RETURNING id, revision_resubmitted_at
                 """,
                 new_docs_param,
                 business_notes,
                 submission_id,
+                sub["status"],
+                sub["revision_round"] or 0,
             )
         else:
-            await db.execute(
+            updated = await db.fetchrow(
                 """
                 UPDATE submissions
                    SET status = 'reviewing',
                        notes = COALESCE(NULLIF($1, ''), notes),
                        revision_resubmitted_at = NOW(),
                        updated_at = NOW()
-                 WHERE id = $2
+                 WHERE id = $2 AND status = $3 AND COALESCE(revision_round, 0) = $4
+                RETURNING id, revision_resubmitted_at
                 """,
                 business_notes,
                 submission_id,
+                sub["status"],
+                sub["revision_round"] or 0,
             )
-        await db.execute(
+        if updated is None:
+            raise InvalidStateTransition("submission state changed before resubmission")
+        resolved = await db.fetchrow(
             """
             UPDATE submission_revision_requests
                SET resolved_at = NOW(),
                    business_response = NULLIF($2, '')
-             WHERE id = $1
+             WHERE id = $1 AND resolved_at IS NULL
+            RETURNING id
             """,
             pending["id"],
             business_notes,
         )
+        if resolved is None:
+            raise NoRevisionPending(submission_id)
 
     log.info("[revisions] resubmit submission=%s round=%d", submission_id, sub["revision_round"])
     return {
         "submission_id": submission_id,
         "round_resolved": sub["revision_round"],
-        "resubmitted_at": datetime.now(timezone.utc).isoformat(),
+        "resubmitted_at": updated["revision_resubmitted_at"].isoformat(),
         "provider_id": str(sub["provider_id"]),
     }
 
@@ -273,13 +343,30 @@ async def list_revision_history(
     rows = await db.fetch(
         """
         SELECT id, round, requester_id, requester_name, feedback,
-               document_feedback, requested_at, resolved_at, business_response
+               document_feedback, requested_at, resolved_at, business_response,
+               requirements_version_id, submitted_document_ids, submitted_round
         FROM submission_revision_requests
         WHERE submission_id = $1
         ORDER BY round DESC
         """,
         submission_id,
     )
+    tenant_id = await db.fetchval(
+        "SELECT business_tenant FROM submissions WHERE id = $1", submission_id
+    )
+    snapshot_ids = list(dict.fromkeys(
+        document_id for row in rows for document_id in (row["submitted_document_ids"] or [])
+    ))
+    snapshot_docs = {}
+    if snapshot_ids and tenant_id is not None:
+        docs = await db.fetch(
+            """SELECT id, original_filename, doc_type
+                 FROM documents
+                WHERE id = ANY($1::uuid[]) AND tenant_id = $2""",
+            snapshot_ids,
+            tenant_id,
+        )
+        snapshot_docs = {str(doc["id"]): doc for doc in docs}
     out = []
     for r in rows:
         df = r["document_feedback"]
@@ -296,6 +383,21 @@ async def list_revision_history(
                 "requested_at": r["requested_at"].isoformat(),
                 "resolved_at": r["resolved_at"].isoformat() if r["resolved_at"] else None,
                 "business_response": r["business_response"],
+                # Historical reads are sourced from this immutable round snapshot,
+                # never from the submission's mutable current document_ids.
+                "requirements_version_id": str(r["requirements_version_id"]) if r["requirements_version_id"] else None,
+                "submitted_document_ids": [str(document_id) for document_id in (r["submitted_document_ids"] or [])],
+                "submitted_documents": [
+                    {
+                        "id": str(document_id),
+                        "filename": snapshot_docs[str(document_id)]["original_filename"],
+                        "doc_type": snapshot_docs[str(document_id)]["doc_type"],
+                    }
+                    for document_id in (r["submitted_document_ids"] or [])
+                    if str(document_id) in snapshot_docs
+                ],
+                "submitted_round": r["submitted_round"],
+                "round_evidence_state": "bound" if r["submitted_round"] is not None and r["requirements_version_id"] else "unknown",
             }
         )
     return out

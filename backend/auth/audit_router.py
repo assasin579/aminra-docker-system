@@ -5,7 +5,9 @@ import io
 import json as _json
 from uuid import UUID as _UUID, uuid4
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
+from collections.abc import Awaitable, Callable
+from auth.offline_replay_idempotency import ExistingReplayRecord, classify_duplicate_replay
 from datetime import date, datetime
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Request
@@ -20,6 +22,80 @@ from services.conflict_interest import assert_no_unresolved_conflict
 
 log = logging.getLogger("aminra.audits")
 router = APIRouter()
+
+
+def _response_body_from_record(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        parsed = _json.loads(value)
+        return parsed if isinstance(parsed, dict) else {"value": parsed}
+    return {"value": value}
+
+
+async def _execute_mobile_replay_operation(
+    *,
+    db: Any,
+    scope: dict[str, str | None],
+    request_hash: str,
+    mutate: Callable[[], Awaitable[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Commit an idempotency receipt and its mutation in one transaction."""
+    in_progress_body = {
+        "error": "mobile_replay_in_progress",
+        "message": "Mobile offline replay operation is already being processed.",
+    }
+    async with db.transaction():
+        inserted = await db.fetchrow(
+            """
+            INSERT INTO mobile_offline_replay_operations (
+                tenant_id, user_id, visit_id, operation_type, route_key,
+                resource_key, idempotency_key, request_hash, response_status,
+                response_body
+            )
+            VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10::jsonb)
+            ON CONFLICT (tenant_id, operation_type, route_key, resource_key, idempotency_key)
+            DO NOTHING RETURNING id
+            """,
+            scope["tenant_id"], scope["user_id"], scope["visit_id"],
+            scope["operation_type"], scope["route_key"], scope["resource_key"],
+            scope["idempotency_key"], request_hash, 409, _json.dumps(in_progress_body),
+        )
+        if not inserted:
+            existing = await db.fetchrow(
+                """
+                SELECT request_hash, response_status, response_body
+                FROM mobile_offline_replay_operations
+                WHERE tenant_id=$1::uuid AND operation_type=$2 AND route_key=$3
+                  AND resource_key=$4 AND idempotency_key=$5
+                """,
+                scope["tenant_id"], scope["operation_type"], scope["route_key"],
+                scope["resource_key"], scope["idempotency_key"],
+            )
+            if not existing:
+                raise HTTPException(409, "Replay reservation conflict")
+            classification = classify_duplicate_replay(
+                existing=ExistingReplayRecord(
+                    request_hash=existing["request_hash"],
+                    response_status=existing["response_status"],
+                    response_body=_response_body_from_record(existing["response_body"]),
+                ),
+                incoming_request_hash=request_hash,
+            )
+            if classification.outcome == "conflict_409":
+                raise HTTPException(409, classification.response_body)
+            return classification.response_body
+
+        response_body = await mutate()
+        await db.execute(
+            """
+            UPDATE mobile_offline_replay_operations
+            SET response_status=$1, response_body=$2::jsonb, updated_at=now()
+            WHERE id=$3
+            """,
+            200, _json.dumps(response_body), inserted["id"],
+        )
+        return response_body
 
 
 def _validate_uuid(v: str) -> str:

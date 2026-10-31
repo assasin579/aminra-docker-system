@@ -4,7 +4,7 @@
  * Dossier detail — info + standard + doc_types required + uploaded documents.
  */
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
@@ -27,14 +27,21 @@ interface DocumentInDossier {
   uploaded_at: string;
 }
 
+interface AttachableDocument {
+  id: string;
+  doc_type: string;
+  original_filename: string;
+  version_number: number;
+}
+
 interface DossierDetail {
-  requirements_binding_status?: string;
   id: string;
   title: string;
   status: string;
   notes: string | null;
   standard_code: string | null;
   standard_name_vi: string | null;
+  requirements_binding_status: string;
   doc_types: DocTypeReq[];
   documents: DocumentInDossier[];
   created_at: string;
@@ -210,11 +217,18 @@ export default function DossierDetailPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
-  const { token, isAuthenticated, loading: authLoading } = useUserAuth();
+  const { token, user, isAuthenticated, loading: authLoading } = useUserAuth();
   const [dossier, setDossier] = useState<DossierDetail | null>(null);
   const [readiness, setReadiness] = useState<DossierReadiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attachableDocuments, setAttachableDocuments] = useState<AttachableDocument[]>([]);
+  const [selectedDocumentByType, setSelectedDocumentByType] = useState<Record<string, string>>({});
+  const [selectedFileByType, setSelectedFileByType] = useState<Record<string, File | null>>({});
+  const [attachmentBusyType, setAttachmentBusyType] = useState<string | null>(null);
+  const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const idempotencyBySlot = useRef<Record<string, { signature: string; key: string }>>({});
 
   useEffect(() => {
     if (authLoading) return;
@@ -237,8 +251,21 @@ export default function DossierDetailPage({
         if (!readinessRes.ok) throw new Error(`HTTP ${readinessRes.status}`);
         const readinessPayload: unknown = await readinessRes.json();
         if (!isDossierReadiness(readinessPayload)) throw new Error("INVALID_READINESS_RESPONSE");
-        setDossier(await res.json());
+        const dossierPayload: DossierDetail = await res.json();
+        setDossier(dossierPayload);
         setReadiness(readinessPayload);
+        if (dossierPayload.requirements_binding_status === "bound") {
+          const availableRes = await fetch(`/api/dossiers/${id}/attachable-documents`, { headers: authHeaders });
+          if (availableRes.ok) {
+            const availablePayload = await availableRes.json();
+            setAttachableDocuments(Array.isArray(availablePayload.items) ? availablePayload.items : []);
+          } else {
+            setAttachableDocuments([]);
+            setAttachmentError("Không tải được danh sách tài liệu có thể đính kèm");
+          }
+        } else {
+          setAttachableDocuments([]);
+        }
       } catch (e) {
         setError(e instanceof Error && e.message === "INVALID_READINESS_RESPONSE"
           ? "Không tải được trạng thái sẵn sàng"
@@ -248,6 +275,67 @@ export default function DossierDetailPage({
       }
     })();
   }, [authLoading, isAuthenticated, token, id, router]);
+
+  const attachForSlot = async (docType: string) => {
+    if (!token || attachmentBusyType) return;
+    const selectedFile = selectedFileByType[docType] ?? null;
+    const selectedDocumentId = selectedDocumentByType[docType] ?? "";
+    if (Number(Boolean(selectedFile)) + Number(Boolean(selectedDocumentId)) !== 1) {
+      setAttachmentError("Chọn một tệp mới hoặc một tài liệu đã có trước khi đính kèm");
+      return;
+    }
+    const signature = selectedFile
+      ? `file:${selectedFile.name}:${selectedFile.size}:${selectedFile.lastModified}:${docType}`
+      : `reference:${selectedDocumentId}:${docType}`;
+    const previousKey = idempotencyBySlot.current[docType];
+    const idempotencyKey = previousKey?.signature === signature ? previousKey.key : crypto.randomUUID();
+    idempotencyBySlot.current[docType] = { signature, key: idempotencyKey };
+    setAttachmentBusyType(docType);
+    setAttachmentError(null);
+    setAttachmentMessage(null);
+    try {
+      const form = new FormData();
+      form.append("doc_type", docType);
+      if (selectedFile) form.append("file", selectedFile);
+      else form.append("document_id", selectedDocumentId);
+      const response = await fetch(`/api/dossiers/${id}/documents`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Idempotency-Key": idempotencyKey },
+        body: form,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.detail || `Đính kèm thất bại (HTTP ${response.status})`);
+      if (result.attachment_state !== "attached" || !result.document_id) {
+        throw new Error("Máy chủ chưa xác nhận tài liệu đã được đính kèm");
+      }
+      const headers = { Authorization: `Bearer ${token}` };
+      const [dossierRes, readinessRes, availableRes] = await Promise.all([
+        fetch(`/api/dossiers/${id}`, { headers }),
+        fetch(`/api/dossiers/${id}/readiness`, { headers }),
+        fetch(`/api/dossiers/${id}/attachable-documents`, { headers }),
+      ]);
+      if (!dossierRes.ok || !readinessRes.ok || !availableRes.ok) {
+        throw new Error("Tài liệu đã được lưu nhưng checklist chưa tải lại được; hãy tải lại trang để xác nhận");
+      }
+      const [dossierPayload, readinessPayload, availablePayload] = await Promise.all([
+        dossierRes.json(), readinessRes.json(), availableRes.json(),
+      ]);
+      if (!isDossierReadiness(readinessPayload) || !Array.isArray(dossierPayload.documents)) {
+        throw new Error("Tệp đã được gửi nhưng phản hồi checklist không hợp lệ; hãy tải lại trang");
+      }
+      setDossier(dossierPayload);
+      setReadiness(readinessPayload);
+      setAttachableDocuments(Array.isArray(availablePayload.items) ? availablePayload.items : []);
+      setSelectedDocumentByType((previous) => ({ ...previous, [docType]: "" }));
+      setSelectedFileByType((previous) => ({ ...previous, [docType]: null }));
+      delete idempotencyBySlot.current[docType];
+      setAttachmentMessage("Tài liệu đã được đính kèm vào slot và checklist đã cập nhật.");
+    } catch (cause) {
+      setAttachmentError(cause instanceof Error ? cause.message : "Không thể đính kèm tài liệu");
+    } finally {
+      setAttachmentBusyType(null);
+    }
+  };
 
   if (loading || authLoading) {
     return (
@@ -509,7 +597,12 @@ export default function DossierDetailPage({
           >
             Tài liệu cần chuẩn bị
           </h2>
-          <div className="space-y-2">
+          {attachmentError && <p role="alert" className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{attachmentError}</p>}
+          {attachmentMessage && <p role="status" className="mb-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{attachmentMessage}</p>}
+          {user?.role === "business" && dossier.requirements_binding_status !== "bound" && (
+            <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Hồ sơ chưa được gắn với phiên bản yêu cầu đã xác minh; không thể đính kèm hoặc tự gắn lại tài liệu cũ.</p>
+          )}
+          <div id="dossier-document-attachments" className="space-y-2">
             {dossier.doc_types.map((dt) => {
               const matching = dossier.documents.filter(
                 (d) => d.doc_type === dt.doc_type,
@@ -549,6 +642,53 @@ export default function DossierDetailPage({
                         Chưa có tài liệu
                       </div>
                     )}
+                    {user?.role === "business" && dossier.requirements_binding_status === "bound" && (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+                        <label className="block text-xs font-medium text-slate-700">
+                          Dùng tài liệu đã có
+                          <select
+                            aria-label={`Tài liệu có sẵn cho ${dt.doc_type}`}
+                            value={selectedDocumentByType[dt.doc_type] ?? ""}
+                            onChange={(event) => {
+                              setSelectedDocumentByType((previous) => ({ ...previous, [dt.doc_type]: event.target.value }));
+                              setSelectedFileByType((previous) => ({ ...previous, [dt.doc_type]: null }));
+                              setAttachmentError(null);
+                            }}
+                            className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-2"
+                          >
+                            <option value="">Chọn tài liệu cùng loại</option>
+                            {attachableDocuments.filter((doc) => doc.doc_type === dt.doc_type).map((doc) => (
+                              <option key={doc.id} value={doc.id}>
+                                {doc.original_filename} — v{doc.version_number}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block text-xs font-medium text-slate-700">
+                          Hoặc tải tệp mới
+                          <input
+                            aria-label={`Tệp mới cho ${dt.doc_type}`}
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                            onChange={(event) => {
+                              setSelectedFileByType((previous) => ({ ...previous, [dt.doc_type]: event.target.files?.[0] ?? null }));
+                              setSelectedDocumentByType((previous) => ({ ...previous, [dt.doc_type]: "" }));
+                              setAttachmentError(null);
+                            }}
+                            className="mt-1 block min-h-10 w-full text-xs"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => void attachForSlot(dt.doc_type)}
+                          disabled={attachmentBusyType !== null}
+                          className="min-h-10 rounded-lg px-3 text-sm font-semibold text-white disabled:opacity-50"
+                          style={{ background: "#0A1F44" }}
+                        >
+                          {attachmentBusyType === dt.doc_type ? "Đang đính kèm…" : "Đính kèm slot"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -570,14 +710,14 @@ export default function DossierDetailPage({
           >
             ✦ Tạo tài liệu từ mẫu
           </Link>
-          <Link
-            href={`/documents?dossier=${dossier.id}`}
+          <a
+            href="#dossier-document-attachments"
             className="flex-1 text-center px-5 py-2.5 rounded-xl font-semibold text-sm text-white"
             style={{ background: "#0A1F44" }}
             data-testid="dossier-upload-doc-cta"
           >
-            ↑ Upload tài liệu
-          </Link>
+            ↑ Đính kèm tài liệu theo slot
+          </a>
         </div>
 
         {dossier.notes && (

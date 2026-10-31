@@ -15,15 +15,28 @@ Endpoints:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
+from pathlib import Path
 from typing import Any, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import Response, APIRouter, Depends, HTTPException, status
+from fastapi import Response, APIRouter, Depends, File, Form, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from auth.db import get_db
 from auth.jwt_utils import get_current_user
+from auth.identity import resolve_canonical_user_id
+from auth.permissions import check_permission_db
+from auth.upload_utils import validate_upload
+from services.dossier_attachments import (
+    attach_document_reference,
+    find_idempotent_attachment,
+    list_attachable_documents,
+    list_dossier_documents,
+    validate_dossier_slot,
+)
 from services.dossier_readiness import compute_dossier_readiness
 
 log = logging.getLogger("aminra.dossier")
@@ -157,13 +170,7 @@ async def _row_to_public(db, row, include_documents: bool = False) -> DossierPub
 
     documents: List[DocumentInDossier] = []
     if include_documents:
-        doc_rows = await db.fetch(
-            """SELECT id, doc_type, filename, original_filename, status,
-                      compliance_score, version_number, uploaded_at
-               FROM documents WHERE dossier_id = $1
-               ORDER BY uploaded_at DESC""",
-            row["id"],
-        )
+        doc_rows = await list_dossier_documents(db, dossier_id=row["id"])
         documents = [
             DocumentInDossier(
                 id=str(r["id"]),
@@ -320,6 +327,154 @@ async def get_dossier_readiness(
         dossier_id=str(dossier_id),
         tenant_id=str(tenant_id),
     )
+
+
+@router.get("/{dossier_id}/attachable-documents")
+async def get_attachable_documents(
+    dossier_id: UUID,
+    user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only business users can attach documents")
+    await check_permission_db(user, "can_upload")
+    tenant_id = await _resolve_tenant_id(db, user)
+    if not tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant not resolvable")
+    dossier = await db.fetchrow(
+        """SELECT d.id, d.requirements_version_id, d.requirements_binding_status,
+                  d.status, rv.state AS requirements_state
+           FROM dossiers d LEFT JOIN standard_requirement_versions rv
+             ON rv.id=d.requirements_version_id
+           WHERE d.id=$1 AND d.tenant_id=$2""",
+        dossier_id, tenant_id,
+    )
+    if not dossier or dossier.get("status") == "cancelled":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dossier not found")
+    if dossier.get("requirements_binding_status") != "bound" or not dossier.get("requirements_version_id"):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Dossier chưa được gắn với phiên bản yêu cầu đã xác minh")
+    if dossier.get("requirements_state") != "published":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Phiên bản yêu cầu của hồ sơ không còn hợp lệ")
+    rows = await list_attachable_documents(
+        db, dossier_id=dossier_id, tenant_id=tenant_id,
+        requirements_version_id=dossier["requirements_version_id"],
+    )
+    return {"items": [{**row, "id": str(row["id"])} for row in rows]}
+
+
+@router.post("/{dossier_id}/documents")
+async def attach_or_upload_dossier_document(
+    dossier_id: UUID,
+    doc_type: str = Form(...),
+    document_id: UUID | None = Form(None),
+    file: UploadFile | None = File(None),
+    idempotency_key: UUID = Header(..., alias="Idempotency-Key"),
+    user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    if user.get("role") != "business":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only business users can attach documents")
+    await check_permission_db(user, "can_upload")
+    tenant_id = await _resolve_tenant_id(db, user)
+    if not tenant_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tenant not resolvable")
+    actor_id = await resolve_canonical_user_id(user, db)
+    if not actor_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Không xác định được danh tính người thao tác")
+    doc_type = doc_type.strip()
+    if not doc_type or len(doc_type) > 100:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Slot tài liệu không hợp lệ")
+    if (document_id is None) == (file is None):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Chọn đúng một tài liệu có sẵn hoặc tệp mới")
+
+    saved_path: Path | None = None
+    try:
+        async with db.transaction():
+            dossier = await validate_dossier_slot(
+                db, dossier_id=dossier_id, tenant_id=tenant_id, doc_type=doc_type,
+            )
+            content: bytes | None = None
+            safe_name = ""
+            mime_type = "application/octet-stream"
+            if file is not None:
+                content = await validate_upload(file)
+                safe_name = "".join(
+                    char if char.isalnum() or char in "._- " else "_"
+                    for char in (file.filename or "file")
+                ).strip() or "file"
+                mime_type = file.content_type or mime_type
+                content_digest = hashlib.sha256(content).hexdigest()
+            else:
+                content_digest = str(document_id)
+
+            fingerprint_payload = {
+                "action": "dossier-document-attachment-v1",
+                "actor_id": str(actor_id),
+                "tenant_id": str(tenant_id),
+                "dossier_id": str(dossier_id),
+                "requirements_version_id": str(dossier["requirements_version_id"]),
+                "doc_type": doc_type,
+                "document_id": str(document_id) if document_id else None,
+                "content_sha256": content_digest,
+                "filename": safe_name if file is not None else None,
+                "mime_type": mime_type if file is not None else None,
+            }
+            request_sha256 = hashlib.sha256(
+                json.dumps(fingerprint_payload, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+            result = await find_idempotent_attachment(
+                db, dossier=dossier, idempotency_key=idempotency_key,
+                request_sha256=request_sha256, doc_type=doc_type, actor_id=actor_id,
+            )
+            if result is None and document_id is not None:
+                result = await attach_document_reference(
+                    db, dossier=dossier, document_id=document_id,
+                    doc_type=doc_type, actor_id=actor_id,
+                    idempotency_key=idempotency_key, request_sha256=request_sha256,
+                )
+            elif result is None:
+                if file is None or content is None:
+                    raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Tệp tải lên không có")
+                from auth.document_router import UPLOAD_DIR
+                tenant_dir = UPLOAD_DIR / str(tenant_id)
+                tenant_dir.mkdir(parents=True, exist_ok=True)
+                doc_uuid = uuid4()
+                saved_path = tenant_dir / f"{doc_uuid}_{safe_name}"
+                if not saved_path.resolve().is_relative_to(tenant_dir.resolve()):
+                    raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid file path")
+                saved_path.write_bytes(content)
+                inserted = await db.fetchrow(
+                    """INSERT INTO documents
+                              (id, filename, original_filename, file_path, file_size, mime_type,
+                               user_id, tenant_id, doc_type)
+                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                       RETURNING id, tenant_id, doc_type, filename, original_filename,
+                                 status, compliance_score, version_number, uploaded_at""",
+                    doc_uuid, saved_path.name, file.filename or safe_name, str(saved_path),
+                    len(content), mime_type, actor_id, tenant_id, doc_type,
+                )
+                if not inserted:
+                    raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Không thể lưu metadata tài liệu")
+                result = await attach_document_reference(
+                    db, dossier=dossier, document_id=doc_uuid,
+                    doc_type=doc_type, actor_id=actor_id,
+                    idempotency_key=idempotency_key, request_sha256=request_sha256,
+                )
+        document = result["document"]
+        return {
+            "document_id": str(document["id"]),
+            "doc_type": document["doc_type"],
+            "attachment_state": "attached",
+            "created_attachment": result["created"],
+        }
+    except Exception:
+        if saved_path is not None:
+            try:
+                if saved_path.exists():
+                    saved_path.unlink()
+            except OSError:
+                log.exception("Failed to remove uncommitted Dossier attachment file")
+        raise
 
 
 @router.get("/{dossier_id}", response_model=DossierPublic)

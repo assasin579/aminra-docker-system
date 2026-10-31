@@ -261,6 +261,37 @@ describe("RevisionPanel — business resubmit", () => {
       );
     });
   });
+
+  test("resubmit retries preserve the same idempotency key after a lost response", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(respond(200, { history: [] }))
+      .mockRejectedValueOnce(new Error("response lost"))
+      .mockResolvedValueOnce(respond(200, { round_resolved: 1, resubmitted_at: "now" }))
+      .mockResolvedValueOnce(respond(200, { history: [] }));
+
+    render(<RevisionPanel {...baseProps} role="business" status="revision_required" />);
+    fireEvent.change(
+      await screen.findByPlaceholderText(/Mô tả những gì đã sửa/i),
+      { target: { value: "Đã upload bản mới có seal" } },
+    );
+    const submit = screen.getByRole("button", { name: /Đã sửa — gửi lại/i });
+    fireEvent.click(submit);
+    expect(await screen.findByText("response lost")).toBeInTheDocument();
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls.filter(
+        ([url]) => typeof url === "string" && url.endsWith("/sub-123/resubmit"),
+      );
+      expect(calls).toHaveLength(2);
+      const firstKey = new Headers(calls[0][1].headers).get("Idempotency-Key");
+      const secondKey = new Headers(calls[1][1].headers).get("Idempotency-Key");
+      expect(firstKey).toBeTruthy();
+      expect(secondKey).toBe(firstKey);
+      expect(calls[0][1].body).toBe(calls[1][1].body);
+    });
+  });
 });
 
 // ── History rendering ──────────────────────────────────────────────────────
@@ -322,6 +353,36 @@ describe("RevisionPanel — history rendering", () => {
     expect(screen.getByText("major")).toBeInTheDocument();
     expect(screen.getByText(/Seal mờ/)).toBeInTheDocument();
     expect(screen.getByText(/Scan lại/)).toBeInTheDocument();
+  });
+
+  test("renders a round diff for retained, replaced, added and removed evidence", async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      respond(200, {
+        history: [{
+          id: "r1", round: 1, requester_id: "cb", requester_name: "Halal CB",
+          feedback: "Replace policy", document_feedback: [],
+          requested_at: "2026-04-24T10:00:00Z", resolved_at: "2026-04-24T15:00:00Z",
+          submitted_document_ids: ["old-policy", "retained", "removed"],
+          submitted_documents: [
+            { id: "old-policy", filename: "policy-v1.pdf", doc_type: "policy" },
+            { id: "retained", filename: "certificate.pdf", doc_type: "certificate" },
+            { id: "removed", filename: "old-supporting.pdf", doc_type: null },
+          ],
+        }],
+      }),
+    );
+    render(<RevisionPanel {...baseProps} role="business" status="reviewing"
+      documents={[
+        { id: "new-policy", filename: "policy-v2.pdf", doc_type: "policy" },
+        { id: "retained", filename: "certificate.pdf", doc_type: "certificate" },
+        { id: "added", filename: "supporting.pdf", doc_type: "supporting" },
+      ]}
+    />);
+    const diff = await screen.findByRole("region", { name: "So sánh bằng chứng vòng 1" });
+    expect(diff).toHaveTextContent("policy-v1.pdf → policy-v2.pdf");
+    expect(diff).toHaveTextContent("Được giữ nguyên: certificate.pdf");
+    expect(diff).toHaveTextContent("Được thêm: supporting.pdf");
+    expect(diff).toHaveTextContent("Đã loại bỏ: old-supporting.pdf");
   });
 
   test("shows round count badge when history not empty", async () => {
