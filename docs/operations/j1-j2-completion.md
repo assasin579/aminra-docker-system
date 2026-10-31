@@ -24,6 +24,12 @@ Recover forward; retain the database and file volumes. Never restore an older
 backup over live evidence as an application rollback. The old application image
 is only a temporary recovery option with J1/J2 writes disabled.
 
+Readiness selects the explicitly submitted dossier. A legacy NULL dossier may
+be inferred only when the entire packet still identifies the same original
+dossier and tenant. Reusing a file never imports another dossier's review round.
+The owner's dossier-detail handoff link carries dossier_id into the submission
+form; certification readiness is separate from sending evidence for CB review.
+
 ## Database boundary
 
 Use `aminra_app` for backend and worker. It has no superuser, BYPASSRLS,

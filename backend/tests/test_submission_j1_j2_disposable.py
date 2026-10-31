@@ -1596,3 +1596,23 @@ async def test_bound_browser_replacement_attaches_before_pointer_change(db, case
         )
     assert error.value.status_code == 409
     assert await db.fetchval('SELECT document_ids FROM submissions WHERE id=$1',case['ids']['submission']) == before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('explicit_binding', [True, False])
+async def test_reused_document_does_not_borrow_another_dossier_review_context(db, case, explicit_binding):
+    from services.dossier_readiness import compute_dossier_readiness
+    reuse = uuid4()
+    await db.execute('''INSERT INTO dossiers
+        (id,tenant_id,standard_type_id,title,status,created_by,requirements_version_id,requirements_binding_status)
+        VALUES($1,$2,$3,'Synthetic reuse scope','draft',$2,$4,'bound')''',
+        reuse,case['ids']['business_a'],case['ids']['standard'],case['ids']['requirements'])
+    if explicit_binding:
+        await db.execute('UPDATE submissions SET dossier_id=$1 WHERE id=$2',case['ids']['dossier'],case['ids']['submission'])
+    for dossier_id in [case['ids']['dossier'],reuse]:
+        dossier = await validate_dossier_slot(db,dossier_id=dossier_id,tenant_id=case['ids']['business_a'],doc_type='permit')
+        await attach_document_reference(db,dossier=dossier,document_id=case['initial_docs'][0],doc_type='permit',actor_id=case['ids']['business_a'],idempotency_key=uuid4(),request_sha256='a'*64)
+    primary = await compute_dossier_readiness(db,dossier_id=str(case['ids']['dossier']),tenant_id=str(case['ids']['business_a']))
+    other = await compute_dossier_readiness(db,dossier_id=str(reuse),tenant_id=str(case['ids']['business_a']))
+    assert all(slot['submission_id']==str(case['ids']['submission']) for slot in primary['requirement_slots'])
+    assert all(slot['submission_id'] is None and slot['submitted_round'] is None for slot in other['requirement_slots'])

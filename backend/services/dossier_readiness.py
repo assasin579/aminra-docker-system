@@ -159,6 +159,18 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
           FROM submissions
          WHERE business_tenant = $1
            AND requirements_version_id = $3
+           AND (
+               submissions.dossier_id = $2
+               OR (submissions.dossier_id IS NULL AND (
+                   SELECT COUNT(*) = cardinality(submissions.document_ids)
+                      AND COALESCE(bool_and(
+                          legacy.dossier_id IS NOT DISTINCT FROM $2
+                          AND legacy.tenant_id IS NOT DISTINCT FROM $1
+                      ), FALSE)
+                     FROM documents legacy
+                    WHERE legacy.id = ANY(submissions.document_ids)
+               ))
+           )
            AND EXISTS (
                SELECT 1 FROM documents d
                 WHERE d.id = ANY(submissions.document_ids)

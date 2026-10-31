@@ -7,7 +7,7 @@ const authState = vi.hoisted(() => ({
   token: "provider-token",
   isAuthenticated: true,
   loading: false,
-  user: { role: "provider" },
+  user: { role: "provider" } as { role: string; is_owner?: boolean },
 }));
 const routerReplace = vi.hoisted(() => vi.fn());
 
@@ -150,6 +150,7 @@ function findFetchCall(path: string): [RequestInfo | URL, RequestInit | undefine
 describe("Dossier detail certification readiness command panel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.user = { role: "provider" };
     global.fetch = vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const path = String(url);
       const method = init?.method || "GET";
@@ -161,6 +162,24 @@ describe("Dossier detail certification readiness command panel", () => {
       }
       return jsonResponse(500, { detail: `Unhandled mock: ${method} ${path}` });
     }) as unknown as typeof fetch;
+  });
+
+  it.each([
+    { owner: true, status: "in_progress", documents: dossierFixture.documents, visible: true },
+    { owner: false, status: "in_progress", documents: dossierFixture.documents, visible: false },
+    { owner: true, status: "cert_issued", documents: dossierFixture.documents, visible: false },
+    { owner: true, status: "in_progress", documents: [], visible: false },
+  ])("handoff uses the exact dossier and owner capability: $owner/$status/$visible", async ({ owner, status, documents, visible }) => {
+    authState.user = { role: "business", is_owner: owner };
+    vi.mocked(fetch).mockImplementation((url) => String(url).endsWith("/readiness")
+      ? jsonResponse(200, readinessFixture)
+      : String(url).endsWith("/attachable-documents")
+        ? jsonResponse(200, [])
+        : jsonResponse(200, { ...dossierFixture, status, documents, requirements_binding_status: "bound" }));
+    renderPage();
+    await screen.findByText("Hồ sơ nhà máy A");
+    if (visible) expect(screen.getByTestId("dossier-submit-cta")).toHaveAttribute("href", "/submissions?dossier_id=dossier-1");
+    else expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
   });
 
   it("fetches source-of-truth readiness and renders blockers instead of trusting uploaded document count", async () => {
