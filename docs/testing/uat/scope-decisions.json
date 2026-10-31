@@ -1,0 +1,82 @@
+[
+  {
+    "id": "SCOPE-01",
+    "name": "Báo giá, hợp đồng, phí",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-02",
+    "name": "Lấy mẫu/phòng thử nghiệm",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-03",
+    "name": "Marketplace",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-04",
+    "name": "Kho/giao nhận/thu hồi",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-05",
+    "name": "ERP/API",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-06",
+    "name": "Đa ngôn ngữ",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-07",
+    "name": "Chữ ký điện tử",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  },
+  {
+    "id": "SCOPE-08",
+    "name": "Chuyển dữ liệu cũ",
+    "decision": "Excluded",
+    "applies_to": "Current UAT only",
+    "future": "Backlog for a later phase",
+    "approved_by": "Owner — conversation",
+    "approved_on": "2026-10-31",
+    "reason": "Owner explicitly excluded all eight commercial scope groups from current UAT in conversation 2026-10-31; retained for a later phase."
+  }
+]
