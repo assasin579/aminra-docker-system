@@ -300,7 +300,8 @@ describe("Dossier editing capability and lifecycle UX", () => {
     expect(screen.queryByTestId("dossier-create-doc-cta")!==null).toBe(editable);
     expect(screen.queryByRole("form",{name:"Bổ sung tài liệu hồ sơ"})).not.toBeInTheDocument();
     if(editable){expect(screen.getByTestId("dossier-readiness-state")).toHaveTextContent("chưa gửi đơn vị chứng nhận");expect(screen.getByText("Gửi hồ sơ cho đơn vị chứng nhận")).toBeInTheDocument();}
-    if(["cancelled","cert_issued"].includes(status)){expect(screen.getByText("Hồ sơ đã đóng; bạn có thể xem lại lịch sử")).toBeInTheDocument();}
+    if(status==="cert_issued"){expect(screen.getByText("Hồ sơ đã đóng; bạn có thể xem lại lịch sử")).toBeInTheDocument();}
+    if(status==="cancelled"){expect(screen.getByText("Hồ sơ đã hủy. Chỉ hiển thị thông tin và tài liệu đã lưu.")).toBeInTheDocument();}
   });
 
   it("a submitted dossier links to tracking rather than creating another submission", async () => {
@@ -323,4 +324,23 @@ it("an explicitly delegated uploader can attach but cannot perform owner submiss
   renderPage();await screen.findByText("Hồ sơ nhà máy A");
   expect(screen.getAllByRole("button",{name:"Đính kèm tài liệu"})).toHaveLength(3);
   expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
+});
+
+
+it.each(["cancelled", "in_progress"])("readiness404 does not fabricate a review state for %s", async status => {
+  authState.user={role:"business",is_owner:true};
+  global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")?jsonResponse(404,{detail:"Dossier not found"})
+    :jsonResponse(200,{...dossierFixture,status,requirements_binding_status:"bound"}));
+  renderPage();
+  if(status==="cancelled"){
+    expect(await screen.findByText("Hồ sơ đã hủy. Chỉ hiển thị thông tin và tài liệu đã lưu.")).toBeInTheDocument();
+    expect(screen.getByText("Hồ sơ nhà máy A")).toBeInTheDocument();
+    expect(screen.queryByTestId("certification-readiness-panel")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:"Đính kèm tài liệu"})).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
+  }else{
+    expect(await screen.findByText("Không tải được trạng thái hồ sơ. Vui lòng thử lại.")).toBeInTheDocument();
+    expect(screen.queryByTestId("certification-readiness-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
+  }
 });

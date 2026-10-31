@@ -240,11 +240,21 @@ export default function DossierDetailPage({
             headers: authHeaders,
           }),
         ]);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (!readinessRes.ok) throw new Error(`HTTP ${readinessRes.status}`);
+        if (!res.ok) throw new Error([403, 404].includes(res.status)
+          ? "Không tìm thấy hồ sơ hoặc bạn không có quyền xem."
+          : "Không tải được hồ sơ. Vui lòng thử lại.");
+        const dossierPayload: DossierDetail = await res.json();
+        // Cancelled dossiers remain readable, but readiness intentionally returns404.
+        // Do not invent readiness or let that response hide an authorized dossier.
+        if (dossierPayload.status === "cancelled") {
+          setDossier(dossierPayload);
+          setReadiness(null);
+          setAttachableDocuments([]);
+          return;
+        }
+        if (!readinessRes.ok) throw new Error("Không tải được trạng thái hồ sơ. Vui lòng thử lại.");
         const readinessPayload: unknown = await readinessRes.json();
         if (!isDossierReadiness(readinessPayload)) throw new Error("INVALID_READINESS_RESPONSE");
-        const dossierPayload: DossierDetail = await res.json();
         setDossier(dossierPayload);
         setReadiness(readinessPayload);
         if (canEditDossierDocuments(user, dossierPayload)) {
@@ -338,7 +348,7 @@ export default function DossierDetailPage({
     );
   }
 
-  if (error || !dossier || !readiness) {
+  if (error || !dossier || (!readiness && dossier.status !== "cancelled")) {
     return (
       <div className="min-h-screen grid place-items-center px-6">
         <div className="text-center">
@@ -372,9 +382,9 @@ export default function DossierDetailPage({
   const completed = dossier.doc_types.filter((dt) =>
     uploadedDocTypes.has(dt.doc_type),
   ).length;
-  const blockingNcrs = readiness.blocking_ncrs ?? readiness.open_ncrs;
+  const blockingNcrs = readiness?.blocking_ncrs ?? readiness?.open_ncrs ?? [];
   const blockingNcrIds = new Set(blockingNcrs.map((ncr) => ncr.id).filter(Boolean));
-  const nonBlockingNcrs = readiness.open_ncrs.filter((ncr) => !ncr.id || !blockingNcrIds.has(ncr.id));
+  const nonBlockingNcrs = (readiness?.open_ncrs ?? []).filter((ncr) => !ncr.id || !blockingNcrIds.has(ncr.id));
 
   return (
     <div className="min-h-screen" style={{ background: "#FFFFFF" }}>
@@ -408,6 +418,8 @@ export default function DossierDetailPage({
           </span>
         </div>
 
+
+        {dossier.status === "cancelled" && <p role="status" className="mb-6 rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm text-slate-700">Hồ sơ đã hủy. Chỉ hiển thị thông tin và tài liệu đã lưu.</p>}
 
         {/* Progress */}
         <div
