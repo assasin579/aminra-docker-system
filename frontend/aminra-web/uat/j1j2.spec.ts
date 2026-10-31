@@ -170,3 +170,22 @@ for(const [kind,actor] of [['business','bizA'],['provider','cbX']] as const){
   }finally{release();}
  });
 }
+
+
+test.describe('first service-worker claim',()=>{
+ test.use({serviceWorkers:'allow'});
+ for(const [kind,actor] of [['business','bizA'],['provider','cbX']] as const){
+  test(`PWA-FIRST-CLAIM-${kind} @AUTH-01 @AUTH-04 native login survives actual worker activation without document reload`,async({page,request},info)=>{
+   if(kind==='business')await prepare(request,'pwa-claim',undefined,false);
+   const navigations:string[]=[];
+   page.on('request',r=>{if(r.isNavigationRequest()&&r.frame()===page.mainFrame())navigations.push(new URL(r.url()).pathname);});
+   await login(page,actor);
+   await expect.poll(()=>page.evaluate(()=>!!navigator.serviceWorker.controller)).toBe(true);
+   await expect(page.getByRole('button').filter({hasText:config.actors[actor].email}).first()).toBeVisible();
+   expect(navigations).toEqual(['/'+kind+'/login']);
+   const state=await page.evaluate(()=>({credential:!!localStorage.getItem('aminra_user_token'),purge:sessionStorage.getItem('aminra_auth_last_purge_reason')}));
+   expect(state).toEqual({credential:true,purge:null});
+   await info.attach('actual-worker-first-claim',{body:JSON.stringify({navigations,state}),contentType:'application/json'});
+  });
+ }
+});
