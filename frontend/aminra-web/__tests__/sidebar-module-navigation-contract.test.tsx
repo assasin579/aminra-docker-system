@@ -135,4 +135,10 @@ describe("business sidebar module navigation", () => {
       expect(screen.getByRole("link", { name: /Lô hàng/i })).toBeInTheDocument();
     });
   });
+  it("routes a business member to dossier history instead of the owner-only submissions list", async () => {
+    userState.user.is_owner=false;mockedApiJson.mockResolvedValue({modules:[]});render(<Sidebar />);
+    expect(await screen.findByRole("link",{name:"Hồ sơ và lịch sử"})).toHaveAttribute("href","/dossiers");
+    expect(screen.queryByRole("link",{name:"Hồ sơ đã gửi"})).not.toBeInTheDocument();
+  });
+
 });

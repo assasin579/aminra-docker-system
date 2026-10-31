@@ -344,3 +344,15 @@ it.each(["cancelled", "in_progress"])("readiness404 does not fabricate a review 
     expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
   }
 });
+
+
+it("member reads permitted correction history in the dossier without owner-only listing or commands", async () => {
+  authState.user={role:"business",is_owner:false};
+  global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")?jsonResponse(200,{...readinessFixture,requirement_slots:[{submission_id:"linked-submission"}]})
+    :String(url).endsWith("/revisions")?jsonResponse(200,{history:[{id:"round1",round:1,requester_id:"cb",requester_name:"CB",feedback:"Cần sửa ngày trên chính sách",document_feedback:[],requested_at:"2026-10-30T00:00:00Z",resolved_at:null,business_response:null}]})
+    :jsonResponse(200,{...dossierFixture,requirements_binding_status:"bound"}));
+  renderPage();expect(await screen.findByText("Cần sửa ngày trên chính sách")).toBeInTheDocument();
+  expect(screen.queryByRole("button",{name:"Đã sửa — gửi lại cho CB"})).not.toBeInTheDocument();
+  expect(screen.queryByRole("link",{name:"Xem hồ sơ đã gửi"})).not.toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).includes("my-submissions"))).toBe(false);
+});
