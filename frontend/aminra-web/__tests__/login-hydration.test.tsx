@@ -1,4 +1,4 @@
-import { act, fireEvent, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -6,11 +6,11 @@ import type { ReactNode } from "react";
 import BusinessLoginPage from "@/app/(auth)/business/login/page";
 import ProviderLoginPage from "@/app/(auth)/provider/login/page";
 
-const { business, provider, replace } = vi.hoisted(() => ({ business: vi.fn(), provider: vi.fn(), replace: vi.fn() }));
+const { business, provider, replace, auth } = vi.hoisted(() => ({ business: vi.fn(), provider: vi.fn(), replace: vi.fn(), auth: { loading: false } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a> }));
-vi.mock("@/components/UserAuthContext", () => ({ useUserAuth: () => ({ loginBusiness: business, loginProvider: provider }) }));
-beforeEach(() => { vi.clearAllMocks(); business.mockResolvedValue(undefined); provider.mockResolvedValue(undefined); });
+vi.mock("@/components/UserAuthContext", () => ({ useUserAuth: () => ({ loginBusiness: business, loginProvider: provider, loading: auth.loading }) }));
+beforeEach(() => { auth.loading = false; vi.clearAllMocks(); business.mockResolvedValue(undefined); provider.mockResolvedValue(undefined); });
 
 for (const [name, Page, login] of [["business", BusinessLoginPage, business], ["provider", ProviderLoginPage, provider]] as const) {
   it(`${name} server-rendered credentials cannot be edited before event handlers hydrate`, () => {
@@ -19,6 +19,15 @@ for (const [name, Page, login] of [["business", BusinessLoginPage, business], ["
     for (const selector of ['input[type="email"]', 'input[type="password"]', 'input[type="checkbox"]']) {
       expect(container.querySelector(selector)).toBeDisabled();
     }
+  });
+  it(`${name} credentials stay inert while a previous identity is still being restored`, () => {
+    auth.loading = true;
+    const view = render(<Page />);
+    expect(view.container.querySelector('input[type="email"]')).toBeDisabled();
+    expect(view.container.querySelector('input[type="password"]')).toBeDisabled();
+    auth.loading = false;
+    view.rerender(<Page />);
+    expect(view.container.querySelector('input[type="email"]')).toBeEnabled();
   });
   it(`${name} hydrated credentials preserve typed values and submit exactly once`, async () => {
     const container = document.createElement("div");

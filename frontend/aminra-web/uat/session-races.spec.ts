@@ -259,3 +259,25 @@ for (const kind of ['business','provider'] as const) {
   } finally {release.resolve();await page.unroute(scripts);}
  });
 }
+
+test('LOGIN-RESTORE-READINESS @AUTH-02 @AUTH-04 changing account waits until the previous identity scope has settled',async({page,request})=>{
+ const old=await token(request,'bizA'),profile=await api(request,old,'/auth/me');
+ await page.goto('/offline.html');await publish(page,old,profile);
+ const captured=deferred(),release=deferred();
+ await page.route('**/api/auth/me',async route=>{
+  if(route.request().headers().authorization!=='Bearer '+old)return route.continue();
+  const response=await route.fetch();expect(response.status()).toBe(200);captured.resolve();await release.promise;await deliver(route,response);
+ });
+ try {
+  await page.goto('/provider/login');await captured.promise;
+  const email=page.locator('input[type=email]'),password=page.locator('input[type=password]');
+  await expect(page.getByText('Đang chuẩn bị đăng nhập…',{exact:true})).toBeVisible();
+  await expect(email).toBeDisabled();await expect(password).toBeDisabled();
+  release.resolve();await expect(email).toBeEnabled();
+  await email.fill(config.actors.cbX.email);await password.fill(config.actors.cbX.password);
+  await expect(email).toHaveValue(config.actors.cbX.email);
+  const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đăng nhập',exact:true}).click()]);
+  expect(response.status()).toBe(200);await page.waitForURL('**/dashboard/provider');
+  await expect(page.getByText(config.actors.cbX.email,{exact:true})).toBeVisible();
+ } finally {release.resolve();}
+});

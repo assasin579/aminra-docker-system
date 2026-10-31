@@ -10,7 +10,7 @@ import { useHydrationReady } from "@/lib/useHydrationReady";
 export default function ProviderLoginPage() {
   const router = useRouter();
   const hydrated = useHydrationReady();
-  const { loginProvider } = useUserAuth();
+  const { loginProvider, loading: restoringSession } = useUserAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,7 +102,8 @@ export default function ProviderLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <fieldset disabled={!hydrated || loading} className="min-w-0 space-y-5">
+          <fieldset disabled={!hydrated || restoringSession || loading} className="min-w-0 space-y-5">
+          {(!hydrated || restoringSession) && <p role="status" className="text-sm text-slate-600">Đang chuẩn bị đăng nhập…</p>}
           <div>
             <label
               className="block text-xs font-medium mb-1.5"

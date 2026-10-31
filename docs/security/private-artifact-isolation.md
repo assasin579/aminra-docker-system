@@ -99,4 +99,6 @@ success headers are sent. This preserves parent/assignment locks through the
 handler while preventing a successful receipt for a failed commit. ASGI-send
 ordering tests cover success and commit failure; buffered clients alone cannot
 establish that ordering. Login controls remain disabled in server-rendered HTML
-until hydration attaches their handlers, preventing early input from being lost.
+until hydration attaches their handlers and restoration of a previous identity
+finishes. The authorization-scope boundary may remount descendants when that
+identity arrives; credential entry must wait until this initialization settles.
