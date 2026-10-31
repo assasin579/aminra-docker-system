@@ -91,7 +91,7 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
     method: req.method,
     headers,
     body,
-    signal: req.signal,
+    signal: req.method === "GET" || req.method === "HEAD" ? req.signal : undefined,
     // @ts-ignore — allow streaming duplex
     duplex: "half",
   });
