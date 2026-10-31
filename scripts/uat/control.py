@@ -37,15 +37,22 @@ async def main():
  elif kind=='suspend_auditor':
   import httpx
   who=p['actor'];assert who in ('assigned','unassigned');a=actors[who];uid=UUID(a['id'])
+  mode=p['mode'];assert mode in ('application','identity')
   assert await c.fetchval('SELECT tenant_id FROM users WHERE id=$1',uid)==UUID(actors['cbX']['id'])
+  if mode=='application':
+   state=p['status'];assert state in ('active','suspended')
+   changed=await c.fetchval("UPDATE users SET status=$1::user_status WHERE id=$2 AND tenant_id=$3 RETURNING id",state,uid,UUID(actors['cbX']['id']));assert changed==uid
+   print(json.dumps({'status':state}));await c.close();return
   base='http://uat-keycloak:8080'
   with httpx.Client(timeout=15) as client:
    r=client.post(base+'/realms/master/protocol/openid-connect/token',data={'grant_type':'password','client_id':'admin-cli','username':'uat-admin','password':m['admin_password']});r.raise_for_status();headers={'Authorization':'Bearer '+r.json()['access_token']}
-   url=base+'/admin/realms/aminra/users/'+a['id'];r=client.get(url,headers=headers);r.raise_for_status();u=r.json();u.setdefault('attributes',{})['status']=['suspended'];r=client.put(url,headers=headers,json=u);r.raise_for_status()
-   r=client.post(base+'/realms/aminra/protocol/openid-connect/token',data={'grant_type':'password','client_id':'aminra-frontend','username':a['email'],'password':a['password']});r.raise_for_status();suspended_token=r.json()['access_token'];import jwt;token_claims=jwt.decode(suspended_token,options={'verify_signature':False});assert token_claims.get('status')=='suspended','UAT realm did not issue the expected suspended status claim'
+   url=base+'/admin/realms/aminra/users/'+a['id'];r=client.get(url,headers=headers);r.raise_for_status();u=r.json()
+   # A fresh token has not entered the application's authority cache. Revoke
+   # identity/session independently of the application's suspension status.
+   r=client.post(base+'/realms/aminra/protocol/openid-connect/token',data={'grant_type':'password','client_id':'aminra-frontend','username':a['email'],'password':a['password']});r.raise_for_status();suspended_token=r.json()['access_token'];import jwt;token_claims=jwt.decode(suspended_token,options={'verify_signature':False});assert token_claims.get('sub')==a['id']
    u['enabled']=False;r=client.put(url,headers=headers,json=u);r.raise_for_status();r=client.post(url+'/logout',headers=headers);r.raise_for_status()
    login=client.post(base+'/realms/aminra/protocol/openid-connect/token',data={'grant_type':'password','client_id':'aminra-frontend','username':a['email'],'password':a['password']});assert login.status_code==400
-  print(json.dumps({'suspended':True,'new_login_denied':True,'access_token':suspended_token}))
+  print(json.dumps({'revoked':True,'new_login_denied':True,'access_token':suspended_token}))
  elif kind in ('keycloak_authority','reader_permissions'):
   import httpx
   base='http://uat-keycloak:8080'

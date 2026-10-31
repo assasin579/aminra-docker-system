@@ -8,6 +8,12 @@ from uuid import uuid4
 ROOT=Path(__file__).resolve().parents[2]
 LABEL='io.aminra.uat.run'
 
+def storage_preflight(output):
+ for label,path in [('temporary',Path(tempfile.gettempdir())),('evidence',Path(output or ROOT/'.uat-runs').resolve())]:
+  while not path.exists():path=path.parent
+  if shutil.disk_usage(path).free < 512*1024*1024:
+   raise RuntimeError('Insufficient '+label+' workspace capacity (requires 512 MiB free); use a disk-backed TMPDIR/output before starting UAT')
+
 def sh(argv,data=None,out=None):
  r=subprocess.run(argv,input=data,stdout=out or subprocess.PIPE,stderr=subprocess.PIPE,timeout=240)
  if r.returncode:raise RuntimeError(Path(argv[0]).name+' failed: '+r.stderr.decode(errors='replace')[-1000:])
@@ -223,6 +229,7 @@ def main():
 
 def execute(args):
  from report import generate
+ storage_preflight(args.output)
  run=Run(args);code=1
  def stop(signum,frame):raise KeyboardInterrupt('UAT interrupted')
  signal.signal(signal.SIGTERM,stop)
@@ -230,8 +237,9 @@ def execute(args):
   browser_env={**os.environ,'PLAYWRIGHT_BROWSERS_PATH':args.browser_cache}
   browser_module=ROOT/'frontend/aminra-web/node_modules/playwright'
   browser_name={'desktop':'chromium','mobile':'chromium','firefox':'firefox','webkit':'webkit'}[args.project]
-  probe=subprocess.run(['node','-e',"const fs=require('fs'),p=require(process.argv[1]);if(!fs.existsSync(p[process.argv[2]].executablePath()))process.exit(1)",str(browser_module),browser_name],env=browser_env,capture_output=True)
-  if probe.returncode:raise RuntimeError('Required Playwright browser missing; install the locked browser into --browser-cache before UAT')
+  probe=subprocess.run(['node','-e',"const p=require(process.argv[1]);(async()=>{const b=await p[process.argv[2]].launch();try{const page=await b.newPage();await page.setContent('<title>UAT preflight</title>');if(await page.title()!=='UAT preflight')throw new Error('render preflight failed')}finally{await b.close()}})().catch(e=>{console.error(e.message);process.exitCode=1})",str(browser_module),browser_name],env=browser_env,capture_output=True,timeout=45)
+  (run.output/'browser-preflight.log').write_bytes(probe.stdout+probe.stderr)
+  if probe.returncode:raise RuntimeError('Playwright launch/render preflight failed; check temporary workspace capacity, browser cache and browser-preflight.log')
   run.setup();env={**os.environ,'UAT_CONFIG':str(run.config),'UAT_OUTPUT':str(run.output),'UAT_SUITE':args.suite,'PLAYWRIGHT_BROWSERS_PATH':args.browser_cache}
   cli=ROOT/'frontend/aminra-web/node_modules/@playwright/test/cli.js'
   if not cli.exists():raise RuntimeError('Run npm ci in frontend/aminra-web first')

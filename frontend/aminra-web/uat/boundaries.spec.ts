@@ -59,6 +59,12 @@ test('LIBRARY-01 @DOC-05 @DOS-06 one representative per type preserves history a
 test('SESSION-01 @AUTH-04 @E2E-12 logout and account switch do not render previous business files',async({page,request})=>{
  const owner=await login(page,'bizA');const sentinel=config.run_id+'-private-switch.pdf';
  const r=await request.post(config.base_url+'/api/api/documents/upload',{headers:{Authorization:'Bearer '+owner},multipart:{doc_type:'halal_policy',file:{name:sentinel,mimeType:'application/pdf',buffer:pdf(sentinel)}}});expect(r.status()).toBe(200);
+ // A prior case may have explicitly selected an older representative. Select
+ // this test's own sentinel before checking that account switching clears it.
+ const sentinelId=(await r.json()).id;
+ await api(request,owner,'/api/documents/'+sentinelId+'/promote','POST');
+ const selected=await api(request,owner,'/api/documents?view=latest_by_type&doc_type=halal_policy');
+ expect(selected.documents[0].id).toBe(sentinelId);
  await page.goto('/documents');await expect(page.getByText(sentinel,{exact:true})).toBeVisible();
  await page.getByRole('button').filter({hasText:config.actors.bizA.email}).first().click();await page.getByRole('button',{name:'Đăng xuất',exact:true}).click();
  await login(page,'bizB');await page.goto('/documents');await expect(page.getByRole('heading',{name:'Kho tài liệu',exact:true})).toBeVisible();await expect(page.getByText(sentinel,{exact:true})).toHaveCount(0);

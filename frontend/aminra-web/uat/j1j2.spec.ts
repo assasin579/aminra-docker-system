@@ -20,7 +20,10 @@ test('J1-REUSE @DOS-02 @DOC-05 exact document reuse does not borrow another doss
  const[reused]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/dossiers/'+b.id+'/documents')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đính kèm tài liệu',exact:true}).click()]);expect(reused.status()).toBe(200);expect((await reused.json()).document_id).toBe(doc);
  const ra=await api(request,f.biz,'/dossiers/'+a.id+'/readiness'),rb=await api(request,f.biz,'/dossiers/'+b.id+'/readiness');expect(ra.requirement_slots[0].evidence_document_id).toBe(doc);expect(rb.requirement_slots[0].evidence_document_id).toBe(doc);expect(rb.submission_round).toBeNull();
  const foreign=await token(request,'bizB');const denied=await request.post(config.base_url+'/api/dossiers/'+b.id+'/documents',{headers:{Authorization:'Bearer '+foreign,'Idempotency-Key':randomUUID()},multipart:{doc_type:'halal_policy',document_id:doc}});expect(denied.status()).toBe(404);
- await login(page,'bizA');await page.goto('/dossiers/'+b.id);await expect(page.getByTestId('doc-type-row-halal_policy')).toContainText('1 file đã upload');
+ // The API-only foreign-token probe does not switch this browser's actor.
+ // Verify the existing business session and reload the dossier; repeated
+ // authenticated login-page navigation belongs to the auth lifecycle suite.
+ await page.goto('/dossiers/'+b.id);await expect(page.getByRole('button').filter({hasText:config.actors.bizA.email}).first()).toBeVisible();await expect(page.getByTestId('doc-type-row-halal_policy')).toContainText('1 file đã upload');
 });
 
 test('J1-AI-NOT-APPROVAL @DOS-05 @DOS-08 AI score alone cannot make a dossier certified',async({page,request})=>{
@@ -40,13 +43,31 @@ test('J1-PACKET-PREVIEW @CB-05 @DOC-07 selected CB sees packet and file while fo
 });
 
 test('J1-DASHBOARD-RACE @AUTH-04 @DOS-07 delayed previous-tenant dashboard cannot populate the new account',async({page,request},info)=>{
+ const lifecycle: unknown[] = [];
+ page.on('console', message => { if (message.type() === 'debug' && message.text().startsWith('auth-probe:')) lifecycle.push(JSON.parse(message.text().slice(11))); });
+ await page.addInitScript(() => {
+  const record = (event: string, detail: Record<string, unknown> = {}) => console.debug('auth-probe:' + JSON.stringify({event, path: location.pathname, at: performance.now(), ...detail}));
+  for (const event of ['beforeunload', 'pagehide', 'pageshow', 'DOMContentLoaded']) window.addEventListener(event, () => record(event));
+  const remove = Storage.prototype.removeItem;
+  Storage.prototype.removeItem = function(key) { if (key === 'aminra_user_token') record('credential_removed', {stack: new Error().stack}); return remove.call(this, key); };
+  const set = Storage.prototype.setItem;
+  Storage.prototype.setItem = function(key, value) { if (key === 'aminra_user_token') record('credential_saved'); if (key === 'aminra_auth_last_purge_reason') record('purge', {reason: value}); return set.call(this, key, value); };
+ });
  const f=await prepare(request,'dashboard',undefined,false);await makeDossier(request,f,'private');
  const b=await token(request,'bizB'),bProfile=await api(request,b,'/auth/me');if(!bProfile.industry_schema_id){const aProfile=await api(request,f.biz,'/auth/me');await api(request,b,'/industry-schemas/business-select','POST',{schema_id:aProfile.industry_schema_id});}
  const bEmpty=await api(request,b,'/dossiers/dashboard');expect(bEmpty.total_dossiers).toBe(0);expect(bEmpty.profiles).toEqual([]);
  await login(page,'bizA');await page.goto('/dashboard/business');
- let release!:()=>void,intercept!:()=>void,settle!:()=>void;const held=new Promise<void>(r=>release=r),seen=new Promise<void>(r=>intercept=r),settled=new Promise<void>(r=>settle=r);let hold=true;
- await page.route('**/api/dossiers/dashboard?*',async route=>{if(!hold)return route.continue();hold=false;const response=await route.fetch();expect(response.headers()['cache-control']).toContain('no-store');intercept();await held;try{await route.fulfill({response});}catch{/* navigation may cancel the old response */}finally{settle();}});
- try{await page.reload({waitUntil:'domcontentloaded'});await seen;await expect(page.getByText('Đang tải mức sẵn sàng hồ sơ…',{exact:true})).toBeVisible();await page.getByRole('button').filter({hasText:config.actors.bizA.email}).first().click();await page.getByRole('button',{name:'Đăng xuất',exact:true}).click();await login(page,'bizB');release();await settled;await page.waitForLoadState('networkidle');await expect(page.getByRole('heading',{name:'Bắt đầu hồ sơ chứng nhận',exact:true})).toBeVisible();await expect(page.locator('body')).not.toContainText(f.name+' private');await info.attach('account-race',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});}finally{release();}
+ let release!:()=>void,settle!:()=>void;const held=new Promise<void>(r=>release=r),settled=new Promise<void>(r=>settle=r);let responseHeld=false;
+ // Auth restoration/refresh may issue more than one request. Delay every
+ // request from actor A, while allowing actor B's own request to complete.
+ // Decoding here identifies test traffic only; the backend still verifies it.
+ await page.route('**/api/dossiers/dashboard?*',async route=>{
+  let subject:string|undefined;
+  try{subject=JSON.parse(Buffer.from((route.request().headers().authorization||'').replace(/^Bearer /,'').split('.')[1]||'','base64url').toString()).sub;}catch{/* anonymous traffic is not the race fixture */}
+  if(subject!==config.actors.bizA.id)return route.continue();
+  const response=await route.fetch();expect(response.headers()['cache-control']).toContain('no-store');responseHeld=true;await held;try{await route.fulfill({response});}catch{/* navigation may cancel the old response */}finally{settle();}
+ });
+ try{await page.reload({waitUntil:'domcontentloaded'});await expect.poll(()=>({held:responseHeld,path:new URL(page.url()).pathname}),{timeout:15000,message:'Session restore must retain the business dashboard and intercept a response before account-switch assertions'}).toMatchObject({held:true,path:'/dashboard/business'});await expect(page.getByText('Đang tải mức sẵn sàng hồ sơ…',{exact:true})).toBeVisible();await page.getByRole('button').filter({hasText:config.actors.bizA.email}).first().click();await page.getByRole('button',{name:'Đăng xuất',exact:true}).click();await login(page,'bizB');release();await settled;await page.waitForLoadState('networkidle');await expect(page.getByRole('heading',{name:'Bắt đầu hồ sơ chứng nhận',exact:true})).toBeVisible();await expect(page.locator('body')).not.toContainText(f.name+' private');await info.attach('account-race',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});}finally{release();await info.attach('auth-lifecycle',{body:JSON.stringify(lifecycle),contentType:'application/json'});}
 });
 
 test('[API] J2-AUTHORITY @SUB-05 @CB-03 @E2E-12 correction authority and history follow exact auditor assignment',async({request})=>{
@@ -67,7 +88,25 @@ test('[API] J2-FILE-REASSIGN @CB-04 @DOC-07 historic bytes require current assig
  const diagnostic=control('actor_state',{submission:f.submission});
  const direct=await request.get(config.api_url+'/api/documents/'+f.document+'/file',{headers:{Authorization:'Bearer '+old}});
  expect(oldResponse.status(),JSON.stringify({db:diagnostic,direct_status:direct.status()})).toBe(404);expect((await request.get(file,{headers:{Authorization:'Bearer '+next}})).status()).toBe(200);
- const suspended=control('suspend_auditor',{actor:'unassigned'});expect(suspended.new_login_denied).toBe(true);expect((await request.get(file,{headers:{Authorization:'Bearer '+suspended.access_token}})).status()).toBe(404);expect((await request.get(file,{headers:{Authorization:'Bearer '+cb}})).status()).toBe(200);
+ // Assignment, application suspension and identity revocation are distinct
+ // authority boundaries. Do not conflate all refusals into a document 404.
+ const assertDenied=async(t:string,status:number)=>{
+  for(const url of [file,config.api_url+'/api/documents/'+f.document+'/file']){
+   const response=await request.get(url,{headers:{Authorization:'Bearer '+t}});
+   expect(response.status()).toBe(status);
+   expect(response.headers()['content-type']).toContain('application/json');
+   const body=await response.body();expect(body.includes(Buffer.from('%PDF'))).toBe(false);
+   expect(body.toString()).not.toContain(f.name);
+  }
+ };
+ await assertDenied(old,404);
+ expect(control('suspend_auditor',{actor:'unassigned',mode:'application',status:'suspended'}).status).toBe('suspended');
+ await assertDenied(next,403);
+ expect(control('suspend_auditor',{actor:'unassigned',mode:'application',status:'active'}).status).toBe('active');
+ expect((await request.get(file,{headers:{Authorization:'Bearer '+next}})).status()).toBe(200);
+ const revoked=control('suspend_auditor',{actor:'unassigned',mode:'identity'});
+ expect(revoked.new_login_denied).toBe(true);await assertDenied(revoked.access_token,401);
+ expect((await request.get(file,{headers:{Authorization:'Bearer '+cb}})).status()).toBe(200);
 });
 
 test('[API] X-PUBLICATION-GUARDS @STD-02 @STD-03 @SUB-03 only platform admin publishes and immutable evidence rejects edits',async({request})=>{
@@ -93,3 +132,41 @@ test('J1-DELEGATED-UPLOAD @ORG-04 @DOS-02 delegated upload is effective and revo
  }finally{control('member_permissions',{permissions:{can_upload:false}});}
  await page.reload();await expect(page.getByRole('button',{name:'Đính kèm tài liệu',exact:true})).toHaveCount(0);
 });
+
+test('AUTH-NAVIGATION @AUTH-04 reload during profile restoration preserves the credential and verifies it again',async({page,request},info)=>{
+ await prepare(request,'navigation',undefined,false);
+ await login(page,'bizA');
+ let release!:()=>void;const held=new Promise<void>(resolve=>release=resolve);let captured=false;
+ await page.route('**/api/auth/me',async route=>{
+  if(captured)return route.continue();
+  const response=await route.fetch();expect(response.status()).toBe(200);captured=true;
+  await held;try{await route.fulfill({response});}catch{/* the departing document cancels this response */}
+ });
+ try{
+  await page.goto('/dashboard/business');
+  await expect.poll(()=>captured).toBe(true);
+  await page.reload({waitUntil:'domcontentloaded'});release();
+  await expect(page.getByRole('button').filter({hasText:config.actors.bizA.email}).first()).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe('/dashboard/business');
+  const state=await page.evaluate(()=>({credentialPresent:!!localStorage.getItem('aminra_user_token'),purge:sessionStorage.getItem('aminra_auth_last_purge_reason')}));
+  expect(state).toEqual({credentialPresent:true,purge:null});
+  await info.attach('navigation-restore',{body:JSON.stringify(state),contentType:'application/json'});
+ }finally{release();}
+});
+
+for(const [kind,actor] of [['business','bizA'],['provider','cbX']] as const){
+ test(`AUTH-HYDRATION-${kind} @AUTH-01 @AUTH-02 server controls stay inert until handlers attach, then native login succeeds`,async({page,request})=>{
+  if(kind==='business')await prepare(request,'hydration',undefined,false);
+  let release!:()=>void;const scripts=new Promise<void>(resolve=>release=resolve);
+  await page.route('**/_next/static/**/*.js',async route=>{await scripts;await route.continue();});
+  try{
+   await page.goto('/'+kind+'/login',{waitUntil:'commit'});
+   await expect(page.locator('input[type=email]')).toBeDisabled();await expect(page.locator('input[type=password]')).toBeDisabled();
+   release();await expect(page.locator('input[type=email]')).toBeEnabled();
+   const a=config.actors[actor];await page.locator('input[type=email]').fill(a.email);await page.locator('input[type=password]').fill(a.password);
+   const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đăng nhập',exact:true}).click()]);
+   expect(response.status()).toBe(200);await page.waitForURL('**/dashboard/'+kind);
+   await expect(page.getByRole('button').filter({hasText:a.email}).first()).toBeVisible();
+  }finally{release();}
+ });
+}
