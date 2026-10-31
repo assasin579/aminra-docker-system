@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { dossierApiPath } from "@/lib/documentApi";
 import { useUserAuth } from "@/components/UserAuthContext";
 
 interface DossierListItem {
@@ -42,6 +43,10 @@ export default function DossierListPage() {
       router.replace("/business/login");
       return;
     }
+    if (user?.role !== "business") {
+      router.replace("/submissions");
+      return;
+    }
     if (user?.role === "business" && user.is_owner && !user.industry_schema_id) {
       router.replace("/business/onboarding/industry-select");
       return;
@@ -49,7 +54,7 @@ export default function DossierListPage() {
 
     (async () => {
       try {
-        const res = await fetch("/api/dossiers", {
+        const res = await fetch(dossierApiPath(), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

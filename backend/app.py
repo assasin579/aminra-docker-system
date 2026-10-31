@@ -36,7 +36,8 @@ from auth.db import init_pool, close_pool
 from auth.router import router as auth_router
 from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
-from auth.identity import resolve_canonical_user_id
+from auth.identity import resolve_canonical_user_id, resolve_canonical_tenant_id
+from auth.permissions import check_permission_db
 from auth.jwt_utils import get_current_user, decode_token
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
@@ -206,21 +207,8 @@ def _require_admin(request: Request):
 
 
 # ── Halal document type registry ───────────────────────────────────────────────
-HALAL_DOC_TYPES: Dict[str, str] = {
-    "halal_policy": "Halal Policy",
-    "has_manual": "HAS Manual",
-    "internal_halal_committee": "Internal Halal Committee",
-    "company_profile": "Company Profile",
-    "halal_manual": "Halal Manual",
-    "ingredient_raw_material": "Ingredient & Raw Material Documentation",
-    "process_flow_chart": "Process Flow Chart",
-    "sop_raw_material_receiving": "SOP - Raw Material Receiving",
-    "sop_storage_segregation": "SOP - Storage and Segregation",
-    "sop_production_operation": "SOP - Production or Service Operation",
-    "sop_cleaning_sanitation": "SOP - Cleaning and Sanitation",
-    "sop_handling_nonconformances": "SOP - Handling Non-Conformances",
-    "sop_complaint_recall": "SOP - Complaint and Recall Management",
-}
+from services.document_types import HALAL_DOC_TYPES
+
 
 # ── Template caches ────────────────────────────────────────────────────────────
 _template_json_cache: Dict[str, tuple] = {}
@@ -348,6 +336,9 @@ class Citation(BaseModel):
 
 
 class EvaluationReport(BaseModel):
+    document_id: Optional[str] = None
+    document_save_status: str = "not_applicable"
+    document_save_error: Optional[str] = None
     filename: str
     doc_type: str
     doc_type_label: str
@@ -2202,6 +2193,8 @@ async def evaluate_doc(
     previous_context: Optional[str] = Form(None),
     lang: Optional[str] = Form(None),
 ):
+    if user.get("role") == "business":
+        await check_permission_db(user, "can_upload")
     content = await validate_upload(file)
     suffix = Path(file.filename or "").suffix.lower()
     jwt_user = user  # auth now required, no anonymous fallback
@@ -2233,10 +2226,8 @@ async def evaluate_doc(
     # If no lang-specific dir → empty content (don't pollute LLM with wrong-lang refs)
 
     import tempfile
-    import uuid as _uuid
 
     file_bytes = content
-    file_size = len(file_bytes)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(file_bytes)
@@ -2283,48 +2274,26 @@ async def evaluate_doc(
         }
     )
 
-    # Persist to DB if authenticated business user
-    if jwt_user and jwt_user.get("role") == "business" and jwt_user.get("tenant_id"):
+    # AI success and library persistence are independent, explicit outcomes.
+    if jwt_user.get("role") == "business":
+        from services.document_ingestion import save_library_document
+        report.document_save_status = "failed"
         try:
             from auth.db import get_pool
-            import json as _json_mod
-
-            pool = get_pool()
-            async with pool.acquire() as conn:
-                # Save file to tenant folder
-                tenant_dir = UPLOAD_DIR / jwt_user["tenant_id"]
-                tenant_dir.mkdir(parents=True, exist_ok=True)
-                doc_uuid = str(_uuid.uuid4())
-                safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in file.filename).strip()
-                save_path = tenant_dir / f"{doc_uuid}_{safe_name}"
-                if not save_path.resolve().is_relative_to(tenant_dir.resolve()):
-                    raise HTTPException(400, "Invalid file path")
-                save_path.write_bytes(file_bytes)
-
-                mime = file.content_type or "application/octet-stream"
-                await conn.execute(
-                    """
-                    INSERT INTO documents
-                        (filename, original_filename, file_path, file_size, mime_type,
-                         user_id, tenant_id, doc_type, compliance_score, evaluation_result)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-                    """,
-                    save_path.name,
-                    file.filename,
-                    str(save_path),
-                    file_size,
-                    mime,
-                    # documents.user_id is FK → users.id; resolve from JWT.
-                    await resolve_canonical_user_id(jwt_user, conn),
-                    jwt_user["tenant_id"],
-                    result.get("doc_type"),
-                    result.get("compliance_score"),
-                    _json_mod.dumps(result, ensure_ascii=False),
+            async with get_pool().acquire() as conn:
+                tenant_id = await resolve_canonical_tenant_id(jwt_user, conn)
+                actor_id = await resolve_canonical_user_id(jwt_user, conn)
+                saved = await save_library_document(
+                    conn, tenant_id=tenant_id, actor_id=actor_id,
+                    filename=file.filename or "file", content=file_bytes,
+                    mime_type=file.content_type or "application/octet-stream",
+                    doc_type=result.get("doc_type"), evaluation_result=result,
                 )
-                log.info(f"[documents] Saved {file.filename} for tenant {jwt_user['tenant_id']}")
-        except Exception as e:
-            log.error(f"[documents] Failed to save to DB: {e}")
-            # Don't fail the evaluate response — just log
+                report.document_id = saved["id"]
+                report.document_save_status = "saved"
+        except Exception:
+            log.exception("[documents] AI completed but library persistence failed")
+            report.document_save_error = "Phân tích AI đã hoàn tất nhưng chưa lưu được vào kho tài liệu."
 
     return report
 

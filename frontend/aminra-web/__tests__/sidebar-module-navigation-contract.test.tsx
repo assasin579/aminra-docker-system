@@ -135,6 +135,14 @@ describe("business sidebar module navigation", () => {
       expect(screen.getByRole("link", { name: /Lô hàng/i })).toBeInTheDocument();
     });
   });
+  it("gives owners distinct library, preparation and sent-packet entries", async () => {
+    mockedApiJson.mockResolvedValue({ modules: [] });
+    render(<Sidebar />);
+    expect(await screen.findByRole("link", { name: "Kho tài liệu" })).toHaveAttribute("href", "/documents");
+    expect(screen.getByRole("link", { name: "Hồ sơ chứng nhận" })).toHaveAttribute("href", "/dossiers");
+    expect(screen.getByRole("link", { name: "Hồ sơ đã gửi" })).toHaveAttribute("href", "/submissions");
+  });
+
   it("routes a business member to dossier history instead of the owner-only submissions list", async () => {
     userState.user.is_owner=false;mockedApiJson.mockResolvedValue({modules:[]});render(<Sidebar />);
     expect(await screen.findByRole("link",{name:"Hồ sơ và lịch sử"})).toHaveAttribute("href","/dossiers");

@@ -15,12 +15,9 @@ Endpoints:
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
-from pathlib import Path
 from typing import Any, List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import Response, APIRouter, Depends, File, Form, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -29,14 +26,11 @@ from auth.db import get_db
 from auth.jwt_utils import get_current_user
 from auth.identity import resolve_canonical_user_id
 from auth.permissions import check_permission_db
-from auth.upload_utils import validate_upload
 from services.dossier_attachments import (
-    attach_document_reference,
-    find_idempotent_attachment,
     list_attachable_documents,
     list_dossier_documents,
-    validate_dossier_slot,
 )
+from services.document_ingestion import attach_dossier_document
 from services.dossier_readiness import compute_dossier_readiness
 
 log = logging.getLogger("aminra.dossier")
@@ -381,101 +375,11 @@ async def attach_or_upload_dossier_document(
     actor_id = await resolve_canonical_user_id(user, db)
     if not actor_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Không xác định được danh tính người thao tác")
-    doc_type = doc_type.strip()
-    if not doc_type or len(doc_type) > 100:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Slot tài liệu không hợp lệ")
-    if (document_id is None) == (file is None):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Chọn đúng một tài liệu có sẵn hoặc tệp mới")
-
-    saved_path: Path | None = None
-    try:
-        async with db.transaction():
-            dossier = await validate_dossier_slot(
-                db, dossier_id=dossier_id, tenant_id=tenant_id, doc_type=doc_type,
-            )
-            content: bytes | None = None
-            safe_name = ""
-            mime_type = "application/octet-stream"
-            if file is not None:
-                content = await validate_upload(file)
-                safe_name = "".join(
-                    char if char.isalnum() or char in "._- " else "_"
-                    for char in (file.filename or "file")
-                ).strip() or "file"
-                mime_type = file.content_type or mime_type
-                content_digest = hashlib.sha256(content).hexdigest()
-            else:
-                content_digest = str(document_id)
-
-            fingerprint_payload = {
-                "action": "dossier-document-attachment-v1",
-                "actor_id": str(actor_id),
-                "tenant_id": str(tenant_id),
-                "dossier_id": str(dossier_id),
-                "requirements_version_id": str(dossier["requirements_version_id"]),
-                "doc_type": doc_type,
-                "document_id": str(document_id) if document_id else None,
-                "content_sha256": content_digest,
-                "filename": safe_name if file is not None else None,
-                "mime_type": mime_type if file is not None else None,
-            }
-            request_sha256 = hashlib.sha256(
-                json.dumps(fingerprint_payload, sort_keys=True, separators=(",", ":")).encode()
-            ).hexdigest()
-            result = await find_idempotent_attachment(
-                db, dossier=dossier, idempotency_key=idempotency_key,
-                request_sha256=request_sha256, doc_type=doc_type, actor_id=actor_id,
-            )
-            if result is None and document_id is not None:
-                result = await attach_document_reference(
-                    db, dossier=dossier, document_id=document_id,
-                    doc_type=doc_type, actor_id=actor_id,
-                    idempotency_key=idempotency_key, request_sha256=request_sha256,
-                )
-            elif result is None:
-                if file is None or content is None:
-                    raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Tệp tải lên không có")
-                from auth.document_router import UPLOAD_DIR
-                tenant_dir = UPLOAD_DIR / str(tenant_id)
-                tenant_dir.mkdir(parents=True, exist_ok=True)
-                doc_uuid = uuid4()
-                saved_path = tenant_dir / f"{doc_uuid}_{safe_name}"
-                if not saved_path.resolve().is_relative_to(tenant_dir.resolve()):
-                    raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid file path")
-                saved_path.write_bytes(content)
-                inserted = await db.fetchrow(
-                    """INSERT INTO documents
-                              (id, filename, original_filename, file_path, file_size, mime_type,
-                               user_id, tenant_id, doc_type)
-                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                       RETURNING id, tenant_id, doc_type, filename, original_filename,
-                                 status, compliance_score, version_number, uploaded_at""",
-                    doc_uuid, saved_path.name, file.filename or safe_name, str(saved_path),
-                    len(content), mime_type, actor_id, tenant_id, doc_type,
-                )
-                if not inserted:
-                    raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Không thể lưu metadata tài liệu")
-                result = await attach_document_reference(
-                    db, dossier=dossier, document_id=doc_uuid,
-                    doc_type=doc_type, actor_id=actor_id,
-                    idempotency_key=idempotency_key, request_sha256=request_sha256,
-                )
-        document = result["document"]
-        return {
-            "document_id": str(document["id"]),
-            "doc_type": document["doc_type"],
-            "attachment_state": "attached",
-            "created_attachment": result["created"],
-        }
-    except Exception:
-        if saved_path is not None:
-            try:
-                if saved_path.exists():
-                    saved_path.unlink()
-            except OSError:
-                log.exception("Failed to remove uncommitted Dossier attachment file")
-        raise
-
+    return await attach_dossier_document(
+        db, dossier_id=dossier_id, tenant_id=tenant_id, actor_id=actor_id,
+        doc_type=doc_type, idempotency_key=idempotency_key,
+        document_id=document_id, file=file,
+    )
 
 @router.get("/{dossier_id}", response_model=DossierPublic)
 async def get_dossier(

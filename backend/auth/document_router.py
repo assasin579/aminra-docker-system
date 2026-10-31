@@ -17,7 +17,7 @@ from uuid import UUID as _UUID
 import os
 from pathlib import Path as _Path
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Request, UploadFile, File, Form
+from fastapi import Header, APIRouter, HTTPException, Depends, Query, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse as _FileResponse
 from pydantic import BaseModel, Field
 from uuid import uuid4 as _uuid4
@@ -28,6 +28,7 @@ from auth.jwt_utils import get_current_user, decode_token
 from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
 from services.feature_flags import is_feature_enabled
+from services.document_types import HALAL_DOC_TYPES
 from services.document_versioning import (
     AUDIT_EVENT_APPROVED,
     AUDIT_EVENT_REJECTED,
@@ -88,6 +89,8 @@ class DocumentItem(BaseModel):
     doc_type: Optional[str]
     doc_type_label: Optional[str]
     compliance_score: Optional[int]
+    ai_score: Optional[int] = None
+    cb_score: Optional[int] = None
     overall_status: Optional[str]
     file_size: Optional[int]
     mime_type: Optional[str]
@@ -99,6 +102,7 @@ class DocumentItem(BaseModel):
     # Existing API consumers receive None — same shape as before for compat.
     approval_status: Optional[str] = None
     version_number: Optional[int] = None
+    is_current_selection: bool = False
 
 
 class DocumentDetail(DocumentItem):
@@ -177,9 +181,13 @@ def _label_from_result(result: Optional[dict]) -> Optional[str]:
 
 
 class RevisionItem(BaseModel):
+    is_current_selection: bool = False
+    approval_status: Optional[str] = None
     id: str
     original_filename: str
     compliance_score: Optional[int]
+    ai_score: Optional[int] = None
+    cb_score: Optional[int] = None
     overall_status: Optional[str]
     file_size: Optional[int]
     uploaded_by_name: Optional[str]
@@ -285,10 +293,11 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     doc_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),  # compliant | needs_review | non_compliant
+    view: str = Query("latest_by_type", pattern="^(all|latest_by_type)$"),
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    """Return only the latest document per doc_type for the tenant."""
+    """Explicit library view; retain latest-by-type as the legacy default."""
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
 
@@ -306,12 +315,22 @@ async def list_documents(
                    d.id, d.original_filename, d.doc_type, d.compliance_score,
                    d.file_size, d.mime_type, d.uploaded_at, d.evaluation_result,
                    d.user_id, d.tenant_id, d.status,
-                   d.approval_status, d.version_number
+                   d.approval_status, d.version_number,
+                   (cv.current_document_id IS NOT NULL) AS is_current_selection
             FROM documents d
+            LEFT JOIN document_current_versions cv ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
             WHERE d.tenant_id = $1
-            ORDER BY COALESCE(doc_type, id::text), d.uploaded_at DESC
+            ORDER BY COALESCE(doc_type, id::text), cv.selected_at DESC NULLS LAST, d.uploaded_at DESC, d.id
         )
     """
+
+    if view == "all":
+        cte = """WITH latest AS (
+            SELECT d.*, (cv.current_document_id IS NOT NULL) AS is_current_selection
+            FROM documents d LEFT JOIN document_current_versions cv
+              ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
+            WHERE d.tenant_id = $1
+        )"""
 
     # Build dynamic WHERE on the CTE result
     conditions: list[str] = []
@@ -341,7 +360,7 @@ async def list_documents(
         {cte}
         SELECT l.id, l.original_filename, l.doc_type, l.compliance_score,
                l.file_size, l.mime_type, l.uploaded_at, l.evaluation_result, l.status,
-               l.approval_status, l.version_number,
+               l.approval_status, l.version_number, l.is_current_selection,
                u.company_name AS uploaded_by_name,
                (SELECT COUNT(*) FROM documents d2
                 WHERE d2.tenant_id = $1
@@ -366,6 +385,8 @@ async def list_documents(
             doc_type=r["doc_type"],
             doc_type_label=_label_from_result(_parse_result(r["evaluation_result"])),
             compliance_score=r["compliance_score"],
+            ai_score=(_parse_result(r["evaluation_result"]) or {}).get("compliance_score"),
+            cb_score=(_parse_result(r["evaluation_result"]) or {}).get("cb_score"),
             overall_status=_status_from_result(_parse_result(r["evaluation_result"])),
             file_size=r["file_size"],
             mime_type=r["mime_type"],
@@ -373,6 +394,7 @@ async def list_documents(
             uploaded_at=r["uploaded_at"],
             revision_count=r["revision_count"],
             status=r["status"],
+            is_current_selection=r.get("is_current_selection", False),
             # Flag-gated additive fields (None when OFF — preserves baseline shape)
             approval_status=r["approval_status"] if flag_on else None,
             version_number=r["version_number"] if flag_on else None,
@@ -400,9 +422,11 @@ async def list_revisions(
     rows = await db.fetch(
         """
         SELECT d.id, d.original_filename, d.compliance_score,
-               d.file_size, d.uploaded_at, d.evaluation_result,
+               d.file_size, d.uploaded_at, d.evaluation_result, d.approval_status,
+               (cv.current_document_id IS NOT NULL) AS is_current_selection,
                u.company_name AS uploaded_by_name
         FROM documents d
+        LEFT JOIN document_current_versions cv ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
         LEFT JOIN users u ON u.id = d.user_id
         WHERE d.tenant_id = $1 AND d.doc_type = $2
         ORDER BY d.uploaded_at DESC
@@ -420,8 +444,12 @@ async def list_revisions(
         revisions.append(
             RevisionItem(
                 id=str(r["id"]),
+                is_current_selection=r.get("is_current_selection", False),
+                approval_status=r.get("approval_status"),
                 original_filename=r["original_filename"],
                 compliance_score=r["compliance_score"],
+                ai_score=(er or {}).get("compliance_score"),
+                cb_score=(er or {}).get("cb_score"),
                 overall_status=_status_from_result(er),
                 file_size=r["file_size"],
                 uploaded_by_name=r["uploaded_by_name"],
@@ -443,10 +471,11 @@ async def promote_document(
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    """Promote a revision to be the current/active version for its doc_type."""
+    """Select within an existing version chain without modifying upload chronology."""
     _validate_uuid(doc_id)
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await check_permission_db(user, "can_edit")
 
     tenant_id = await resolve_canonical_tenant_id(user, db)
     row = await db.fetchrow(
@@ -457,14 +486,11 @@ async def promote_document(
     if not row:
         raise HTTPException(404, "Tài liệu không tồn tại")
 
-    # Set uploaded_at to NOW() — makes this the "latest" version
-    await db.execute(
-        "UPDATE documents SET uploaded_at = NOW() WHERE id = $1",
-        doc_id,
-    )
-
-    log.info(f"[documents] Promoted {doc_id} (type={row['doc_type']}) by {user.get('email')}")
-    return {"message": "Đã chọn phiên bản này làm tài liệu chính thức"}
+    from services.document_library import select_current_version
+    actor_id = await resolve_canonical_user_id(user, db)
+    if not actor_id:
+        raise HTTPException(403, "Không xác định được người thao tác")
+    return await select_current_version(db, tenant_id=tenant_id, document_id=doc_id, actor_id=actor_id)
 
 
 @router.get("/documents/{doc_id}", response_model=DocumentDetail)
@@ -487,8 +513,10 @@ async def get_document(
                d.approver_id, d.approved_at, d.effective_date,
                d.next_review_date, d.retention_period_days,
                d.retention_expires_at, d.superseded_by_id,
+               (cv.current_document_id IS NOT NULL) AS is_current_selection,
                u.company_name AS uploaded_by_name
         FROM documents d
+        LEFT JOIN document_current_versions cv ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
         LEFT JOIN users u ON u.id = d.user_id
         WHERE d.id = $1 AND d.tenant_id = $2
         """,
@@ -503,10 +531,13 @@ async def get_document(
     er = _parse_result(row["evaluation_result"]) or {}
     return DocumentDetail(
         id=str(row["id"]),
+        is_current_selection=row.get("is_current_selection", False),
         original_filename=row["original_filename"],
         doc_type=row["doc_type"],
         doc_type_label=er.get("doc_type_label"),
         compliance_score=row["compliance_score"],
+        ai_score=er.get("compliance_score"),
+        cb_score=er.get("cb_score"),
         overall_status=er.get("overall_status"),
         file_size=row["file_size"],
         mime_type=row["mime_type"],
@@ -573,6 +604,7 @@ async def _load_submission_document_read_access(doc_id: str, user: dict, db):
                          THEN COALESCE(s.revision_round, 0) ELSE 0 END
                   ), 0) AS access_round
              FROM documents d
+        LEFT JOIN document_current_versions cv ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
              JOIN submissions s ON {access_column}=$2
             WHERE d.id=$1
               AND ($1=ANY(s.document_ids) OR EXISTS (
@@ -739,6 +771,7 @@ async def upload_document(
     file: UploadFile = File(...),
     doc_type: Optional[str] = Form(None),
     dossier_id: Optional[_UUID] = Form(None),
+    idempotency_key: Optional[_UUID] = Header(None, alias="Idempotency-Key"),
     user=Depends(get_current_user),
     db=Depends(get_db),
 ):
@@ -752,62 +785,31 @@ async def upload_document(
         raise HTTPException(400, "Tenant không xác định")
 
     if dossier_id is not None:
-        dossier = await db.fetchrow(
-            "SELECT requirements_version_id, requirements_binding_status FROM dossiers "
-            "WHERE id=$1 AND tenant_id=$2 AND status NOT IN ('cancelled','cert_issued')",
-            dossier_id, tenant_id,
+        from services.document_ingestion import attach_dossier_document
+        actor_id = await resolve_canonical_user_id(user, db)
+        if not actor_id:
+            raise HTTPException(403, "Không xác định được người thao tác")
+        result = await attach_dossier_document(
+            db, dossier_id=dossier_id, tenant_id=tenant_id, actor_id=actor_id,
+            doc_type=doc_type or "", file=file,
+            idempotency_key=idempotency_key or _uuid4(),
         )
-        if not dossier:
-            raise HTTPException(404, "Hồ sơ không tồn tại")
-        if dossier['requirements_binding_status'] != 'bound':
-            raise HTTPException(409, "Hồ sơ chưa có bộ yêu cầu được chốt")
-        if not doc_type or not await db.fetchval(
-            "SELECT 1 FROM standard_requirement_version_slots WHERE requirements_version_id=$1 AND doc_type=$2",
-            dossier['requirements_version_id'],doc_type,
-        ):
-            raise HTTPException(422, "Loại tài liệu không thuộc bộ yêu cầu của hồ sơ")
+        return {**result, "id": result["document_id"], "filename": file.filename}
 
     content = await validate_upload(file)
-    file_size = len(content)
-
-    tenant_dir = UPLOAD_DIR / str(tenant_id)
-    tenant_dir.mkdir(parents=True, exist_ok=True)
-    doc_uuid = str(_uuid4())
-    safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in (file.filename or "file")).strip()
-    save_path = tenant_dir / f"{doc_uuid}_{safe_name}"
-    if not save_path.resolve().is_relative_to(tenant_dir.resolve()):
-        raise HTTPException(400, "Invalid file path")
-    save_path.write_bytes(content)
-
-    mime = file.content_type or "application/octet-stream"
+    from services.document_ingestion import save_library_document
     canonical_user_id = await resolve_canonical_user_id(user, db)
     try:
-        row = await db.fetchrow(
-            """INSERT INTO documents
-                  (filename, original_filename, file_path, file_size, mime_type,
-                   user_id, tenant_id, doc_type, dossier_id)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, uploaded_at""",
-            save_path.name,
-            file.filename,
-            str(save_path),
-            file_size,
-            mime,
-            canonical_user_id,
-            tenant_id,
-            doc_type,
-            dossier_id,
+        return await save_library_document(
+            db, tenant_id=tenant_id, actor_id=canonical_user_id,
+            filename=file.filename or "file", content=content,
+            mime_type=file.content_type or "application/octet-stream", doc_type=doc_type,
         )
+    except HTTPException:
+        raise
     except Exception:
-        try:
-            if save_path.exists() and save_path.resolve().is_relative_to(tenant_dir.resolve()):
-                save_path.unlink()
-        except Exception:
-            log.exception("[documents] Failed to cleanup orphan upload after DB insert failure")
-        log.exception("[documents] Upload DB insert failed for tenant %s", tenant_id)
+        log.exception("[documents] Upload persistence failed")
         raise HTTPException(500, "Không thể lưu metadata tài liệu")
-
-    log.info(f"[documents] Uploaded {file.filename} for tenant {tenant_id} (no eval)")
-    return {"id": str(row["id"]), "filename": file.filename, "doc_type": doc_type}
 
 
 # ── Evaluate existing document ───────────────────────────────────────���────────
@@ -820,21 +822,7 @@ async def _run_evaluate_background(
     from auth.db import get_pool
     from pipeline.evaluate import evaluate_document
 
-    _DOC_TYPE_LABELS = {
-        "halal_policy": "Halal Policy",
-        "has_manual": "HAS Manual",
-        "halal_manual": "Halal Manual",
-        "internal_halal_committee": "Internal Halal Committee",
-        "company_profile": "Company Profile",
-        "ingredient_raw_material": "Ingredient & Raw Material",
-        "process_flow_chart": "Process Flow Chart",
-        "sop_raw_material_receiving": "SOP - Raw Material Receiving",
-        "sop_storage_segregation": "SOP - Storage & Segregation",
-        "sop_production_operation": "SOP - Production Operation",
-        "sop_cleaning_sanitation": "SOP - Cleaning & Sanitation",
-        "sop_handling_nonconformances": "SOP - Handling Non-Conformances",
-        "sop_complaint_recall": "SOP - Complaint & Recall",
-    }
+    _DOC_TYPE_LABELS = HALAL_DOC_TYPES
 
     forced_doc_type = doc_type
     forced_doc_label = _DOC_TYPE_LABELS.get(doc_type or "", "")
@@ -912,6 +900,7 @@ async def evaluate_existing_document(
     _validate_uuid(doc_id)
     if user["role"] != "business":
         raise HTTPException(403, "Chỉ dành cho tài khoản doanh nghiệp")
+    await check_permission_db(user, "can_upload")
     if lang not in ("vi", "en"):
         lang = "vi"
 
@@ -1008,7 +997,7 @@ async def delete_document(
         # for version trigger/FK rejections; map to a stable API contract.
         sqlstate = getattr(e, "sqlstate", "")
         if sqlstate and sqlstate.startswith("23"):
-            raise HTTPException(409, "Không thể xoá tài liệu đang có liên kết phiên bản")
+            raise HTTPException(409, "Không thể xoá tài liệu đang được hồ sơ hoặc chuỗi phiên bản tham chiếu")
         raise
 
     if resolved_file:
@@ -1020,21 +1009,7 @@ async def delete_document(
 # ── Dashboard Stats ───────────────────────────────────────────────────────────
 
 # All 13 Halal document types
-_ALL_DOC_TYPES = {
-    "halal_policy": "Halal Policy",
-    "has_manual": "HAS Manual",
-    "internal_halal_committee": "Internal Halal Committee",
-    "company_profile": "Company Profile",
-    "halal_manual": "Halal Manual",
-    "ingredient_raw_material": "Ingredient & Raw Material",
-    "process_flow_chart": "Process Flow Chart",
-    "sop_raw_material_receiving": "SOP - Raw Material Receiving",
-    "sop_storage_segregation": "SOP - Storage & Segregation",
-    "sop_production_operation": "SOP - Production Operation",
-    "sop_cleaning_sanitation": "SOP - Cleaning & Sanitation",
-    "sop_handling_nonconformances": "SOP - Handling Non-Conformances",
-    "sop_complaint_recall": "SOP - Complaint & Recall",
-}
+_ALL_DOC_TYPES = HALAL_DOC_TYPES
 
 
 @router.get("/dashboard/stats")
@@ -1541,6 +1516,18 @@ async def supersede_document(
             doc_id,
             next_version,
         )
+        # Reconcile current selections when an approved replacement joins the chain.
+        selections = await db.fetch(
+            """DELETE FROM document_current_versions WHERE tenant_id=$1
+               AND (current_document_id=$2 OR root_document_id=$3)
+               RETURNING root_document_id""",
+            tenant_id, doc_id, body.new_document_id,
+        )
+        if selections:
+            from services.document_library import select_current_version
+            actor_id = await resolve_canonical_user_id(user, db)
+            await select_current_version(db, tenant_id=tenant_id,
+                document_id=body.new_document_id, actor_id=actor_id)
         await _audit_strict(
             db,
             action=AUDIT_EVENT_SUPERSEDED,
