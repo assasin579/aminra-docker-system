@@ -155,6 +155,7 @@ def _require_provider(user: dict):
 
 async def get_scoped_audit_db(db=Depends(get_db)):
     # Keep the parent authorization/assignment lock through the child mutation.
+    # Routes use function scope: commit must finish before success is sent.
     async with db.transaction():
         yield db
 
@@ -207,7 +208,7 @@ class VisitUpdate(BaseModel):
 
 # ── Business Portfolio ──
 @router.get("/businesses")
-async def list_businesses(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def list_businesses(user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """List all businesses this CB serves, with aggregated stats."""
     _require_provider(user)
     if not user.get("is_owner"):
@@ -266,7 +267,7 @@ async def list_businesses(user=Depends(get_current_user), db=Depends(get_scoped_
 
 # ── Business dossier (consolidated docs + revisions) ──
 @router.get("/businesses/{business_id}/dossier")
-async def business_dossier(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def business_dossier(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """A related business's submissions, audits and explicitly shared evidence.
 
     Document metadata is limited to this provider's current/historical packets;
@@ -395,7 +396,7 @@ async def business_dossier(business_id: str, user=Depends(get_current_user), db=
 
 # ── Business composite score ──
 @router.get("/businesses/{business_id}/score")
-async def business_score(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def business_score(business_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """Composite score for a business under this provider's relationship.
 
     Components:
@@ -525,7 +526,7 @@ async def business_score(business_id: str, user=Depends(get_current_user), db=De
 
 # ── Stats ──
 @router.get("/stats")
-async def audit_stats(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def audit_stats(user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _require_provider(user)
     where, param = await _audit_filter(user, db)
     counts = await db.fetchrow(
@@ -568,7 +569,7 @@ async def audit_stats(user=Depends(get_current_user), db=Depends(get_scoped_audi
 
 # ── Templates (Phase E — placed before /{id} routes) ──
 @router.get("/templates")
-async def list_templates(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def list_templates(user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
@@ -595,7 +596,7 @@ async def list_templates(user=Depends(get_current_user), db=Depends(get_scoped_a
 
 
 @router.post("/templates")
-async def create_template(req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def create_template(req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
@@ -612,7 +613,7 @@ async def create_template(req: dict, user=Depends(get_current_user), db=Depends(
 
 
 @router.put("/templates/{tid}")
-async def update_template(tid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def update_template(tid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(tid)
     _require_provider(user)
     if not user.get("is_owner"):
@@ -642,7 +643,7 @@ async def update_template(tid: str, req: dict, user=Depends(get_current_user), d
 
 
 @router.delete("/templates/{tid}")
-async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(tid)
     _require_provider(user)
     if not user.get("is_owner"):
@@ -655,7 +656,7 @@ async def delete_template(tid: str, user=Depends(get_current_user), db=Depends(g
 
 # ── List visits ──
 @router.get("/")
-async def list_visits(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def list_visits(user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _require_provider(user)
     where, param = await _audit_filter(user, db)
     rows = await db.fetch(
@@ -690,7 +691,7 @@ async def list_visits(user=Depends(get_current_user), db=Depends(get_scoped_audi
 
 # ── Create visit ──
 @router.post("/")
-async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _require_provider(user)
     if not user.get("is_owner"):
         raise HTTPException(403, "Chỉ chủ tổ chức")
@@ -719,13 +720,13 @@ async def create_visit(req: VisitCreate, user=Depends(get_current_user), db=Depe
         req.notes,
     )
 
-    log.info(f"[audit] Created visit {row['id']} for {req.business_tenant}")
+    log.info(f"[audit] Staged visit {row['id']} for {req.business_tenant}")
     return {"id": str(row["id"]), "message": "Đã tạo chuyến kiểm định"}
 
 
 # ── Get visit detail ──
 @router.get("/{vid}")
-async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=False, mutable=False)
@@ -810,7 +811,7 @@ async def get_visit(vid: str, user=Depends(get_current_user), db=Depends(get_sco
 
 # ── Update visit ──
 @router.put("/{vid}")
-async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
@@ -846,7 +847,7 @@ async def update_visit(vid: str, req: VisitUpdate, user=Depends(get_current_user
 
 # ── Delete visit ──
 @router.delete("/{vid}")
-async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
@@ -864,7 +865,7 @@ async def delete_visit(vid: str, user=Depends(get_current_user), db=Depends(get_
 
 # ── Assign auditor ──
 @router.put("/{vid}/assign")
-async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     if not user.get("is_owner"):
@@ -924,7 +925,7 @@ async def assign_visit_auditor(vid: str, req: dict, user=Depends(get_current_use
 
 # ── Update status ──
 @router.put("/{vid}/status")
-async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=True, mutable=False)
@@ -972,7 +973,7 @@ async def update_visit_status(vid: str, req: dict, user=Depends(get_current_user
 
 
 @router.post("/{vid}/accept-report")
-async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """Only the CB owner may accept a report submitted by its assigned auditor."""
     _validate_uuid(vid)
     _require_provider(user)
@@ -1024,7 +1025,7 @@ async def accept_report(vid: str, user=Depends(get_current_user), db=Depends(get
 
 # ── Populate checklist from template ──
 @router.post("/{vid}/populate-checklist")
-async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=True, mutable=True)
@@ -1069,7 +1070,7 @@ async def populate_checklist(vid: str, user=Depends(get_current_user), db=Depend
 
 
 @router.get("/{vid}/items")
-async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=False, mutable=False)
@@ -1093,7 +1094,7 @@ async def list_items(vid: str, user=Depends(get_current_user), db=Depends(get_sc
 
 
 @router.post("/{vid}/items")
-async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=True, mutable=True)
@@ -1118,7 +1119,7 @@ async def add_item(vid: str, req: dict, user=Depends(get_current_user), db=Depen
 
 
 @router.delete("/{vid}/items/{item_id}")
-async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
@@ -1129,7 +1130,7 @@ async def delete_item(vid: str, item_id: str, user=Depends(get_current_user), db
 
 
 @router.put("/{vid}/items/{item_id}")
-async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _validate_uuid(item_id)
     _require_provider(user)
@@ -1158,7 +1159,7 @@ async def update_item(vid: str, item_id: str, req: dict, user=Depends(get_curren
 
 @router.post("/{vid}/items/{item_id}/photo")
 async def upload_item_photo(
-    vid: str, item_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db)
+    vid: str, item_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")
 ):
     _validate_uuid(vid)
     _validate_uuid(item_id)
@@ -1193,7 +1194,7 @@ async def upload_item_photo(
 
 # ── NCR CRUD ──
 @router.get("/{vid}/ncr")
-async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=False, mutable=False)
@@ -1221,7 +1222,7 @@ async def list_ncr(vid: str, user=Depends(get_current_user), db=Depends(get_scop
 
 
 @router.post("/{vid}/ncr")
-async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=True, mutable=True)
@@ -1241,7 +1242,7 @@ async def create_ncr(vid: str, req: dict, user=Depends(get_current_user), db=Dep
 
 
 @router.put("/{vid}/ncr/{ncr_id}")
-async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _validate_uuid(ncr_id)
     _require_provider(user)
@@ -1268,7 +1269,7 @@ async def update_ncr(vid: str, ncr_id: str, req: dict, user=Depends(get_current_
 
 @router.post("/{vid}/ncr/{ncr_id}/photo")
 async def upload_ncr_photo(
-    vid: str, ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db)
+    vid: str, ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")
 ):
     _validate_uuid(vid)
     _validate_uuid(ncr_id)
@@ -1303,7 +1304,7 @@ async def upload_ncr_photo(
 
 
 @router.post("/{vid}/generate-report")
-async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=True, mutable=True, assigned_only=True)
@@ -1613,7 +1614,7 @@ async def generate_report(vid: str, user=Depends(get_current_user), db=Depends(g
 
 
 @router.get("/{vid}/report-pdf")
-async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_scoped_audit_db)):
+async def download_report(vid: str, request: Request, token: Optional[str] = Query(None), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     user = await _enriched_user_from_header_or_query(request, token)
     if user.get("role") == "provider":
@@ -1660,7 +1661,7 @@ async def download_report(vid: str, request: Request, token: Optional[str] = Que
 
 
 @router.get("/history/{business_tenant}")
-async def visit_history(business_tenant: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def visit_history(business_tenant: str, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(business_tenant)
     _require_provider(user)
     scope, identity = await _audit_filter(user, db)
@@ -1691,7 +1692,7 @@ async def visit_history(business_tenant: str, user=Depends(get_current_user), db
 
 
 @router.post("/{vid}/decision")
-async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def cert_decision(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """Provider decides on cert state after a visit.
 
     Fixes from bug audit 2026-04-26:
@@ -1783,7 +1784,7 @@ async def upload_signature(
     file: UploadFile = File(...),
     type: str = Query("auditor"),
     user=Depends(get_current_user),
-    db=Depends(get_scoped_audit_db),
+    db=Depends(get_scoped_audit_db, scope="function"),
 ):
     _validate_uuid(vid)
     _require_provider(user)
@@ -1807,7 +1808,7 @@ async def upload_signature(
 
 
 @router.put("/{vid}/gps")
-async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     _validate_uuid(vid)
     _require_provider(user)
     await _require_visit_access(vid, user, db, lock=True, mutable=True)
@@ -1826,7 +1827,7 @@ async def save_gps(vid: str, req: dict, user=Depends(get_current_user), db=Depen
 
 
 @router.get("/ncr/pending")
-async def pending_ncr(user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def pending_ncr(user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """Business sees their open NCRs."""
     if user.get("role") != "business":
         raise HTTPException(403)
@@ -1860,7 +1861,7 @@ async def pending_ncr(user=Depends(get_current_user), db=Depends(get_scoped_audi
 
 @router.post("/ncr/{ncr_id}/evidence")
 async def upload_ncr_evidence(
-    ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db)
+    ncr_id: str, file: UploadFile = File(...), user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")
 ):
     """Business uploads corrective action evidence."""
     _validate_uuid(ncr_id)
@@ -1915,7 +1916,7 @@ async def upload_ncr_evidence(
 
 
 @router.put("/ncr/{ncr_id}/verify")
-async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """Auditor verifies NCR evidence and closes it."""
     _validate_uuid(ncr_id)
     _require_provider(user)
@@ -1956,7 +1957,7 @@ async def verify_ncr(ncr_id: str, req: dict, user=Depends(get_current_user), db=
 
 
 @router.post("/{vid}/follow-up")
-async def create_follow_up(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db)):
+async def create_follow_up(vid: str, req: dict, user=Depends(get_current_user), db=Depends(get_scoped_audit_db, scope="function")):
     """Create a follow-up visit linked to parent."""
     _validate_uuid(vid)
     _require_provider(user)

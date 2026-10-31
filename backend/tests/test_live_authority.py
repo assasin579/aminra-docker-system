@@ -79,3 +79,40 @@ def test_raw_token_decode_is_not_used_as_resource_or_admin_authority():
         for node in ast.walk(ast.parse(source.read_text())):
             if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='decode_token':violations.append(str(source.relative_to(root))+':'+str(node.lineno))
     assert violations==[]
+
+@pytest.mark.asyncio
+async def test_overall_authority_budget_bounds_multiple_individually_valid_steps(monkeypatch, caplog):
+    import asyncio
+    monkeypatch.setattr(guard, '_VERIFY_BUDGET_SECONDS', 0.04)
+    async def delayed_introspection(request):
+        await asyncio.sleep(0.025)
+        return httpx.Response(200, json={'active': True, 'sub': 'subject-a'})
+    async def delayed_service(request):
+        await asyncio.sleep(0.025)
+        return httpx.Response(200, json={'access_token': 'synthetic-service-token'})
+    with respx.mock as mock:
+        introspect, _, _ = routes(mock)
+        introspect.mock(side_effect=delayed_introspection)
+        mock.post('https://identity.example.invalid/realms/aminra/protocol/openid-connect/token').mock(side_effect=delayed_service)
+        with pytest.raises(HTTPException) as exc:
+            await guard.current_realm_roles('synthetic-a', claims())
+    assert exc.value.status_code == 503
+    assert exc.value.headers['X-Aminra-Auth-Error'] == 'authority_unavailable'
+    assert len(exc.value.headers['X-Aminra-Auth-Trace']) == 32
+    assert 'reason=TimeoutError' in caplog.text
+    assert not guard._cache
+
+@pytest.mark.asyncio
+async def test_failure_attribution_records_step_but_never_credentials_or_exception_text(caplog):
+    with respx.mock as mock:
+        _, _, effective = routes(mock)
+        effective.mock(side_effect=httpx.ConnectError('DO-NOT-LOG synthetic-service-secret synthetic-a subject-a'))
+        with pytest.raises(HTTPException) as exc:
+            await guard.current_realm_roles('synthetic-a', claims())
+    assert exc.value.status_code == 503
+    assert 'stage=effective_roles' in caplog.text
+    assert 'reason=ConnectError' in caplog.text
+    for private in ['DO-NOT-LOG', 'synthetic-service-secret', 'synthetic-a', 'subject-a', 'identity.example.invalid']:
+        assert private not in caplog.text
+    assert exc.value.headers['X-Aminra-Auth-Trace'] in caplog.text
+    assert not guard._cache

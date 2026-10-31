@@ -210,7 +210,8 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       const current = ++generation.current;
       pendingRead.current?.abort();
       const controller = new AbortController(); pendingRead.current = controller;
-      const deadline = window.setTimeout(() => controller.abort(), 5000);
+      // Allow the backend's 7s authority budget plus transport; stay below the 10s polling interval.
+      const deadline = window.setTimeout(() => controller.abort(), 9000);
       activeSession.current = { token: storedToken, user: sameIdentity ? previous : null };
       if (!sameIdentity) { setToken(null); setUser(null); setLoading(true); }
       try {

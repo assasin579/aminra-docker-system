@@ -211,3 +211,73 @@ test('ADMIN-VISIBLE-REVOCATION @AUTH-05 current visible admin loses authority th
   const denied=await request.get(config.base_url+'/api/admin/templates/halal_policy/files',{headers:{Authorization:'Bearer '+credential}});expect(denied.status()).toBe(403);
  } finally {control('keycloak_authority',{actor:'admin',action:'restore'});}
 });
+
+for (const mode of ['within-budget', 'over-budget'] as const) {
+ test(`AUTH-VERIFY-BUDGET-${mode} @AUTH-04 @AUTH-05 slow valid verification survives six seconds; unavailable authority still clears the session`,async({page,request}) => {
+  const credential=await token(request,'bizA'),profile=await api(request,credential,'/auth/me');
+  await page.goto('/offline.html');await publish(page,credential,profile);
+  const release=deferred();let captured=0;
+  await page.route('**/api/auth/me',async route=>{
+   if(route.request().headers().authorization!=='Bearer '+credential)return route.continue();
+   const response=await route.fetch();expect(response.status()).toBe(200);captured++;
+   await release.promise;await deliver(route,response);
+  });
+  try {
+   await page.goto('/documents');await expect.poll(()=>captured).toBeGreaterThan(0);
+   if(mode==='within-budget') {
+    // Deliberately exceed the previous five-second client deadline. This is
+    // a controlled transport delay after real server identity verification.
+    await page.waitForTimeout(6000);
+    expect(await page.evaluate(()=>localStorage.getItem('aminra_user_token'))).toBe(credential);
+    release.resolve();
+    await expect(page.getByText(config.actors.bizA.email,{exact:true})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Kho tài liệu',exact:true})).toBeVisible();
+   } else {
+    await expect.poll(()=>page.evaluate(()=>localStorage.getItem('aminra_user_token')),{timeout:12000}).toBeNull();
+    await expect(page.getByText(config.actors.bizA.email,{exact:true})).toHaveCount(0);
+    release.resolve();
+   }
+  } finally {release.resolve();}
+ });
+}
+
+for (const kind of ['business','provider'] as const) {
+ test(`LOGIN-HYDRATION-${kind} @AUTH-02 credential controls stay disabled until their handlers are ready`,async({page})=>{
+  const scripts=/\/_next\/static\/.*\.js(?:\?.*)?$/;const release=deferred();
+  await page.route(scripts,async route=>{await release.promise;await route.continue();});
+  try {
+   await page.goto('/'+kind+'/login',{waitUntil:'commit'});
+   const email=page.locator('input[type=email]'),password=page.locator('input[type=password]');
+   await expect(email).toBeDisabled();await expect(password).toBeDisabled();
+   await expect(page.locator('input[type=checkbox]')).toBeDisabled();
+   release.resolve();await expect(email).toBeEnabled();
+   const actor=config.actors[kind==='business'?'bizA':'cbX'];
+   await email.fill(actor.email);await password.fill(actor.password);
+   await expect(email).toHaveValue(actor.email);
+   const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đăng nhập',exact:true}).click()]);
+   expect(response.status()).toBe(200);await page.waitForURL('**/dashboard/'+kind);
+  } finally {release.resolve();await page.unroute(scripts);}
+ });
+}
+
+test('LOGIN-RESTORE-READINESS @AUTH-02 @AUTH-04 changing account waits until the previous identity scope has settled',async({page,request})=>{
+ const old=await token(request,'bizA'),profile=await api(request,old,'/auth/me');
+ await page.goto('/offline.html');await publish(page,old,profile);
+ const captured=deferred(),release=deferred();
+ await page.route('**/api/auth/me',async route=>{
+  if(route.request().headers().authorization!=='Bearer '+old)return route.continue();
+  const response=await route.fetch();expect(response.status()).toBe(200);captured.resolve();await release.promise;await deliver(route,response);
+ });
+ try {
+  await page.goto('/provider/login');await captured.promise;
+  const email=page.locator('input[type=email]'),password=page.locator('input[type=password]');
+  await expect(page.getByText('Đang chuẩn bị đăng nhập…',{exact:true})).toBeVisible();
+  await expect(email).toBeDisabled();await expect(password).toBeDisabled();
+  release.resolve();await expect(email).toBeEnabled();
+  await email.fill(config.actors.cbX.email);await password.fill(config.actors.cbX.password);
+  await expect(email).toHaveValue(config.actors.cbX.email);
+  const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST'),page.getByRole('button',{name:'Đăng nhập',exact:true}).click()]);
+  expect(response.status()).toBe(200);await page.waitForURL('**/dashboard/provider');
+  await expect(page.getByRole('main').getByText(config.actors.cbX.email,{exact:true})).toBeVisible();
+ } finally {release.resolve();}
+});

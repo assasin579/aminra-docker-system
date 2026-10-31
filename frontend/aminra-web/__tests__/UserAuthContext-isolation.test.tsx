@@ -207,3 +207,38 @@ it("a returning visible tab revalidates authority and discards cached owner reco
     await screen.findByText("member-records");expect(screen.queryByText("previous-owner-records")).toBeNull();
   } finally {visible.mockRestore();}
 });
+
+it("a valid authority response after six seconds is not discarded before the server verification budget", async () => {
+  vi.useFakeTimers();
+  try {
+    store("a");
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
+      const timer = setTimeout(() => resolve(Response.json(profile("a"))), 6000);
+      init?.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(new DOMException("Synthetic cancelled verification", "AbortError"));
+      }, { once: true });
+    }));
+    const { result, unmount } = renderHook(() => useUserAuth(), { wrapper });
+    await act(async () => { await vi.advanceTimersByTimeAsync(6001); });
+    expect(result.current.user?.id).toBe("a");
+    expect(localStorage.getItem("aminra_user_token")).toBe(jwt("a"));
+    unmount();
+  } finally { vi.useRealTimers(); }
+});
+
+it("authority verification still fails closed at nine seconds before the periodic refresh can restart it", async () => {
+  vi.useFakeTimers();
+  try {
+    store("a");
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("Synthetic timeout", "AbortError")), { once: true });
+    }));
+    const { result, unmount } = renderHook(() => useUserAuth(), { wrapper });
+    await act(async () => { await vi.advanceTimersByTimeAsync(9001); });
+    expect(result.current.user).toBeNull();
+    expect(result.current.loading).toBe(false);
+    expect(localStorage.getItem("aminra_user_token")).toBeNull();
+    unmount();
+  } finally { vi.useRealTimers(); }
+});

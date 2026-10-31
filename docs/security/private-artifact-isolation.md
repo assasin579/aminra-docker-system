@@ -81,8 +81,24 @@ not falsely declared successful. A new offline workflow must obtain fresh,
 actor-and-tenant scoped authorization and must not silently reuse the old queue.
 
 
-Verified profiles are refreshed when the tab becomes visible, on `pageshow` and
-at10-second intervals while visible. Verification has a5-second deadline and
-never authorizes an old identity after a newer session wins. Current DB lookup
-uses the Keycloak subject first and rejects conflicting subject/email mappings;
-a changed email cannot bypass a suspension or restore stale owner claims.
+Verified profiles refresh when the tab becomes visible, on `pageshow`, and every
+10 seconds while visible. Backend authority verification has a shared 7-second
+budget; each identity-provider request retains its 3-second timeout. The browser
+allows 9 seconds, below the polling interval, so a valid multi-step check taking
+more than 5 seconds can complete without an unbounded authorization window.
+Verification never authorizes an old identity after a newer session wins.
+
+Failures log only a random trace, fixed step name, exception class, upstream
+status and elapsed time. Login responses forward validated diagnostic headers,
+never upstream error text. Current DB lookup uses the Keycloak subject first and
+rejects conflicting subject/email mappings; a changed email cannot bypass a
+suspension or restore stale owner claims.
+
+Audit transactions use function-scoped dependencies so commit completes before
+success headers are sent. This preserves parent/assignment locks through the
+handler while preventing a successful receipt for a failed commit. ASGI-send
+ordering tests cover success and commit failure; buffered clients alone cannot
+establish that ordering. Login controls remain disabled in server-rendered HTML
+until hydration attaches their handlers and restoration of a previous identity
+finishes. The authorization-scope boundary may remount descendants when that
+identity arrives; credential entry must wait until this initialization settles.

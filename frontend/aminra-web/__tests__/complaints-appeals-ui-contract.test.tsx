@@ -11,7 +11,8 @@ describe("Complaints and appeals UI contract", () => {
     expect(source).toContain('data-api-path="/api/complaints"');
     expect(source).toContain('data-api-path="/api/complaints/{id}/assign"');
     expect(source).toContain('data-api-path="/api/complaints/{id}/transition"');
-    expect(source).toContain('data-api-path="/api/complaints/{id}/events"');
+    // Event creation is server-side; do not advertise a nonexistent history GET.
+    expect(source).not.toContain('data-api-path="/api/complaints/{id}/events"');
     expect(source).toContain('data-marker="appeal-original-decision-requirement"');
     expect(source).toContain('name="original_decision_id"');
     expect(source).toContain('data-testid="appeal-original-decision-required"');
