@@ -246,7 +246,7 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
         elif _document_is_rejected(row):
             slot["state"] = "revision_required"
         else:
-            slot["state"] = "pending_review"
+            slot["state"] = "pending_review" if submission else "ready_to_submit"
 
     missing_required_documents = [doc_type for doc_type in required_doc_types if doc_type not in latest_by_type]
     unreviewed_documents: list[dict[str, Any]] = []
@@ -372,6 +372,10 @@ async def compute_dossier_readiness(db, *, dossier_id: str, tenant_id: str) -> d
     elif rejected_documents:
         state = "documents_rejected"
         next_action = "replace_rejected_documents"
+        next_actor_role = "business"
+    elif unreviewed_documents and not submission:
+        state = "documents_ready_to_submit"
+        next_action = "submit_dossier_to_cb"
         next_actor_role = "business"
     elif unreviewed_documents:
         state = "documents_in_review"

@@ -7,7 +7,7 @@ const authState = vi.hoisted(() => ({
   token: "provider-token",
   isAuthenticated: true,
   loading: false,
-  user: { role: "provider" } as { role: string; is_owner?: boolean },
+  user: { role: "provider" } as { role: string; is_owner?: boolean; permissions?: {can_upload?:boolean} },
 }));
 const routerReplace = vi.hoisted(() => vi.fn());
 
@@ -265,7 +265,8 @@ describe("Dossier detail certification readiness command panel", () => {
     expect(screen.getByText(/1 NCR mức nhẹ đang mở; hiện không chặn quyết định/)).toBeInTheDocument();
     expect(screen.queryByText("NCR/CAPA đang chặn quyết định")).not.toBeInTheDocument();
   });
-  it("accepts real API nullable optional fields and keeps the bound upload form available", async () => {
+  it("accepts real API nullable optional fields and keeps the owner attachment controls available", async () => {
+    authState.user = { role: "business", is_owner: true };
     const actualShape = { ...readinessFixture, state: "requirements_pending", readiness_percent: 25,
       unreviewed_documents: [], rejected_documents: [], open_ncrs: [], blocking_ncrs: [],
       blocking_reasons: [{ id: null, code: "missing_required_document", title: null, label: null,
@@ -274,8 +275,52 @@ describe("Dossier detail certification readiness command panel", () => {
     vi.mocked(fetch).mockImplementation((url) => jsonResponse(200, String(url).endsWith("/readiness")
       ? actualShape : { ...dossierFixture, requirements_binding_status: "bound" }));
     renderPage();
-    expect(await screen.findByRole("form", { name: "Bổ sung tài liệu hồ sơ" })).toBeInTheDocument();
+    expect(await screen.findAllByRole("button", { name: "Đính kèm tài liệu" })).toHaveLength(3);
     expect(screen.getByLabelText("Sẵn sàng 25 phần trăm")).toBeInTheDocument();
     expect(screen.queryByText("Không tải được trạng thái sẵn sàng")).not.toBeInTheDocument();
   });
+});
+
+
+describe("Dossier editing capability and lifecycle UX", () => {
+  it.each([
+    ["business",true,"in_progress",true],
+    ["business",false,"in_progress",false],
+    ["provider",true,"in_progress",false],
+    ["business",true,"cancelled",false],
+    ["business",true,"cert_issued",false],
+  ] as const)("%s owner=%s status=%s has editable documents=%s", async (role,owner,status,editable) => {
+    authState.user={role,is_owner:owner};
+    global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")
+      ?jsonResponse(200,{...readinessFixture,state:"documents_ready_to_submit",next_action:"submit_dossier_to_cb",next_actor_role:"business",requirement_slots:[]})
+      :String(url).endsWith("/attachable-documents")?jsonResponse(200,{items:[]})
+      :jsonResponse(200,{...dossierFixture,status,requirements_binding_status:"bound"}));
+    renderPage();await screen.findByText("Hồ sơ nhà máy A");
+    expect(screen.queryAllByRole("button",{name:"Đính kèm tài liệu"})).toHaveLength(editable?3:0);
+    expect(screen.queryByTestId("dossier-create-doc-cta")!==null).toBe(editable);
+    expect(screen.queryByRole("form",{name:"Bổ sung tài liệu hồ sơ"})).not.toBeInTheDocument();
+    if(editable){expect(screen.getByTestId("dossier-readiness-state")).toHaveTextContent("chưa gửi đơn vị chứng nhận");expect(screen.getByText("Gửi hồ sơ cho đơn vị chứng nhận")).toBeInTheDocument();}
+    if(["cancelled","cert_issued"].includes(status)){expect(screen.getByText("Hồ sơ đã đóng; bạn có thể xem lại lịch sử")).toBeInTheDocument();}
+  });
+
+  it("a submitted dossier links to tracking rather than creating another submission", async () => {
+    authState.user={role:"business",is_owner:true};
+    global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")?jsonResponse(200,{...readinessFixture,requirement_slots:[{submission_id:"existing-submission"}]})
+      :String(url).endsWith("/attachable-documents")?jsonResponse(200,{items:[]})
+      :jsonResponse(200,{...dossierFixture,requirements_binding_status:"bound"}));
+    renderPage();await screen.findByText("Hồ sơ nhà máy A");
+    expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
+    expect(screen.getByRole("link",{name:"Xem hồ sơ đã gửi"})).toHaveAttribute("href","/submissions");
+  });
+});
+
+
+it("an explicitly delegated uploader can attach but cannot perform owner submission", async () => {
+  authState.user={role:"business",is_owner:false,permissions:{can_upload:true}};
+  global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")?jsonResponse(200,readinessFixture)
+    :String(url).endsWith("/attachable-documents")?jsonResponse(200,{items:[]})
+    :jsonResponse(200,{...dossierFixture,requirements_binding_status:"bound"}));
+  renderPage();await screen.findByText("Hồ sơ nhà máy A");
+  expect(screen.getAllByRole("button",{name:"Đính kèm tài liệu"})).toHaveLength(3);
+  expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
 });

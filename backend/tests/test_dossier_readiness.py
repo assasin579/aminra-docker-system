@@ -587,3 +587,20 @@ async def test_legacy_approved_status_does_not_override_current_draft_approval_s
     assert result["state"] == "documents_in_review"
     assert result["unreviewed_documents"][0]["doc_type"] == "halal_policy"
     assert result["readiness_percent"] == 25
+
+
+@pytest.mark.parametrize("submitted", [False, True])
+async def test_prepared_packet_handoff_changes_only_after_submission(submitted):
+    from services.dossier_readiness import compute_dossier_readiness
+    dossier_id, tenant_id, standard_id = uuid4(), uuid4(), uuid4()
+    docs = [FakeRecord(id=uuid4(), doc_type=kind, status="compliant", approval_status=None, compliance_score=99, evaluation_result={}, version_number=1) for kind in ["halal_policy", "has_manual"]]
+    db = _base_db(dossier_id=dossier_id,tenant_id=tenant_id,standard_id=standard_id,docs=docs)
+    if not submitted:
+        db.fetchrow_responses[1] = ("FROM submissions", None)
+    result = await compute_dossier_readiness(db,dossier_id=str(dossier_id),tenant_id=str(tenant_id))
+    assert result["readiness_percent"] == 0
+    assert result["certificate_issue_blocked"] is True
+    assert result["state"] == ("documents_in_review" if submitted else "documents_ready_to_submit")
+    assert result["next_action"] == ("review_uploaded_documents" if submitted else "submit_dossier_to_cb")
+    assert result["next_actor_role"] == ("reviewer" if submitted else "business")
+    assert all(slot["state"] == ("pending_review" if submitted else "ready_to_submit") for slot in result["requirement_slots"])

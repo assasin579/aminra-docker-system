@@ -31,6 +31,7 @@ const docs = [
 ];
 
 const baseProps = {
+  canResubmit: true,
   submissionId: "sub-123",
   token: "jwt-xyz",
   documents: docs,
@@ -429,4 +430,12 @@ describe("RevisionPanel — history rendering", () => {
     render(<RevisionPanel {...baseProps} role="business" status="reviewing" />);
     expect(await screen.findByText(/1 vòng/)).toBeInTheDocument();
   });
+});
+
+
+test("business member reads correction history without an owner resubmit action", async () => {
+  vi.mocked(fetch).mockResolvedValue(respond(200, {history:[{id:"round1",round:1,requester_id:"cb",requester_name:"CB",feedback:"Cần sửa ngày",document_feedback:[],requested_at:"2026-10-30T00:00:00Z",resolved_at:null,business_response:null}]}));
+  render(<RevisionPanel {...baseProps} role="business" status="revision_required" canResubmit={false} />);
+  expect(await screen.findByText("Cần sửa ngày")).toBeInTheDocument();
+  expect(screen.queryByRole("button",{name:"Đã sửa — gửi lại cho CB"})).not.toBeInTheDocument();
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DOC_TYPE_LABEL_VI } from "@/lib/dossierWorkflow";
 import { useEffect, useRef, useState } from "react";
 import welcome from "./DossierWelcome.module.css";
 
@@ -47,6 +48,7 @@ type Dashboard = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
+  submit_dossier_to_cb: "Gửi hồ sơ cho đơn vị chứng nhận",
   upload_required_documents: "Bổ sung tài liệu",
   replace_rejected_documents: "Sửa tài liệu bị trả lại",
   submit_capa_evidence: "Bổ sung bằng chứng khắc phục",
@@ -55,6 +57,7 @@ const ACTION_LABELS: Record<string, string> = {
 const BOUND_READINESS_STATES = new Set([
   "requirements_pending",
   "documents_rejected",
+  "documents_ready_to_submit",
   "documents_in_review",
   "ncr_open",
   "capa_in_review",
@@ -251,7 +254,7 @@ export default function BusinessReadinessProfiles({ token, contextKey }: { token
                   <ul className="space-y-1 text-sm" aria-label={`${dossier.title} requirements`}>
                     {slots.map((slot, index) => (
                       <li key={`${slot.doc_type}-${index}`}>
-                        {slot.doc_type} ({slot.required ? "bắt buộc" : "tùy chọn"}): <strong>{({ missing_required: "Còn thiếu", pending_review: "Chờ đánh giá", approved: "Đã được duyệt", revision_required: "Cần sửa", optional_not_submitted: "Chưa nộp" } as Record<string, string>)[slot.state] ?? "Chưa xác định"}</strong>
+                        {DOC_TYPE_LABEL_VI[slot.doc_type] ?? slot.doc_type} ({slot.required ? "bắt buộc" : "tùy chọn"}): <strong>{({ ready_to_submit: "Đã chuẩn bị — chưa gửi", missing_required: "Còn thiếu", pending_review: "Chờ đánh giá", approved: "Đã được duyệt", revision_required: "Cần sửa", optional_not_submitted: "Chưa nộp" } as Record<string, string>)[slot.state] ?? "Chưa xác định"}</strong>
 
                         {slot.submitted_round != null && <> · Vòng đánh giá {slot.submitted_round}</>}
                         {slot.evidence_version != null && <> · Tài liệu phiên bản {slot.evidence_version}</>}

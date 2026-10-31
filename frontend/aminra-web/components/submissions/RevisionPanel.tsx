@@ -39,6 +39,7 @@ interface Props {
   role: "business" | "provider";
   documents: DocumentInfo[];
   token: string;
+  canResubmit?: boolean;
   onChanged?: () => void; // notify parent to refetch submission
 }
 
@@ -49,6 +50,7 @@ export default function RevisionPanel({
   documents,
   token,
   onChanged,
+  canResubmit = false,
 }: Props) {
   const [history, setHistory] = useState<RevisionRound[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function RevisionPanel({
   const providerCanRequest =
     role === "provider" && (status === "reviewing" || status === "returned");
   const businessCanResubmit =
-    role === "business" && status === "revision_required";
+    role === "business" && canResubmit && status === "revision_required";
   const hasAction = providerCanRequest || businessCanResubmit;
   const hasHistory = history.length > 0;
 
