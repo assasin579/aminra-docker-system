@@ -51,6 +51,13 @@ test('LIBRARY-01 @DOC-05 @DOS-06 one representative per type preserves history a
  const [chosen]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/documents/'+ids[0]+'/promote')&&r.request().method()==='POST'),history.locator('[data-history-document-id="'+ids[0]+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true}).click()]);expect(chosen.status()).toBe(200);
  await expect(page.getByRole('heading',{name:names[0],exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:names[1],exact:true})).toHaveCount(0);for(const name of names)await expect(history.getByText(name,{exact:true})).toBeVisible();
  const selected=await api(request,owner,'/api/documents?view=latest_by_type&doc_type=halal_policy');expect(selected.total).toBe(1);expect(selected.documents[0].id).toBe(ids[0]);
+ for(const target of [1,0,1,0]){
+  page.once('dialog',dialog=>dialog.accept());
+  const [switched]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/documents/'+ids[target]+'/promote')&&r.request().method()==='POST'),history.locator('[data-history-document-id="'+ids[target]+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true}).click()]);expect(switched.status()).toBe(200);
+  await expect(page.getByRole('heading',{name:names[target],exact:true})).toBeVisible();
+  await expect(history.getByRole('button',{name:'Chọn bản hiện hành',exact:true})).toHaveCount(1);
+  await expect(history.locator('[data-history-document-id="'+ids[1-target]+'"]').getByRole('button',{name:'Chọn bản hiện hành',exact:true})).toBeVisible();
+ }
  const all=await api(request,owner,'/api/documents?view=all&doc_type=halal_policy');expect(all.total).toBe(2);expect(all.documents.map((d:{id:string})=>d.id).sort()).toEqual([...ids].sort());
  for(let i=0;i<ids.length;i++){const response=await request.get(config.base_url+'/api/api/documents/'+ids[i]+'/file',{headers:{Authorization:'Bearer '+owner}});expect(response.status()).toBe(200);expect(await response.body()).toEqual(pdf(names[i]));}
  await info.attach('library-selection',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
