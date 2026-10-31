@@ -312,9 +312,28 @@ describe("handleSubmit", () => {
         (c: unknown[]) => typeof c[0] === "string" && c[0].includes("/submissions/submit"),
       );
       expect(submitCall).toBeDefined();
+      expect(fetchMock.mock.calls.some(c => c[0] === "/api/dossiers/dossier-a02")).toBe(true);
       expect(JSON.parse((submitCall![1] as { body: string }).body).dossier_id).toBe("dossier-a02");
     });
     window.history.replaceState({}, "", "/");
+  });
+
+  test("transport failure retry keeps the same nonempty idempotency key", async () => {
+    mockBizAuth();
+    const fetchMock = await openModalWithData();
+    fetchMock.mockRejectedValueOnce(new TypeError("connection lost after commit"));
+    fireEvent.click(screen.getByText("HALCERT Vietnam"));
+    fireEvent.click(screen.getByRole("button", { name: /Gửi 1 tài liệu/i }));
+    await waitFor(() => expect(vi.mocked(alert)).toHaveBeenCalled());
+    fetchMock.mockResolvedValueOnce(respond(200, { submission_id: "same-receipt" })).mockResolvedValueOnce(emptySubs());
+    fireEvent.click(screen.getByRole("button", { name: /Gửi 1 tài liệu/i }));
+    await waitFor(() => expect(screen.queryByTestId("modal")).not.toBeInTheDocument());
+    const calls = fetchMock.mock.calls.filter(c => String(c[0]).endsWith("/submissions/submit"));
+    expect(calls).toHaveLength(2);
+    const key = calls[0][1].headers["Idempotency-Key"];
+    expect(key).toMatch(/^[0-9a-f-]{36}$/);
+    expect(calls[1][1].headers["Idempotency-Key"]).toBe(key);
+    expect(calls[1][1].body).toBe(calls[0][1].body);
   });
 
   test("modal đóng và fetchSubs được gọi sau khi submit thành công", async () => {
