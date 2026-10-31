@@ -29,8 +29,14 @@ type TokenResponse = {
   error_description?: string;
 };
 
-function jsonError(message: string, status: number): NextResponse {
-  return NextResponse.json({ detail: message }, { status });
+function jsonError(message: string, status: number, upstream?: Response): NextResponse {
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  const trace = upstream?.headers.get("X-Aminra-Auth-Trace");
+  if (trace && /^[a-f0-9]{32}$/.test(trace)) headers["X-Aminra-Auth-Trace"] = trace;
+  if (upstream?.headers.get("X-Aminra-Auth-Error") === "authority_unavailable") {
+    headers["X-Aminra-Auth-Error"] = "authority_unavailable";
+  }
+  return NextResponse.json({ detail: message }, { status, headers });
 }
 
 function normalizeRole(role: unknown): "business" | "provider" | undefined {
@@ -111,7 +117,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const profile = await profileRes.json().catch(() => null);
   if (!profileRes.ok || !profile) {
-    return jsonError("Không tải được hồ sơ ứng dụng sau khi xác thực.", profileRes.status || 502);
+    return jsonError("Không tải được hồ sơ ứng dụng sau khi xác thực.", profileRes.status || 502, profileRes);
   }
 
   if (expectedRole && profile.role !== expectedRole) {
@@ -123,5 +129,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  return NextResponse.json({ access_token: tokenBody.access_token, user: profile });
+  return NextResponse.json({ access_token: tokenBody.access_token, user: profile }, { headers: { "Cache-Control": "no-store" } });
 }

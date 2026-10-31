@@ -211,3 +211,32 @@ test('ADMIN-VISIBLE-REVOCATION @AUTH-05 current visible admin loses authority th
   const denied=await request.get(config.base_url+'/api/admin/templates/halal_policy/files',{headers:{Authorization:'Bearer '+credential}});expect(denied.status()).toBe(403);
  } finally {control('keycloak_authority',{actor:'admin',action:'restore'});}
 });
+
+for (const mode of ['within-budget', 'over-budget'] as const) {
+ test(`AUTH-VERIFY-BUDGET-${mode} @AUTH-04 @AUTH-05 slow valid verification survives six seconds; unavailable authority still clears the session`,async({page,request}) => {
+  const credential=await token(request,'bizA'),profile=await api(request,credential,'/auth/me');
+  await page.goto('/offline.html');await publish(page,credential,profile);
+  const release=deferred();let captured=0;
+  await page.route('**/api/auth/me',async route=>{
+   if(route.request().headers().authorization!=='Bearer '+credential)return route.continue();
+   const response=await route.fetch();expect(response.status()).toBe(200);captured++;
+   await release.promise;await deliver(route,response);
+  });
+  try {
+   await page.goto('/documents');await expect.poll(()=>captured).toBeGreaterThan(0);
+   if(mode==='within-budget') {
+    // Deliberately exceed the previous five-second client deadline. This is
+    // a controlled transport delay after real server identity verification.
+    await page.waitForTimeout(6000);
+    expect(await page.evaluate(()=>localStorage.getItem('aminra_user_token'))).toBe(credential);
+    release.resolve();
+    await expect(page.getByText(config.actors.bizA.email,{exact:true})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Kho tài liệu',exact:true})).toBeVisible();
+   } else {
+    await expect.poll(()=>page.evaluate(()=>localStorage.getItem('aminra_user_token')),{timeout:12000}).toBeNull();
+    await expect(page.getByText(config.actors.bizA.email,{exact:true})).toHaveCount(0);
+    release.resolve();
+   }
+  } finally {release.resolve();}
+ });
+}
