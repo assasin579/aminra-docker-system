@@ -1,0 +1,2528 @@
+{
+  "baseline_sha256": "149312f446317af42efef405705bc7e13e6ab0cc1f455ccb9f6ea88f1a7db24f",
+  "types": {
+    "Control": 160,
+    "Scope decision": 8,
+    "E2E": 14
+  },
+  "controls": [
+    {
+      "id": "AUTH-01",
+      "type": "Control",
+      "group": "Tài khoản, đăng nhập và phiên làm việc",
+      "name": "Đăng ký/kích hoạt",
+      "expected": "Tạo đúng loại tổ chức; xử lý email trùng, liên kết hết hạn và dùng lại.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUTH-02",
+      "type": "Control",
+      "group": "Tài khoản, đăng nhập và phiên làm việc",
+      "name": "Đăng nhập/khôi phục",
+      "expected": "Đúng vai trò; mật khẩu sai, tài khoản khóa và reset không tạo quyền ngoài ý muốn.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "journeys.spec.ts",
+          "case": "AUTH-01 @AUTH-02 @AUTH-06 business, member and CB login forms preserve role and identity",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "AUTH-02 @AUTH-02 wrong password must not create authenticated session",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUTH-03",
+      "type": "Control",
+      "group": "Tài khoản, đăng nhập và phiên làm việc",
+      "name": "Phiên hết hạn",
+      "expected": "Hướng dẫn đăng nhập lại; xử lý dữ liệu chưa lưu; không báo lưu thành công khi bị từ chối.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUTH-04",
+      "type": "Control",
+      "group": "Tài khoản, đăng nhập và phiên làm việc",
+      "name": "Đăng xuất/chuyển tài khoản",
+      "expected": "Back, tab cũ và cache không lộ dữ liệu người trước; thử DN → CB cùng trình duyệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "SESSION-01 @AUTH-04 @E2E-12 logout and account switch do not render previous business files",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-DASHBOARD-RACE @AUTH-04 @DOS-07 delayed previous-tenant dashboard cannot populate the new account",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUTH-05",
+      "type": "Control",
+      "group": "Tài khoản, đăng nhập và phiên làm việc",
+      "name": "Thu hồi quyền",
+      "expected": "Khóa/hạ quyền có hiệu lực trong thời gian đã chốt, kể cả phiên đang mở.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUTH-06",
+      "type": "Control",
+      "group": "Tài khoản, đăng nhập và phiên làm việc",
+      "name": "Danh tính nhất quán",
+      "expected": "Tên, tổ chức, vai trò và người thực hiện trong lịch sử khớp tài khoản.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "journeys.spec.ts",
+          "case": "AUTH-01 @AUTH-02 @AUTH-06 business, member and CB login forms preserve role and identity",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ORG-01",
+      "type": "Control",
+      "group": "Doanh nghiệp, cơ sở và nhân sự",
+      "name": "Hồ sơ pháp nhân",
+      "expected": "Tạo/sửa định danh, địa chỉ, liên hệ; kiểm tra bắt buộc và trùng theo quy tắc.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ORG-02",
+      "type": "Control",
+      "group": "Doanh nghiệp, cơ sở và nhân sự",
+      "name": "Phạm vi cơ sở",
+      "expected": "Phân biệt pháp nhân, nhà máy, địa điểm, dây chuyền; tài liệu/chứng nhận đúng phạm vi.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ORG-03",
+      "type": "Control",
+      "group": "Doanh nghiệp, cơ sở và nhân sự",
+      "name": "Mời thành viên",
+      "expected": "Đúng người/tổ chức, có hạn; sửa URL/token không gia nhập DN khác.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ORG-04",
+      "type": "Control",
+      "group": "Doanh nghiệp, cơ sở và nhân sự",
+      "name": "Phân quyền nội bộ",
+      "expected": "Kiểm tra xem, sửa, nộp, tải, xóa theo vai trò.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "MEMBER-01 @ORG-04 @SUB-01 member sees dossier without owner-only actions",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J2-MEMBER-HISTORY @SUB-05 @SUB-06 @ORG-04 member reads exact CB feedback without replace or resubmit commands",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-DELEGATED-UPLOAD @ORG-04 @DOS-02 delegated upload is effective and revocation removes the capability",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "NAV-01 @ORG-04 @DOS-01 @CB-05 owner dossier navigation and provider redirect",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "[API] PERM-01 @ORG-04 @DOC-05 @E2E-12 read-only member cannot promote or invoke AI persistence",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ORG-05",
+      "type": "Control",
+      "group": "Doanh nghiệp, cơ sở và nhân sự",
+      "name": "Thay đổi thông tin",
+      "expected": "Đổi tên/địa chỉ không âm thầm sửa hồ sơ đã chốt hoặc chứng nhận lịch sử.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ORG-06",
+      "type": "Control",
+      "group": "Doanh nghiệp, cơ sở và nhân sự",
+      "name": "Ngừng hoạt động nhân sự",
+      "expected": "Không mất lịch sử; không xóa đăng nhập rồi thất bại nghiệp vụ giữa chừng.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CB-01",
+      "type": "Control",
+      "group": "Tổ chức chứng nhận và đội ngũ đánh giá",
+      "name": "Hồ sơ CB",
+      "expected": "Quản lý phạm vi/chương trình/trạng thái; không nhận việc ngoài điều kiện cho phép.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CB-02",
+      "type": "Control",
+      "group": "Tổ chức chứng nhận và đội ngũ đánh giá",
+      "name": "Quản lý auditor",
+      "expected": "Mời, sửa, khóa, ngừng sử dụng; không vượt tổ chức.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CB-03",
+      "type": "Control",
+      "group": "Tổ chức chứng nhận và đội ngũ đánh giá",
+      "name": "Phân công",
+      "expected": "Đúng thẩm quyền; auditor thấy hồ sơ được giao theo chính sách.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] J2-AUTHORITY @SUB-05 @CB-03 @E2E-12 correction authority and history follow exact auditor assignment",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CB-04",
+      "type": "Control",
+      "group": "Tổ chức chứng nhận và đội ngũ đánh giá",
+      "name": "Tái phân công",
+      "expected": "Giữ chứng cứ/lịch sử; cập nhật quyền người cũ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] J2-FILE-REASSIGN @CB-04 @DOC-07 historic bytes require current assignment and active auditor",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CB-05",
+      "type": "Control",
+      "group": "Tổ chức chứng nhận và đội ngũ đánh giá",
+      "name": "Cách ly CB",
+      "expected": "CB Y không thấy hồ sơ chỉ gửi CB X qua danh sách, URL, tải và export.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "[API] SCOPE-01 @CB-05 @DOC-05 @DOC-07 @E2E-12 CB sees exact packet, not another dossier or another tenant",
+          "surface": "api"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-PACKET-PREVIEW @CB-05 @DOC-07 selected CB sees packet and file while foreign CB and business are denied",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "NAV-01 @ORG-04 @DOS-01 @CB-05 owner dossier navigation and provider redirect",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CB-06",
+      "type": "Control",
+      "group": "Tổ chức chứng nhận và đội ngũ đánh giá",
+      "name": "Phân tách trách nhiệm",
+      "expected": "Quyền đánh giá, chấp nhận báo cáo, quyết định đúng ma trận; chặn tự duyệt khi bị cấm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "STD-01",
+      "type": "Control",
+      "group": "Tiêu chuẩn, chương trình và cấu hình yêu cầu",
+      "name": "Cấu hình yêu cầu",
+      "expected": "Đúng tài liệu bắt buộc/tùy chọn, điều kiện ngành/sản phẩm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "STD-02",
+      "type": "Control",
+      "group": "Tiêu chuẩn, chương trình và cấu hình yêu cầu",
+      "name": "Công bố",
+      "expected": "Chỉ Platform Admin công bố theo quyết định hiện tại; chặn cả UI và request trực tiếp.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] X-PUBLICATION-GUARDS @STD-02 @STD-03 @SUB-03 only platform admin publishes and immutable evidence rejects edits",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "STD-03",
+      "type": "Control",
+      "group": "Tiêu chuẩn, chương trình và cấu hình yêu cầu",
+      "name": "Ghim phiên bản",
+      "expected": "Hồ sơ/đợt đánh giá ghi nhận đúng phiên bản yêu cầu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "PINNED-01 @STD-03 @STD-04 @DOS-06 @E2E-05 published v2 does not change old dossier requirements",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] X-PUBLICATION-GUARDS @STD-02 @STD-03 @SUB-03 only platform admin publishes and immutable evidence rejects edits",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "STD-04",
+      "type": "Control",
+      "group": "Tiêu chuẩn, chương trình và cấu hình yêu cầu",
+      "name": "Thay đổi cấu hình",
+      "expected": "Công bố v2 không đổi mẫu số/yêu cầu/kết quả hồ sơ ghim v1.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "PINNED-01 @STD-03 @STD-04 @DOS-06 @E2E-05 published v2 does not change old dossier requirements",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "STD-05",
+      "type": "Control",
+      "group": "Tiêu chuẩn, chương trình và cấu hình yêu cầu",
+      "name": "Hồ sơ cũ",
+      "expected": "Legacy chưa xác định phiên bản hiển thị Unknown; không suy diễn từ cấu hình hiện tại.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "STD-06",
+      "type": "Control",
+      "group": "Tiêu chuẩn, chương trình và cấu hình yêu cầu",
+      "name": "Chuyển phiên bản",
+      "expected": "Quy trình duyệt, người thực hiện, lý do, đánh giá lại và lịch sử.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "PRD-01",
+      "type": "Control",
+      "group": "Sản phẩm và phạm vi đề nghị chứng nhận",
+      "name": "Danh mục sản phẩm",
+      "expected": "Tạo/sửa mã, quy cách, nhóm; kiểm tra trùng theo DN.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "PRD-02",
+      "type": "Control",
+      "group": "Sản phẩm và phạm vi đề nghị chứng nhận",
+      "name": "Phạm vi liên kết",
+      "expected": "Đúng cơ sở, quy trình, nguyên liệu, hồ sơ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "PRD-03",
+      "type": "Control",
+      "group": "Sản phẩm và phạm vi đề nghị chứng nhận",
+      "name": "Công thức/BOM",
+      "expected": "Nếu thuộc pilot: thành phần, đơn vị, tỷ lệ, phiên bản theo quy tắc được duyệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "PRD-04",
+      "type": "Control",
+      "group": "Sản phẩm và phạm vi đề nghị chứng nhận",
+      "name": "Thay đổi sau nộp",
+      "expected": "Đổi công thức/NCC/dây chuyền không thay chứng cứ đã nộp; xử lý thay đổi phù hợp.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "PRD-05",
+      "type": "Control",
+      "group": "Sản phẩm và phạm vi đề nghị chứng nhận",
+      "name": "Phạm vi cấp",
+      "expected": "Chỉ sản phẩm/cơ sở được quyết định xuất hiện trên chứng nhận và xác minh.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "PRD-06",
+      "type": "Control",
+      "group": "Sản phẩm và phạm vi đề nghị chứng nhận",
+      "name": "Ngừng sản phẩm",
+      "expected": "Không mất lịch sử lô/chứng nhận.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUP-01",
+      "type": "Control",
+      "group": "Nhà cung cấp và hồ sơ đầu vào",
+      "name": "Hồ sơ NCC",
+      "expected": "Danh tính, liên hệ, nguyên liệu và chứng nhận.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUP-02",
+      "type": "Control",
+      "group": "Nhà cung cấp và hồ sơ đầu vào",
+      "name": "Hiệu lực",
+      "expected": "Hết hạn/đình chỉ/thiếu phạm vi hiển thị đúng; không suy ra mọi nguyên liệu đều được chứng nhận.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUP-03",
+      "type": "Control",
+      "group": "Nhà cung cấp và hồ sơ đầu vào",
+      "name": "Liên kết đúng",
+      "expected": "Nguyên liệu–NCC–nhà sản xuất–chứng từ; phân biệt thương nhân nếu cần.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUP-04",
+      "type": "Control",
+      "group": "Nhà cung cấp và hồ sơ đầu vào",
+      "name": "Supplier portal",
+      "expected": "Token đúng phạm vi; kiểm tra hết hạn, dùng lại, chuyển tiếp, sửa mã tài liệu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUP-05",
+      "type": "Control",
+      "group": "Nhà cung cấp và hồ sơ đầu vào",
+      "name": "Phê duyệt hồ sơ",
+      "expected": "Dữ liệu NCC bổ sung không tự thành dữ liệu DN/CB chấp thuận.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUP-06",
+      "type": "Control",
+      "group": "Nhà cung cấp và hồ sơ đầu vào",
+      "name": "Xóa/khôi phục",
+      "expected": "Giữ giao dịch/lô/lịch sử; không tạo trùng hay phục hồi hiệu lực đã hết.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-01",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Lô đầu vào",
+      "expected": "Đúng nguyên liệu, NCC, số lô, ngày nhận, hạn dùng, lượng, đơn vị.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-02",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Liên kết sản xuất",
+      "expected": "Truy đầu vào → bước/quy trình → thành phẩm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-03",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Tách/gộp",
+      "expected": "Một đầu vào nhiều thành phẩm và ngược lại; không mất quan hệ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-04",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Truy ngược/xuôi",
+      "expected": "Từ thành phẩm đủ đầu vào; từ đầu vào đủ thành phẩm bị ảnh hưởng.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-05",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Dữ liệu sai",
+      "expected": "Lô không tồn tại/khác DN, quan hệ vòng, lượng/đơn vị sai được xử lý.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-06",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Cân đối",
+      "expected": "Nếu cam kết: công thức duyệt cho quy đổi, hao hụt, trả hàng, tái chế, vượt lượng.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-07",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Sự cố đầu vào",
+      "expected": "Tìm đủ lô/hồ sơ ảnh hưởng; không tự thu hồi thành phẩm khi chưa có quyết định.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "TRC-08",
+      "type": "Control",
+      "group": "Nguyên liệu, quy trình và truy xuất lô",
+      "name": "Truy xuất công khai",
+      "expected": "Đúng lô/phạm vi công khai; không lộ công thức/hồ sơ nội bộ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-01",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Biểu mẫu",
+      "expected": "Đúng loại/chương trình và điều kiện bắt buộc; lưu nháp không mất.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-02",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Kiểm tra dữ liệu",
+      "expected": "Ngày, số, đơn vị, danh sách lặp, tiếng Việt, ký tự đặc biệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-03",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Sinh PDF",
+      "expected": "Khớp form; nhiều trang, bảng dài, chữ ký/logo, ngắt trang.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-04",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Tải tệp",
+      "expected": "Loại/kích thước/định dạng đúng; tệp hỏng, tên trùng, mạng ngắt không tạo hoàn tất giả.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-05",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Phiên bản",
+      "expected": "Upload lại truy vết được; chứng cứ lần nộp trước giữ đúng quyền.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "[API] SCOPE-01 @CB-05 @DOC-05 @DOC-07 @E2E-12 CB sees exact packet, not another dossier or another tenant",
+          "surface": "api"
+        },
+        {
+          "file": "boundaries.spec.ts",
+          "case": "[API] VERSION-01 @DOC-05 @DOC-06 owner current selection is idempotent and preserves chronology and approval",
+          "surface": "api"
+        },
+        {
+          "file": "boundaries.spec.ts",
+          "case": "LIBRARY-01 @DOC-05 @DOS-06 library renders two independent same-type uploads",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-REUSE @DOS-02 @DOC-05 exact document reuse does not borrow another dossier review context",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "[API] PERM-01 @ORG-04 @DOC-05 @E2E-12 read-only member cannot promote or invoke AI persistence",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-06",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Chỉnh sửa/xóa",
+      "expected": "Không làm mất chứng cứ đang dùng trong hồ sơ/đánh giá.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "[API] VERSION-01 @DOC-05 @DOC-06 owner current selection is idempotent and preserves chronology and approval",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-07",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Tải/xem",
+      "expected": "Preview/download/PDF kiểm tra quyền; URL chia sẻ không vượt quyền.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "[API] SCOPE-01 @CB-05 @DOC-05 @DOC-07 @E2E-12 CB sees exact packet, not another dossier or another tenant",
+          "surface": "api"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-PACKET-PREVIEW @CB-05 @DOC-07 selected CB sees packet and file while foreign CB and business are denied",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] J2-FILE-REASSIGN @CB-04 @DOC-07 historic bytes require current assignment and active auditor",
+          "surface": "api"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOC-08",
+      "type": "Control",
+      "group": "Tạo tài liệu, biểu mẫu và PDF",
+      "name": "Nhất quán",
+      "expected": "Tên DN, sản phẩm, phiên bản, ngày khớp UI/PDF/export.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-01",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Tạo hồ sơ",
+      "expected": "Đúng chương trình, sản phẩm, cơ sở, bộ yêu cầu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "NAV-01 @ORG-04 @DOS-01 @CB-05 owner dossier navigation and provider redirect",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-02",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Gắn chứng cứ",
+      "expected": "Đúng ô yêu cầu; không nhầm hồ sơ/chương trình.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-REUSE @DOS-02 @DOC-05 exact document reuse does not borrow another dossier review context",
+          "surface": "browser"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-DELEGATED-UPLOAD @ORG-04 @DOS-02 delegated upload is effective and revocation removes the capability",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-03",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Thiếu/N/A",
+      "expected": "Phân biệt thiếu, chưa đánh giá, không đạt, hết hạn, N/A; N/A có căn cứ/phê duyệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-04",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Readiness",
+      "expected": "Theo bộ yêu cầu ghim; đối chiếu phép tính độc lập; không /13 cố định.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-05",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Ý nghĩa hoàn thành",
+      "expected": "AI score/tự đánh dấu không thay sự chấp thuận CB.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-AI-NOT-APPROVAL @DOS-05 @DOS-08 AI score alone cannot make a dossier certified",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-06",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Nhiều hồ sơ",
+      "expected": "Chương trình khác yêu cầu có kết quả độc lập; không cộng gộp sai.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "PINNED-01 @STD-03 @STD-04 @DOS-06 @E2E-05 published v2 does not change old dossier requirements",
+          "surface": "browser"
+        },
+        {
+          "file": "boundaries.spec.ts",
+          "case": "LIBRARY-01 @DOC-05 @DOS-06 library renders two independent same-type uploads",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-07",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Biên mẫu số",
+      "expected": "Không cấu hình, mẫu số 0, legacy không hiển thị 100% gây hiểu nhầm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-DASHBOARD-RACE @AUTH-04 @DOS-07 delayed previous-tenant dashboard cannot populate the new account",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DOS-08",
+      "type": "Control",
+      "group": "Quản lý hồ sơ và mức sẵn sàng",
+      "name": "Điều kiện khác",
+      "expected": "Readiness 100% không tự đồng nghĩa đủ audit/quyết định/cấp chứng nhận.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J1-AI-NOT-APPROVAL @DOS-05 @DOS-08 AI score alone cannot make a dossier certified",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-01",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Nộp",
+      "expected": "Đúng người; thiếu điều kiện có thông báo cụ thể.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "MEMBER-01 @ORG-04 @SUB-01 member sees dossier without owner-only actions",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-02",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Chọn CB",
+      "expected": "Đúng CB/phạm vi; có thể kiểm tra nơi nhận trước xác nhận.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-03",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Chốt chứng cứ",
+      "expected": "Lần nộp ghi đúng phiên bản tài liệu/yêu cầu/thời điểm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] X-PUBLICATION-GUARDS @STD-02 @STD-03 @SUB-03 only platform admin publishes and immutable evidence rejects edits",
+          "surface": "api"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-04",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Tiếp nhận/từ chối",
+      "expected": "Đúng inbox; từ chối có lý do/trạng thái.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-05",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Bổ sung",
+      "expected": "Đúng mục, lý do, hạn, người phụ trách; mở được form từ hành trình thực tế.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "[API] J2-AUTHORITY @SUB-05 @CB-03 @E2E-12 correction authority and history follow exact auditor assignment",
+          "surface": "api"
+        },
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J2-MEMBER-HISTORY @SUB-05 @SUB-06 @ORG-04 member reads exact CB feedback without replace or resubmit commands",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-06",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Nộp lại",
+      "expected": "Phân biệt phiên bản/đợt; giữ nhận xét/chứng cứ cũ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "j1j2.spec.ts",
+          "case": "J2-MEMBER-HISTORY @SUB-05 @SUB-06 @ORG-04 member reads exact CB feedback without replace or resubmit commands",
+          "surface": "browser"
+        },
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-07",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Rút/hủy/chuyển",
+      "expected": "Nếu cho phép: đúng điều kiện; không cấp trên hồ sơ rút/hủy.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "boundaries.spec.ts",
+          "case": "CLOSED-01 @SUB-07 cancelled dossier remains readable and hides mutations",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUB-08",
+      "type": "Control",
+      "group": "Nộp hồ sơ, tiếp nhận và bổ sung",
+      "name": "Gửi lặp",
+      "expected": "Double-click/refresh/timeout rồi retry không tạo hai lần nộp.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "journeys.spec.ts",
+          "case": "JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08 @DOC-05 @E2E-02 @E2E-13 browser submission, lost response, correction and retained evidence",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-01",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Chứng cứ đúng",
+      "expected": "Đúng hồ sơ/lần nộp/yêu cầu/phiên bản.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-02",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Đánh giá yêu cầu",
+      "expected": "Đạt/không đạt/chưa đủ căn cứ theo mô hình đã chốt; đủ nhận xét.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-03",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Không phù hợp",
+      "expected": "Có yêu cầu, chứng cứ, phân loại, hạn, người xử lý.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-04",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Khắc phục",
+      "expected": "DN nộp nguyên nhân/biện pháp/chứng cứ; không tự đóng phát hiện CB.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-05",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Xác minh",
+      "expected": "Auditor chấp nhận/yêu cầu lại; điểm mở chặn đúng bước.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-06",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Chứng cứ thay đổi",
+      "expected": "Kết quả bản cũ không tự áp dụng bản mới; đánh giá lại rõ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-07",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Đồng thời",
+      "expected": "Hai người lưu không ghi đè âm thầm; có xử lý được duyệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "REV-08",
+      "type": "Control",
+      "group": "Đánh giá hồ sơ và điểm không phù hợp",
+      "name": "Kết luận tổng hợp",
+      "expected": "Khớp chi tiết; không nhảy trạng thái để duyệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-01",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Lập lịch",
+      "expected": "Đúng DN/cơ sở/loại audit/ngày/đoàn/phạm vi.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-02",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Đổi lịch",
+      "expected": "Đổi/hủy có lý do, thông báo; giữ chứng cứ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-03",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Hiện trường",
+      "expected": "Checklist, quan sát, ảnh/tệp, phát hiện đúng cuộc đánh giá.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-04",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Nộp báo cáo",
+      "expected": "Chỉ auditor được giao; owner không giả làm người nộp.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-05",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Chấp nhận",
+      "expected": "Auditor không tự chấp nhận; owner theo quyền.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-06",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Bất biến",
+      "expected": "Báo cáo chấp nhận không quay trạng thái cũ; sửa theo phiên bản.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-07",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Thống kê",
+      "expected": "Phân biệt audit hoàn thành/báo cáo nộp/chấp nhận; không đếm đôi.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AUD-08",
+      "type": "Control",
+      "group": "Đánh giá hiện trường và báo cáo auditor",
+      "name": "Thực địa",
+      "expected": "Đổi auditor/mất mạng/tải ảnh lỗi không tạo hoàn tất giả.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "MOB-01",
+      "type": "Control",
+      "group": "Mobile auditor và đồng bộ offline",
+      "name": "Dữ liệu giao",
+      "expected": "Chỉ dữ liệu đúng quyền; rõ phiên bản biểu mẫu offline.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "MOB-02",
+      "type": "Control",
+      "group": "Mobile auditor và đồng bộ offline",
+      "name": "Lưu bền",
+      "expected": "Đóng app/mất mạng/khởi động lại không mất ghi nhận đã lưu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "MOB-03",
+      "type": "Control",
+      "group": "Mobile auditor và đồng bộ offline",
+      "name": "Đồng bộ",
+      "expected": "Phân biệt chưa gửi/đang gửi/đã nhận/lỗi; biết mục cần xử lý.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "MOB-04",
+      "type": "Control",
+      "group": "Mobile auditor và đồng bộ offline",
+      "name": "Gửi lại",
+      "expected": "Không nhân đôi ảnh/phát hiện/báo cáo.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "MOB-05",
+      "type": "Control",
+      "group": "Mobile auditor và đồng bộ offline",
+      "name": "Xung đột",
+      "expected": "Hồ sơ đổi/đóng hoặc thu hồi quyền lúc offline xử lý rõ khi online.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "MOB-06",
+      "type": "Control",
+      "group": "Mobile auditor và đồng bộ offline",
+      "name": "Thiết bị thật",
+      "expected": "Camera, thiếu dung lượng, ảnh lớn, đổi Wi-Fi/di động trên thiết bị pilot.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-01",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Xung đột",
+      "expected": "Khai báo/xem xét/xử lý theo CB; chưa giải quyết chặn đúng bước.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "extended.spec.ts",
+          "case": "CONFLICT-01 @DEC-01 declaration, review and override persist and enforce assignment blocking",
+          "surface": "browser"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "CONFLICT-VALIDATION @DEC-01 rejected declaration preserves fields and does not appear as saved",
+          "surface": "browser"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "[API] TRUST-ROLE @CMP-01 @DEC-01 unrelated CB queues are empty and business cannot manage CB workflows",
+          "surface": "api"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "TRUST-RESPONSE-LOSS-CONFLICT @DEC-01 lost write response recovers one persisted declaration after reload",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-02",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Override",
+      "expected": "Đúng quyền, lý do, lịch sử; không bỏ qua âm thầm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-03",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Điều kiện",
+      "expected": "Đủ chứng cứ/báo cáo/xử lý bắt buộc mới quyết định.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-04",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Phân tách",
+      "expected": "Người đánh giá/quyết định theo quy trình CB phê duyệt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-05",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Quyết định",
+      "expected": "Chấp thuận/từ chối có căn cứ/phạm vi/người/thời điểm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-06",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Ràng buộc",
+      "expected": "Đúng DN/CB/lần nộp/phiên bản; không tái dùng cho hồ sơ khác.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-07",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Thay đổi",
+      "expected": "Sửa/hủy/thay thế có quy trình và giữ lịch sử.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DEC-08",
+      "type": "Control",
+      "group": "Xung đột lợi ích và quyết định chứng nhận",
+      "name": "Đồng thời",
+      "expected": "Không tạo hai quyết định hiệu lực mâu thuẫn.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-01",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Điều kiện",
+      "expected": "Không cấp thiếu quyết định hợp lệ/còn điều kiện chặn.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-02",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Nội dung",
+      "expected": "Đúng pháp nhân/cơ sở/sản phẩm/chương trình/CB/phạm vi/ngày.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-03",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Số chứng nhận",
+      "expected": "Duy nhất; retry/đồng thời không tạo cấp trùng.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-04",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "PDF/QR",
+      "expected": "Tải được, rõ tiếng Việt; QR đúng chứng nhận/hostname.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-05",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Ngày biên",
+      "expected": "Ngày bắt đầu/ngày hết hạn/ngày kế tiếp theo múi giờ nghiệp vụ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-06",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Đình chỉ/thu hồi",
+      "expected": "Đúng quyền, lý do, hiệu lực; registry/public nhất quán.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-07",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Sửa/cấp lại",
+      "expected": "Liên kết cũ–mới; không sửa lặng lẽ bản phát hành.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CERT-08",
+      "type": "Control",
+      "group": "Phát hành và vòng đời chứng nhận",
+      "name": "Gia hạn/mở rộng",
+      "expected": "Đủ điều kiện, giữ lịch sử; không kéo dài chỉ bằng sửa ngày.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "VER-01",
+      "type": "Control",
+      "group": "Xác minh công khai và bằng chứng số",
+      "name": "Không đăng nhập",
+      "expected": "Tra QR/số trên smartphone.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "VER-02",
+      "type": "Control",
+      "group": "Xác minh công khai và bằng chứng số",
+      "name": "Trạng thái",
+      "expected": "Phân biệt active/expired/suspended/revoked/mã không tồn tại.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "VER-03",
+      "type": "Control",
+      "group": "Xác minh công khai và bằng chứng số",
+      "name": "Phạm vi",
+      "expected": "Rõ sản phẩm/cơ sở; không suy rộng toàn DN.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "VER-04",
+      "type": "Control",
+      "group": "Xác minh công khai và bằng chứng số",
+      "name": "Riêng tư",
+      "expected": "Không lộ tài liệu gốc/công thức/email cá nhân/ghi chú.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "VER-05",
+      "type": "Control",
+      "group": "Xác minh công khai và bằng chứng số",
+      "name": "Cache",
+      "expected": "Thu hồi/đình chỉ cập nhật public trong thời gian cam kết.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "VER-06",
+      "type": "Control",
+      "group": "Xác minh công khai và bằng chứng số",
+      "name": "Blockchain",
+      "expected": "Nếu có: pending/success/fail/mismatch rõ; không thay trạng thái chứng nhận hiện tại.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUR-01",
+      "type": "Control",
+      "group": "Giám sát, thay đổi và tái chứng nhận",
+      "name": "Kế hoạch",
+      "expected": "Lịch/phạm vi/người phụ trách đúng chương trình.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUR-02",
+      "type": "Control",
+      "group": "Giám sát, thay đổi và tái chứng nhận",
+      "name": "Nhắc hạn",
+      "expected": "Đúng người/thời điểm; không lặp không kiểm soát.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUR-03",
+      "type": "Control",
+      "group": "Giám sát, thay đổi và tái chứng nhận",
+      "name": "Quá hạn",
+      "expected": "Hậu quả đúng quy tắc; không coi còn hợp lệ chỉ vì chưa xử lý.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUR-04",
+      "type": "Control",
+      "group": "Giám sát, thay đổi và tái chứng nhận",
+      "name": "Thay đổi trọng yếu",
+      "expected": "NCC/công thức/địa chỉ/dây chuyền được tiếp nhận và đánh giá tác động.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUR-05",
+      "type": "Control",
+      "group": "Giám sát, thay đổi và tái chứng nhận",
+      "name": "Tái chứng nhận",
+      "expected": "Chu kỳ mới liên kết cũ; đúng bộ yêu cầu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SUR-06",
+      "type": "Control",
+      "group": "Giám sát, thay đổi và tái chứng nhận",
+      "name": "Chuyển tiếp",
+      "expected": "Hồ sơ gia hạn chưa duyệt không kéo dài chứng nhận cũ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CMP-01",
+      "type": "Control",
+      "group": "Khiếu nại, kháng nghị và vụ việc",
+      "name": "Tiếp nhận",
+      "expected": "Đúng loại/đối tượng/nội dung/chứng cứ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "extended.spec.ts",
+          "case": "COMPLAINT-01 @CMP-01 @E2E-11 business intake, CB assignment and complete lifecycle persist after reload",
+          "surface": "browser"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "COMPLAINT-VALIDATION @CMP-01 appeal requires decision; rejected reference preserves input without a receipt",
+          "surface": "browser"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "[API] TRUST-ROLE @CMP-01 @DEC-01 unrelated CB queues are empty and business cannot manage CB workflows",
+          "surface": "api"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "TRUST-RESPONSE-LOSS-COMPLAINT @CMP-01 lost write response recovers one persisted case after reload",
+          "surface": "browser"
+        },
+        {
+          "file": "extended.spec.ts",
+          "case": "TRUST-REFRESH-FAILURE @CMP-01 saved receipt survives a failed register refresh",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CMP-02",
+      "type": "Control",
+      "group": "Khiếu nại, kháng nghị và vụ việc",
+      "name": "Phân công",
+      "expected": "Đúng quyền, độc lập và xung đột lợi ích.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CMP-03",
+      "type": "Control",
+      "group": "Khiếu nại, kháng nghị và vụ việc",
+      "name": "Trạng thái",
+      "expected": "Đúng điều kiện/hạn/người/thông báo.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CMP-04",
+      "type": "Control",
+      "group": "Khiếu nại, kháng nghị và vụ việc",
+      "name": "Bảo mật",
+      "expected": "Người không liên quan không thấy danh tính/dữ liệu nhạy cảm.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CMP-05",
+      "type": "Control",
+      "group": "Khiếu nại, kháng nghị và vụ việc",
+      "name": "Kết luận",
+      "expected": "Căn cứ/hành động/xác nhận đóng; mở lại theo chính sách.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "CMP-06",
+      "type": "Control",
+      "group": "Khiếu nại, kháng nghị và vụ việc",
+      "name": "Tác động",
+      "expected": "Khiếu nại không tự đổi chứng nhận; phải có quyết định thẩm quyền.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AI-01",
+      "type": "Control",
+      "group": "AI, OCR và trợ lý nghiệp vụ",
+      "name": "Vai trò",
+      "expected": "Gợi ý/điểm không thành kết luận chứng nhận chính thức.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AI-02",
+      "type": "Control",
+      "group": "AI, OCR và trợ lý nghiệp vụ",
+      "name": "Trích xuất",
+      "expected": "Đối chiếu tên/ngày/thành phần/phạm vi với gốc; người xác nhận dữ liệu chưa chắc.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AI-03",
+      "type": "Control",
+      "group": "AI, OCR và trợ lý nghiệp vụ",
+      "name": "Căn cứ",
+      "expected": "Nguồn/phạm vi phù hợp; thiếu căn cứ phải rõ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AI-04",
+      "type": "Control",
+      "group": "AI, OCR và trợ lý nghiệp vụ",
+      "name": "Mẫu chuẩn",
+      "expected": "Chuyên gia đánh giá đạt/không đạt/thiếu thông tin; chốt ngưỡng trước.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AI-05",
+      "type": "Control",
+      "group": "AI, OCR và trợ lý nghiệp vụ",
+      "name": "Lỗi dịch vụ",
+      "expected": "Timeout không mất tệp/khóa vô hạn thủ công/báo đạt giả.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "AI-06",
+      "type": "Control",
+      "group": "AI, OCR và trợ lý nghiệp vụ",
+      "name": "Ranh giới",
+      "expected": "Không trả dữ liệu DN khác; nội dung tệp không đổi quyền/quy tắc.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "RPT-01",
+      "type": "Control",
+      "group": "Dashboard, tìm kiếm và báo cáo",
+      "name": "Theo vai trò",
+      "expected": "Đúng chỉ số/phạm vi; auditor không thấy toàn đội khi chưa được phép.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "RPT-02",
+      "type": "Control",
+      "group": "Dashboard, tìm kiếm và báo cáo",
+      "name": "Đối soát",
+      "expected": "KPI khớp danh sách và mẫu; rõ công thức/mẫu số/kỳ.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "RPT-03",
+      "type": "Control",
+      "group": "Dashboard, tìm kiếm và báo cáo",
+      "name": "Ngày biên",
+      "expected": "Tháng trống/đổi năm/hết hạn/cửa sổ sắp hết hạn; không đếm chồng.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "RPT-04",
+      "type": "Control",
+      "group": "Dashboard, tìm kiếm và báo cáo",
+      "name": "Tìm/lọc/trang",
+      "expected": "Không mất/lặp; tổng và export cùng phạm vi.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "RPT-05",
+      "type": "Control",
+      "group": "Dashboard, tìm kiếm và báo cáo",
+      "name": "Empty/error",
+      "expected": "Phân biệt thiếu dữ liệu và lỗi; không thay lỗi bằng 0.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "RPT-06",
+      "type": "Control",
+      "group": "Dashboard, tìm kiếm và báo cáo",
+      "name": "Làm mới",
+      "expected": "Đổi tài khoản/tổ chức/cập nhật không giữ dữ liệu cũ sai phạm vi.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "NTF-01",
+      "type": "Control",
+      "group": "Thông báo, email và công việc đến hạn",
+      "name": "Sự kiện",
+      "expected": "Nộp/bổ sung/phân công/quyết định/chứng nhận tạo đúng thông báo.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "NTF-02",
+      "type": "Control",
+      "group": "Thông báo, email và công việc đến hạn",
+      "name": "Người nhận",
+      "expected": "Đúng tổ chức/phụ trách; không gửi người cũ sau tái phân công.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "NTF-03",
+      "type": "Control",
+      "group": "Thông báo, email và công việc đến hạn",
+      "name": "Liên kết",
+      "expected": "Đúng đối tượng; login quay về đúng việc và kiểm tra quyền.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "NTF-04",
+      "type": "Control",
+      "group": "Thông báo, email và công việc đến hạn",
+      "name": "SMTP lỗi",
+      "expected": "Không mất nghiệp vụ; rõ gửi/retry; không lặp hành động.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "NTF-05",
+      "type": "Control",
+      "group": "Thông báo, email và công việc đến hạn",
+      "name": "Quá hạn",
+      "expected": "Tần suất/ưu tiên/escalation theo CB; không đoán ngưỡng.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "NTF-06",
+      "type": "Control",
+      "group": "Thông báo, email và công việc đến hạn",
+      "name": "Nội dung",
+      "expected": "Không chứa bí mật/token/dữ liệu vượt nhu cầu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ADM-01",
+      "type": "Control",
+      "group": "Quản trị nền tảng và module",
+      "name": "Tài khoản/tổ chức",
+      "expected": "Tìm/khóa/hỗ trợ đúng phạm vi; đủ lịch sử.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ADM-02",
+      "type": "Control",
+      "group": "Quản trị nền tảng và module",
+      "name": "Module/flags",
+      "expected": "Đúng tenant; chặn cả hành động, không chỉ menu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ADM-03",
+      "type": "Control",
+      "group": "Quản trị nền tảng và module",
+      "name": "Dữ liệu cũ",
+      "expected": "Tắt/bật không mất/chuyển sai dữ liệu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ADM-04",
+      "type": "Control",
+      "group": "Quản trị nền tảng và module",
+      "name": "Danh mục chung",
+      "expected": "Ngành/loại tài liệu/tiêu chuẩn không phá lịch sử.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ADM-05",
+      "type": "Control",
+      "group": "Quản trị nền tảng và module",
+      "name": "Quyền Admin",
+      "expected": "Không mặc nhiên thành CB owner để đánh giá/chấp nhận/cấp.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "ADM-06",
+      "type": "Control",
+      "group": "Quản trị nền tảng và module",
+      "name": "Hỗ trợ đặc biệt",
+      "expected": "Impersonation/override nếu có phải giới hạn/hiển thị/truy vết.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DAT-01",
+      "type": "Control",
+      "group": "Audit trail, dữ liệu và quyền riêng tư",
+      "name": "Lịch sử",
+      "expected": "Đúng ai/việc/đối tượng/thời điểm/lý do.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DAT-02",
+      "type": "Control",
+      "group": "Audit trail, dữ liệu và quyền riêng tư",
+      "name": "Bất biến",
+      "expected": "Không sửa/xóa qua UI hoặc nghiệp vụ; tài khoản ngừng vẫn truy vết.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DAT-03",
+      "type": "Control",
+      "group": "Audit trail, dữ liệu và quyền riêng tư",
+      "name": "Export",
+      "expected": "Đúng phạm vi, đủ quan hệ, đọc được, không lộ DN khác.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DAT-04",
+      "type": "Control",
+      "group": "Audit trail, dữ liệu và quyền riêng tư",
+      "name": "Xóa tài khoản",
+      "expected": "Phân biệt khóa đăng nhập/xóa cá nhân/giữ chứng cứ theo chính sách.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DAT-05",
+      "type": "Control",
+      "group": "Audit trail, dữ liệu và quyền riêng tư",
+      "name": "Thời hạn lưu",
+      "expected": "Không dọn tài liệu đang giữ hoặc phục vụ vụ việc.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "DAT-06",
+      "type": "Control",
+      "group": "Audit trail, dữ liệu và quyền riêng tư",
+      "name": "Khôi phục",
+      "expected": "Nhất quán tài khoản/tệp/hồ sơ/quyết định/chứng nhận, không chỉ DB.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "OPS-01",
+      "type": "Control",
+      "group": "Trải nghiệm, đồng thời và phục hồi",
+      "name": "Thiết bị",
+      "expected": "Luồng chính trên iPhone Safari; không phụ thuộc hover/che nút.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "OPS-02",
+      "type": "Control",
+      "group": "Trải nghiệm, đồng thời và phục hồi",
+      "name": "Chống mất",
+      "expected": "Back/refresh/đóng tab/hết phiên/mất mạng rõ với dữ liệu chưa lưu.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "OPS-03",
+      "type": "Control",
+      "group": "Trải nghiệm, đồng thời và phục hồi",
+      "name": "Đáp ứng",
+      "expected": "Khối lượng/người dùng pilot và ngưỡng tìm/tải/sinh PDF được chốt.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "OPS-04",
+      "type": "Control",
+      "group": "Trải nghiệm, đồng thời và phục hồi",
+      "name": "Lặp",
+      "expected": "Retry worker/người dùng không nhân quyết định/chứng nhận/thông báo.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "OPS-05",
+      "type": "Control",
+      "group": "Trải nghiệm, đồng thời và phục hồi",
+      "name": "Gián đoạn",
+      "expected": "DB/storage/Keycloak/worker lỗi được phát hiện; không báo hoàn tất một phần.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "OPS-06",
+      "type": "Control",
+      "group": "Trải nghiệm, đồng thời và phục hồi",
+      "name": "Phục hồi/rollback",
+      "expected": "Có thời gian/mất dữ liệu thực đo; tiếp tục đúng trạng thái sau restore.",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [
+        {
+          "file": "recovery.spec.ts",
+          "case": "RECOVERY-01 @OPS-06 @E2E-14 login, dossier and exact file survive synthetic DB restore",
+          "surface": "browser"
+        }
+      ],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-01",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Báo giá, hợp đồng, phí",
+      "expected": "Chấp thuận giá/phạm vi/thanh toán/điều kiện chặn",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-02",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Lấy mẫu/phòng thử nghiệm",
+      "expected": "Mã mẫu/bàn giao/kết quả/phiên bản/liên kết quyết định",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-03",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Marketplace",
+      "expected": "Đồng ý công khai/phạm vi/gỡ khi hết hạn hoặc thu hồi",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-04",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Kho/giao nhận/thu hồi",
+      "expected": "Xuất nhập/trả hàng/đối tác nhận/lô ảnh hưởng",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-05",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "ERP/API",
+      "expected": "Mapping/trùng/retry/lỗi một phần/đối soát",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-06",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Đa ngôn ngữ",
+      "expected": "Nội dung/đơn vị/ngày/ý nghĩa nhất quán",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-07",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Chữ ký điện tử",
+      "expected": "Người ký/thẩm quyền/toàn vẹn/xác minh theo cơ chế chọn",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "SCOPE-08",
+      "type": "Scope decision",
+      "group": "Y",
+      "name": "Chuyển dữ liệu cũ",
+      "expected": "Mapping/đối soát/dữ liệu thiếu/không tạo phê duyệt giả",
+      "pilot_scope": "Excluded",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "N/A",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-01",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "DN mới → sản phẩm → hồ sơ → CB → đánh giá → quyết định → cấp → QR",
+      "expected": "Một bộ dữ liệu xuyên suốt, đúng phạm vi và lịch sử",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-02",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Thiếu hồ sơ → bổ sung → nộp lại → đánh giá lại",
+      "expected": "Form dùng được thực tế; giữ phiên bản",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-03",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Không phù hợp → khắc phục nhiều vòng → đóng",
+      "expected": "Không quyết định khi còn điều kiện chặn",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-04",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Từ chối tiếp nhận/từ chối chứng nhận",
+      "expected": "Đúng lý do/quyền/thông báo; không sinh chứng nhận",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-05",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Yêu cầu v1 → v2 khi đang xử lý",
+      "expected": "Hồ sơ cũ giữ v1; mới theo quy tắc",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-06",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Đổi auditor/khóa tài khoản giữa quá trình",
+      "expected": "Chuyển giao đầy đủ; thu hồi quyền cũ",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-07",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Phát hành → đình chỉ → xử lý → phục hồi/thu hồi",
+      "expected": "Nội bộ/public nhất quán",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-08",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Hết hạn → gia hạn/tái chứng nhận",
+      "expected": "Không gia hạn giả",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-09",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Sự cố nguyên liệu → truy xuôi → xác định ảnh hưởng",
+      "expected": "Đủ tập ảnh hưởng, đúng ranh giới",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-10",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Auditor offline → ghi nhận → mất mạng → đồng bộ",
+      "expected": "Không mất/trùng chứng cứ",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-11",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Khiếu nại/kháng nghị quyết định",
+      "expected": "Đúng người/lịch sử/tác động",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-12",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "DN A/CB X thử dữ liệu DN B/CB Y",
+      "expected": "Chặn xem/sửa/tải/export/tác vụ nền",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-13",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Timeout nộp/phê duyệt/cấp → gửi lại",
+      "expected": "Một kết quả nghiệp vụ hợp lệ",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    },
+    {
+      "id": "E2E-14",
+      "type": "E2E",
+      "group": "End to end",
+      "name": "Backup → restore → login → hồ sơ → tệp → verify",
+      "expected": "Khôi phục được hành trình và các dữ liệu liên quan",
+      "pilot_scope": "Pending decision",
+      "priority": "Pending triage",
+      "candidate_cases": [],
+      "status": "Not run",
+      "scope_decision_required": false
+    }
+  ]
+}

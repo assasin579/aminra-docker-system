@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "authority": "Owner delegated reasonable software decisions in conversation 2026-10-31; this records implementation defaults, not Halal or legal approval",
+  "baseline_unchanged": true,
+  "decisions": {
+    "authorization": "Server checks canonical current identity, organization and permissions; wrong organization fails closed",
+    "revocation": "Effective on the next protected request; technical verification target at most 60 seconds",
+    "decision_preconditions": "Approved nonempty submission; any linked audit report accepted; linked nonconformities closed; independent decision maker; no unresolved conflict",
+    "decision_finality": "One active decision per provider/submission; final decisions cannot be silently rewritten",
+    "certificate_issuance": "Approved independent decision and approved active submissions; serialized per provider/business; no duplicate active certificate",
+    "dates": "Validity includes the entire expiry business day; business timezone Asia/Ho_Chi_Minh; expiring window 60 days, consistent with earlier owner decision",
+    "local_performance_targets": {"concurrent_users": 20, "dataset_rows": 1000, "list_p95_ms": 2000, "protected_api_p95_ms": 1500, "pdf_p95_ms": 10000},
+    "synthetic_recovery_targets": {"rpo_accepted_writes": 0, "rto_seconds": 300, "required_components": ["application database", "identity database", "document and certificate storage", "application processes"]},
+    "external_evidence": "Physical pilot device/camera/network checks and independent Halal expert judgments retain explicit evidence requirements; emulation or synthetic fixtures do not establish them",
+    "release": "Manual topic branch, reviewed PR and exact committed-image verification; no CI/CD activation"
+  }
+}

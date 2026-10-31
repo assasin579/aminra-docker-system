@@ -1,0 +1,210 @@
+{
+  "source": "Retained technical acceptance.csv, 2026-10-30; historical verdicts not inherited",
+  "criteria": [
+    {
+      "id": "J1-A01",
+      "scope": "Readiness legacy/UNKNOWN/optional-only/missing required",
+      "required_cases": [
+        "J1-READINESS-unpublished",
+        "J1-READINESS-legacy",
+        "J1-READINESS-optional",
+        "J1-READINESS-missing"
+      ],
+      "required_real_db_tests": [
+        "test_legacy_dossier_remains_unknown_under_current_published_profile"
+      ]
+    },
+    {
+      "id": "J1-A02",
+      "scope": "Exact-version attach/reuse/tenant isolation",
+      "required_cases": [
+        "J1-REUSE",
+        "J1-DELEGATED-UPLOAD",
+        "JOURNEY-01"
+      ],
+      "required_real_db_tests": [
+        "test_j1_a02_reuses_exact_document_version_and_denies_wrong_tenant"
+      ]
+    },
+    {
+      "id": "J1-A03",
+      "scope": "Pinned slots, exact dossier review context; AI alone insufficient",
+      "required_cases": [
+        "PINNED-01",
+        "J1-AI-NOT-APPROVAL"
+      ],
+      "required_real_db_tests": [
+        "test_reused_document_does_not_borrow_another_dossier_review_context",
+        "test_bound_resubmit_without_document_ids_revalidates_current_packet"
+      ]
+    },
+    {
+      "id": "J1-A04",
+      "scope": "Owner-selected CB and dossier handoff",
+      "required_cases": [
+        "JOURNEY-01",
+        "NAV-01"
+      ],
+      "required_real_db_tests": [
+        "test_submit_routes_owner_selected_cb_to_canonical_org_tenant"
+      ]
+    },
+    {
+      "id": "J1-A05",
+      "scope": "Initial submission retry/concurrency/conflict/atomicity",
+      "required_cases": [
+        "JOURNEY-01"
+      ],
+      "required_real_db_tests": [
+        "test_submit_retry_same_key_returns_same_submission_receipt",
+        "test_submit_route_concurrent_same_key_commits_one_submission",
+        "test_submit_failure_rolls_back_receipt_and_submission",
+        "test_submit_replay_rechecks_current_provider_eligibility"
+      ]
+    },
+    {
+      "id": "J1-A06",
+      "scope": "Selected-CB packet/preview and wrong-CB denial",
+      "required_cases": [
+        "J1-PACKET-PREVIEW"
+      ],
+      "required_real_db_tests": [
+        "test_historical_round_document_file_serves_exact_bytes_and_scopes_provider"
+      ]
+    },
+    {
+      "id": "J1-A07",
+      "scope": "Download immutable historical bytes",
+      "required_cases": [
+        "JOURNEY-01",
+        "RECOVERY-01"
+      ],
+      "required_real_db_tests": [
+        "test_historical_round_document_file_serves_exact_bytes_and_scopes_provider"
+      ]
+    },
+    {
+      "id": "J1-A08",
+      "scope": "Dashboard loading/UNKNOWN/account switch/stale result",
+      "required_cases": [
+        "J1-DASHBOARD-RACE",
+        "J1-READINESS-unpublished"
+      ],
+      "required_real_db_tests": [
+        "test_g1_dashboard_uses_canonical_tenant_predicate_under_app_role"
+      ]
+    },
+    {
+      "id": "J2-A01",
+      "scope": "Correction authority and exact assignment",
+      "required_cases": [
+        "JOURNEY-01",
+        "J2-AUTHORITY"
+      ],
+      "required_real_db_tests": [
+        "test_request_revision_replay_rechecks_current_assignment"
+      ]
+    },
+    {
+      "id": "J2-A02",
+      "scope": "Business/member/CB/reviewer history scope and snapshots",
+      "required_cases": [
+        "J2-AUTHORITY",
+        "J2-MEMBER-HISTORY"
+      ],
+      "required_real_db_tests": [
+        "test_revision_history_scope_snapshot_and_uuid_values"
+      ]
+    },
+    {
+      "id": "J2-A03",
+      "scope": "Pinned replacement/resubmit and omitted IDs",
+      "required_cases": [
+        "JOURNEY-01"
+      ],
+      "required_real_db_tests": [
+        "test_bound_browser_replacement_attaches_before_pointer_change",
+        "test_bound_resubmit_without_document_ids_revalidates_current_packet",
+        "test_resubmit_rejects_document_type_outside_pinned_requirements"
+      ]
+    },
+    {
+      "id": "J2-A04",
+      "scope": "Two rounds, retained response and old/new diff",
+      "required_cases": [
+        "JOURNEY-01"
+      ],
+      "required_real_db_tests": [
+        "test_j2_round_resubmit_diff_and_old_snapshot_immutability",
+        "test_replacement_preserves_open_revision_until_explicit_resubmit_retry"
+      ]
+    },
+    {
+      "id": "J2-A05",
+      "scope": "Three command receipts, concurrency/conflict/rollback",
+      "required_cases": [
+        "JOURNEY-01",
+        "RECOVERY-01"
+      ],
+      "required_real_db_tests": [
+        "test_request_revision_retry_same_key_replays_original_request",
+        "test_request_revision_route_serializes_concurrent_same_key",
+        "test_request_revision_route_concurrent_different_keys_has_one_winner",
+        "test_request_revision_database_failure_rolls_back_submission",
+        "test_resubmit_route_concurrent_different_keys_has_one_winner",
+        "test_resubmit_same_key_different_payload_conflicts_without_mutation",
+        "test_resubmit_receipt_and_mutation_rollback_together_on_side_effect_failure"
+      ]
+    },
+    {
+      "id": "J2-A06",
+      "scope": "Historical-file scope after reassignment/revocation",
+      "required_cases": [
+        "J2-FILE-REASSIGN"
+      ],
+      "required_real_db_tests": [
+        "test_historical_round_document_file_serves_exact_bytes_and_scopes_provider"
+      ]
+    },
+    {
+      "id": "X-A01",
+      "scope": "Actual delivery lifecycle and byte identity across restart",
+      "required_cases": [
+        "RECOVERY-01"
+      ],
+      "required_real_db_tests": [
+        "test_historical_round_document_file_serves_exact_bytes_and_scopes_provider"
+      ]
+    },
+    {
+      "id": "X-A02",
+      "scope": "Legacy compatibility, guarded downgrade, forward recovery",
+      "required_cases": [
+        "J1-READINESS-legacy",
+        "RECOVERY-01"
+      ],
+      "required_real_db_tests": [
+        "test_legacy_dossier_remains_unknown_under_current_published_profile"
+      ]
+    },
+    {
+      "id": "X-A03",
+      "scope": "Rendered two-round J1/J2 on exact build",
+      "required_cases": [
+        "JOURNEY-01",
+        "RECOVERY-01"
+      ],
+      "required_real_db_tests": []
+    },
+    {
+      "id": "X-A04",
+      "scope": "Publication authority, immutable snapshots and lineage",
+      "required_cases": [
+        "X-PUBLICATION-GUARDS"
+      ],
+      "required_real_db_tests": [
+        "test_requirements_publication_authority_snapshot_immutability_and_rollback"
+      ]
+    }
+  ]
+}

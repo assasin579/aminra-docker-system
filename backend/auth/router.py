@@ -45,11 +45,13 @@ log = logging.getLogger("aminra.auth")
 router = APIRouter()
 
 
-def _row_to_profile(row, member_count: int | None = None, industry_code: str | None = None) -> UserProfile:
+def _row_to_profile(row, member_count: int | None = None, industry_code: str | None = None, realm_roles: list[str] | None = None) -> UserProfile:
     from auth.permissions import get_user_permissions
 
     perms = get_user_permissions(dict(row))
     return UserProfile(
+        keycloak_sub=str(row["keycloak_sub"]) if row.get("keycloak_sub") else None,
+        realm_roles=realm_roles,
         id=str(row["id"]),
         email=row["email"],
         role=row["role"],
@@ -184,7 +186,7 @@ async def get_me(user: dict = Depends(get_current_user), db: Connection = Depend
             "SELECT code FROM industry_schemas WHERE id = $1",
             row["industry_schema_id"],
         )
-    return _row_to_profile(row, member_count=member_count, industry_code=industry_code)
+    return _row_to_profile(row, member_count=member_count, industry_code=industry_code, realm_roles=user.get("realm_roles"))
 
 
 # ── Invite member (business owner, max 7) ──────────────────────────────────────

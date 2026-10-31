@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
+import { privateCacheKey } from "@/lib/private-client-cache";
 import { useUserAuth } from "@/components/UserAuthContext";
 import GenerateDocTab, {
   type GenerateState,
@@ -16,79 +17,8 @@ import { DOC_TYPE_OPTIONS, SOP_SUB_OPTIONS } from "@/lib/documentTypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface EvalIssue {
-  section: string;
-  severity: "critical" | "major" | "minor";
-  issue: string;
-  recommendation: string;
-  reference: string;
-}
-
-interface GapAnalysis {
-  critical_gaps: string[];
-  major_gaps: string[];
-  minor_gaps: string[];
-}
-
-interface RiskFlag {
-  text_snippet: string;
-  risk_type: string;
-  severity: "critical" | "high" | "medium" | "low";
-  explanation: string;
-}
-
-interface Citation {
-  standard: string;
-  clause: string;
-  text: string;
-  relevance: string;
-}
-
-interface EvaluationReport {
-  document_id?: string | null;
-  document_save_status?: "saved" | "failed" | "not_applicable";
-  document_save_error?: string | null;
-  filename: string;
-  doc_type: string;
-  doc_type_label: string;
-  word_count: number;
-  standards_found: number;
-  compliance_score: number;
-  overall_status: "compliant" | "needs_review" | "non_compliant";
-  summary: string;
-  issues: EvalIssue[];
-  strengths: string[];
-  recommendations: string[];
-  standards_checked: string[];
-  gap_analysis: GapAnalysis | null;
-  risk_flags: RiskFlag[];
-  citations: Citation[];
-  extracted_text?: string;
-}
-
-interface FileVersionEntry {
-  version: number;
-  score: number;
-  status: string;
-  doc_type_label: string;
-  timestamp: string;
-  issues_count: number;
-  strengths_count: number;
-  summary: string;
-}
-
-interface AuditorReview {
-  reviewer: string;
-  notes: string;
-  confirmed_issues: string[];
-  false_positives: string[];
-  additional_findings: string[];
-  issue_comments: Record<string, string>;
-  final_score: number | null;
-  status: "pending" | "approved" | "rejected";
-  reviewed_at?: string;
-  filename?: string;
-}
+import type { EvalIssue, GapAnalysis, EvaluationReport, FileVersionEntry, AuditorReview } from "@/lib/evaluation-types";
+import { generateReportHTML } from "@/lib/evaluation-report-html";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -312,9 +242,11 @@ export default function UploadPage() {
     null,
   );
 
-  const safeKey = (filename: string) =>
-    filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const SESSION_KEY = `aminra_eval_${user?.id || "anon"}`;
+  const SESSION_KEY = privateCacheKey(user?.id, user?.tenant_id, "evaluation");
+  const actorId = user?.id;
+  const tenantId = user?.tenant_id;
+  const live = useRef(true);
+  useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
 
   // Restore session on mount or user change
   useEffect(() => {
@@ -331,7 +263,7 @@ export default function UploadPage() {
     setRewrites({});
     setReviewSaved(false);
     try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
+      const saved = SESSION_KEY ? sessionStorage.getItem(SESSION_KEY) : null;
       if (saved) {
         const s = JSON.parse(saved);
         if (s.report) {
@@ -348,11 +280,11 @@ export default function UploadPage() {
       }
     } catch {}
 
-  }, [user?.id]);
+  }, [SESSION_KEY]);
 
   // Persist session whenever result is available
   useEffect(() => {
-    if (phase === "done" && report) {
+    if (SESSION_KEY && phase === "done" && report) {
       try {
         sessionStorage.setItem(
           SESSION_KEY,
@@ -398,13 +330,16 @@ export default function UploadPage() {
     };
     const updated = [entry, ...prevVersions].slice(0, 10);
     setFileVersions(updated);
-    const key = safeKey(r.filename);
+    if (!live.current) return;
+    const versionKey = privateCacheKey(actorId, tenantId, "versions", r.filename);
+    const reportKey = privateCacheKey(actorId, tenantId, "report", r.filename);
+    if (!versionKey || !reportKey) return;
     try {
       localStorage.setItem(
-        `aminra_file_versions_${key}`,
+        versionKey,
         JSON.stringify(updated),
       );
-      localStorage.setItem(`aminra_full_report_${key}`, JSON.stringify(r));
+      localStorage.setItem(reportKey, JSON.stringify(r));
     } catch {}
   };
 
@@ -433,13 +368,14 @@ export default function UploadPage() {
       setActiveTab("overview");
 
       // Load per-file cache
-      const fk = safeKey(file.name);
+      const versionsKey = privateCacheKey(actorId, tenantId, "versions", file.name);
+      const reportKey = privateCacheKey(actorId, tenantId, "report", file.name);
       let prevReport: EvaluationReport | null = null;
       let prevVersions: FileVersionEntry[] = [];
       try {
-        const rv = localStorage.getItem(`aminra_file_versions_${fk}`);
+        const rv = versionsKey ? localStorage.getItem(versionsKey) : null;
         if (rv) prevVersions = JSON.parse(rv);
-        const rr = localStorage.getItem(`aminra_full_report_${fk}`);
+        const rr = reportKey ? localStorage.getItem(reportKey) : null;
         if (rr) prevReport = JSON.parse(rr);
       } catch {}
       setFileVersions(prevVersions);
@@ -447,11 +383,7 @@ export default function UploadPage() {
 
       // Phase 1: Upload + Ingest (background)
       setPhase("uploading");
-      const formData = new FormData();
-      formData.append("file", file);
-      try {
-        await fetch(`${API}/ingest`, { method: "POST", body: formData });
-      } catch {}
+      // Private uploads are evaluated directly, never ingested into shared knowledge.
 
       // Phase 2: Analyze
       setPhase("analyzing");
@@ -493,18 +425,20 @@ export default function UploadPage() {
           throw new Error(err.error || `HTTP ${res.status}`);
         }
         const data: EvaluationReport = await res.json();
+        if (!live.current) return;
         clearInterval(analyzeTimerRef.current!);
         setAnalyzeProgress(100);
         setTimeout(() => {
+          if (!live.current) return;
           setReport(data);
           setExtractedText(data.extracted_text || "");
           setPhase("done");
           saveFileVersion(data, prevVersions);
           // Load existing review
-          fetch(`${API}/reviews/${encodeURIComponent(file.name)}`)
+          fetch(`${API}/reviews/${encodeURIComponent(file.name)}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
             .then((r) => r.json())
             .then((d) => {
-              if (d.exists && d.review) setExistingReview(d.review);
+              if (live.current && d.exists && d.review) setExistingReview(d.review);
             })
             .catch(() => {});
         }, 400);
@@ -514,7 +448,7 @@ export default function UploadPage() {
         setPhase("idle");
       }
     },
-    [API, selectedDocType, canAnalyze],
+    [API, selectedDocType, canAnalyze, token, actorId, tenantId],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -577,17 +511,20 @@ export default function UploadPage() {
   const saveReview = async () => {
     if (!fileName) return;
     try {
-      await fetch(`${API}/reviews/${encodeURIComponent(fileName)}`, {
+      const response = await fetch(`${API}/reviews/${encodeURIComponent(fileName)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           ...review,
           filename: fileName,
           reviewed_at: new Date().toISOString(),
         }),
       });
-      setReviewSaved(true);
-    } catch {}
+      if (!response.ok) throw new Error("Chưa lưu được nhận xét. Vui lòng thử lại.");
+      if (live.current) setReviewSaved(true);
+    } catch (error) {
+      if (live.current) setError(error instanceof Error ? error.message : "Chưa lưu được nhận xét.");
+    }
   };
 
   // F-10: Export
@@ -596,6 +533,7 @@ export default function UploadPage() {
     const html = generateReportHTML(report, existingReview);
     const win = window.open("", "_blank");
     if (win) {
+      win.opener = null;
       win.document.write(html);
       win.document.close();
       win.print();
@@ -1056,7 +994,7 @@ export default function UploadPage() {
         <button
           onClick={() => {
             try {
-              sessionStorage.removeItem(SESSION_KEY);
+              if (SESSION_KEY) sessionStorage.removeItem(SESSION_KEY);
             } catch {}
             setPhase("idle");
             setReport(null);
@@ -2066,12 +2004,13 @@ export default function UploadPage() {
           {fileVersions.length > 0 && (
             <button
               onClick={() => {
-                const key = safeKey(fileName);
+                const versionKey = privateCacheKey(actorId, tenantId, "versions", fileName);
+                const reportKey = privateCacheKey(actorId, tenantId, "report", fileName);
                 setFileVersions([]);
                 setPreviousReport(null);
                 try {
-                  localStorage.removeItem(`aminra_file_versions_${key}`);
-                  localStorage.removeItem(`aminra_full_report_${key}`);
+                  if (versionKey) localStorage.removeItem(versionKey);
+                  if (reportKey) localStorage.removeItem(reportKey);
                 } catch {}
               }}
               className="text-xs px-3 py-1.5 rounded-lg transition-all"
@@ -2634,56 +2573,3 @@ export default function UploadPage() {
 }
 
 // ─── F-10: HTML Report Generator ─────────────────────────────────────────────
-
-function generateReportHTML(
-  report: EvaluationReport,
-  review: AuditorReview | null,
-): string {
-  const st =
-    report.overall_status === "compliant"
-      ? "#0A1F44"
-      : report.overall_status === "needs_review"
-        ? "#f59e0b"
-        : "#ef4444";
-  const stLabel =
-    report.overall_status === "compliant"
-      ? "Tuân thủ"
-      : report.overall_status === "needs_review"
-        ? "Cần xem xét"
-        : "Không tuân thủ";
-  return `<!DOCTYPE html><html lang="vi"><head>
-<meta charset="UTF-8"><title>Báo cáo Halal — ${report.filename}</title>
-<style>
-  body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; color: #111; line-height: 1.6; }
-  h1 { color: #166534; border-bottom: 2px solid #166534; padding-bottom: 8px; }
-  h2 { color: #0A1F44; margin-top: 28px; font-size: 16px; }
-  .score { font-size: 48px; font-weight: bold; color: ${st}; }
-  .status { display: inline-block; padding: 4px 12px; border-radius: 20px; background: ${st}22; color: ${st}; font-weight: bold; margin-left: 12px; font-size: 14px; }
-  .issue { border-left: 3px solid #dc2626; padding: 10px 16px; margin: 8px 0; background: #fef2f2; border-radius: 4px; }
-  .citation { border-left: 3px solid #0A1F44; padding: 10px 16px; margin: 8px 0; background: #eff6ff; border-radius: 4px; }
-  .risk { border-left: 3px solid #d97706; padding: 10px 16px; margin: 8px 0; background: #fffbeb; border-radius: 4px; }
-  blockquote { font-style: italic; color: #374151; margin: 0; }
-  .meta { color: #6b7280; font-size: 13px; }
-  @media print { body { margin: 20px; } }
-</style></head><body>
-<h1>Báo cáo Đánh giá Halal Compliance</h1>
-<p class="meta">Tài liệu: <strong>${report.filename}</strong> · ${report.doc_type_label} · ${report.word_count.toLocaleString()} từ</p>
-<p class="meta">Ngày: ${new Date().toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" })}</p>
-<p><span class="score">${report.compliance_score}</span><span>/100</span><span class="status">${stLabel}</span></p>
-<p>${report.summary}</p>
-${report.strengths.length ? `<h2>Điểm mạnh</h2><ul>${report.strengths.map((s) => `<li>${s}</li>`).join("")}</ul>` : ""}
-${report.issues.length ? `<h2>Vấn đề phát hiện (${report.issues.length})</h2>${report.issues.map((i) => `<div class="issue"><strong>[${i.severity.toUpperCase()}] ${i.section}</strong><br>${i.issue}<br><em>→ ${i.recommendation}</em><br><small>§ ${i.reference}</small></div>`).join("")}` : ""}
-${
-  report.gap_analysis
-    ? `<h2>Gap Analysis</h2>
-${report.gap_analysis.critical_gaps.length ? `<h3 style="color:#dc2626">Nghiêm trọng</h3><ul>${report.gap_analysis.critical_gaps.map((g) => `<li>${g}</li>`).join("")}</ul>` : ""}
-${report.gap_analysis.major_gaps.length ? `<h3 style="color:#d97706">Lớn</h3><ul>${report.gap_analysis.major_gaps.map((g) => `<li>${g}</li>`).join("")}</ul>` : ""}
-${report.gap_analysis.minor_gaps.length ? `<h3 style="color:#0A1F44">Nhỏ</h3><ul>${report.gap_analysis.minor_gaps.map((g) => `<li>${g}</li>`).join("")}</ul>` : ""}`
-    : ""
-}
-${report.risk_flags.length ? `<h2>Rủi ro Inline (${report.risk_flags.length})</h2>${report.risk_flags.map((r) => `<div class="risk"><span style="color:#d97706;font-weight:bold">[${r.severity.toUpperCase()}] ${r.risk_type}</span><br><blockquote>"${r.text_snippet}"</blockquote><br>${r.explanation}</div>`).join("")}` : ""}
-${report.citations.length ? `<h2>Trích dẫn Tiêu chuẩn (${report.citations.length})</h2>${report.citations.map((c) => `<div class="citation"><strong>${c.standard} — Điều ${c.clause}</strong><br><blockquote>"${c.text}"</blockquote><br><small>${c.relevance}</small></div>`).join("")}` : ""}
-${review ? `<h2>Review của Kiểm toán viên</h2><p>Reviewer: <strong>${review.reviewer}</strong> · Trạng thái: <strong>${review.status}</strong></p><p>${review.notes}</p>` : ""}
-<hr style="margin-top:40px"><p class="meta" style="text-align:center">Được tạo bởi AMINRA — Halal Certification AI · ${new Date().toISOString()}</p>
-</body></html>`;
-}

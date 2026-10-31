@@ -91,6 +91,8 @@ class InviteMemberRequest(BaseModel):
 
 
 class UserProfile(BaseModel):
+    keycloak_sub: Optional[str] = None
+    realm_roles: Optional[list[str]] = None
     id: str
     email: str
     role: str

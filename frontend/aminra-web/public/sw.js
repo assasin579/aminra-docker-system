@@ -1,6 +1,6 @@
 // AMINRA Service Worker — offline caching for audit field use
-const CACHE_NAME = "aminra-v9";
-const OFFLINE_URL = "/audits";
+const CACHE_NAME = "aminra-v10";
+const OFFLINE_URL = "/offline.html";
 // URLs the SW must NEVER serve from cache (always go to network).
 // Auth/admin identity paths are account-switch critical: cached responses/pages
 // can resurrect a prior browser profile after logout/login as another account.
@@ -25,7 +25,7 @@ const NEVER_CACHE_PATTERNS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([OFFLINE_URL, "/audits/templates"]);
+      return cache.addAll([OFFLINE_URL]);
     }),
   );
   self.skipWaiting();
@@ -37,7 +37,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key.startsWith("aminra-") && key !== CACHE_NAME)
           .map((key) => caches.delete(key)),
       );
     }),
@@ -74,44 +74,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // API calls: network-first, fallback to cache
-  if (url.pathname.startsWith("/api/")) {
-    // Some endpoints (template downloads) MUST never be served from cache —
-    // admin rotates content, stale = wrong template delivered to business.
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (
-            !skipCache &&
-            response.ok &&
-            request.url.includes("/api/api/audits/")
-          ) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => (skipCache ? Response.error() : caches.match(request))),
-    );
+  // Authorization headers do not partition Cache Storage. Keep all API and
+  // private navigation/RSC responses network-only, including offline failures.
+  const staticAsset = url.pathname.startsWith("/_next/static/") ||
+    /^\/aminra-[a-z0-9-]+\.png$/.test(url.pathname) ||
+    url.pathname === OFFLINE_URL;
+  if (!staticAsset || request.headers.has("Authorization")) {
+    event.respondWith(fetch(request));
     return;
   }
+  event.respondWith(fetch(request).then((response) => {
+    if (response.ok) {
+      const clone = response.clone();
+      event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, clone)));
+    }
+    return response;
+  }).catch(() => caches.match(request).then(cached => cached || Response.error())));
 
-  // Pages: network-first, fallback to cache, then offline page
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(request).then((cached) => {
-          return cached || caches.match(OFFLINE_URL);
-        });
-      }),
-  );
 });
 
 // Web push: show notification when server pushes via VAPID
@@ -156,61 +135,6 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// Listen for sync events (for queued offline checklist updates)
-self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-audit-data") {
-    event.waitUntil(syncAuditData());
-  }
-});
-
-async function syncAuditData() {
-  // Read queued updates from IndexedDB and POST them
-  try {
-    const db = await openDB();
-    const tx = db.transaction("sync-queue", "readonly");
-    const store = tx.objectStore("sync-queue");
-    const items = await getAllFromStore(store);
-
-    for (const item of items) {
-      try {
-        await fetch(item.url, {
-          method: item.method,
-          headers: item.headers,
-          body: item.body,
-        });
-        // Remove from queue on success
-        const delTx = db.transaction("sync-queue", "readwrite");
-        delTx.objectStore("sync-queue").delete(item.id);
-      } catch (e) {
-        // Keep in queue for next sync
-      }
-    }
-  } catch (e) {
-    // IndexedDB not available
-  }
-}
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open("aminra-offline", 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("sync-queue")) {
-        db.createObjectStore("sync-queue", {
-          keyPath: "id",
-          autoIncrement: true,
-        });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function getAllFromStore(store) {
-  return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+// Legacy offline entries contain bearer credentials without an actor/tenant
+// authorization contract. They must never be replayed in the background.
+// A future offline workflow must obtain current, scoped user authorization.

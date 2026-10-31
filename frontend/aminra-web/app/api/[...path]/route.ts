@@ -16,8 +16,18 @@ const PUBLIC_TRACE_BROWSER_CACHE_CONTROL = "public, max-age=5, stale-while-reval
 const PUBLIC_TRACE_SHARED_CACHE_CONTROL = "public, max-age=30, stale-while-revalidate=60";
 const publicTraceProxyCache = new Map<string, { expiresAt: number; status: number; headers: [string, string][]; body: string }>();
 
+function privateResponseHeaders(source: Headers): Headers {
+  const headers = new Headers(source);
+  headers.set("cache-control", "private, no-store, max-age=0");
+  headers.set("cdn-cache-control", "no-store");
+  headers.set("cloudflare-cdn-cache-control", "no-store");
+  headers.set("pragma", "no-cache");
+  headers.set("vary", [headers.get("vary"), "Authorization", "Cookie"].filter(Boolean).join(", "));
+  return headers;
+}
+
 function cacheablePublicTracePath(req: NextRequest, path: string[]): string | null {
-  if (req.method !== "GET") return null;
+  if (req.method !== "GET" || req.headers.has("authorization") || req.headers.has("cookie")) return null;
   if (path.length === 5 && path[0] === "api" && path[1] === "supply-chain" && path[2] === "batches" && path[3] === "trace") {
     return `${path.join("/")}${req.nextUrl.search || ""}`;
   }
@@ -103,13 +113,13 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
     rememberPublicTrace(publicTraceCacheKey, upstream, bodyText);
     const cached = publicTraceProxyCache.get(publicTraceCacheKey);
     if (cached) return responseFromCached(cached);
-    return new Response(bodyText, { status: upstream.status, headers: upstream.headers });
+    return new Response(bodyText, { status: upstream.status, headers: privateResponseHeaders(upstream.headers) });
   }
 
   // Stream the response back (handles SSE / chunked transfer too)
   return new Response(upstream.body, {
     status: upstream.status,
-    headers: upstream.headers,
+    headers: privateResponseHeaders(upstream.headers),
   });
 }
 

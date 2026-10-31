@@ -38,7 +38,7 @@ from auth.admin_router import router as admin_auth_router
 from auth.document_router import router as document_router
 from auth.identity import resolve_canonical_user_id, resolve_canonical_tenant_id
 from auth.permissions import check_permission_db
-from auth.jwt_utils import get_current_user, decode_token
+from auth.jwt_utils import get_current_user
 from auth.rate_limit import rate_limit_api, rate_limit_upload
 from auth.upload_utils import validate_upload
 
@@ -95,6 +95,18 @@ app = FastAPI(
     docs_url=None if _is_prod else "/docs",
     redoc_url=None if _is_prod else "/redoc",
 )
+@app.middleware("http")
+async def private_response_cache_boundary(request: Request, call_next):
+    response = await call_next(request)
+    if request.headers.get("authorization") or request.query_params.get("token"):
+        response.headers["Cache-Control"] = "private, no-store, max-age=0"
+        response.headers["CDN-Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Vary"] = ", ".join(filter(None, [response.headers.get("Vary"), "Authorization", "Cookie"]))
+    return response
+
+
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://aminra.org,https://dev-web.silvergem.org,https://fe.silvergem.org").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -190,20 +202,16 @@ TEMPLATE_REVISIONS_DIR.mkdir(parents=True, exist_ok=True)
 # `_require_admin` checks JWT for realm role `platform_admin`.
 
 
-def _require_admin(request: Request):
-    """Validate Keycloak JWT + check realm role `platform_admin`.
-
-    Returns claims dict on success (caller can ignore). Raises 401/403 otherwise.
-    """
+async def _require_admin(request: Request):
+    """Current Keycloak role/session and canonical active app identity."""
+    from auth import keycloak_validator
+    from auth.db import get_pool
+    from auth.jwt_utils import require_admin
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(401, "Unauthorized")
-    token = auth[7:]
-    claims = decode_token(token)
-    realm_roles = (claims.get("realm_access") or {}).get("roles", [])
-    if "platform_admin" not in realm_roles:
-        raise HTTPException(403, "Admin access required (Keycloak realm role `platform_admin`)")
-    return claims
+    user = await keycloak_validator.authenticate_keycloak_token(auth[7:], get_pool())
+    return await require_admin(user)
 
 
 # ── Halal document type registry ───────────────────────────────────────────────
@@ -423,23 +431,23 @@ class TemplateConfig(BaseModel):
 
 
 @app.get("/admin/verify")
-def admin_verify(request: Request):
+async def admin_verify(request: Request):
     try:
-        _require_admin(request)
+        await _require_admin(request)
         return {"valid": True}
     except HTTPException:
         return {"valid": False}
 
 
 @app.get("/admin/doc-types")
-def list_doc_types(request: Request):
-    _require_admin(request)
+async def list_doc_types(request: Request):
+    await _require_admin(request)
     return {"doc_types": [{"id": k, "label": v} for k, v in HALAL_DOC_TYPES.items()]}
 
 
 @app.get("/admin/templates")
-def list_templates(request: Request):
-    _require_admin(request)
+async def list_templates(request: Request):
+    await _require_admin(request)
     result = []
     for dt_id, dt_label in HALAL_DOC_TYPES.items():
         p = TEMPLATES_DIR / f"{dt_id}.json"
@@ -459,8 +467,8 @@ def list_templates(request: Request):
 
 
 @app.get("/admin/templates/{doc_type}")
-def get_template(doc_type: str, request: Request):
-    _require_admin(request)
+async def get_template(doc_type: str, request: Request):
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     p = TEMPLATES_DIR / f"{doc_type}.json"
@@ -476,8 +484,8 @@ def get_template(doc_type: str, request: Request):
 
 
 @app.put("/admin/templates/{doc_type}")
-def save_template(doc_type: str, config: TemplateConfig, request: Request):
-    _require_admin(request)
+async def save_template(doc_type: str, config: TemplateConfig, request: Request):
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     config.doc_type = doc_type
@@ -489,9 +497,9 @@ def save_template(doc_type: str, config: TemplateConfig, request: Request):
 
 
 @app.get("/admin/templates/{doc_type}/files")
-def list_template_files(doc_type: str, request: Request, lang: str = ""):
+async def list_template_files(doc_type: str, request: Request, lang: str = ""):
     """List reference files. If lang specified (vi/en), list from lang subfolder."""
-    _require_admin(request)
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang and lang not in ("vi", "en"):
@@ -548,7 +556,7 @@ def list_template_files(doc_type: str, request: Request, lang: str = ""):
 @app.post("/admin/templates/{doc_type}/files")
 async def upload_template_file(doc_type: str, request: Request, file: UploadFile = File(...), lang: str = Form("vi")):
     """Upload reference file to a language subfolder."""
-    _require_admin(request)
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang not in ("vi", "en"):
@@ -567,9 +575,9 @@ async def upload_template_file(doc_type: str, request: Request, file: UploadFile
 
 
 @app.delete("/admin/templates/{doc_type}/files/{filename}")
-def delete_template_file(doc_type: str, filename: str, request: Request, lang: str = "vi"):
+async def delete_template_file(doc_type: str, filename: str, request: Request, lang: str = "vi"):
     """Delete reference file from a language subfolder."""
-    _require_admin(request)
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang not in ("vi", "en"):
@@ -588,8 +596,8 @@ def delete_template_file(doc_type: str, filename: str, request: Request, lang: s
 
 
 @app.get("/admin/templates/{doc_type}/revisions")
-def get_template_revisions(doc_type: str, request: Request):
-    _require_admin(request)
+async def get_template_revisions(doc_type: str, request: Request):
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     rev_file = TEMPLATE_REVISIONS_DIR / f"{doc_type}.json"
@@ -610,7 +618,7 @@ async def upload_template_file_lang(
     lang: str = Form("vi"),
 ):
     """Upload a DOCX template for a specific language (vi/en)."""
-    _require_admin(request)
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang not in ("vi", "en"):
@@ -629,9 +637,9 @@ async def upload_template_file_lang(
 
 
 @app.delete("/admin/templates/{doc_type}/template-file")
-def delete_template_file_lang(doc_type: str, request: Request, lang: str = "vi"):
+async def delete_template_file_lang(doc_type: str, request: Request, lang: str = "vi"):
     """Delete a language-specific DOCX template."""
-    _require_admin(request)
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404)
     if lang not in ("vi", "en"):
@@ -645,9 +653,9 @@ def delete_template_file_lang(doc_type: str, request: Request, lang: str = "vi")
 
 
 @app.get("/admin/templates/{doc_type}/template-files")
-def list_template_files_lang(doc_type: str, request: Request):
+async def list_template_files_lang(doc_type: str, request: Request):
     """List language-specific templates for a doc_type."""
-    _require_admin(request)
+    await _require_admin(request)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404)
     result = {}
@@ -665,29 +673,27 @@ def list_template_files_lang(doc_type: str, request: Request):
 # ── Admin file preview endpoints ──────────────────────────────────────────────
 
 
-def _verify_admin_token_string(token: str) -> bool:
-    """Validate a Keycloak JWT passed via `?token=` query string + check
-    `platform_admin` realm role.
-
-    Used for file preview links opened in new browser tabs where setting a
-    Bearer header isn't possible. Post-Phase-4c the legacy opaque admin
-    session is gone — only Keycloak tokens are accepted.
-    """
+async def _verify_admin_token_string(token: str) -> bool:
     if not token:
         return False
+    from auth import keycloak_validator
+    from auth.db import get_pool
+    from auth.jwt_utils import require_admin
     try:
-        claims = decode_token(token)
-    except HTTPException:
+        user = await keycloak_validator.authenticate_keycloak_token(token, get_pool())
+        await require_admin(user)
+    except HTTPException as exc:
+        if exc.status_code == 503:
+            raise
         return False
-    realm_roles = (claims.get("realm_access") or {}).get("roles", [])
-    return "platform_admin" in realm_roles
+    return True
 
 
-def _require_admin_or_token(request: Request, token: Optional[str]):
+async def _require_admin_or_token(request: Request, token: Optional[str]):
     """Accept either a `Bearer` admin session OR `?token=` query string."""
-    if token and _verify_admin_token_string(token):
+    if token and await _verify_admin_token_string(token):
         return
-    _require_admin(request)
+    await _require_admin(request)
 
 
 def _guess_media_type(filename: str) -> str:
@@ -774,9 +780,9 @@ def _maybe_serve_as_pdf(file: Path) -> tuple[Path, str]:
 
 
 @app.get("/admin/templates/{doc_type}/template-file/view")
-def view_template_file(doc_type: str, request: Request, lang: str = "vi", token: Optional[str] = None):
+async def view_template_file(doc_type: str, request: Request, lang: str = "vi", token: Optional[str] = None):
     """Serve the canonical {doc_type}_{lang}.docx for admin preview/verification."""
-    _require_admin_or_token(request, token)
+    await _require_admin_or_token(request, token)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang not in ("vi", "en"):
@@ -795,9 +801,9 @@ def view_template_file(doc_type: str, request: Request, lang: str = "vi", token:
 
 
 @app.get("/admin/templates/{doc_type}/files/{filename}/view")
-def view_reference_file(doc_type: str, filename: str, request: Request, lang: str = "vi", token: Optional[str] = None):
+async def view_reference_file(doc_type: str, filename: str, request: Request, lang: str = "vi", token: Optional[str] = None):
     """Serve a reference file from the lang subfolder for admin preview."""
-    _require_admin_or_token(request, token)
+    await _require_admin_or_token(request, token)
     if doc_type not in HALAL_DOC_TYPES:
         raise HTTPException(404, f"Loại tài liệu không tồn tại: {doc_type}")
     if lang not in ("vi", "en"):
@@ -949,7 +955,7 @@ def download_template(
 
 @app.get("/admin/placeholders")
 async def list_placeholders(request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -960,7 +966,7 @@ async def list_placeholders(request: Request):
 
 @app.post("/admin/placeholders")
 async def create_placeholder(request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     body = await request.json()
     key = body.get("key", "").strip().lower().replace(" ", "_")
     label = body.get("label", "").strip()
@@ -997,7 +1003,7 @@ async def create_placeholder(request: Request):
 
 @app.put("/admin/placeholders/{key}")
 async def update_placeholder(key: str, request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     body = await request.json()
     label = body.get("label", "").strip()
     description = body.get("description", "").strip()
@@ -1030,7 +1036,7 @@ async def update_placeholder(key: str, request: Request):
 
 @app.delete("/admin/placeholders/{key}")
 async def delete_placeholder(key: str, request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1678,7 +1684,7 @@ async def admin_list_users(
     status: Optional[str] = None,
     q: Optional[str] = None,
 ):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1713,7 +1719,7 @@ async def admin_list_users(
 
 @app.get("/admin/users/{user_id}/delete-impact")
 async def admin_user_delete_impact(user_id: str, request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1783,7 +1789,7 @@ async def admin_user_delete_impact(user_id: str, request: Request):
 
 @app.post("/admin/users/{user_id}/related-files/cleanup")
 async def admin_cleanup_user_related_files(user_id: str, request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1811,7 +1817,7 @@ async def admin_cleanup_user_related_references(
     request: Request,
     body: AdminUserReferenceCleanupRequest,
 ):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1846,7 +1852,7 @@ async def admin_run_account_deletion_case(
     request: Request,
     body: AdminAccountDeletionRunRequest,
 ):
-    claims = _require_admin(request)
+    claims = await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1910,7 +1916,7 @@ async def admin_run_account_deletion_case(
 
 @app.get("/admin/account-deletion-cases/{case_id}")
 async def admin_get_account_deletion_case(case_id: str, request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1937,7 +1943,7 @@ async def admin_get_account_deletion_case(case_id: str, request: Request):
 
 @app.post("/admin/users/{user_id}/deletion-case")
 async def admin_create_account_deletion_case(user_id: str, request: Request):
-    claims = _require_admin(request)
+    claims = await _require_admin(request)
     from auth.db import get_pool
 
     pool = get_pool()
@@ -1978,7 +1984,7 @@ async def admin_create_account_deletion_case(user_id: str, request: Request):
 
 @app.post("/admin/users")
 async def admin_create_user(request: Request, body: dict | None = Body(default=None)):
-    _require_admin(request)
+    await _require_admin(request)
     _raise_keycloak_only_account_management()
 
 
@@ -1988,13 +1994,13 @@ async def admin_reset_user_password(
     request: Request,
     body: dict | None = Body(default=None),
 ):
-    _require_admin(request)
+    await _require_admin(request)
     _raise_keycloak_only_account_management()
 
 
 @app.put("/admin/users/{user_id}")
 async def admin_update_user(user_id: str, request: Request, body: dict | None = Body(default=None)):
-    _require_admin(request)
+    await _require_admin(request)
     _raise_keycloak_only_account_management()
 
 
@@ -2004,13 +2010,13 @@ async def admin_cleanup_keycloak_identity_by_email(
     request: Request,
     body: dict | None = Body(default=None),
 ):
-    _require_admin(request)
+    await _require_admin(request)
     _raise_keycloak_only_account_management()
 
 
 @app.delete("/admin/users/{user_id}")
 async def admin_delete_user(user_id: str, request: Request):
-    _require_admin(request)
+    await _require_admin(request)
     _raise_keycloak_only_account_management()
 
 
@@ -2146,6 +2152,14 @@ async def ingest_document(
     user: dict = Depends(get_current_user),  # C12 fix — require auth
 ):
     """Upload + queue RAG ingest. Returns job_id; poll /jobs/{job_id} for progress."""
+    # This endpoint publishes shared reference knowledge. Private documents
+    # must use /evaluate/library upload and never enter the shared corpus.
+    from auth.jwt_utils import require_admin
+    await require_admin(user)
+    from services.private_resources import resolve_private_scope
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
     content = await validate_upload(file)
 
     # C7 fix — sanitize filename + UUID prefix to prevent traversal & cross-tenant overwrites.
@@ -2158,10 +2172,10 @@ async def ingest_document(
         raise HTTPException(400, "Invalid file path")
     save_path.write_bytes(content)
 
-    from services.jobs import enqueue
+    from services.jobs import enqueue_scoped
 
     try:
-        job = await enqueue("ingest_document", path=str(save_path))
+        job = await enqueue_scoped("ingest_document", scope, path=str(save_path), public_reference=True)
     except Exception as e:
         log.exception("[ingest] enqueue failed")
         raise HTTPException(503, f"Job queue unavailable: {e}")
@@ -2172,9 +2186,12 @@ async def ingest_document(
 @app.get("/jobs/{job_id}")
 async def get_job(job_id: str, user: dict = Depends(get_current_user)):
     """Poll a background job by ID. Auth required to avoid anonymous job-result IDOR."""
-    from services.jobs import get_job_status
-
-    view = await get_job_status(job_id)
+    from services.jobs import get_scoped_job_status
+    from services.private_resources import resolve_private_scope
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
+    view = await get_scoped_job_status(job_id, scope)
     return {
         "job_id": view.job_id,
         "status": view.status,
@@ -2532,9 +2549,18 @@ async def save_review(filename: str, review: AuditorReview, user: dict = Depends
     review.filename = filename
     if not review.reviewed_at:
         review.reviewed_at = datetime.utcnow().isoformat()
-    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)
-    path = REVIEWS_DIR / f"{safe_name}.json"
-    path.write_text(_json.dumps(review.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
+    from services.private_resources import resolve_private_scope, review_path
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
+    path = review_path(REVIEWS_DIR, scope, filename)
+    import tempfile
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # Readers see the complete old or new review, never a partially written file.
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, encoding="utf-8", delete=False) as draft:
+        draft.write(_json.dumps(review.model_dump(), ensure_ascii=False, indent=2))
+        temporary_path = Path(draft.name)
+    os.replace(temporary_path, path)
     return {"message": "Review saved", "filename": filename}
 
 
@@ -2542,8 +2568,11 @@ async def save_review(filename: str, review: AuditorReview, user: dict = Depends
 async def get_review(filename: str, user: dict = Depends(get_current_user)):
     import json as _json
 
-    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)
-    path = REVIEWS_DIR / f"{safe_name}.json"
+    from services.private_resources import resolve_private_scope, review_path
+    from auth.db import get_pool
+    async with get_pool().acquire() as conn:
+        scope = await resolve_private_scope(user, conn)
+    path = review_path(REVIEWS_DIR, scope, filename)
     if not path.exists():
         return {"exists": False, "review": None}
     data = _json.loads(path.read_text(encoding="utf-8"))

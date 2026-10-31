@@ -88,12 +88,19 @@ async def get_or_reconcile_user_from_keycloak_claims(user: dict, db):
         )
 
     row = row_by_sub or row_by_email
+    if row and row.get("keycloak_sub") and row.get("keycloak_sub") != kc_sub:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Existing identity binding cannot be transferred by email")
     role = _app_role_from_claims(user)
     status_claim = user.get("status") or "active"
     is_owner = _bool_claim(user.get("is_owner"), default=True)
 
     if not row:
-        tenant_uuid = _parse_uuid(user.get("tenant_id"))
+        # Invited staff must have a DB projection created by the invitation
+        # transaction. Self-editable identity attributes never grant membership.
+        if not is_owner:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Invitation projection required")
+        tenant_uuid = None  # New owners receive their own generated application tenant.
+
         row = await db.fetchrow(
             """
             INSERT INTO users (email, keycloak_sub, role, company_name,
@@ -130,7 +137,7 @@ async def get_or_reconcile_user_from_keycloak_claims(user: dict, db):
                 *values,
             )
 
-    if row.get("is_owner") and row.get("tenant_id") is None:
+    if row.get("is_owner") and row.get("tenant_id") != row["id"]:
         row = await db.fetchrow("UPDATE users SET tenant_id = id WHERE id = $1 RETURNING *", row["id"])
 
     return row
