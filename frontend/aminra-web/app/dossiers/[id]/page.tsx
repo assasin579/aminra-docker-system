@@ -698,6 +698,18 @@ export default function DossierDetailPage({
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3 sm:flex-row">
+          {user?.role === "business" && user.is_owner === true
+            && dossier.requirements_binding_status === "bound" && dossier.documents.length > 0
+            && !["cancelled", "cert_issued"].includes(dossier.status) && (
+              <Link
+                href={`/submissions?dossier_id=${dossier.id}`}
+                data-testid="dossier-submit-cta"
+                className="flex-1 rounded-xl px-5 py-2.5 text-center text-sm font-semibold text-white"
+                style={{ background: "#0A1F44" }}
+              >
+                Gửi hồ sơ cho CB
+              </Link>
+            )}
           <Link
             href={`/create-document?dossier=${dossier.id}`}
             className="flex-1 text-center px-5 py-2.5 rounded-xl font-semibold text-sm"
