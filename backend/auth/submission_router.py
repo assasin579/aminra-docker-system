@@ -1823,68 +1823,91 @@ async def replace_submission_document(
     _validate_uuid(old_doc_id)
     _validate_uuid(new_doc_id)
 
-    sub = await db.fetchrow(
-        "SELECT id, document_ids, status, archived_at FROM submissions WHERE id=$1 AND business_tenant=$2",
-        submission_id,
-        await resolve_canonical_tenant_id(user, db),
-    )
-    if not sub:
-        raise HTTPException(404)
-
-    # C1 fix — never let docs swap on terminal-state submissions; cert may already
-    # cover the old set. Business must request a fresh submission instead.
-    archived_at = sub["archived_at"] if "archived_at" in sub.keys() else None
-    if sub["status"] in ("approved", "rejected") or archived_at is not None:
-        raise HTTPException(400, "Hồ sơ đã ở trạng thái cuối — không thể thay tài liệu. Tạo hồ sơ mới nếu cần.")
-
-    # Verify new doc belongs to tenant
-    new_doc = await db.fetchrow(
-        "SELECT id FROM documents WHERE id=$1 AND tenant_id=$2", new_doc_id, await resolve_canonical_tenant_id(user, db)
-    )
-    if not new_doc:
-        raise HTTPException(400, "Tài liệu mới không hợp lệ")
-
-    # W3-M5 fix — old_doc_id must be in the submission. Silent-append previously
-    # let attackers/typos add docs that bypassed CB review.
-    doc_ids = [str(d) for d in (sub["document_ids"] or [])]
-    if old_doc_id not in doc_ids:
-        raise HTTPException(400, "Tài liệu cũ không thuộc hồ sơ này")
-    doc_ids[doc_ids.index(old_doc_id)] = new_doc_id
-
-    # Replacement uploads update only the current document pointer. The
-    # revision request remains open until the Business explicitly resubmits;
-    # that explicit resubmit is the transaction that resolves the request.
-    await db.execute(
-        "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2",
-        doc_ids,
-        submission_id,
-    )
-
-    # Notify provider + auditor
-    sub_info = await db.fetchrow(
-        "SELECT provider_id, auditor_id, company_name FROM submissions WHERE id=$1", submission_id
-    )
-    if sub_info:
-        await notify(
-            db,
-            str(sub_info["provider_id"]),
-            "status_change",
-            f"{sub_info['company_name']} đã cập nhật tài liệu",
-            "Phiên bản mới đã được upload",
-            "/submissions",
+    from auth.permissions import check_permission_db
+    await check_permission_db(user, "can_upload")
+    tenant_id = await resolve_canonical_tenant_id(user, db)
+    if not tenant_id:
+        raise HTTPException(403, "Không xác định được doanh nghiệp")
+    async with db.transaction():
+        sub = await db.fetchrow(
+            "SELECT id, document_ids, status, archived_at, dossier_id, requirements_version_id, requirements_binding_status FROM submissions WHERE id=$1 AND business_tenant=$2 FOR UPDATE",
+            submission_id,
+            tenant_id,
         )
-        if sub_info["auditor_id"]:
+        if not sub:
+            raise HTTPException(404)
+
+        # C1 fix — never let docs swap on terminal-state submissions; cert may already
+        # cover the old set. Business must request a fresh submission instead.
+        archived_at = sub["archived_at"] if "archived_at" in sub.keys() else None
+        if sub["status"] in ("approved", "rejected") or archived_at is not None:
+            raise HTTPException(400, "Hồ sơ đã ở trạng thái cuối — không thể thay tài liệu. Tạo hồ sơ mới nếu cần.")
+
+        # Verify new doc belongs to tenant
+        new_doc = await db.fetchrow(
+            "SELECT id FROM documents WHERE id=$1 AND tenant_id=$2", new_doc_id, tenant_id
+        )
+        if not new_doc:
+            raise HTTPException(400, "Tài liệu mới không hợp lệ")
+
+        # W3-M5 fix — old_doc_id must be in the submission. Silent-append previously
+        # let attackers/typos add docs that bypassed CB review.
+        doc_ids = [str(d) for d in (sub["document_ids"] or [])]
+        if old_doc_id not in doc_ids:
+            raise HTTPException(400, "Tài liệu cũ không thuộc hồ sơ này")
+        if sub.get("dossier_id") and sub.get("requirements_binding_status") == "bound":
+            from services.dossier_attachments import validate_dossier_slot, attach_document_reference
+            from uuid import uuid5, NAMESPACE_URL
+            import hashlib
+            actor_id = await resolve_canonical_user_id(user, db)
+            if not actor_id:
+                raise HTTPException(403, "Không xác định được người thao tác")
+            old_type = await db.fetchval("SELECT doc_type FROM documents WHERE id=$1 AND tenant_id=$2", old_doc_id, tenant_id)
+            dossier = await validate_dossier_slot(db, dossier_id=sub["dossier_id"], tenant_id=tenant_id, doc_type=old_type)
+            if dossier["requirements_version_id"] != sub["requirements_version_id"]:
+                raise HTTPException(409, "Phiên bản yêu cầu của hồ sơ không khớp")
+            identity = f"replace:{submission_id}:{old_doc_id}:{new_doc_id}:{actor_id}"
+            await attach_document_reference(
+                db, dossier=dossier, document_id=new_doc_id, doc_type=old_type,
+                actor_id=actor_id, idempotency_key=uuid5(NAMESPACE_URL, identity),
+                request_sha256=hashlib.sha256(identity.encode()).hexdigest(),
+            )
+        doc_ids[doc_ids.index(old_doc_id)] = new_doc_id
+
+        # Replacement uploads update only the current document pointer. The
+        # revision request remains open until the Business explicitly resubmits;
+        # that explicit resubmit is the transaction that resolves the request.
+        await db.execute(
+            "UPDATE submissions SET document_ids = $1::uuid[], updated_at = NOW() WHERE id = $2",
+            doc_ids,
+            submission_id,
+        )
+
+        # Notify provider + auditor
+        sub_info = await db.fetchrow(
+            "SELECT provider_id, auditor_id, company_name FROM submissions WHERE id=$1", submission_id
+        )
+        if sub_info:
             await notify(
                 db,
-                str(sub_info["auditor_id"]),
+                str(sub_info["provider_id"]),
                 "status_change",
                 f"{sub_info['company_name']} đã cập nhật tài liệu",
                 "Phiên bản mới đã được upload",
                 "/submissions",
             )
+            if sub_info["auditor_id"]:
+                await notify(
+                    db,
+                    str(sub_info["auditor_id"]),
+                    "status_change",
+                    f"{sub_info['company_name']} đã cập nhật tài liệu",
+                    "Phiên bản mới đã được upload",
+                    "/submissions",
+                )
 
-    log.info(f"[submission] {submission_id} doc replaced: {old_doc_id} → {new_doc_id}")
-    return {"message": "Đã cập nhật tài liệu trong hồ sơ"}
+        log.info(f"[submission] {submission_id} doc replaced: {old_doc_id} → {new_doc_id}")
+        return {"message": "Đã cập nhật tài liệu trong hồ sơ"}
 
 
 # ── Business: get revision history for a doc in submission ────────────────────

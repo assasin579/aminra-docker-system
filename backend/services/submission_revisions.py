@@ -219,7 +219,12 @@ async def resubmit(
     if pending is None:
         raise NoRevisionPending(submission_id)
 
-    new_docs_param = [str(d) for d in new_document_ids] if new_document_ids is not None else None
+    effective_documents = new_document_ids
+    if effective_documents is None and sub.get("requirements_binding_status") == "bound":
+        # Browser replacement updates the current pointer before explicit resubmit.
+        # Validate that exact packet too; omission must not bypass pinned slots.
+        effective_documents = sub.get("document_ids") or []
+    new_docs_param = [str(d) for d in effective_documents] if effective_documents is not None else None
     if new_docs_param is not None:
         if not new_docs_param or len(set(new_docs_param)) != len(new_docs_param):
             raise InvalidStateTransition("resubmission evidence must contain unique document versions")
