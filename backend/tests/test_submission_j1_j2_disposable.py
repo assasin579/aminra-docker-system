@@ -170,6 +170,14 @@ async def case(db):
     }
 
 
+async def complete_submission_documents(case, db):
+    from services.document_library import select_current_version
+    documents = list(case['initial_docs']) + [case['docs'][key]['id'] for key in ('certificate-v1','policy-v1')]
+    for document in documents:
+        await select_current_version(db,tenant_id=case['ids']['business_a'],document_id=document,actor_id=case['ids']['business_a'])
+    return [str(document) for document in documents]
+
+
 @pytest.mark.asyncio
 async def test_submit_routes_owner_selected_cb_to_canonical_org_tenant(db, case, monkeypatch):
     async def no_notify(*_args, **_kwargs):
@@ -185,7 +193,7 @@ async def test_submit_routes_owner_selected_cb_to_canonical_org_tenant(db, case,
     result = await submission_router.submit_documents(
         req=submission_router.SubmitRequest(
             provider_id=str(cb_owner["id"]),
-            document_ids=[str(case["initial_docs"][0])],
+            document_ids=await complete_submission_documents(case, db),
             notes="synthetic recipient-routing regression",
         ),
         request=synthetic_request(), owner=business, db=db,
@@ -746,7 +754,7 @@ async def test_submit_retry_same_key_returns_same_submission_receipt(db, case, m
     request = synthetic_request(headers={"Idempotency-Key": "synthetic-submit-retry-key"})
     payload = submission_router.SubmitRequest(
         provider_id=str(case["ids"]["cb_p"]),
-        document_ids=[str(document_id) for document_id in case["initial_docs"]],
+        document_ids=await complete_submission_documents(case, db),
         notes="synthetic submit retry",
     )
     owner = case["users"]["business_a"]
@@ -760,7 +768,7 @@ async def test_submit_retry_same_key_returns_same_submission_receipt(db, case, m
 
     changed_payload = submission_router.SubmitRequest(
         provider_id=str(case["ids"]["cb_p"]),
-        document_ids=[str(document_id) for document_id in case["initial_docs"]],
+        document_ids=await complete_submission_documents(case, db),
         notes="same key, different notes",
     )
     with pytest.raises(HTTPException) as exc:
@@ -804,7 +812,7 @@ async def test_submit_route_concurrent_same_key_commits_one_submission(db, case,
     owner = case["users"]["business_a"]
     payload = submission_router.SubmitRequest(
         provider_id=str(case["ids"]["cb_p"]),
-        document_ids=[str(document_id) for document_id in case["initial_docs"]],
+        document_ids=await complete_submission_documents(case, db),
         notes="concurrent synthetic submit",
     )
 
@@ -849,7 +857,7 @@ async def test_submit_replay_rechecks_current_provider_eligibility(db, case, mon
     owner = case["users"]["business_a"]
     payload = submission_router.SubmitRequest(
         provider_id=str(case["ids"]["cb_p"]),
-        document_ids=[str(document_id) for document_id in case["initial_docs"]],
+        document_ids=await complete_submission_documents(case, db),
         notes="synthetic eligibility replay",
     )
     first = await submission_router.submit_documents(req=payload, request=request, owner=owner, db=db)
@@ -872,7 +880,7 @@ async def test_submit_failure_rolls_back_receipt_and_submission(db, case, monkey
     owner = case["users"]["business_a"]
     payload = submission_router.SubmitRequest(
         provider_id=str(case["ids"]["cb_p"]),
-        document_ids=[str(document_id) for document_id in case["initial_docs"]],
+        document_ids=await complete_submission_documents(case, db),
         notes="synthetic submit rollback",
     )
     with pytest.raises(RuntimeError, match="synthetic notification failure"):
@@ -1639,11 +1647,13 @@ async def test_library_history_switches_repeatedly_with_one_type_representative(
     async def assert_current(expected):
         history = await document_router.list_revisions('permit', user=case['users']['business_a'], db=db)
         assert [r.id for r in history.revisions if r.is_current_selection] == [str(expected)]
-        library = await document_router.list_documents(page=1,page_size=100,doc_type='permit',status=None,view='latest_by_type',user=case['users']['business_a'],db=db)
+        library = await document_router.list_documents(page=1,page_size=100,doc_type='permit',status=None,view='official_by_type',user=case['users']['business_a'],db=db)
         assert [r.id for r in library.documents] == [str(expected)]
-    # The default latest representative must also be marked before any explicit selection.
-    if independent:
-        await assert_current(second)
+    # Upload chronology alone does not designate an official document.
+    pending = await document_router.list_revisions('permit',user=case['users']['business_a'],db=db)
+    assert not any(row.is_current_selection for row in pending.revisions)
+    initial = await document_router.list_documents(page=1,page_size=100,doc_type='permit',status=None,view='official_by_type',user=case['users']['business_a'],db=db)
+    assert initial.total == 0
     for target in [first, second, first, second, first]:
         await select_current_version(db,tenant_id=tenant,document_id=target,actor_id=tenant)
         await assert_current(target)
@@ -1653,3 +1663,64 @@ async def test_library_history_switches_repeatedly_with_one_type_representative(
     assert await db.fetchval('SELECT selected_at FROM document_current_versions WHERE current_document_id=$1',first) == selected_at
     assert await db.fetchval('SELECT document_ids FROM submissions WHERE id=$1',case['ids']['submission']) == packet
     assert await db.fetch('SELECT id,uploaded_at,approval_status,version_parent_id,version_number,file_path FROM documents WHERE tenant_id=$1 ORDER BY id',tenant) == before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('actor', ['editing_member','ihc_member','auditor','cb_owner'])
+async def test_only_business_owner_can_select_library_type_representative(db, case, monkeypatch, actor):
+    from auth import document_router
+    from unittest.mock import AsyncMock
+    permission = AsyncMock()
+    monkeypatch.setattr(document_router, 'check_permission_db', permission)
+    if actor in {'editing_member','ihc_member'}:
+        member = uuid4()
+        await db.execute("INSERT INTO users (id,email,company_name,role,tenant_id,is_owner,status,permissions) VALUES ($1,$2,'Synthetic selection member','business',$3,false,'active',$4::jsonb)",member,f"{member}@example.invalid",case['ids']['business_a'],json.dumps({'can_edit':True,'can_upload':True}))
+        user = {**case['users']['business_a'],'id':member,'sub':str(member),'is_owner':False,'permissions':{'can_edit':True}}
+    else:
+        user = case['users']['assigned' if actor == 'auditor' else 'cb_p']
+    if actor == 'ihc_member':
+        user = {**user,'ihc_role':'member','permissions':{'can_edit':True,'can_approve_documents':True}}
+    before = await db.fetchval('SELECT count(*) FROM document_current_versions WHERE tenant_id=$1',case['ids']['business_a'])
+    with pytest.raises(HTTPException) as caught:
+        await document_router.promote_document(str(case['docs']['permit-v1']['id']),user=user,db=db)
+    assert caught.value.status_code == 403
+    with pytest.raises(HTTPException) as replacement_denied:
+        await document_router.supersede_document(str(case['docs']['permit-v1']['id']),body=document_router._SupersedeRequest(new_document_id=str(case['docs']['permit-v2']['id'])),request=synthetic_request(),user=user,db=db)
+    assert replacement_denied.value.status_code == 403
+    permission.assert_not_awaited()
+    assert await db.fetchval('SELECT count(*) FROM document_current_versions WHERE tenant_id=$1',case['ids']['business_a']) == before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('invalid', ['missing_required','duplicate_type','undeclared_type','unselected','nonofficial_revision','unbound'])
+async def test_bound_submission_requires_complete_declared_type_representatives(db, case, monkeypatch, invalid):
+    from unittest.mock import AsyncMock
+    notification = AsyncMock()
+    monkeypatch.setattr(submission_router,'notify',notification)
+    documents = await complete_submission_documents(case, db)
+    if invalid == 'missing_required':
+        documents.remove(str(case['docs']['policy-v1']['id']))
+    elif invalid == 'duplicate_type':
+        documents.append(str(case['docs']['permit-v2']['id']))
+    elif invalid == 'undeclared_type':
+        documents.append(str(case['docs']['wrong-v1']['id']))
+    elif invalid == 'unselected':
+        await db.execute('DELETE FROM document_current_versions WHERE tenant_id=$1 AND current_document_id=$2',case['ids']['business_a'],case['docs']['policy-v1']['id'])
+    elif invalid == 'nonofficial_revision':
+        documents.remove(str(case['docs']['permit-v1']['id']))
+        documents.append(str(case['docs']['permit-v2']['id']))
+    else:
+        from services.document_library import select_current_version
+        document = uuid4()
+        await db.execute("""INSERT INTO documents (id,filename,original_filename,file_path,file_size,mime_type,user_id,tenant_id,doc_type,status)
+            SELECT $1::uuid,'unbound.pdf','unbound.pdf','synthetic://unbound/' || ($1::uuid)::text,file_size,mime_type,user_id,tenant_id,doc_type,status FROM documents WHERE id=$2""",document,case['docs']['permit-v1']['id'])
+        await select_current_version(db,tenant_id=case['ids']['business_a'],document_id=document,actor_id=case['ids']['business_a'])
+        documents=[str(document)]
+    before = await db.fetchval('SELECT count(*) FROM submissions WHERE business_tenant=$1',case['ids']['business_a'])
+    with pytest.raises(HTTPException) as caught:
+        await submission_router.submit_documents(req=submission_router.SubmitRequest(provider_id=str(case['ids']['cb_p']),document_ids=documents),request=synthetic_request(),owner=case['users']['business_a'],db=db)
+    assert caught.value.status_code == (409 if invalid in {'unselected','nonofficial_revision','unbound'} else 400)
+    notification.assert_not_awaited()
+    assert await db.fetchval('SELECT count(*) FROM submissions WHERE business_tenant=$1',case['ids']['business_a']) == before
+    if invalid == 'missing_required':
+        assert 'policy' in caught.value.detail

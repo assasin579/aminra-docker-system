@@ -6,6 +6,7 @@
 
 import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
+import DocumentWorkspaceTabs from "@/components/documents/DocumentWorkspaceTabs";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/components/UserAuthContext";
 import RevisionPanel from "@/components/submissions/RevisionPanel";
@@ -397,11 +398,14 @@ export default function DossierDetailPage({
   ).length;
   const blockingNcrs = readiness?.blocking_ncrs ?? readiness?.open_ncrs ?? [];
   const blockingNcrIds = new Set(blockingNcrs.map((ncr) => ncr.id).filter(Boolean));
+  const requiredTypes = dossier.doc_types.filter(slot => slot.required);
+  const hasRequiredDocuments = requiredTypes.length > 0 && requiredTypes.every(slot => dossier.documents.some(document => document.doc_type === slot.doc_type));
   const nonBlockingNcrs = (readiness?.open_ncrs ?? []).filter((ncr) => !ncr.id || !blockingNcrIds.has(ncr.id));
 
   return (
     <div className="min-h-screen" style={{ background: "#FFFFFF" }}>
       <div className="max-w-4xl mx-auto px-6 py-8">
+        <DocumentWorkspaceTabs active="dossiers" />
         <Link href="/dossiers" className="text-xs" style={{ color: "#6B7280" }}>
           ← Danh sách hồ sơ
         </Link>
@@ -715,7 +719,7 @@ export default function DossierDetailPage({
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3 sm:flex-row">
-          {canEditDocuments && user?.is_owner === true && !hasSubmission && dossier.documents.length > 0 && (
+          {canEditDocuments && user?.is_owner === true && !hasSubmission && hasRequiredDocuments && (
               <Link
                 href={`/submissions?dossier_id=${dossier.id}`}
                 data-testid="dossier-submit-cta"

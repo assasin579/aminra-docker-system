@@ -667,6 +667,14 @@ async def submit_documents(
                 if requirements_binding_status == "bound":
                     requirements_version_id = dossier.get("requirements_version_id")
 
+        if requirements_binding_status != "bound" or not requirements_version_id:
+            raise HTTPException(409, "Chọn bộ hồ sơ có tiêu chuẩn và bộ yêu cầu đã công bố trước khi gửi")
+        if requirements_binding_status == "bound":
+            from services.submission_requirements import validate_submission_requirements
+            await validate_submission_requirements(
+                db, tenant_id=tenant_id, requirements_version_id=requirements_version_id, document_ids=doc_uuids,
+            )
+
         biz = await db.fetchrow("SELECT company_name FROM users WHERE id = $1", actor_id)
         company_name = biz["company_name"] if biz else ""
         row = await db.fetchrow(

@@ -59,6 +59,7 @@ export async function attach(request:APIRequestContext,t:string,dossier:string,n
 }
 export async function packet(request:APIRequestContext,label:string,business:'bizA'|'bizB'='bizA'){
  const f=await prepare(request,label,undefined,true,business),d=await makeDossier(request,f,'packet'),name=f.name+'.pdf';const document=await attach(request,f.biz,d.id,name);
+ await api(request,f.biz,'/api/documents/'+document+'/promote','POST');
  const result=await api(request,f.biz,'/api/submissions/submit','POST',{provider_id:config.actors.cbX.id,dossier_id:d.id,document_ids:[document]});
  return {...f,dossier:d.id,document,submission:result.submission_id,name};
 }

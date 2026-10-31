@@ -2,12 +2,14 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useUserAuth } from "@/components/UserAuthContext";
 import RevisionPanel from "@/components/submissions/RevisionPanel";
 import SlaBadge from "@/components/submissions/SlaBadge";
 import { openAuthed } from "@/lib/authedOpen";
 import { parseApiError } from "@/lib/apiError";
 import Modal from "@/components/Modal";
+import { DOC_TYPE_LABEL_VI } from "@/lib/documentTypes";
 import { loadSubmissionDocuments, currentDossierDocuments, type SubmissionDocument } from "@/lib/submissionDocuments";
 
 interface Submission {
@@ -164,6 +166,7 @@ function SubmissionsContent() {
   const setupRequest = useRef(0);
   const [submitContext, setSubmitContext] = useState<{
     id: string; title: string; standard_code?: string; requirements_version_id?: string;
+    doc_types?: Array<{ doc_type: string; required: boolean }>;
   } | null>(null);
   const [providers, setProviders] = useState<
     Array<{ id: string; company_name: string; email: string }>
@@ -176,6 +179,9 @@ function SubmissionsContent() {
   const [actionError, setActionError] = useState("");
   const submitAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
 
+  const selectedTypes = new Set(submitDocs.filter(doc => selectedDocs.has(doc.id)).map(doc => doc.doc_type));
+  const missingRequiredTypes = (submitContext?.doc_types || []).filter(slot => slot.required && !selectedTypes.has(slot.doc_type)).map(slot => slot.doc_type);
+
   // Deadline state
   const [deadlineModal, setDeadlineModal] = useState<string | null>(null);
   const [deadlineValue, setDeadlineValue] = useState("");
@@ -183,6 +189,7 @@ function SubmissionsContent() {
   const isBusiness = user?.role === "business";
   const isProvider = user?.role === "provider";
   const isBusinessOwner = isBusiness && user?.is_owner === true;
+  const canSendDocuments = isBusinessOwner && !setupLoading && !!submitContext && !!selectedProvider && selectedDocs.size > 0 && missingRequiredTypes.length === 0;
   const canReplaceDocuments = isBusiness && (isBusinessOwner || user?.permissions?.can_upload === true);
 
   useEffect(() => {
@@ -616,9 +623,12 @@ function SubmissionsContent() {
       if (dossierId && (documentData.id !== dossierId || documentData.requirements_binding_status !== "bound")) {
         throw new Error("Không xác nhận được hồ sơ và phiên bản yêu cầu. Hãy quay lại hồ sơ để kiểm tra.");
       }
+      if (dossierId && (!Array.isArray(documentData.doc_types) || !documentData.doc_types.some((slot: { required: boolean }) => slot.required))) {
+        throw new Error("Tiêu chuẩn chưa có danh sách tài liệu bắt buộc đã công bố. Hãy kiểm tra bộ hồ sơ trước khi gửi.");
+      }
       if (request !== setupRequest.current) return;
-      setProviders(providerData.providers);
       const documents = dossierId ? currentDossierDocuments(currentDocuments, documentData.documents) : currentDocuments;
+      setProviders(providerData.providers);
       setSubmitDocs(documents);
       setSelectedDocs(new Set(documents.map(doc => doc.id)));
       if (dossierId) setSubmitContext(documentData);
@@ -630,7 +640,7 @@ function SubmissionsContent() {
   };
 
   const handleSubmit = async () => {
-    if (!isBusinessOwner || setupLoading || !selectedProvider || selectedDocs.size === 0) return;
+    if (!canSendDocuments || submitting) return;
     if (searchParams?.get("dossier_id") && submitContext?.id !== searchParams.get("dossier_id")) return;
     setSubmitting(true);
     setSubmitError("");
@@ -2058,6 +2068,7 @@ function SubmissionsContent() {
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+              {!submitContext && !setupLoading && !submitError && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Chọn bộ hồ sơ theo tiêu chuẩn trước khi gửi. <Link href="/dossiers" className="font-semibold underline">Chọn bộ hồ sơ theo tiêu chuẩn</Link></p>}
               {submitContext && (
                 <section aria-label="Hồ sơ đang gửi" className="rounded-xl border border-cream-300 bg-cream-50 p-3 text-sm text-navy-900">
                   <p className="font-semibold">{submitContext.title}</p>
@@ -2210,6 +2221,12 @@ function SubmissionsContent() {
                 )}
               </div>
 
+              {missingRequiredTypes.length > 0 && (
+                <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+                  Cần cung cấp đủ tài liệu bắt buộc trước khi gửi: {missingRequiredTypes.map(type => DOC_TYPE_LABEL_VI[type] || type).join(", ")}
+                </p>
+              )}
+
               {/* Notes */}
               <div>
                 <label
@@ -2243,20 +2260,20 @@ function SubmissionsContent() {
               <button
                 onClick={handleSubmit}
                 disabled={
-                  setupLoading || submitting || !selectedProvider || selectedDocs.size === 0
+                  !canSendDocuments || submitting
                 }
                 className="w-full py-3 rounded-xl text-sm font-semibold transition-all"
                 style={{
                   background:
-                    !selectedProvider || selectedDocs.size === 0
+                    !canSendDocuments
                       ? "#E2E8F0"
                       : "#0A1F44",
                   boxShadow:
-                    selectedProvider && selectedDocs.size > 0
+                    canSendDocuments
                       ? "0 4px 15px rgba(37,99,235,0.3)"
                       : "none",
                   color:
-                    !selectedProvider || selectedDocs.size === 0
+                    !canSendDocuments
                       ? "#6B7280"
                       : "white",
                 }}
