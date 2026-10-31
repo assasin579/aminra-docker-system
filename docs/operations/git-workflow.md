@@ -40,3 +40,22 @@ Main source integration was manually validated with 149 backend auth/revision te
 ## 5. Improvements
 
 Keep one clean main checkout and separate worktrees for simultaneous topics. Record the active worktree, branch, commit, remaining WIP and exact resume point at session handoff. Consider CI/CD only when the owner resumes that scope; do not request workflow-token scope for routine source-only work.
+
+
+## Frontend authentication configuration preflight
+
+Production Compose sets the server-side `KEYCLOAK_URL` explicitly from
+`FRONTEND_KEYCLOAK_URL` (default `https://auth.aminra.org`). The login route must
+not inherit a build-time localhost issuer. Keep `BACKEND_URL` pointing to the
+reachable backend service on the shared Docker network. The server issuer is
+independent of the optional browser SSO feature flag; this release keeps that
+flag disabled. If SSO is enabled later, also set the public Keycloak build args
+for the target environment.
+
+Before manual acceptance, record the effective server issuer and backend host
+(without secrets), verify issuer metadata from the FE network, and perform real
+Business/CB UI logins. A healthy root page and API calls using separately minted
+tokens do not prove that the FE login route is configured correctly. Preserve
+runtime environment overrides on image replacement and record any intentional
+change. Use the same source/image/schema plus effective runtime configuration
+in the acceptance record. No CI/CD or automatic deployment is introduced.

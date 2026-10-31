@@ -27,6 +27,7 @@ services:
     environment:
       - NODE_ENV=production
       - BACKEND_URL=http://aminra-backend:8000
+      - KEYCLOAK_URL=${FRONTEND_KEYCLOAK_URL:-https://auth.aminra.org}
     networks:
       - app-network
     restart: unless-stopped
