@@ -17,6 +17,19 @@ test('JOURNEY-01 @DOS-01 @DOS-02 @SUB-01 @SUB-02 @SUB-03 @SUB-05 @SUB-06 @SUB-08
  const[uploaded]=await Promise.all([p.waitForResponse(r=>r.url().endsWith('/dossiers/'+dossier+'/documents')&&r.request().method()==='POST'),p.getByRole('button',{name:'Đính kèm tài liệu',exact:true}).click()]);
  expect(uploaded.status(),await uploaded.text()).toBe(200);const oldId=(await uploaded.json()).document_id;
  await expect(p.getByRole('status').filter({hasText:'Tài liệu đã được đính kèm vào hồ sơ'})).toBeVisible();
+ // Earlier cases may have explicitly selected another upload of this type.
+ // Choose this dossier's attached file through the real library UI before sending.
+ await p.goto('/documents');
+ await p.locator('.doc-card-hover').filter({has:p.getByText('Chính sách Halal',{exact:true})}).getByTitle('Lịch sử',{exact:true}).click();
+ const libraryHistory=p.getByRole('dialog');
+ const libraryRow=libraryHistory.locator('[data-history-document-id="'+oldId+'"]');await expect(libraryRow).toBeVisible();
+ const libraryChoice=libraryRow.getByRole('button',{name:'Chọn bản hiện hành',exact:true});
+ if(await libraryChoice.count()){
+  p.once('dialog',dialog=>dialog.accept());
+  const [chosen]=await Promise.all([p.waitForResponse(r=>r.url().endsWith('/documents/'+oldId+'/promote')&&r.request().method()==='POST'),libraryChoice.click()]);expect(chosen.status()).toBe(200);
+ }
+ await expect(p.getByRole('heading',{name:oldName,exact:true})).toBeVisible();
+ await p.goto('/dossiers/'+dossier);
  await p.getByTestId('dossier-submit-cta').focus();await p.keyboard.press('Enter');await p.waitForURL('**/submissions?dossier_id='+dossier);
  await p.getByRole('button',{name:'Gửi hồ sơ mới',exact:true}).click();
  await p.getByRole('dialog',{name:'Gửi hồ sơ đến tổ chức chứng nhận',exact:true}).getByRole('button').filter({hasText:config.actors.cbX.email.split('@')[0]}).click();
