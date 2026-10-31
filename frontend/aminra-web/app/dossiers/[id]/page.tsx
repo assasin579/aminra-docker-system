@@ -267,7 +267,7 @@ export default function DossierDetailPage({
         setLoading(false);
       }
     })();
-  }, [authLoading, isAuthenticated, token, id, router, user?.role, user?.is_owner]);
+  }, [authLoading, isAuthenticated, token, id, router, user?.role, user?.is_owner, user?.permissions?.can_upload]);
 
   const attachForSlot = async (docType: string) => {
     if (!token || attachmentBusyType || !canEditDocuments) return;
@@ -690,7 +690,7 @@ export default function DossierDetailPage({
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3 sm:flex-row">
-          {canEditDocuments && !hasSubmission && dossier.documents.length > 0 && (
+          {canEditDocuments && user?.is_owner === true && !hasSubmission && dossier.documents.length > 0 && (
               <Link
                 href={`/submissions?dossier_id=${dossier.id}`}
                 data-testid="dossier-submit-cta"

@@ -178,6 +178,7 @@ function SubmissionsContent() {
   const isBusiness = user?.role === "business";
   const isProvider = user?.role === "provider";
   const isBusinessOwner = isBusiness && user?.is_owner === true;
+  const canReplaceDocuments = isBusiness && (isBusinessOwner || user?.permissions?.can_upload === true);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/business/login");
@@ -368,7 +369,7 @@ function SubmissionsContent() {
     docType: string | null,
   ) => {
     if (!token || !file) return;
-    if (!isBusinessOwner) return;
+    if (!canReplaceDocuments) return;
     setUploading(true);
     setActionError("");
     try {
@@ -1350,7 +1351,7 @@ function SubmissionsContent() {
                             )}
                             <div className="flex items-center gap-1.5">
                               {/* Business: reupload button */}
-                              {isBusinessOwner && ["pending", "assigned", "reviewing", "returned", "revision_required"].includes(sub.status) && (
+                              {canReplaceDocuments && ["pending", "assigned", "reviewing", "returned", "revision_required"].includes(sub.status) && (
                                 <button
                                   onClick={() => {
                                     setReuploadDocId(doc.id);
@@ -2322,7 +2323,7 @@ function SubmissionsContent() {
                             />
                           </svg>
                         </button>
-                        {isBusinessOwner && !isCurrent && expanded && (
+                        {canReplaceDocuments && !isCurrent && expanded && (
                           <button
                             onClick={() => {
                               const currentDoc = subDocs.find(

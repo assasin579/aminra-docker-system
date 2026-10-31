@@ -7,7 +7,7 @@ const authState = vi.hoisted(() => ({
   token: "provider-token",
   isAuthenticated: true,
   loading: false,
-  user: { role: "provider" } as { role: string; is_owner?: boolean },
+  user: { role: "provider" } as { role: string; is_owner?: boolean; permissions?: {can_upload?:boolean} },
 }));
 const routerReplace = vi.hoisted(() => vi.fn());
 
@@ -312,4 +312,15 @@ describe("Dossier editing capability and lifecycle UX", () => {
     expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
     expect(screen.getByRole("link",{name:"Xem hồ sơ đã gửi"})).toHaveAttribute("href","/submissions");
   });
+});
+
+
+it("an explicitly delegated uploader can attach but cannot perform owner submission", async () => {
+  authState.user={role:"business",is_owner:false,permissions:{can_upload:true}};
+  global.fetch=vi.fn((url)=>String(url).endsWith("/readiness")?jsonResponse(200,readinessFixture)
+    :String(url).endsWith("/attachable-documents")?jsonResponse(200,{items:[]})
+    :jsonResponse(200,{...dossierFixture,requirements_binding_status:"bound"}));
+  renderPage();await screen.findByText("Hồ sơ nhà máy A");
+  expect(screen.getAllByRole("button",{name:"Đính kèm tài liệu"})).toHaveLength(3);
+  expect(screen.queryByTestId("dossier-submit-cta")).not.toBeInTheDocument();
 });
