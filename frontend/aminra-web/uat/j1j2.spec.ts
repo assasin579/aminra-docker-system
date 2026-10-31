@@ -226,5 +226,17 @@ test('STANDARD-REQUIRED-01 @STD-01 @DOS-03 @SUB-01 workspace dossier requires bo
  await modal.getByRole('button').filter({hasText:config.actors.cbX.email.split('@')[0]}).click();
  const manualBox=modal.getByRole('checkbox',{name:new RegExp(f.name+'-manual.pdf')});await manualBox.uncheck();await expect(modal.getByRole('button',{name:'Gửi 1 tài liệu',exact:true})).toBeDisabled();await manualBox.check();
  const [sent]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/submissions/submit')&&r.request().method()==='POST'),modal.getByRole('button',{name:'Gửi 2 tài liệu',exact:true}).click()]);expect(sent.status()).toBe(200);
- const body=await sent.json();const rows=await api(request,f.biz,'/api/submissions/my-submissions');const submitted=rows.submissions.find((row:{id:string})=>row.id===body.submission_id);expect([...submitted.document_ids].sort()).toEqual([policy,manual].sort());
+ // Verify the committed packet through its read API. Reading the browser's
+ // response body can hang after the successful modal/history transition.
+ expect(sent.request().postDataJSON()).toMatchObject({dossier_id:dossier.id,provider_id:config.actors.cbX.id});
+ expect([...sent.request().postDataJSON().document_ids].sort()).toEqual([policy,manual].sort());
+ await expect(modal).not.toBeVisible();
+ const rows=await api(request,f.biz,'/api/submissions/my-submissions');
+ const previous=new Set(before.submissions.map((row:{id:string})=>row.id));
+ const created=rows.submissions.filter((row:{id:string})=>!previous.has(row.id));expect(created).toHaveLength(1);
+ expect(created[0]).toMatchObject({doc_count:2,provider_email:config.actors.cbX.email});
+ for(const actorToken of [f.biz,await token(request,'cbX')]){
+  const packet=await api(request,actorToken,'/api/submissions/received/'+created[0].id+'/documents');
+  expect(packet.documents.map((row:{id:string})=>row.id).sort()).toEqual([policy,manual].sort());
+ }
 });
