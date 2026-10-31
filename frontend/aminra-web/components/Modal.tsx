@@ -1,75 +1,76 @@
 "use client";
 
-/**
- * Modal — render qua React Portal vào document.body để escape mọi containing
- * block do parent có transform/filter/perspective/contain. Fix triệt để bug
- * "modal bị kéo tụt xuống" khi parent có animation/transform.
- *
- * Backwards-compatible: dùng cùng class system (.animate-modal-overlay,
- * .animate-modal-content) như các modal cũ. Chỉ wrap.
- *
- * Usage:
- *   {showModal && (
- *     <Modal onClose={() => setShowModal(false)}>
- *       <div className="w-full max-w-md rounded-2xl p-6 animate-modal-content"
- *            style={{ background: "#FFFFFF" }}>
- *         ...form content...
- *       </div>
- *     </Modal>
- *   )}
- */
-
-import { useEffect, useState, type ReactNode, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 
 interface Props {
   children: ReactNode;
-  /** Click backdrop để đóng. Truyền undefined nếu không muốn click-outside-to-close. */
   onClose?: () => void;
-  /** Extra className cho backdrop wrapper (Tailwind / CSS) */
   className?: string;
+  ariaLabel?: string;
 }
 
-export default function Modal({ children, onClose, className = "" }: Props) {
+const openDialogs = new Set<HTMLElement>();
+let originalBodyOverflow = "";
+
+const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export default function Modal({ children, onClose, className = "", ariaLabel = "Hộp thoại" }: Props) {
   const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
 
-  // Mount-after-hydration: createPortal cần document tồn tại
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
-    setMounted(true);
-    // Khoá scroll body khi modal mở
-    const prev = document.body.style.overflow;
+    if (!mounted || !dialogRef.current) return;
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (openDialogs.size === 0) originalBodyOverflow = document.body.style.overflow;
+    openDialogs.add(dialog);
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
+    const isTop = () => Array.from(document.querySelectorAll('[data-aminra-modal]')).at(-1) === dialog;
+    const focusables = () => Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+      .filter((node) => !node.closest('[hidden], [inert], [aria-hidden="true"]') && getComputedStyle(node).display !== 'none' && getComputedStyle(node).visibility !== 'hidden');
+    (focusables()[0] ?? dialog).focus();
+    const handler = (event: KeyboardEvent) => {
+      if (!isTop()) return;
+      if (event.key === "Escape") { event.stopPropagation(); closeRef.current?.(); }
+      if (event.key !== "Tab") return;
+      const items = focusables();
+      const first = items[0];
+      const last = items.at(-1);
+      if (!first || !last) { event.preventDefault(); dialog.focus(); return; }
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog)) {
+        event.preventDefault(); first.focus();
+      }
     };
-  }, []);
-
-  // ESC key đóng modal
-  useEffect(() => {
-    if (!onClose) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const keepFocus = (event: FocusEvent) => {
+      if (isTop() && event.target instanceof Node && !dialog.contains(event.target)) (focusables()[0] ?? dialog).focus();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+    document.addEventListener("focusin", keepFocus);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.removeEventListener("focusin", keepFocus);
+      openDialogs.delete(dialog);
+      if (openDialogs.size === 0) document.body.style.overflow = originalBodyOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [mounted]);
 
   if (!mounted) return null;
-
-  const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
-    // Chỉ đóng khi click vào backdrop, KHÔNG đóng khi click vào content trong
-    if (e.target === e.currentTarget && onClose) onClose();
+  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) onClose?.();
   };
-
   return createPortal(
-    <div
+    <div ref={dialogRef} data-aminra-modal tabIndex={-1}
       className={`fixed inset-0 z-[100] grid place-items-center p-4 animate-modal-overlay ${className}`}
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-    >
+      onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-label={ariaLabel}>
       {children}
-    </div>,
-    document.body,
+    </div>, document.body,
   );
 }

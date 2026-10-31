@@ -62,9 +62,7 @@ vi.mock("@/components/Modal", () => ({
   ),
 }));
 vi.mock("@/lib/authedOpen", () => ({ openAuthed: vi.fn() }));
-vi.mock("@/lib/apiError", () => ({
-  parseApiError: (_: unknown, fallback: string) => fallback,
-}));
+
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -96,6 +94,7 @@ function mockProvAuth() {
 }
 
 beforeEach(() => {
+  window.history.replaceState({}, "", "/");
   vi.stubGlobal("fetch", vi.fn());
   vi.stubGlobal("alert", vi.fn());
 });
@@ -245,7 +244,13 @@ describe("handleSubmit", () => {
     fetchMock
       .mockResolvedValueOnce(emptySubs())
       .mockResolvedValueOnce(respond(200, { providers: PROVIDERS }))
-      .mockResolvedValueOnce(respond(200, { documents: DOCS }));
+      .mockResolvedValueOnce(respond(200, {
+        documents: DOCS,
+        ...(window.location.search.includes("dossier_id=") ? {
+          id: "dossier-a02", title: "Dossier A02", standard_code: "HAS",
+          requirements_binding_status: "bound", requirements_version_id: "pinned-a02",
+        } : {}),
+      }));
 
     render(<SubmissionsPage />);
     fireEvent.click(
@@ -414,7 +419,7 @@ test.each(["revision_required", "future_unrecognized_state"])("renders honest wo
   mockBizAuth();
   vi.mocked(fetch).mockResolvedValue(respond(200,{submissions:[{id:"sub-ux",status,company_name:"Doanh nghiệp QA",provider_name:"CB QA",submitted_at:"2026-10-30T00:00:00Z",doc_count:1,document_ids:["doc-1"]}]}));
   render(<SubmissionsPage />);
-  expect(await screen.findByText(status==="revision_required" ? "Cần sửa hồ sơ" : "Chưa xác định trạng thái")).toBeInTheDocument();
+  expect(await screen.findByText(status==="revision_required" ? "Cần sửa và gửi lại" : "Trạng thái chưa xác định")).toBeInTheDocument();
   expect(screen.queryByText("Chờ đơn vị chứng nhận tiếp nhận")).not.toBeInTheDocument();
 });
 

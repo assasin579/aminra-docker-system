@@ -74,9 +74,10 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
       color: "#0EA5E9",
       bg: "rgba(14,165,233,0.12)",
     },
-    revision_required: { label: "Cần sửa hồ sơ", color: "#DC2626", bg: "#FEF2F2" },
+    revision_required: { label: "Cần sửa và gửi lại", color: "#B45309", bg: "#FFFBEB" },
+    rejected: { label: "Đã từ chối", color: "#991B1B", bg: "#FEF2F2" },
     returned: {
-      label: "Cần bổ sung",
+      label: "Đã trả lại",
       color: "#f87171",
       bg: "rgba(239,68,68,0.12)",
     },
@@ -112,6 +113,8 @@ function SubmissionsContent() {
   );
   const [subDocs, setSubDocs] = useState<SubDoc[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+  const detailsRequest = useRef(0);
   const [auditorScore, setAuditorScore] = useState<{
     score: number | null;
     notes: string | null;
@@ -152,7 +155,15 @@ function SubmissionsContent() {
   const [loadingRevisions, setLoadingRevisions] = useState(false);
 
   // Submit new application (business only)
+  const [listError, setListError] = useState("");
+  const listRequest = useRef(0);
   const [showSubmit, setShowSubmit] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const setupRequest = useRef(0);
+  const [submitContext, setSubmitContext] = useState<{
+    id: string; title: string; standard_code?: string; requirements_version_id?: string;
+  } | null>(null);
   const [providers, setProviders] = useState<
     Array<{ id: string; company_name: string; email: string }>
   >([]);
@@ -167,7 +178,6 @@ function SubmissionsContent() {
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [submitNotes, setSubmitNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
   const [actionError, setActionError] = useState("");
   const submitAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
 
@@ -222,30 +232,59 @@ function SubmissionsContent() {
 
   const fetchSubs = useCallback(async () => {
     if (!token || (isBusiness && !isBusinessOwner)) return;
+    const request = ++listRequest.current;
     setFetching(true);
+    setListError("");
     try {
       const endpoint = isBusiness
         ? "/api/api/submissions/my-submissions"
         : "/api/api/submissions/received";
-      const res = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setSubs(d.submissions || []);
-      }
+      const res = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Không tải được danh sách hồ sơ. Vui lòng thử lại.");
+      const data = await res.json();
+      if (!Array.isArray(data.submissions)) throw new Error("Dữ liệu danh sách hồ sơ không hợp lệ.");
+      if (request === listRequest.current) setSubs(data.submissions);
+    } catch (error) {
+      if (request !== listRequest.current) return;
+      setSubs([]);
+      setListError(error instanceof Error ? error.message : "Không tải được danh sách hồ sơ.");
     } finally {
-      setFetching(false);
+      if (request === listRequest.current) setFetching(false);
     }
   }, [token, isBusiness, isBusinessOwner]);
 
   useEffect(() => {
-    if (isAuthenticated) fetchSubs();
-  }, [isAuthenticated, fetchSubs]);
+    setSubs([]);
+    setExpanded(null);
+    setSubDocs([]);
+    setDetailsError("");
+    detailsRequest.current++;
+    setShowSubmit(false);
+    setupRequest.current++;
+    setSubmitNotes("");
+    setSubmitContext(null);
+    setSubmitError("");
+    setSelectedProvider("");
+    setProviders([]);
+    setSubmitDocs([]);
+    setSelectedDocs(new Set());
+    submitAttempt.current = null;
+    setEvaluation({});
+    setAuditorScore({ score: null, notes: null });
+    return () => { setupRequest.current++; detailsRequest.current++; };
+  }, [isAuthenticated, user?.id, user?.tenant_id, user?.role]);
+
+  useEffect(() => {
+    if (isAuthenticated) void fetchSubs();
+    return () => { listRequest.current++; };
+  }, [isAuthenticated, fetchSubs, user?.id, user?.tenant_id]);
 
   const loadSubmissionDetails = async (id: string) => {
+    const request = ++detailsRequest.current;
     setExpanded(id);
     setLoadingDocs(true);
+    setDetailsError("");
+    setSubDocs([]);
     try {
       const [docsRes, evalRes] = await Promise.all([
         fetch(`/api/api/submissions/received/${id}/documents`, {
@@ -255,9 +294,13 @@ function SubmissionsContent() {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
+      if (request !== detailsRequest.current) return;
+      if (!docsRes.ok) throw new Error("Không tải được tài liệu của hồ sơ. Vui lòng thử lại.");
       if (docsRes.ok) {
         const d = await docsRes.json();
-        setSubDocs(d.documents || []);
+        if (!Array.isArray(d.documents)) throw new Error("Dữ liệu tài liệu của hồ sơ không hợp lệ.");
+        if (request !== detailsRequest.current) return;
+        setSubDocs(d.documents);
         setAuditorScore({
           score: d.auditor_score ?? null,
           notes: d.auditor_notes ?? null,
@@ -269,6 +312,7 @@ function SubmissionsContent() {
       }));
       if (evalRes.ok) {
         const d = await evalRes.json();
+        if (request !== detailsRequest.current) return;
         if (d.evaluation) {
           // Merge saved checklist with full template — keep saved checked states, add missing items
           const savedMap = new Map(
@@ -302,8 +346,10 @@ function SubmissionsContent() {
           [id]: { checklist: defaultChecklist, score: 0, notes: "" },
         }));
       }
+    } catch (error) {
+      if (request === detailsRequest.current) setDetailsError(error instanceof Error ? error.message : "Không tải được chi tiết hồ sơ.");
     } finally {
-      setLoadingDocs(false);
+      if (request === detailsRequest.current) setLoadingDocs(false);
     }
   };
 
@@ -542,48 +588,60 @@ function SubmissionsContent() {
     }
   };
 
+  const closeSubmitModal = () => {
+    if (submitting) return;
+    setupRequest.current++;
+    setShowSubmit(false);
+  };
+
   const openSubmitModal = async () => {
     if (!isBusinessOwner) return;
+    const request = ++setupRequest.current;
+    const dossierId = searchParams?.get("dossier_id");
+    setShowSubmit(true);
+    setSetupLoading(true);
     setSubmitError("");
+    setSubmitContext(null);
     setProviders([]);
-    setSelectedProvider("");
     setSubmitDocs([]);
     setSelectedDocs(new Set());
+    setSelectedProvider("");
     try {
       const [provRes, docRes] = await Promise.all([
-        fetch("/api/api/submissions/providers", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(searchParams?.get("dossier_id")
-          ? `/api/dossiers/${encodeURIComponent(searchParams.get("dossier_id")!)}`
-          : "/api/api/documents?page=1&page_size=100", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch("/api/api/submissions/providers", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(dossierId ? `/api/dossiers/${encodeURIComponent(dossierId)}` : "/api/api/documents?page=1&page_size=100",
+          { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      if (!provRes.ok || !docRes.ok) throw new Error("Không tải được danh sách đơn vị chứng nhận hoặc tài liệu. Đóng và mở lại hộp gửi hồ sơ để thử lại.");
-      if (provRes.ok) {
-        const d = await provRes.json();
-        setProviders(d.providers || []);
+      if (!provRes.ok || !docRes.ok) throw new Error("Không tải được tổ chức chứng nhận hoặc tài liệu. Vui lòng thử lại.");
+      const [providerData, documentData] = await Promise.all([provRes.json(), docRes.json()]);
+      if (!Array.isArray(providerData.providers) || !Array.isArray(documentData.documents)) {
+        throw new Error("Dữ liệu chuẩn bị gửi hồ sơ không hợp lệ.");
       }
-      if (docRes.ok) {
-        const d = await docRes.json();
-        const docs = d.documents || [];
-        setSubmitDocs(docs);
-        setSelectedDocs(new Set(docs.map((doc: any) => doc.id)));
+      if (dossierId && (documentData.id !== dossierId || documentData.requirements_binding_status !== "bound")) {
+        throw new Error("Không xác nhận được hồ sơ và phiên bản yêu cầu. Hãy quay lại hồ sơ để kiểm tra.");
       }
-    } catch (error) { setSubmitError(error instanceof Error ? error.message : "Không tải được dữ liệu gửi hồ sơ"); }
-    setShowSubmit(true);
+      if (request !== setupRequest.current) return;
+      setProviders(providerData.providers);
+      setSubmitDocs(documentData.documents);
+      setSelectedDocs(new Set(documentData.documents.map((doc: { id: string }) => doc.id)));
+      if (dossierId) setSubmitContext(documentData);
+    } catch (error) {
+      if (request === setupRequest.current) setSubmitError(error instanceof Error ? error.message : "Không tải được dữ liệu gửi hồ sơ.");
+    } finally {
+      if (request === setupRequest.current) setSetupLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
-    if (!isBusinessOwner || !selectedProvider || selectedDocs.size === 0) return;
-    setSubmitError("");
+    if (!isBusinessOwner || setupLoading || !selectedProvider || selectedDocs.size === 0) return;
+    if (searchParams?.get("dossier_id") && submitContext?.id !== searchParams.get("dossier_id")) return;
     setSubmitting(true);
+    setSubmitError("");
     const payload = {
       provider_id: selectedProvider,
       document_ids: Array.from(selectedDocs).sort(),
       notes: submitNotes,
-      ...(searchParams?.get("dossier_id") ? { dossier_id: searchParams.get("dossier_id") } : {}),
+      ...(submitContext ? { dossier_id: submitContext.id } : {}),
     };
     const fingerprint = JSON.stringify({ actor: user?.id, tenant: user?.tenant_id, payload });
     if (submitAttempt.current?.fingerprint !== fingerprint) {
@@ -592,22 +650,10 @@ function SubmissionsContent() {
     try {
       const res = await fetch("/api/api/submissions/submit", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "Idempotency-Key": submitAttempt.current.key,
-        },
-        body: JSON.stringify({
-          provider_id: selectedProvider,
-          document_ids: payload.document_ids,
-          notes: payload.notes,
-          ...(payload.dossier_id ? { dossier_id: payload.dossier_id } : {}),
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "Idempotency-Key": submitAttempt.current.key },
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.detail || "Gửi thất bại");
-      }
+      if (!res.ok) throw new Error(parseApiError(await res.json().catch(() => ({})), "Gửi thất bại. Vui lòng thử lại."));
       submitAttempt.current = null;
       setShowSubmit(false);
       setSubmitNotes("");
@@ -948,7 +994,12 @@ function SubmissionsContent() {
       <div
         className={`flex-1 lg:min-h-0 lg:overflow-y-auto space-y-3 ${isProvider && !selectedCompany && subs.length > 0 ? "hidden" : ""}`}
       >
-        {fetching ? (
+        {listError ? (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
+            <p>{listError}</p>
+            <button className="mt-2 underline" onClick={() => void fetchSubs()}>Thử tải lại danh sách</button>
+          </div>
+        ) : fetching ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
               <div
@@ -975,7 +1026,7 @@ function SubmissionsContent() {
             ? subs.filter((s) => s.company_name === selectedCompany)
             : subs
           ).map((sub, idx) => {
-            const st = STATUS_MAP[sub.status] || { label: "Chưa xác định trạng thái", color: "#64748B", bg: "#F1F5F9" };
+            const st = STATUS_MAP[sub.status] || { label: "Trạng thái chưa xác định", color: "#475569", bg: "#F1F5F9" };
             const isOpen = expanded === sub.id;
             return (
               <div
@@ -1137,7 +1188,7 @@ function SubmissionsContent() {
                     {/* Status actions — provider only */}
                     {isProvider && (
                       <div className="flex flex-wrap items-center gap-2 py-3">
-                        {(["reviewing", "returned", "approved"] as const).map(
+                        {(["reviewing", "approved"] as const).map(
                           (s) => {
                             const cfg = STATUS_MAP[s];
                             return (
@@ -1290,7 +1341,12 @@ function SubmissionsContent() {
                     )}
 
                     {/* Documents */}
-                    {loadingDocs ? (
+                    {detailsError ? (
+                      <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-900">
+                        <p>{detailsError}</p>
+                        <button onClick={() => void loadSubmissionDetails(sub.id)} className="mt-2 underline">Thử tải lại tài liệu hồ sơ</button>
+                      </div>
+                    ) : loadingDocs ? (
                       <div className="flex items-center justify-center gap-1.5 py-4">
                         <div className="w-2 h-2 rounded-full bg-[#0A1F44] animate-pulse-dot" />
                         <div
@@ -1565,7 +1621,7 @@ function SubmissionsContent() {
                     )}
 
                     {/* Revision cycle panel — appears for both personas */}
-                    {token && (
+                    {token && !loadingDocs && !detailsError && (
                       <div className="pt-4">
                         <RevisionPanel
                           submissionId={sub.id}
@@ -1578,7 +1634,7 @@ function SubmissionsContent() {
                             filename: d.original_filename,
                             doc_type: d.doc_type,
                           }))}
-                          onChanged={() => fetchSubs()}
+                          onChanged={() => { void fetchSubs(); }}
                         />
                       </div>
                     )}
@@ -1951,7 +2007,7 @@ function SubmissionsContent() {
       )}
       {/* Submit new application modal (business only) */}
       {showSubmit && isBusinessOwner && (
-        <Modal onClose={() => setShowSubmit(false)}>
+        <Modal onClose={submitting ? undefined : closeSubmitModal} ariaLabel="Gửi hồ sơ đến tổ chức chứng nhận">
           <div
             className="w-full max-w-lg rounded-2xl flex flex-col animate-modal-content"
             style={{
@@ -1962,7 +2018,6 @@ function SubmissionsContent() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {submitError && <p role="alert" className="m-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{submitError}</p>}
             <div
               className="px-6 py-5 flex-shrink-0"
               style={{ borderBottom: "1px solid #E2E8F0" }}
@@ -1978,12 +2033,14 @@ function SubmissionsContent() {
                   >
                     Gửi hồ sơ đến tổ chức chứng nhận
                   </h2>
-                  <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
+                  <p className="text-sm mt-1" style={{ color: "#475569" }}>
                     Chọn tổ chức và tài liệu cần gửi
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowSubmit(false)}
+                  onClick={closeSubmitModal}
+                  disabled={submitting}
+                  aria-label="Đóng cửa sổ gửi hồ sơ"
                   className="w-8 h-8 rounded-lg grid place-items-center"
                   style={{ background: "rgba(0,0,0,0.05)" }}
                 >
@@ -1993,6 +2050,20 @@ function SubmissionsContent() {
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+              {submitContext && (
+                <section aria-label="Hồ sơ đang gửi" className="rounded-xl border border-cream-300 bg-cream-50 p-3 text-sm text-navy-900">
+                  <p className="font-semibold">{submitContext.title}</p>
+                  <p>Tiêu chuẩn: {submitContext.standard_code || "Chưa xác định"}</p>
+                  <p className="break-all">Phiên bản yêu cầu: {submitContext.requirements_version_id || "Chưa xác định"}</p>
+                  <p>Gửi hồ sơ để CB thẩm định. Việc gửi hồ sơ không đồng nghĩa với đã đủ điều kiện cấp chứng nhận.</p>
+                </section>
+              )}
+              {setupLoading && <p role="status">Đang tải tổ chức chứng nhận và tài liệu…</p>}
+              {submitError && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-900">
+                <p>{submitError}</p>
+                {providers.length === 0 && <button onClick={() => void openSubmitModal()} className="mt-2 underline">Thử tải lại dữ liệu gửi hồ sơ</button>}
+              </div>}
+              {!setupLoading && (providers.length > 0 || !submitError) && <fieldset disabled={submitting} className="space-y-5">
               {/* Provider select */}
               <div>
                 <label
@@ -2011,6 +2082,7 @@ function SubmissionsContent() {
                       <button
                         key={p.id}
                         onClick={() => setSelectedProvider(p.id)}
+                        aria-pressed={selectedProvider === p.id}
                         className="w-full grid items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
                         style={{
                           gridTemplateColumns: "auto 1fr",
@@ -2079,7 +2151,7 @@ function SubmissionsContent() {
                       Bạn chưa có tài liệu nào
                     </p>
                     <a
-                      href="/documents"
+                      href={submitContext ? `/dossiers/${encodeURIComponent(submitContext.id)}#dossier-document-attachments` : "/documents"}
                       className="text-sm font-semibold"
                       style={{ color: "#0EA5E9" }}
                     >
@@ -2132,10 +2204,12 @@ function SubmissionsContent() {
                 <label
                   className="text-xs font-medium mb-1.5 block"
                   style={{ color: "#6B7280" }}
+                  htmlFor="submission-notes"
                 >
                   Ghi chú (tuỳ chọn)
                 </label>
                 <textarea
+                  id="submission-notes"
                   value={submitNotes}
                   onChange={(e) => setSubmitNotes(e.target.value)}
                   placeholder="Thông tin thêm cho tổ chức chứng nhận..."
@@ -2148,6 +2222,7 @@ function SubmissionsContent() {
                   }}
                 />
               </div>
+              </fieldset>}
             </div>
 
             <div
@@ -2157,14 +2232,14 @@ function SubmissionsContent() {
               <button
                 onClick={handleSubmit}
                 disabled={
-                  submitting || !selectedProvider || selectedDocs.size === 0
+                  setupLoading || submitting || !selectedProvider || selectedDocs.size === 0
                 }
                 className="w-full py-3 rounded-xl text-sm font-semibold transition-all"
                 style={{
                   background:
                     !selectedProvider || selectedDocs.size === 0
                       ? "#E2E8F0"
-                      : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                      : "#0A1F44",
                   boxShadow:
                     selectedProvider && selectedDocs.size > 0
                       ? "0 4px 15px rgba(37,99,235,0.3)"

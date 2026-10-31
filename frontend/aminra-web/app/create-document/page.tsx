@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useUserAuth } from "@/components/UserAuthContext";
 import { useFeatureFlags } from "@/lib/featureFlags";
 import { downloadPdfHtml, RenderPdfError } from "@/lib/renderPdfHtml";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,14 @@ const INDUSTRY_ICON_MAP: Record<string, string> = {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function CreateDocumentPage() {
+  return <Suspense fallback={<p role="status">Đang tải ngữ cảnh hồ sơ…</p>}><CreateDocumentContent /></Suspense>;
+}
+
+function CreateDocumentContent() {
+  const searchParams = useSearchParams();
+  const dossierId = searchParams?.get("dossier");
+  const [dossierContext, setDossierContext] = useState<{ id: string; title: string; requirements_version_id: string } | null>(null);
+  const [contextError, setContextError] = useState("");
   const { user, token, isAuthenticated } = useUserAuth();
 
   const [step, setStep] = useState(1);
@@ -97,6 +106,33 @@ export default function CreateDocumentPage() {
       is_system: boolean;
     }>
   >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDossierContext(null);
+    setContextError("");
+    setSelectedTypes([]);
+    setGenerated(false);
+    if (!dossierId || !token) return;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/dossiers/${encodeURIComponent(dossierId)}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error("Không tải được hồ sơ nguồn. Hãy quay lại hồ sơ và thử lại.");
+        const dossier = await response.json();
+        if (dossier.id !== dossierId || dossier.requirements_binding_status !== "bound" || !dossier.requirements_version_id || !Array.isArray(dossier.doc_types)) {
+          throw new Error("Hồ sơ chưa có bộ yêu cầu đã xác minh để tạo tài liệu.");
+        }
+        if (cancelled) return;
+        setDossierContext({ id: dossier.id, title: dossier.title, requirements_version_id: dossier.requirements_version_id });
+        setSelectedStandardCode(dossier.standard_code);
+        setStandard({ id: dossier.standard_type_id, code: dossier.standard_code, name_vi: dossier.standard_name_vi || dossier.standard_code,
+          organization: null, scheme_version: null, doc_types: dossier.doc_types });
+      } catch (error) {
+        if (!cancelled) setContextError(error instanceof Error ? error.message : "Không tải được ngữ cảnh hồ sơ.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [dossierId, token]);
 
   // ── Fetch templates + company profile ────────────────────────────────────
 
@@ -137,7 +173,7 @@ export default function CreateDocumentPage() {
           const industryData: IndustrySchemaSummary = await industryRes.json();
           setIndustry(industryData);
           // Auto-select default standard if exactly 1 available, else pre-select default
-          if (industryData.available_standards.length > 0) {
+          if (!dossierId && industryData.available_standards.length > 0) {
             const def = industryData.available_standards.find((s) => s.is_default);
             const auto = def ?? industryData.available_standards[0];
             setSelectedStandardCode(auto.code);
@@ -151,10 +187,11 @@ export default function CreateDocumentPage() {
     };
 
     fetchData();
-  }, [isAuthenticated, token, user?.industry_schema_code]);
+  }, [isAuthenticated, token, user?.industry_schema_code, dossierId]);
 
   // Fetch standard detail (doc_types list) when user picks a standard
   useEffect(() => {
+    if (dossierId) return;
     if (!token || !selectedStandardCode) {
       setStandard(null);
       return;
@@ -165,7 +202,7 @@ export default function CreateDocumentPage() {
       });
       if (res.ok) setStandard(await res.json());
     })();
-  }, [token, selectedStandardCode]);
+  }, [token, selectedStandardCode, dossierId]);
 
   // ── Toggle template selection ────────────────────────────────────────────
 
@@ -432,6 +469,7 @@ export default function CreateDocumentPage() {
   );
 
   const handleGenerate = async () => {
+    if (dossierId && dossierContext?.id !== dossierId) return;
     setGenerating(true);
     setError("");
     setGenerated(false);
@@ -514,6 +552,13 @@ export default function CreateDocumentPage() {
     );
   }
 
+  if (dossierId && !dossierContext) {
+    return <div className="mx-auto max-w-2xl space-y-4 p-6 text-navy-900">
+      <p role={contextError ? "alert" : "status"}>{contextError || "Đang tải bộ yêu cầu đã chốt của hồ sơ…"}</p>
+      <Link className="underline" href={`/dossiers/${encodeURIComponent(dossierId)}`}>Quay lại hồ sơ nguồn</Link>
+    </div>;
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   const profileRows = [
@@ -556,8 +601,19 @@ export default function CreateDocumentPage() {
           </p>
         </div>
 
+        {dossierContext && (
+          <section aria-label="Ngữ cảnh hồ sơ nguồn" className="rounded-xl border border-cream-300 bg-cream-50 p-4 text-sm text-navy-900 space-y-2">
+            <p className="font-semibold">Đang chuẩn bị tài liệu cho: {dossierContext.title}</p>
+            <p>Tiêu chuẩn: {standard?.name_vi}</p>
+            <p className="break-all">Phiên bản yêu cầu: {dossierContext.requirements_version_id}</p>
+            <p>Mẫu tạo ra là bản nháp tải về máy. Sau khi hoàn thiện, quay lại hồ sơ để đính kèm đúng loại tài liệu; tạo mẫu chưa đồng nghĩa với đã nộp cho CB.</p>
+            <Link href={`/dossiers/${encodeURIComponent(dossierContext.id)}#dossier-document-attachments`} className="inline-block font-semibold underline">
+              Quay lại hồ sơ để đính kèm tài liệu
+            </Link>
+          </section>
+        )}
         {/* TASK #19 — Industry + Standard chooser */}
-        {industry && (
+        {industry && !dossierId && (
           <div
             className="rounded-2xl p-4 animate-section space-y-3"
             style={{
@@ -1158,6 +1214,7 @@ export default function CreateDocumentPage() {
                 Tạo thành công {selectedTypes.length} file{" "}
                 {outputFormat === "pdf" ? "PDF" : "DOCX"}! Kiểm tra thư
                 mục Downloads.
+                {dossierContext && <p className="mt-2">Bước tiếp theo: hoàn thiện tệp rồi chọn “Quay lại hồ sơ để đính kèm tài liệu” ở trên.</p>}
               </div>
             )}
 
