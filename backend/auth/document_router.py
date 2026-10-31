@@ -29,6 +29,7 @@ from auth.upload_utils import validate_upload
 from auth.permissions import check_permission_db, get_user_permissions
 from services.feature_flags import is_feature_enabled
 from services.document_types import HALAL_DOC_TYPES
+from services.document_library import TYPE_REPRESENTATIVE_SQL
 from services.document_versioning import (
     AUDIT_EVENT_APPROVED,
     AUDIT_EVENT_REJECTED,
@@ -419,19 +420,20 @@ async def list_revisions(
         raise HTTPException(400, "Tenant không xác định")
 
     rows = await db.fetch(
-        """
+        "WITH representative AS (" + TYPE_REPRESENTATIVE_SQL + """
+        )
         SELECT d.id, d.original_filename, d.compliance_score,
                d.file_size, d.uploaded_at, d.evaluation_result, d.approval_status,
-               (cv.current_document_id IS NOT NULL) AS is_current_selection,
+               COALESCE(d.id=(SELECT id FROM representative),false) AS is_current_selection,
                u.company_name AS uploaded_by_name
         FROM documents d
-        LEFT JOIN document_current_versions cv ON cv.current_document_id=d.id AND cv.tenant_id=d.tenant_id
         LEFT JOIN users u ON u.id = d.user_id
         WHERE d.tenant_id = $1 AND d.doc_type = $2
         ORDER BY d.uploaded_at DESC
         """,
         tenant_id,
         doc_type_id,
+        None,
     )
 
     doc_type_label = None

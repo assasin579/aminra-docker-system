@@ -1616,3 +1616,40 @@ async def test_reused_document_does_not_borrow_another_dossier_review_context(db
     other = await compute_dossier_readiness(db,dossier_id=str(reuse),tenant_id=str(case['ids']['business_a']))
     assert all(slot['submission_id']==str(case['ids']['submission']) for slot in primary['requirement_slots'])
     assert all(slot['submission_id'] is None and slot['submitted_round'] is None for slot in other['requirement_slots'])
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('independent', [False, True])
+async def test_library_history_switches_repeatedly_with_one_type_representative(db, case, monkeypatch, independent):
+    from auth import document_router
+    from services.document_library import select_current_version
+    from unittest.mock import AsyncMock
+    monkeypatch.setattr(document_router, 'is_feature_enabled', AsyncMock(return_value=False))
+    tenant = case['ids']['business_a']
+    first = case['docs']['permit-v1']['id']
+    second = case['docs']['permit-v2']['id']
+    if independent:
+        second = uuid4()
+        await db.execute("""INSERT INTO documents
+            (id,filename,original_filename,file_path,file_size,mime_type,user_id,tenant_id,doc_type,status,uploaded_at)
+            SELECT $1::uuid,'independent.pdf','independent.pdf','synthetic://independent/' || ($1::uuid)::text,
+                   file_size,mime_type,user_id,tenant_id,doc_type,status,now()+interval '1 second'
+            FROM documents WHERE id=$2""", second, first)
+    packet = await db.fetchval('SELECT document_ids FROM submissions WHERE id=$1', case['ids']['submission'])
+    before = await db.fetch('SELECT id,uploaded_at,approval_status,version_parent_id,version_number,file_path FROM documents WHERE tenant_id=$1 ORDER BY id', tenant)
+    async def assert_current(expected):
+        history = await document_router.list_revisions('permit', user=case['users']['business_a'], db=db)
+        assert [r.id for r in history.revisions if r.is_current_selection] == [str(expected)]
+        library = await document_router.list_documents(page=1,page_size=100,doc_type='permit',status=None,view='latest_by_type',user=case['users']['business_a'],db=db)
+        assert [r.id for r in library.documents] == [str(expected)]
+    # The default latest representative must also be marked before any explicit selection.
+    if independent:
+        await assert_current(second)
+    for target in [first, second, first, second, first]:
+        await select_current_version(db,tenant_id=tenant,document_id=target,actor_id=tenant)
+        await assert_current(target)
+    selected_at = await db.fetchval('SELECT selected_at FROM document_current_versions WHERE current_document_id=$1',first)
+    replay = await select_current_version(db,tenant_id=tenant,document_id=first,actor_id=tenant)
+    assert replay['changed'] is False
+    assert await db.fetchval('SELECT selected_at FROM document_current_versions WHERE current_document_id=$1',first) == selected_at
+    assert await db.fetchval('SELECT document_ids FROM submissions WHERE id=$1',case['ids']['submission']) == packet
+    assert await db.fetch('SELECT id,uploaded_at,approval_status,version_parent_id,version_number,file_path FROM documents WHERE tenant_id=$1 ORDER BY id',tenant) == before
